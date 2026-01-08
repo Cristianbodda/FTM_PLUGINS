@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    TEMPLATE DOMANDE - MOODLE XML FORMAT                       ║
+║                                                                              ║
+║  Istruzioni:                                                                 ║
+║  1. Sostituisci SETTORE con il tuo settore (es. LOGISTICA, MECCANICA, etc.)  ║
+║  2. Sostituisci XX con il tipo (es. MR, MAu, etc.)                          ║
+║  3. Sostituisci YY con il codice competenza (es. A1, B2, C3, etc.)          ║
+║  4. Il codice competenza può essere nel NOME o nel TESTO della domanda      ║
+║                                                                              ║
+║  Formato codice: SETTORE_XX_YY                                               ║
+║  Esempi: AUTOMOBILE_MR_A1, LOGISTICA_MR_B2, MECCANICA_MAu_C3                 ║
+║                                                                              ║
+║  IMPORTANTE: Mantieni la struttura XML esattamente come in questo template!  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<quiz>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ESEMPIO 1: Codice competenza nel NOME della domanda
+     Formato nome: "Q01 - SETTORE_XX_YY" oppure "SETTORE_XX_YY - Descrizione"
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<question type="multichoice">
+    <name>
+        <text>Q01 - SETTORE_MR_A1</text>
+    </name>
+    <questiontext format="html">
+        <text><![CDATA[<p>Scrivi qui il testo della domanda. Questa è la prima domanda di esempio.</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <!-- Risposta CORRETTA: fraction="100" -->
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Questa è la risposta corretta</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <!-- Risposte ERRATE: fraction="0" -->
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Questa è una risposta errata</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Questa è un'altra risposta errata</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Questa è la terza risposta errata</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <correctfeedback format="html"><text></text></correctfeedback>
+    <partiallycorrectfeedback format="html"><text></text></partiallycorrectfeedback>
+    <incorrectfeedback format="html"><text></text></incorrectfeedback>
+    <shownumcorrect/>
+</question>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ESEMPIO 2: Codice competenza nel TESTO della domanda (in grassetto)
+     Utile quando il nome deve essere descrittivo
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<question type="multichoice">
+    <name>
+        <text>Domanda sulla sicurezza sul lavoro</text>
+    </name>
+    <questiontext format="html">
+        <text><![CDATA[<p><b>SETTORE_MR_A2</b> - Quale procedura è corretta per la sicurezza in magazzino?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Indossare sempre i DPI appropriati</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Correre per essere più veloci</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Ignorare i segnali di pericolo</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Lavorare senza formazione</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <correctfeedback format="html"><text></text></correctfeedback>
+    <partiallycorrectfeedback format="html"><text></text></partiallycorrectfeedback>
+    <incorrectfeedback format="html"><text></text></incorrectfeedback>
+    <shownumcorrect/>
+</question>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ESEMPIO 3: Domanda con feedback personalizzato
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<question type="multichoice">
+    <name>
+        <text>Q03 - SETTORE_MR_B1</text>
+    </name>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale strumento si usa per questa operazione specifica?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Strumento A - quello corretto</p>]]></text>
+        <feedback format="html">
+            <text><![CDATA[<p>Esatto! Lo strumento A è la scelta corretta perché...</p>]]></text>
+        </feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Strumento B - errato</p>]]></text>
+        <feedback format="html">
+            <text><![CDATA[<p>Non corretto. Lo strumento B non è adatto perché...</p>]]></text>
+        </feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Strumento C - errato</p>]]></text>
+        <feedback format="html">
+            <text><![CDATA[<p>Non corretto. Lo strumento C è usato per altro...</p>]]></text>
+        </feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Strumento D - errato</p>]]></text>
+        <feedback format="html">
+            <text><![CDATA[<p>Non corretto. Lo strumento D non esiste per questo scopo.</p>]]></text>
+        </feedback>
+    </answer>
+    <generalfeedback format="html">
+        <text><![CDATA[<p>Feedback generale: Ricorda sempre di verificare lo strumento prima dell'uso.</p>]]></text>
+    </generalfeedback>
+    <correctfeedback format="html">
+        <text><![CDATA[<p>Ottimo lavoro!</p>]]></text>
+    </correctfeedback>
+    <partiallycorrectfeedback format="html">
+        <text><![CDATA[<p>Parzialmente corretto.</p>]]></text>
+    </partiallycorrectfeedback>
+    <incorrectfeedback format="html">
+        <text><![CDATA[<p>Risposta non corretta. Riprova!</p>]]></text>
+    </incorrectfeedback>
+    <shownumcorrect/>
+</question>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     ESEMPIO 4: Domanda con immagine (opzionale)
+     L'immagine deve essere codificata in base64 o essere un URL
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<question type="multichoice">
+    <name>
+        <text>Q04 - SETTORE_MR_C1</text>
+    </name>
+    <questiontext format="html">
+        <text><![CDATA[<p>Osserva l'immagine e rispondi:</p>
+<p><img src="https://esempio.com/immagine.jpg" alt="Descrizione immagine" width="400"></p>
+<p>Cosa rappresenta questa immagine?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Risposta corretta</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Risposta errata 1</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Risposta errata 2</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Risposta errata 3</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <correctfeedback format="html"><text></text></correctfeedback>
+    <partiallycorrectfeedback format="html"><text></text></partiallycorrectfeedback>
+    <incorrectfeedback format="html"><text></text></incorrectfeedback>
+    <shownumcorrect/>
+</question>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     AGGIUNGI ALTRE DOMANDE SEGUENDO LO STESSO FORMATO
+     Copia una delle domande sopra e modificala
+     ═══════════════════════════════════════════════════════════════════════════ -->
+
+</quiz>

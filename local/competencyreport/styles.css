@@ -1,0 +1,145 @@
+/**
+ * Stili CSS per Report Competenze
+ */
+
+/* Header principale */
+.competency-report-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.competency-report-header h2 {
+    margin: 0;
+    font-weight: 700;
+}
+
+.competency-report-header .lead {
+    opacity: 0.9;
+    margin-bottom: 0;
+}
+
+/* Header studente */
+.student-report-header {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border: 1px solid #dee2e6;
+}
+
+/* Cards personalizzate */
+.card {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+/* Badge punteggi */
+.badge-pill {
+    font-size: 0.9em;
+}
+
+/* Progress bars */
+.progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    font-weight: 600;
+    transition: width 0.6s ease;
+}
+
+/* Tabelle */
+.table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Grafico radar container */
+#radarChart {
+    max-height: 400px;
+}
+
+/* Punti di forza/debolezza */
+.list-group-item {
+    border-left: 4px solid transparent;
+}
+
+.border-success .list-group-item {
+    border-left-color: #28a745;
+}
+
+.border-danger .list-group-item {
+    border-left-color: #dc3545;
+}
+
+/* Animazioni */
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .competency-report-header {
+        padding: 20px;
+    }
+    
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .btn-toolbar {
+        flex-direction: column;
+    }
+    
+    .btn-toolbar .btn {
+        margin-bottom: 10px;
+        width: 100%;
+    }
+}
+
+/* Tooltip personalizzati */
+.difficulty-level {
+    cursor: help;
+}
+
+/* Stati autorizzazione */
+.badge-success {
+    background-color: #28a745;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+}
+
+/* Export buttons */
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+    border: none;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+}
+
+/* Legenda */
+.card-body .badge {
+    margin-right: 5px;
+}

@@ -1,0 +1,100 @@
+<?php
+// ============================================
+// Self Assessment - English Strings
+// ============================================
+
+defined('MOODLE_INTERNAL') || die();
+
+// Plugin info
+$string['pluginname'] = 'Self Assessment';
+$string['selfassessment'] = 'Self Assessment';
+$string['selfassessment:complete'] = 'Complete self assessment';
+$string['selfassessment:view'] = 'View student self assessments';
+$string['selfassessment:manage'] = 'Manage student enablement';
+$string['selfassessment:sendreminder'] = 'Send reminders to students';
+
+// Navigation
+$string['myassessment'] = 'My Self Assessment';
+$string['manageassessments'] = 'Manage Assessments';
+$string['dashboard'] = 'Self Assessment Dashboard';
+
+// Page titles
+$string['compile_title'] = 'Self Assessment - Competencies';
+$string['manage_title'] = 'Manage Self Assessments';
+$string['index_title'] = 'Self Assessment Dashboard';
+
+// Instructions
+$string['instructions'] = 'Rate your skill level for each competency area using the Bloom scale (1-6).';
+$string['instructions_detail'] = 'Be honest in your self-assessment. This will help your coach understand where you need support.';
+
+// Bloom levels
+$string['level1'] = 'REMEMBER';
+$string['level1_desc'] = 'I can recall basic information and terminology';
+$string['level2'] = 'UNDERSTAND';
+$string['level2_desc'] = 'I can explain concepts in my own words';
+$string['level3'] = 'APPLY';
+$string['level3_desc'] = 'I can use knowledge in standard situations';
+$string['level4'] = 'ANALYZE';
+$string['level4_desc'] = 'I can break down problems and identify causes';
+$string['level5'] = 'EVALUATE';
+$string['level5_desc'] = 'I can judge quality and choose the best solution';
+$string['level6'] = 'CREATE';
+$string['level6_desc'] = 'I can design new solutions or improve existing ones';
+
+// Status
+$string['status_enabled'] = 'Enabled';
+$string['status_disabled'] = 'Disabled';
+$string['status_completed'] = 'Completed';
+$string['status_pending'] = 'Pending';
+$string['status_never'] = 'Never compiled';
+
+// Actions
+$string['save'] = 'Save Self Assessment';
+$string['saving'] = 'Saving...';
+$string['saved'] = 'Self assessment saved successfully!';
+$string['enable'] = 'Enable';
+$string['disable'] = 'Disable';
+$string['send_reminder'] = 'Send Reminder';
+$string['view_detail'] = 'View Detail';
+
+// Messages
+$string['save_success'] = 'Your self assessment has been saved successfully.';
+$string['save_error'] = 'Error saving self assessment. Please try again.';
+$string['disabled_message'] = 'Self assessment has been disabled for your account. Contact your coach for more information.';
+$string['already_completed'] = 'You have already completed your self assessment. You can update it at any time.';
+$string['reminder_sent'] = 'Reminder sent successfully to {$a} student(s).';
+$string['status_changed'] = 'Status changed successfully.';
+
+// Dashboard
+$string['total_students'] = 'Total Students';
+$string['completed_count'] = 'Completed';
+$string['pending_count'] = 'Pending';
+$string['disabled_count'] = 'Disabled';
+$string['last_update'] = 'Last Update';
+$string['no_students'] = 'No students found.';
+
+// Filters
+$string['filter_all'] = 'All';
+$string['filter_completed'] = 'Completed';
+$string['filter_pending'] = 'Pending';
+$string['filter_disabled'] = 'Disabled';
+
+// Table headers
+$string['student'] = 'Student';
+$string['status'] = 'Status';
+$string['completed_date'] = 'Completed';
+$string['actions'] = 'Actions';
+
+// Confirmation
+$string['confirm_disable'] = 'Are you sure you want to disable self assessment for this student?';
+$string['confirm_enable'] = 'Are you sure you want to enable self assessment for this student?';
+
+// Errors
+$string['error_notfound'] = 'Student not found.';
+$string['error_permission'] = 'You do not have permission to perform this action.';
+$string['error_disabled'] = 'Self assessment is disabled for your account.';
+
+// Progress
+$string['progress'] = 'Progress';
+$string['areas_completed'] = '{$a->completed} of {$a->total} areas rated';
+$string['completion_percent'] = '{$a}% complete';

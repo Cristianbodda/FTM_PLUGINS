@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q01 - CHIMFARM_1C_03</text></name>
+<questiontext format="html"><text><![CDATA[<p>Durante la progettazione di un impianto chimico valuti il rischio di atmosfere esplosive. Un'area è classificata come Zona 1. Operativamente, cosa indica questa classificazione?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Presenza continua di atmosfera esplosiva</text></answer>
+<answer fraction="100" format="html"><text>Presenza occasionale durante il normale funzionamento</text></answer>
+<answer fraction="0" format="html"><text>Presenza solo in guasto</text></answer>
+<answer fraction="0" format="html"><text>Nessun rischio</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q02 - CHIMFARM_1C_03</text></name>
+<questiontext format="html"><text><![CDATA[<p>In fase di analisi ATEX individui una Zona 0. Dal punto di vista della sicurezza impiantistica, come è definita questa area?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Dove l'atmosfera esplosiva è improbabile</text></answer>
+<answer fraction="100" format="html"><text>Dove l'atmosfera esplosiva è continua o molto frequente</text></answer>
+<answer fraction="0" format="html"><text>Dove l'atmosfera esplosiva appare solo in condizioni anomale</text></answer>
+<answer fraction="0" format="html"><text>Dove è vietato usare elettricità</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q03 - CHIMFARM_4S_02</text></name>
+<questiontext format="html"><text><![CDATA[<p>Nel controllo di un gas di processo monitori il punto di rugiada per evitare condensazioni indesiderate. Cosa rappresenta operativamente questo parametro?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>La temperatura di ebollizione</text></answer>
+<answer fraction="100" format="html"><text>La temperatura alla quale un gas condensa</text></answer>
+<answer fraction="0" format="html"><text>La temperatura di sublimazione</text></answer>
+<answer fraction="0" format="html"><text>Il punto in cui un liquido gela</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q04 - CHIMFARM_3C_02</text></name>
+<questiontext format="html"><text><![CDATA[<p>Per misurare il livello in un serbatoio contenente un fluido aggressivo utilizzi un sensore radar. Su quale principio fisico si basa questa misura?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Pressione idrostatica</text></answer>
+<answer fraction="0" format="html"><text>Conducibilità elettrica</text></answer>
+<answer fraction="100" format="html"><text>Tempo di volo dell'onda riflessa</text></answer>
+<answer fraction="0" format="html"><text>Variazione di densità</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q05 - CHIMFARM_4S_02</text></name>
+<questiontext format="html"><text><![CDATA[<p>Devi mantenere la temperatura di un reattore entro limiti molto stretti. Quale soluzione impiantistica consente un controllo automatico efficace?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Termometro</text></answer>
+<answer fraction="0" format="html"><text>Bagnomaria manuale</text></answer>
+<answer fraction="100" format="html"><text>Camicia termostatata con regolatore PID</text></answer>
+<answer fraction="0" format="html"><text>Condensatore Liebig</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q06 - CHIMFARM_3C_01</text></name>
+<questiontext format="html"><text><![CDATA[<p>Durante il funzionamento di un reattore agitato, quale ruolo svolge l'albero dell'agitatore nel processo?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Sostenere il motore</text></answer>
+<answer fraction="100" format="html"><text>Trasmettere il moto alle pale interne</text></answer>
+<answer fraction="0" format="html"><text>Riscaldare il liquido</text></answer>
+<answer fraction="0" format="html"><text>Misurare la pressione</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q07 - CHIMFARM_3C_01</text></name>
+<questiontext format="html"><text><![CDATA[<p>Nel progetto di un reattore prevedi una camicia esterna. Qual è la sua funzione operativa principale?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Separare impurità</text></answer>
+<answer fraction="100" format="html"><text>Raffreddare o riscaldare il contenuto</text></answer>
+<answer fraction="0" format="html"><text>Misurare la densità</text></answer>
+<answer fraction="0" format="html"><text>Rimuovere vapori tossici</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q08 - CHIMFARM_3C_01</text></name>
+<questiontext format="html"><text><![CDATA[<p>In uno scambiatore di calore a fascio tubiero i due fluidi non entrano in contatto diretto. Come avviene quindi lo scambio termico?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Per contatto diretto tra fluidi</text></answer>
+<answer fraction="100" format="html"><text>Tramite superfici metalliche separate</text></answer>
+<answer fraction="0" format="html"><text>Solo per irraggiamento</text></answer>
+<answer fraction="0" format="html"><text>Solo tramite convezione naturale</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q09 - CHIMFARM_4S_03</text></name>
+<questiontext format="html"><text><![CDATA[<p>Nel dimensionamento di uno scambiatore scegli il flusso in controcorrente. Per quale motivo questa configurazione è più efficiente?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Usa meno energia</text></answer>
+<answer fraction="100" format="html"><text>Le differenze di temperatura restano più elevate lungo tutto lo scambiatore</text></answer>
+<answer fraction="0" format="html"><text>I fluidi viaggiano alla stessa temperatura</text></answer>
+<answer fraction="0" format="html"><text>Riduce la pressione interna</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q10 - CHIMFARM_3C_04</text></name>
+<questiontext format="html"><text><![CDATA[<p>Per proteggere un impianto da sovrapressioni installi una valvola di sicurezza caricata a molla. Come interviene questo dispositivo?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="100" format="html"><text>Si apre automaticamente oltre una pressione prestabilita</text></answer>
+<answer fraction="0" format="html"><text>Serve a regolare la portata</text></answer>
+<answer fraction="0" format="html"><text>Misura il livello</text></answer>
+<answer fraction="0" format="html"><text>Rimuove aria dall'impianto</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q11 - CHIMFARM_3C_01</text></name>
+<questiontext format="html"><text><![CDATA[<p>In una linea di processo devi garantire l'intercettazione rapida del flusso. Quale tipologia di valvola è più indicata?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Regolazione fine del flusso</text></answer>
+<answer fraction="100" format="html"><text>Chiusura rapida e totale del flusso</text></answer>
+<answer fraction="0" format="html"><text>Misura di pressione</text></answer>
+<answer fraction="0" format="html"><text>Dosaggio di precisione</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q12 - CHIMFARM_8T_01</text></name>
+<questiontext format="html"><text><![CDATA[<p>Nel bilancio di materia di un impianto devi esprimere una portata volumetrica. Quale unità di misura è corretta?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>kg/h</text></answer>
+<answer fraction="100" format="html"><text>L/h</text></answer>
+<answer fraction="0" format="html"><text>mol/L</text></answer>
+<answer fraction="0" format="html"><text>bar·m³</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q13 - CHIMFARM_1C_03</text></name>
+<questiontext format="html"><text><![CDATA[<p>Nel valutare i rischi di incendio consideri un materiale auto-infiammabile. Cosa significa operativamente questa definizione?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Richiede una fonte di innesco</text></answer>
+<answer fraction="100" format="html"><text>Può incendiarsi spontaneamente a una certa temperatura</text></answer>
+<answer fraction="0" format="html"><text>Non brucia mai completamente</text></answer>
+<answer fraction="0" format="html"><text>Reagisce solo in presenza di ossigeno puro</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q14 - CHIMFARM_4S_02</text></name>
+<questiontext format="html"><text><![CDATA[<p>Nel diagramma di fase dell'acqua analizzi il punto critico. A quale temperatura si colloca questo valore?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>100 °C</text></answer>
+<answer fraction="100" format="html"><text>374 °C</text></answer>
+<answer fraction="0" format="html"><text>450 °C</text></answer>
+<answer fraction="0" format="html"><text>212 °C</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q15 - CHIMFARM_4S_02</text></name>
+<questiontext format="html"><text><![CDATA[<p>Nel controllo di un solvente osservi la variazione della sua pressione di vapore al variare della temperatura. Qual è la relazione corretta?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="100" format="html"><text>Cresce con la temperatura</text></answer>
+<answer fraction="0" format="html"><text>Diminuisce con la temperatura</text></answer>
+<answer fraction="0" format="html"><text>È costante per ogni sostanza</text></answer>
+<answer fraction="0" format="html"><text>È uguale alla pressione atmosferica</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q16 - CHIMFARM_4S_04</text></name>
+<questiontext format="html"><text><![CDATA[<p>In un impianto di abbattimento polveri installi un filtro a maniche. Qual è la sua funzione specifica?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Filtrare liquidi corrosivi</text></answer>
+<answer fraction="100" format="html"><text>Trattenere polveri fini da correnti gassose</text></answer>
+<answer fraction="0" format="html"><text>Separare liquidi immiscibili</text></answer>
+<answer fraction="0" format="html"><text>Prodotti ad alta viscosità</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q17 - CHIMFARM_1C_03</text></name>
+<questiontext format="html"><text><![CDATA[<p>Valuti il rischio di esplosione di una polvere con Kst = 150 bar·m/s. In quale classe di pericolosità rientra?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>St0</text></answer>
+<answer fraction="100" format="html"><text>St1</text></answer>
+<answer fraction="0" format="html"><text>St2</text></answer>
+<answer fraction="0" format="html"><text>St3</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q18 - CHIMFARM_8T_01</text></name>
+<questiontext format="html"><text><![CDATA[<p>Converti una densità di 0,80 g/mL in unità del Sistema Internazionale. Qual è il valore corretto?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>80 kg/m³</text></answer>
+<answer fraction="100" format="html"><text>800 kg/m³</text></answer>
+<answer fraction="0" format="html"><text>8 kg/m³</text></answer>
+<answer fraction="0" format="html"><text>8000 kg/m³</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q19 - CHIMFARM_4S_02</text></name>
+<questiontext format="html"><text><![CDATA[<p>Analizzando le curve pressione-temperatura (P-T) di un fluido, quale informazione fondamentale ottieni?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Solo zone liquide</text></answer>
+<answer fraction="0" format="html"><text>Solo zone gassose</text></answer>
+<answer fraction="100" format="html"><text>Le condizioni di equilibrio nelle transizioni di fase</text></answer>
+<answer fraction="0" format="html"><text>I cambiamenti chimici</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q20 - CHIMFARM_8T_01</text></name>
+<questiontext format="html"><text><![CDATA[<p>Un serbatoio da 2000 L viene alimentato con una portata costante di 400 L/h. Quanto tempo è necessario per riempirlo completamente partendo da vuoto?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>2 h</text></answer>
+<answer fraction="0" format="html"><text>4 h</text></answer>
+<answer fraction="100" format="html"><text>5 h</text></answer>
+<answer fraction="0" format="html"><text>10 h</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q21 - CHIMFARM_3C_01</text></name>
+<questiontext format="html"><text><![CDATA[<p>Nel layout di un impianto inserisci una tramoggia. Qual è la sua funzione nel processo produttivo?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Misurare la temperatura</text></answer>
+<answer fraction="100" format="html"><text>Alimentare il processo con solidi granulari o polveri</text></answer>
+<answer fraction="0" format="html"><text>Raffreddare i fluidi</text></answer>
+<answer fraction="0" format="html"><text>Stabilizzare i vapori</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q22 - CHIMFARM_4S_02</text></name>
+<questiontext format="html"><text><![CDATA[<p>Nel confronto tra combustibili liquidi utilizzi il potere calorifico come indicatore energetico. Come viene espresso questo parametro?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Kst</text></answer>
+<answer fraction="0" format="html"><text>pKa</text></answer>
+<answer fraction="100" format="html"><text>PCI / PCS (potere calorifico)</text></answer>
+<answer fraction="0" format="html"><text>PM (peso molecolare)</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q23 - CHIMFARM_4S_01</text></name>
+<questiontext format="html"><text><![CDATA[<p>In un impianto batch analizzi il ciclo 'carica-reazione-scarico'. A quale tipologia di processo corrisponde questa sequenza?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Processo continuo</text></answer>
+<answer fraction="100" format="html"><text>Processo sequenziale non continuo</text></answer>
+<answer fraction="0" format="html"><text>Processo impossibile da automatizzare</text></answer>
+<answer fraction="0" format="html"><text>Processo esclusivo da laboratorio</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q24 - CHIMFARM_3C_01</text></name>
+<questiontext format="html"><text><![CDATA[<p>Nella scelta di una pompa per il trasferimento di un solvente poco viscoso, quale tipologia risulta più adatta?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Alte viscosità</text></answer>
+<answer fraction="100" format="html"><text>Liquidi a bassa viscosità</text></answer>
+<answer fraction="0" format="html"><text>Solidi granulari</text></answer>
+<answer fraction="0" format="html"><text>Gas compressi</text></answer>
+</question>
+
+<question type="multichoice">
+<name><text>CHIM_APPR03_Q25 - CHIMFARM_4S_03</text></name>
+<questiontext format="html"><text><![CDATA[<p>Nel reattore noti la formazione di vortici durante l'agitazione. A cosa serve la combinazione di agitatore e baffi interni?</p>]]></text></questiontext>
+<defaultgrade>1</defaultgrade>
+<single>true</single>
+<shuffleanswers>true</shuffleanswers>
+<answernumbering>abc</answernumbering>
+<answer fraction="0" format="html"><text>Aumentare il volume</text></answer>
+<answer fraction="0" format="html"><text>Ridurre lo shear stress</text></answer>
+<answer fraction="100" format="html"><text>Migliorare la miscelazione evitando vortici</text></answer>
+<answer fraction="0" format="html"><text>Raffreddare il reattore</text></answer>
+</question>
+
+</quiz>

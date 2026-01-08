@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    TEMPLATE DOMANDE - CHIMFARM                              
+║                                                                              ║
+║  Come usare questo template:                                                 ║
+║  1. Copia una domanda di esempio                                             ║
+║  2. Modifica il codice competenza: CHIMFARM_XX_YY                            
+║     - XX = tipo (es. MR, MAu)                                               ║
+║     - YY = codice (es. A1, B2, C3)                                          ║
+║  3. Scrivi la tua domanda e le 4 risposte                                   ║
+║  4. Imposta fraction="100" per la risposta CORRETTA                         ║
+║  5. Imposta fraction="0" per le risposte ERRATE                             ║
+║                                                                              ║
+║  Il codice competenza può essere:                                            ║
+║  - Nel NOME: <n><text>Q01 - CHIMFARM_MR_A1</text></n>                       
+║  - Nel TESTO: <b>CHIMFARM_MR_A1</b> - Testo domanda...                      
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<quiz>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     DOMANDA 1: Esempio con codice nel NOME
+     ══════════════════════════════════════════════════════════════════════════ -->
+<question type="multichoice">
+    <n>
+        <text>Q01 - CHIMFARM_MR_A1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Scrivi qui il testo della tua prima domanda.</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Risposta CORRETTA</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Risposta errata 1</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Risposta errata 2</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Risposta errata 3</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <correctfeedback format="html"><text></text></correctfeedback>
+    <partiallycorrectfeedback format="html"><text></text></partiallycorrectfeedback>
+    <incorrectfeedback format="html"><text></text></incorrectfeedback>
+    <shownumcorrect/>
+</question>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     DOMANDA 2: Esempio con codice nel TESTO (in grassetto)
+     ══════════════════════════════════════════════════════════════════════════ -->
+<question type="multichoice">
+    <n>
+        <text>Domanda descrittiva</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p><b>CHIMFARM_MR_A2</b> - Scrivi qui il testo della domanda con il codice in grassetto all'inizio.</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Risposta CORRETTA</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Risposta errata 1</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Risposta errata 2</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Risposta errata 3</p>]]></text>
+        <feedback format="html"><text></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <correctfeedback format="html"><text></text></correctfeedback>
+    <partiallycorrectfeedback format="html"><text></text></partiallycorrectfeedback>
+    <incorrectfeedback format="html"><text></text></incorrectfeedback>
+    <shownumcorrect/>
+</question>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     DOMANDA 3: Esempio con feedback
+     ══════════════════════════════════════════════════════════════════════════ -->
+<question type="multichoice">
+    <n>
+        <text>Q03 - CHIMFARM_MR_B1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Domanda con feedback personalizzato per ogni risposta.</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Risposta CORRETTA</p>]]></text>
+        <feedback format="html">
+            <text><![CDATA[<p>Esatto! Questa è la risposta giusta perché...</p>]]></text>
+        </feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Risposta errata 1</p>]]></text>
+        <feedback format="html">
+            <text><![CDATA[<p>Non corretto. Il motivo è...</p>]]></text>
+        </feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Risposta errata 2</p>]]></text>
+        <feedback format="html">
+            <text><![CDATA[<p>Non corretto. Ricorda che...</p>]]></text>
+        </feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Risposta errata 3</p>]]></text>
+        <feedback format="html">
+            <text><![CDATA[<p>Non corretto. La differenza è...</p>]]></text>
+        </feedback>
+    </answer>
+    <generalfeedback format="html">
+        <text><![CDATA[<p>Feedback generale mostrato a tutti dopo la risposta.</p>]]></text>
+    </generalfeedback>
+    <correctfeedback format="html">
+        <text><![CDATA[<p>Ottimo lavoro!</p>]]></text>
+    </correctfeedback>
+    <partiallycorrectfeedback format="html">
+        <text><![CDATA[<p>Parzialmente corretto.</p>]]></text>
+    </partiallycorrectfeedback>
+    <incorrectfeedback format="html">
+        <text><![CDATA[<p>Risposta non corretta. Riprova!</p>]]></text>
+    </incorrectfeedback>
+    <shownumcorrect/>
+</question>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     COPIA E INCOLLA QUESTA STRUTTURA PER AGGIUNGERE ALTRE DOMANDE
+     Ricorda di cambiare:
+     - Il numero della domanda (Q04, Q05, ecc.)
+     - Il codice competenza (CHIMFARM_MR_XX)
+     - Il testo della domanda
+     - Le 4 risposte (1 corretta con fraction="100", 3 errate con fraction="0")
+     ══════════════════════════════════════════════════════════════════════════ -->
+
+</quiz>
