@@ -121,7 +121,7 @@ echo $OUTPUT->header();
                 $courses = get_courses();
                 foreach ($courses as $c) {
                     if ($c->id > 1) {
-                        echo '<option value="' . $c->id . '">' . format_string($c->fullname) . '</option>';
+                        echo '<option value="' . (int)$c->id . '">' . s(format_string($c->fullname)) . '</option>';
                     }
                 }
                 ?>

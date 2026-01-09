@@ -228,7 +228,7 @@ if ($action === 'delete' && !empty($_POST['questions'])) {
                 echo '<div class="log-item success">✅ Eliminata: ' . htmlspecialchars(substr($q->name, 0, 60)) . '</div>';
                 $deleted++;
             } catch (Exception $e) {
-                echo '<div class="log-item error">❌ Errore: ' . htmlspecialchars(substr($q->name, 0, 40)) . ' - ' . $e->getMessage() . '</div>';
+                echo '<div class="log-item error">❌ Errore: ' . htmlspecialchars(substr($q->name, 0, 40)) . ' - ' . htmlspecialchars($e->getMessage()) . '</div>';
                 $errors++;
             }
         }

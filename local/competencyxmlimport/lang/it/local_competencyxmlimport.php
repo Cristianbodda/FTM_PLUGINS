@@ -26,3 +26,11 @@ $string['defaultlevel'] = 'Livello predefinito (se non trovato)';
 $string['level_base'] = 'Base';
 $string['level_intermediate'] = 'Intermedio';
 $string['level_advanced'] = 'Avanzato';
+
+// Capabilities
+$string['competencyxmlimport:import'] = 'Importare domande da file XML/Word';
+$string['competencyxmlimport:managediagnostics'] = 'Utilizzare strumenti di diagnostica e manutenzione';
+$string['competencyxmlimport:assigncompetencies'] = 'Assegnare competenze alle domande';
+
+// Session management
+$string['sessionexpired'] = 'La sessione è scaduta per inattività. Ricomincia dall\'inizio.';

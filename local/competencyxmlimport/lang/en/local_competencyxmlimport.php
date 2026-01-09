@@ -26,3 +26,11 @@ $string['defaultlevel'] = 'Default level (if not found)';
 $string['level_base'] = 'Base';
 $string['level_intermediate'] = 'Intermediate';
 $string['level_advanced'] = 'Advanced';
+
+// Capabilities
+$string['competencyxmlimport:import'] = 'Import questions from XML/Word files';
+$string['competencyxmlimport:managediagnostics'] = 'Use diagnostic and maintenance tools';
+$string['competencyxmlimport:assigncompetencies'] = 'Assign competencies to questions';
+
+// Session management
+$string['sessionexpired'] = 'Your session has expired due to inactivity. Please start again.';

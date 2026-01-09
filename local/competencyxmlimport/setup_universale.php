@@ -447,13 +447,43 @@ function get_sector_icon($sector) {
 // GESTIONE SESSIONE PER DATI MULTI-STEP
 // ============================================================================
 
+// Session timeout: 30 minutes
+$session_timeout = 30 * 60;
+
+// Check for reset request
+if (optional_param('reset', 0, PARAM_INT) === 1) {
+    unset($_SESSION['setup_universale']);
+    redirect(new moodle_url('/local/competencyxmlimport/setup_universale.php', ['courseid' => $courseid]));
+}
+
+// Initialize or validate session
 if (!isset($_SESSION['setup_universale'])) {
     $_SESSION['setup_universale'] = [
         'frameworkid' => 0,
         'sector' => '',
         'files' => [],
-        'quizzes' => []
+        'quizzes' => [],
+        'started' => time()
     ];
+} else {
+    // Check session timeout
+    $session_age = time() - ($_SESSION['setup_universale']['started'] ?? 0);
+    if ($session_age > $session_timeout) {
+        // Session expired - reset
+        unset($_SESSION['setup_universale']);
+        $_SESSION['setup_universale'] = [
+            'frameworkid' => 0,
+            'sector' => '',
+            'files' => [],
+            'quizzes' => [],
+            'started' => time()
+        ];
+        // Redirect to step 1 with notice
+        if ($step > 1) {
+            \core\notification::warning(get_string('sessionexpired', 'local_competencyxmlimport'));
+            redirect(new moodle_url('/local/competencyxmlimport/setup_universale.php', ['courseid' => $courseid, 'step' => 1]));
+        }
+    }
 }
 
 // Salva dati da form
@@ -660,35 +690,85 @@ if ($step == 3):
     
     if (isset($_FILES['xmlfiles']) && !empty($_FILES['xmlfiles']['name'][0])) {
         $uploaded_count = 0;
-        
+
+        // Configuration: max file size 10MB
+        $max_file_size = 10 * 1024 * 1024;
+        // Allowed MIME types for XML files
+        $allowed_mime_types = ['text/xml', 'application/xml', 'application/x-xml'];
+
         foreach ($_FILES['xmlfiles']['name'] as $key => $filename) {
             if ($_FILES['xmlfiles']['error'][$key] === UPLOAD_ERR_OK) {
                 $tmp_name = $_FILES['xmlfiles']['tmp_name'][$key];
-                
-                // Verifica che sia un file XML
+                $file_size = $_FILES['xmlfiles']['size'][$key];
+
+                // 1. Check file size limit
+                if ($file_size > $max_file_size) {
+                    $upload_error .= "⚠️ File troppo grande (max 10MB): " . s($filename) . "<br>";
+                    continue;
+                }
+
+                // 2. Check file extension
                 $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
                 if ($ext !== 'xml') {
-                    $upload_error .= "⚠️ File ignorato (non XML): $filename<br>";
+                    $upload_error .= "⚠️ File ignorato (non XML): " . s($filename) . "<br>";
                     continue;
                 }
-                
-                // Verifica contenuto XML valido
+
+                // 3. Check MIME type
+                $finfo = new finfo(FILEINFO_MIME_TYPE);
+                $mime_type = $finfo->file($tmp_name);
+                if (!in_array($mime_type, $allowed_mime_types) && strpos($mime_type, 'text/') !== 0) {
+                    $upload_error .= "⚠️ Tipo MIME non valido ($mime_type): " . s($filename) . "<br>";
+                    continue;
+                }
+
+                // 4. Validate XML structure
                 $content = file_get_contents($tmp_name);
-                if (strpos($content, '<question') === false) {
-                    $upload_error .= "⚠️ File ignorato (non contiene domande): $filename<br>";
+                libxml_use_internal_errors(true);
+                $xml = simplexml_load_string($content);
+                if ($xml === false) {
+                    $xml_errors = libxml_get_errors();
+                    libxml_clear_errors();
+                    $upload_error .= "⚠️ XML non valido: " . s($filename) . "<br>";
                     continue;
                 }
-                
-                // Salva il file
-                $destination = $xml_dir . $filename;
+
+                // 5. Check for question content
+                if (strpos($content, '<question') === false) {
+                    $upload_error .= "⚠️ File ignorato (non contiene domande): " . s($filename) . "<br>";
+                    continue;
+                }
+
+                // 6. Sanitize filename to prevent path traversal
+                $safe_filename = clean_filename($filename);
+                if (empty($safe_filename) || $safe_filename !== $filename) {
+                    $safe_filename = 'upload_' . time() . '_' . $key . '.xml';
+                }
+
+                // 7. Save file
+                $destination = $xml_dir . $safe_filename;
                 if (move_uploaded_file($tmp_name, $destination)) {
                     $uploaded_count++;
                 } else {
-                    $upload_error .= "❌ Errore upload: $filename<br>";
+                    $upload_error .= "❌ Errore upload: " . s($filename) . "<br>";
                 }
+            } else {
+                // Handle upload errors
+                $error_messages = [
+                    UPLOAD_ERR_INI_SIZE => 'File troppo grande (limite PHP)',
+                    UPLOAD_ERR_FORM_SIZE => 'File troppo grande (limite form)',
+                    UPLOAD_ERR_PARTIAL => 'Upload parziale',
+                    UPLOAD_ERR_NO_FILE => 'Nessun file',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Cartella temporanea mancante',
+                    UPLOAD_ERR_CANT_WRITE => 'Errore scrittura disco',
+                    UPLOAD_ERR_EXTENSION => 'Upload bloccato da estensione'
+                ];
+                $err_code = $_FILES['xmlfiles']['error'][$key];
+                $err_msg = $error_messages[$err_code] ?? "Errore sconosciuto ($err_code)";
+                $upload_error .= "❌ " . s($filename) . ": $err_msg<br>";
             }
         }
-        
+
         if ($uploaded_count > 0) {
             $upload_message = "✅ Caricati $uploaded_count file XML con successo!";
         }

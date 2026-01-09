@@ -41,28 +41,49 @@ if ($userid) {
 }
 
 if ($format === 'excel') {
-    require_once($CFG->libdir . '/excellib.class.php');
-    
-    $workbook = new MoodleExcelWorkbook($filename . '.xlsx');
-    $worksheet = $workbook->add_worksheet('Competenze');
-    
-    $headerformat = $workbook->add_format(['bold' => 1, 'bg_color' => '#34495e', 'color' => 'white']);
-    
-    $row = 0;
+    // Use PhpSpreadsheet directly for Moodle 4.4+ compatibility
+    require_once($CFG->libdir . '/phpspreadsheet/vendor/autoload.php');
+
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $worksheet = $spreadsheet->getActiveSheet();
+    $worksheet->setTitle('Competenze');
+
+    // Header style
+    $headerStyle = [
+        'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+        'fill' => [
+            'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+            'startColor' => ['rgb' => '34495E']
+        ]
+    ];
+
+    $row = 1;
     foreach ($csvdata as $rowdata) {
-        $col = 0;
+        $col = 1;
         foreach ($rowdata as $cell) {
-            if ($row === 0) {
-                $worksheet->write($row, $col, $cell, $headerformat);
-            } else {
-                $worksheet->write($row, $col, $cell);
-            }
+            $worksheet->setCellValue([$col, $row], $cell);
             $col++;
+        }
+        // Apply header style to first row
+        if ($row === 1) {
+            $lastCol = $col - 1;
+            $worksheet->getStyle([1, 1, $lastCol, 1])->applyFromArray($headerStyle);
         }
         $row++;
     }
-    
-    $workbook->close();
+
+    // Auto-size columns
+    foreach (range(1, $col - 1) as $colIndex) {
+        $worksheet->getColumnDimensionByColumn($colIndex)->setAutoSize(true);
+    }
+
+    // Output to browser
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment;filename="' . $filename . '.xlsx"');
+    header('Cache-Control: max-age=0');
+
+    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+    $writer->save('php://output');
     exit;
 } else {
     header('Content-Type: text/csv; charset=utf-8');
