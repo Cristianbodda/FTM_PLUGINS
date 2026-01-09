@@ -15,20 +15,33 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * FTM Hub version information.
+ * Post-installation hook for local_ftm_suite
  *
- * @package    local_ftm_hub
- * @copyright  2026 Cristian Bodda
+ * This hook runs after the plugin is installed. It verifies that all
+ * FTM plugins are properly installed and logs the installation.
+ *
+ * @package    local_ftm_suite
+ * @copyright  2026 FTM - Formazione Tecnica Meccanica
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_ftm_hub';
-$plugin->version = 2026010902;
-$plugin->requires = 2022112800;
-$plugin->maturity = MATURITY_STABLE;
-$plugin->release = '2.0.2';
-$plugin->dependencies = [
-    'local_competencymanager' => ANY_VERSION,
-];
+/**
+ * Post-installation procedure
+ *
+ * @return bool True on success
+ */
+function xmldb_local_ftm_suite_install() {
+    global $CFG;
+
+    // Log installation.
+    mtrace('FTM Suite Installer: Installation complete.');
+    mtrace('FTM Suite Installer: Visit /local/ftm_suite/ to view plugin status.');
+
+    // All actual dependency validation is handled by Moodle's plugin manager
+    // based on the dependencies declared in version.php.
+    // If this hook runs, all dependencies have been satisfied.
+
+    return true;
+}

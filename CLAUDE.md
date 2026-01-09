@@ -2,7 +2,7 @@
 
 ## 🎯 Panoramica
 
-Sistema di **9 plugin Moodle** interconnessi per la gestione delle competenze tecniche nei settori MECCANICA, AUTOMOBILE e CHIMFARM.
+Sistema di **10 plugin Moodle** interconnessi per la gestione delle competenze tecniche nei settori MECCANICA, AUTOMOBILE e CHIMFARM.
 
 **Target:** Moodle 4.4+ / 4.5 / 5.0 con PHP 8.1+
 
@@ -19,8 +19,9 @@ Sistema di **9 plugin Moodle** interconnessi per la gestione delle competenze te
 | 5 | local_competencyreport | local/ | v1.0 | Grafici radar competenze |
 | 6 | local_competencyxmlimport | local/ | v1.2 | Import domande XML/Word |
 | 7 | local_labeval | local/ | v1.0.0 | Valutazione laboratorio |
-| 8 | local_ftm_hub | local/ | v2.0.1 | Hub navigazione centrale |
-| 9 | block_ftm_tools | blocks/ | v2.0.1 | Sidebar strumenti |
+| 8 | local_ftm_hub | local/ | v2.0.2 | Hub navigazione centrale |
+| 9 | block_ftm_tools | blocks/ | v2.0.2 | Sidebar strumenti |
+| 10 | local_ftm_suite | local/ | v1.0.0 | **META** - Suite installer con status dashboard |
 
 ---
 
@@ -41,6 +42,9 @@ block_ftm_tools (dipende da competencymanager)
 local_selfassessment (standalone)
 local_competencyreport (standalone)
 local_competencyxmlimport (standalone, richiede capabilities)
+
+local_ftm_suite (META - dipende da TUTTI i 9 plugin sopra)
+    └── Installa l'intera suite con validazione dipendenze automatica
 ```
 
 ---
@@ -196,6 +200,7 @@ WHERE qs.quizid = :quizid
 ## 🌐 URL Principali (relativi a Moodle root)
 
 ```
+/local/ftm_suite/index.php            # Suite status dashboard
 /local/ftm_hub/index.php              # Hub centrale
 /local/competencymanager/dashboard.php?courseid=X  # Dashboard
 /local/competencymanager/student_report.php?courseid=X&userid=Y
@@ -262,6 +267,16 @@ $safe_name = clean_filename($filename);
 ---
 
 ## 📊 Changelog Recente
+
+### v1.3 - 9 Gennaio 2026
+**FTM Suite Installer Release**
+
+- **NUOVO:** Plugin `local_ftm_suite` - Meta-installer per la suite completa
+- **NUOVO:** Status dashboard con verifica installazione tutti i plugin
+- **NUOVO:** Dipendenze dichiarative per installazione automatica ordinata
+- **FIX:** Aggiunte dipendenze mancanti a `local_ftm_hub` e `block_ftm_tools`
+- **UPDATE:** local_ftm_hub v2.0.1 → v2.0.2
+- **UPDATE:** block_ftm_tools v2.0.1 → v2.0.2
 
 ### v1.2 - 9 Gennaio 2026
 **Security & Quality Release**

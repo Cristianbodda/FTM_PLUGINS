@@ -25,7 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_ftm_tools';
-$plugin->version = 2026010901;
+$plugin->version = 2026010902;
 $plugin->requires = 2022112800;
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '2.0.1';
+$plugin->release = '2.0.2';
+$plugin->dependencies = [
+    'local_competencymanager' => ANY_VERSION,
+];
