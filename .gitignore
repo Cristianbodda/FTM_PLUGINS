@@ -1,0 +1,19 @@
+# Claude Code
+.auto-claude/
+.claude/
+.claude_settings.json
+
+# Windows
+nul
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Backup files (already excluded by convention)
+*.bak
+*.backup
