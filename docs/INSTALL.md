@@ -20,14 +20,32 @@
 | local_competencyreport | v1.0 | 2025120501 |
 | local_competencyxmlimport | v1.2 | 2026010901 |
 | local_labeval | v1.0.0 | 2024123001 |
-| local_ftm_hub | v2.0.1 | 2026010901 |
-| block_ftm_tools | v2.0.1 | 2026010901 |
+| local_ftm_hub | v2.0.2 | 2026010902 |
+| block_ftm_tools | v2.0.2 | 2026010902 |
+| **local_ftm_suite** | **v1.0.0** | **2026010902** |
 
 ---
 
-## Ordine di Installazione
+## Installazione Rapida con FTM Suite (Raccomandato)
 
-⚠️ **IMPORTANTE**: Rispettare l'ordine per le dipendenze!
+Il plugin **local_ftm_suite** è un meta-installer che verifica automaticamente che tutti i 9 plugin FTM siano installati correttamente.
+
+### Vantaggi:
+- ✅ Validazione automatica delle dipendenze
+- ✅ Dashboard per verificare lo stato di tutti i plugin
+- ✅ Moodle blocca l'installazione se mancano dipendenze
+
+### Procedura:
+1. Copia tutti i 10 plugin nelle rispettive cartelle Moodle
+2. Visita `/admin/index.php`
+3. Moodle installerà i plugin nell'ordine corretto automaticamente
+4. Verifica lo stato su `/local/ftm_suite/index.php`
+
+---
+
+## Ordine di Installazione (Manuale)
+
+⚠️ **IMPORTANTE**: Se installi manualmente, rispetta l'ordine per le dipendenze!
 
 | # | Plugin | Percorso Moodle | Dipendenze |
 |---|--------|-----------------|------------|
@@ -40,6 +58,7 @@
 | 7 | local_labeval | `/local/labeval/` | Plugin 3 |
 | 8 | local_ftm_hub | `/local/ftm_hub/` | Plugin 2 |
 | 9 | block_ftm_tools | `/blocks/ftm_tools/` | Plugin 2 |
+| 10 | **local_ftm_suite** | `/local/ftm_suite/` | **Tutti i plugin sopra** |
 
 ---
 
@@ -49,7 +68,7 @@
 
 2. **Estrai** i file nella root di Moodle:
    ```bash
-   unzip FTM_PLUGINS-v1.2.zip -d /path/to/moodle/
+   unzip FTM_PLUGINS-v1.3.zip -d /path/to/moodle/
    ```
 
 3. **Accedi** come amministratore a Moodle
@@ -98,8 +117,8 @@
 
 Dopo l'installazione, verifica che tutto funzioni:
 
-1. Vai su `/local/competencymanager/system_check.php`
-2. Controlla che tutti i test siano verdi ✅
+1. Vai su `/local/ftm_suite/index.php` - Verifica che tutti i 9 plugin siano "Installed" ✅
+2. Vai su `/local/competencymanager/system_check.php` - Controlla che tutti i test siano verdi
 3. Testa l'export Excel dalla dashboard
 4. Verifica il salvataggio coaching
 
@@ -108,6 +127,7 @@ Dopo l'installazione, verifica che tutto funzioni:
 ## URL dopo l'installazione
 
 ```
+/local/ftm_suite/index.php            → Status dashboard (verifica installazione)
 /local/ftm_hub/index.php              → Hub centrale
 /local/competencymanager/dashboard.php → Dashboard competenze
 /local/coachmanager/index.php         → Gestione coach
@@ -139,4 +159,4 @@ Verifica che PhpSpreadsheet sia installato in `/lib/phpspreadsheet/`
 
 ---
 
-*Ultimo aggiornamento: 9 Gennaio 2026 - v1.2*
+*Ultimo aggiornamento: 9 Gennaio 2026 - v1.3*
