@@ -156,15 +156,19 @@ try {
                     'AUTOMAZ' => 'AUTOMAZIONE',
                     // Meccanica
                     'MECC' => 'MECCANICA',
-                    'METAL' => 'MECCANICA',
-                    'METALCOSTRUZIONE' => 'MECCANICA',
+                    // Metalcostruzione (separato da Meccanica)
+                    'METAL' => 'METALCOSTRUZIONE',
                     // Chimica/Farmaceutica
                     'CHIM' => 'CHIMFARM',
                     'CHIMICA' => 'CHIMFARM',
                     'FARMACEUTICA' => 'CHIMFARM',
+                    // Elettricità
+                    'ELETTR' => 'ELETTRICITA',
+                    'ELETT' => 'ELETTRICITA',
+                    // Elettronica (diverso da Elettricità)
+                    'ELETTRO' => 'ELETTRONICA',
                     // Altri
                     'LOG' => 'LOGISTICA',
-                    'ELETTRO' => 'ELETTRONICA',
                     'INFO' => 'INFORMATICA',
                     'IT' => 'INFORMATICA',
                 ];

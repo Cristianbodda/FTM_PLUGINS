@@ -178,17 +178,24 @@ function get_sector_aliases_helper() {
 
         // Meccanica
         'MECC' => 'MECCANICA',
-        'METAL' => 'MECCANICA',
-        'METALCOSTRUZIONE' => 'MECCANICA',
+
+        // Metalcostruzione (settore separato da Meccanica)
+        'METAL' => 'METALCOSTRUZIONE',
 
         // Chimica/Farmaceutica
         'CHIM' => 'CHIMFARM',
         'CHIMICA' => 'CHIMFARM',
         'FARMACEUTICA' => 'CHIMFARM',
 
+        // Elettricità
+        'ELETTR' => 'ELETTRICITA',
+        'ELETT' => 'ELETTRICITA',
+
+        // Elettronica (diverso da Elettricità)
+        'ELETTRO' => 'ELETTRONICA',
+
         // Altri settori
         'LOG' => 'LOGISTICA',
-        'ELETTRO' => 'ELETTRONICA',
         'INFO' => 'INFORMATICA',
         'IT' => 'INFORMATICA',
     ];
