@@ -30,19 +30,19 @@ $messagetype = '';
 // Esegui azione se richiesta
 if ($action === 'recalculate' && confirm_sesskey() && !empty($sessionids)) {
     $fixed = 0;
-    
+
     foreach ($sessionids as $sid) {
-        // Calcola punteggio corretto
+        // Calcola punteggio corretto da comp_scores (include i pesi!)
         $calc = $DB->get_record_sql("
-            SELECT SUM(r.rating) as total_score,
-                   COUNT(r.id) * 3 as max_score
-            FROM {local_labeval_ratings} r
-            WHERE r.sessionid = ?
+            SELECT SUM(cs.score) as total_score,
+                   SUM(cs.maxscore) as max_score
+            FROM {local_labeval_comp_scores} cs
+            WHERE cs.sessionid = ?
         ", [$sid]);
-        
-        if ($calc) {
-            $percentage = $calc->max_score > 0 ? round(($calc->total_score / $calc->max_score) * 100, 2) : 0;
-            
+
+        if ($calc && $calc->max_score > 0) {
+            $percentage = round(($calc->total_score / $calc->max_score) * 100, 2);
+
             $DB->update_record('local_labeval_sessions', (object)[
                 'id' => $sid,
                 'totalscore' => $calc->total_score,
@@ -52,7 +52,7 @@ if ($action === 'recalculate' && confirm_sesskey() && !empty($sessionids)) {
             $fixed++;
         }
     }
-    
+
     $message = "✅ Ricalcolati punteggi per {$fixed} sessioni!";
     $messagetype = 'success';
 }
@@ -75,6 +75,7 @@ if ($action === 'delete' && confirm_sesskey() && !empty($sessionids)) {
 }
 
 // Trova sessioni con punteggio errato
+// Confronta i totali salvati nella sessione con la somma dei comp_scores (che include i pesi)
 $inconsistent_sessions = $DB->get_records_sql("
     SELECT s.id, s.assignmentid, s.status, s.totalscore as saved_score,
            s.maxscore as saved_maxscore, s.percentage as saved_percentage,
@@ -82,15 +83,16 @@ $inconsistent_sessions = $DB->get_records_sql("
            a.studentid, a.templateid,
            u.firstname, u.lastname, u.username,
            t.name as templatename,
-           (SELECT SUM(r.rating) FROM {local_labeval_ratings} r WHERE r.sessionid = s.id) as calc_score,
-           (SELECT COUNT(r.id) * 3 FROM {local_labeval_ratings} r WHERE r.sessionid = s.id) as calc_maxscore,
+           (SELECT SUM(cs.score) FROM {local_labeval_comp_scores} cs WHERE cs.sessionid = s.id) as calc_score,
+           (SELECT SUM(cs.maxscore) FROM {local_labeval_comp_scores} cs WHERE cs.sessionid = s.id) as calc_maxscore,
+           (SELECT COUNT(cs.id) FROM {local_labeval_comp_scores} cs WHERE cs.sessionid = s.id) as comp_count,
            (SELECT COUNT(r.id) FROM {local_labeval_ratings} r WHERE r.sessionid = s.id) as rating_count
     FROM {local_labeval_sessions} s
     JOIN {local_labeval_assignments} a ON a.id = s.assignmentid
     JOIN {user} u ON u.id = a.studentid
     JOIN {local_labeval_templates} t ON t.id = a.templateid
     WHERE s.status = 'completed'
-    HAVING ABS(COALESCE(saved_score, 0) - COALESCE(calc_score, 0)) > 1
+    HAVING ABS(COALESCE(saved_score, 0) - COALESCE(calc_score, 0)) > 0.01
     ORDER BY s.timecreated DESC
 ");
 
@@ -343,7 +345,36 @@ echo $OUTPUT->header();
                         <tr>
                             <td colspan="9" style="padding: 0;">
                                 <div id="detail_<?php echo $s->id; ?>" class="detail-panel">
-                                    <strong>Ratings salvati (<?php echo $s->rating_count; ?>):</strong>
+                                    <div style="margin-bottom: 15px;">
+                                        <strong>📊 Punteggi Competenze (<?php echo $s->comp_count ?? 0; ?> competenze):</strong>
+                                        <p style="font-size: 12px; color: #666; margin: 5px 0;">
+                                            I totali sono calcolati dalla somma dei punteggi per competenza (che includono i pesi).
+                                        </p>
+                                        <div class="rating-grid" style="margin-top: 10px;">
+                                            <?php
+                                            $comp_scores = $DB->get_records_sql("
+                                                SELECT cs.id, cs.competencycode, cs.score, cs.maxscore, cs.percentage
+                                                FROM {local_labeval_comp_scores} cs
+                                                WHERE cs.sessionid = ?
+                                                ORDER BY cs.competencycode
+                                            ", [$s->id]);
+                                            foreach ($comp_scores as $cs):
+                                            ?>
+                                            <div class="rating-item">
+                                                <div class="behavior" style="font-size: 11px;"><?php echo $cs->competencycode; ?></div>
+                                                <span class="value" style="background: #e3f2fd; color: #1565c0;">
+                                                    <?php echo $cs->score; ?> / <?php echo $cs->maxscore; ?>
+                                                    (<?php echo round($cs->percentage, 1); ?>%)
+                                                </span>
+                                            </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                    <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
+                                    <strong>📝 Ratings grezzi (<?php echo $s->rating_count; ?> comportamenti):</strong>
+                                    <p style="font-size: 12px; color: #666; margin: 5px 0;">
+                                        Valori base senza pesi. Usati per calcolare i punteggi competenze.
+                                    </p>
                                     <div class="rating-grid" style="margin-top: 10px;">
                                         <?php
                                         $ratings = $DB->get_records_sql("
