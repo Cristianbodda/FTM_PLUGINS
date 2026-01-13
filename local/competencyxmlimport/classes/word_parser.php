@@ -369,23 +369,35 @@ class word_parser {
     
     /**
      * Estrae paragrafi dal contenuto XML di Word
-     * 
+     * Gestisce sia paragrafi separati che line breaks <w:br/> interni
+     *
      * @param string $xml_content Contenuto XML di document.xml
      * @return string Testo con paragrafi separati da newline
      */
     private function extract_paragraphs_from_xml($xml_content) {
         $paragraphs = [];
-        
+
         // Pattern per trovare paragrafi <w:p>...</w:p>
         preg_match_all('/<w:p[^>]*>(.*?)<\/w:p>/s', $xml_content, $matches);
-        
+
         foreach ($matches[1] as $p_content) {
+            // Sostituisci <w:br/> e <w:br></w:br> con un marker temporaneo
+            $p_content = preg_replace('/<w:br\s*\/?>/i', '|||LINEBREAK|||', $p_content);
+
             // Estrai testo da ogni <w:t>...</w:t>
             preg_match_all('/<w:t[^>]*>([^<]*)<\/w:t>/', $p_content, $text_matches);
             $paragraph_text = implode('', $text_matches[1]);
-            
-            if (trim($paragraph_text) !== '') {
-                $paragraphs[] = trim($paragraph_text);
+
+            // Converti il marker in newline
+            $paragraph_text = str_replace('|||LINEBREAK|||', "\n", $paragraph_text);
+
+            // Se il paragrafo contiene newline interni, splitta in più linee
+            $lines = explode("\n", $paragraph_text);
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if ($line !== '') {
+                    $paragraphs[] = $line;
+                }
             }
         }
         
