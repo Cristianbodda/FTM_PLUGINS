@@ -549,13 +549,63 @@ function get_sector_competencies($frameworkid, $sector) {
 }
 
 /**
+ * Mapping alias settori (nome nel file → nome nel database)
+ * Permette di usare nomi alternativi nei file Word/Excel
+ */
+function get_sector_aliases() {
+    return [
+        'AUTOVEICOLO' => 'AUTOMOBILE',
+        'AUTO' => 'AUTOMOBILE',
+        'MECC' => 'MECCANICA',
+        'METAL' => 'MECCANICA',
+        'METALCOSTRUZIONE' => 'MECCANICA',
+        'CHIM' => 'CHIMFARM',
+        'CHIMICA' => 'CHIMFARM',
+        'FARMACEUTICA' => 'CHIMFARM',
+        'LOG' => 'LOGISTICA',
+        'ELETTRO' => 'ELETTRONICA',
+        'INFO' => 'INFORMATICA',
+        'IT' => 'INFORMATICA',
+    ];
+}
+
+/**
+ * Converte un codice competenza da alias a nome standard
+ * Es: AUTOVEICOLO_MR_A1 → AUTOMOBILE_MR_A1
+ */
+function normalize_competency_code($code) {
+    $aliases = get_sector_aliases();
+    foreach ($aliases as $alias => $standard) {
+        if (stripos($code, $alias . '_') === 0) {
+            return $standard . substr($code, strlen($alias));
+        }
+    }
+    return $code;
+}
+
+/**
  * Estrae il codice competenza da un testo
+ * Supporta sia il settore standard che gli alias
  */
 function extract_competency_code($text, $sector) {
+    // Prima prova con il settore standard
     $pattern = '/(' . preg_quote($sector, '/') . '_[A-Za-z]+_[A-Z0-9]+)/i';
     if (preg_match($pattern, $text, $m)) {
         return strtoupper($m[1]);
     }
+
+    // Poi prova con tutti gli alias che mappano a questo settore
+    $aliases = get_sector_aliases();
+    foreach ($aliases as $alias => $standard) {
+        if ($standard === $sector) {
+            $pattern = '/(' . preg_quote($alias, '/') . '_[A-Za-z]+_[A-Z0-9]+)/i';
+            if (preg_match($pattern, $text, $m)) {
+                // Converti l'alias nel nome standard
+                return normalize_competency_code(strtoupper($m[1]));
+            }
+        }
+    }
+
     return null;
 }
 

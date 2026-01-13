@@ -143,16 +143,48 @@ try {
                 'invalid_in_excel' => 0
             ];
 
+            // Funzione per normalizzare codici competenza (alias → standard)
+            $normalize_code = function($code) {
+                $aliases = [
+                    'AUTOVEICOLO' => 'AUTOMOBILE',
+                    'AUTO' => 'AUTOMOBILE',
+                    'MECC' => 'MECCANICA',
+                    'METAL' => 'MECCANICA',
+                    'METALCOSTRUZIONE' => 'MECCANICA',
+                    'CHIM' => 'CHIMFARM',
+                    'CHIMICA' => 'CHIMFARM',
+                    'FARMACEUTICA' => 'CHIMFARM',
+                    'LOG' => 'LOGISTICA',
+                    'ELETTRO' => 'ELETTRONICA',
+                    'INFO' => 'INFORMATICA',
+                    'IT' => 'INFORMATICA',
+                ];
+                foreach ($aliases as $alias => $standard) {
+                    if (stripos($code, $alias . '_') === 0) {
+                        return $standard . substr($code, strlen($alias));
+                    }
+                }
+                return $code;
+            };
+
             // Ottieni tutte le competenze uniche trovate nelle domande
             $found_competencies = [];
             foreach ($SESSION->word_import_questions as $q) {
                 if (!empty($q['competency'])) {
                     $comp = strtoupper(trim($q['competency']));
+                    $normalized = $normalize_code($comp);
+
                     if (!isset($found_competencies[$comp])) {
-                        $found_competencies[$comp] = ['count' => 0, 'exists' => false];
+                        $found_competencies[$comp] = [
+                            'count' => 0,
+                            'exists' => false,
+                            'normalized' => $normalized
+                        ];
                     }
                     $found_competencies[$comp]['count']++;
-                    $found_competencies[$comp]['exists'] = in_array($comp, $valid_competencies);
+                    // Verifica sia il codice originale che quello normalizzato
+                    $found_competencies[$comp]['exists'] = in_array($comp, $valid_competencies)
+                        || in_array($normalized, $valid_competencies);
                 }
             }
 
@@ -164,6 +196,7 @@ try {
                     $results['competency_check']['invalid_in_excel']++;
                     $results['competency_check']['missing_competencies'][] = [
                         'code' => $comp,
+                        'normalized' => $info['normalized'],
                         'count' => $info['count']
                     ];
                 }

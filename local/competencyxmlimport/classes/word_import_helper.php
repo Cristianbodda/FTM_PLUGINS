@@ -165,16 +165,50 @@ function generate_quiz_name_from_filename($filename) {
 }
 
 /**
+ * Mapping alias settori (nome nel file → nome nel database)
+ */
+function get_sector_aliases_helper() {
+    return [
+        'AUTOVEICOLO' => 'AUTOMOBILE',
+        'AUTO' => 'AUTOMOBILE',
+        'MECC' => 'MECCANICA',
+        'METAL' => 'MECCANICA',
+        'METALCOSTRUZIONE' => 'MECCANICA',
+        'CHIM' => 'CHIMFARM',
+        'CHIMICA' => 'CHIMFARM',
+        'FARMACEUTICA' => 'CHIMFARM',
+        'LOG' => 'LOGISTICA',
+        'ELETTRO' => 'ELETTRONICA',
+        'INFO' => 'INFORMATICA',
+        'IT' => 'INFORMATICA',
+    ];
+}
+
+/**
+ * Normalizza un codice competenza convertendo alias in nomi standard
+ * Es: AUTOVEICOLO_MR_A1 → AUTOMOBILE_MR_A1
+ */
+function normalize_competency_code_helper($code) {
+    $aliases = get_sector_aliases_helper();
+    foreach ($aliases as $alias => $standard) {
+        if (stripos($code, $alias . '_') === 0) {
+            return $standard . substr($code, strlen($alias));
+        }
+    }
+    return $code;
+}
+
+/**
  * Ottiene tutte le competenze di un settore dal framework
  */
 function get_framework_competencies($frameworkid, $sector) {
     global $DB;
-    
+
     $competencies = [];
-    
+
     // Ottieni tutte le competenze del framework
     $records = $DB->get_records('competency', ['competencyframeworkid' => $frameworkid]);
-    
+
     foreach ($records as $comp) {
         if (!empty($comp->idnumber)) {
             // Filtra per settore se specificato
@@ -183,8 +217,44 @@ function get_framework_competencies($frameworkid, $sector) {
             }
         }
     }
-    
+
     return $competencies;
+}
+
+/**
+ * Verifica se un codice competenza è valido (considerando anche gli alias)
+ */
+function is_valid_competency($code, $valid_competencies) {
+    // Prima prova il codice così com'è
+    if (in_array($code, $valid_competencies)) {
+        return true;
+    }
+
+    // Poi prova normalizzandolo (convertendo alias)
+    $normalized = normalize_competency_code_helper($code);
+    if ($normalized !== $code && in_array($normalized, $valid_competencies)) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Trova il codice competenza corretto nel framework (gestendo alias)
+ */
+function find_matching_competency($code, $valid_competencies) {
+    // Prima prova il codice così com'è
+    if (in_array($code, $valid_competencies)) {
+        return $code;
+    }
+
+    // Poi prova normalizzandolo
+    $normalized = normalize_competency_code_helper($code);
+    if (in_array($normalized, $valid_competencies)) {
+        return $normalized;
+    }
+
+    return null;
 }
 
 /**
