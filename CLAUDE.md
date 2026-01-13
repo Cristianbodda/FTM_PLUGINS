@@ -500,6 +500,42 @@ php admin/cli/cron.php            # Esegui cron
 
 
 
+\# FRAMEWORK COMPETENZE FTM
+
+\## Settori nel Framework (7 totali)
+
+| # | Nome DB | Prefisso Codici |
+|---|---------|-----------------|
+| 01 | Automobile | AUTOMOBILE_* |
+| 02 | Chimico-farmaceutico | CHIMFARM_* |
+| 03 | Elettricità | ELETTRICITÀ_* |
+| 04 | Automazione | AUTOMAZIONE_* |
+| 05 | Logistica | LOGISTICA_* |
+| 06 | Meccanica | MECCANICA_* |
+| 07 | Metalcostruzione | METALCOSTRUZIONE_* |
+
+\## Alias Settori (file → database)
+
+| Alias (input) | Settore Standard |
+|---------------|------------------|
+| AUTOVEICOLO | AUTOMOBILE |
+| AUTOM, AUTOMAZ | AUTOMAZIONE |
+| MECC | MECCANICA |
+| METAL | METALCOSTRUZIONE |
+| CHIM, CHIMICA, FARMACEUTICA | CHIMFARM |
+| ELETTRICITA, ELETTR, ELETT | ELETTRICITÀ |
+| LOG | LOGISTICA |
+
+\### Note importanti:
+- NON usare "AUTO" come alias (ambiguo con AUTOMAZIONE)
+- ELETTRICITÀ ha l'accento À nel database - il mapping gestisce conversione
+- Confronti case-insensitive: MAu = MAU = mau
+- Usare mb_strtoupper() per supporto UTF-8 con accenti
+
+---
+
+
+
 \# DIPENDENZE TRA PLUGIN
 
 

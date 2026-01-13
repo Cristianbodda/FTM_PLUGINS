@@ -143,11 +143,13 @@ try {
                 'invalid_in_excel' => 0
             ];
 
-            // Funzione per normalizzare codici competenza (alias → standard, case-insensitive)
+            // Funzione per normalizzare codici competenza (alias → standard, case-insensitive UTF-8)
             $normalize_code = function($code) {
-                // Prima converti in maiuscolo
-                $code = strtoupper(trim($code));
+                // Prima converti in maiuscolo (UTF-8 safe)
+                $code = mb_strtoupper(trim($code), 'UTF-8');
 
+                // Alias aggiornati per framework FTM
+                // Settori: AUTOMOBILE, CHIMFARM, ELETTRICITÀ, AUTOMAZIONE, LOGISTICA, MECCANICA, METALCOSTRUZIONE
                 $aliases = [
                     // Automobile (NON usare AUTO - ambiguo con AUTOMAZIONE)
                     'AUTOVEICOLO' => 'AUTOMOBILE',
@@ -162,32 +164,30 @@ try {
                     'CHIM' => 'CHIMFARM',
                     'CHIMICA' => 'CHIMFARM',
                     'FARMACEUTICA' => 'CHIMFARM',
-                    // Elettricità
-                    'ELETTR' => 'ELETTRICITA',
-                    'ELETT' => 'ELETTRICITA',
-                    // Elettronica (diverso da Elettricità)
-                    'ELETTRO' => 'ELETTRONICA',
-                    // Altri
+                    // Elettricità (NOTA: nel database ha l'accento À)
+                    'ELETTRICITA' => 'ELETTRICITÀ',
+                    'ELETTR' => 'ELETTRICITÀ',
+                    'ELETT' => 'ELETTRICITÀ',
+                    // Logistica
                     'LOG' => 'LOGISTICA',
-                    'INFO' => 'INFORMATICA',
-                    'IT' => 'INFORMATICA',
                 ];
                 foreach ($aliases as $alias => $standard) {
-                    if (strpos($code, $alias . '_') === 0) {
-                        return $standard . substr($code, strlen($alias));
+                    $alias_upper = mb_strtoupper($alias, 'UTF-8');
+                    if (mb_strpos($code, $alias_upper . '_', 0, 'UTF-8') === 0) {
+                        return $standard . mb_substr($code, mb_strlen($alias_upper, 'UTF-8'), null, 'UTF-8');
                     }
                 }
                 return $code;
             };
 
-            // Crea array di competenze valide in MAIUSCOLO per confronto case-insensitive
-            $valid_competencies_upper = array_map('strtoupper', $valid_competencies);
+            // Crea array di competenze valide in MAIUSCOLO per confronto case-insensitive (UTF-8)
+            $valid_competencies_upper = array_map(function($c) { return mb_strtoupper($c, 'UTF-8'); }, $valid_competencies);
 
             // Ottieni tutte le competenze uniche trovate nelle domande
             $found_competencies = [];
             foreach ($SESSION->word_import_questions as $q) {
                 if (!empty($q['competency'])) {
-                    $comp = strtoupper(trim($q['competency']));
+                    $comp = mb_strtoupper(trim($q['competency']), 'UTF-8');
                     $normalized = $normalize_code($comp);
 
                     if (!isset($found_competencies[$comp])) {

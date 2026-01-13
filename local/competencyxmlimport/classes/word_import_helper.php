@@ -166,6 +166,9 @@ function generate_quiz_name_from_filename($filename) {
 
 /**
  * Mapping alias settori (nome nel file → nome nel database)
+ * Settori nel framework FTM:
+ * 01=AUTOMOBILE, 02=CHIMFARM, 03=ELETTRICITÀ, 04=AUTOMAZIONE,
+ * 05=LOGISTICA, 06=MECCANICA, 07=METALCOSTRUZIONE
  */
 function get_sector_aliases_helper() {
     return [
@@ -187,17 +190,13 @@ function get_sector_aliases_helper() {
         'CHIMICA' => 'CHIMFARM',
         'FARMACEUTICA' => 'CHIMFARM',
 
-        // Elettricità
-        'ELETTR' => 'ELETTRICITA',
-        'ELETT' => 'ELETTRICITA',
+        // Elettricità (NOTA: nel database ha l'accento À)
+        'ELETTRICITA' => 'ELETTRICITÀ',  // Senza accento → con accento
+        'ELETTR' => 'ELETTRICITÀ',
+        'ELETT' => 'ELETTRICITÀ',
 
-        // Elettronica (diverso da Elettricità)
-        'ELETTRO' => 'ELETTRONICA',
-
-        // Altri settori
+        // Logistica
         'LOG' => 'LOGISTICA',
-        'INFO' => 'INFORMATICA',
-        'IT' => 'INFORMATICA',
     ];
 }
 
@@ -205,15 +204,17 @@ function get_sector_aliases_helper() {
  * Normalizza un codice competenza convertendo alias in nomi standard
  * Es: AUTOVEICOLO_MR_A1 → AUTOMOBILE_MR_A1
  * Es: automobile_mau_h2 → AUTOMOBILE_MAU_H2 (case-insensitive)
+ * Usa mb_strtoupper per supporto UTF-8 (caratteri accentati)
  */
 function normalize_competency_code_helper($code) {
-    // Prima converti tutto in maiuscolo per uniformità
-    $code = strtoupper(trim($code));
+    // Prima converti tutto in maiuscolo per uniformità (UTF-8 safe)
+    $code = mb_strtoupper(trim($code), 'UTF-8');
 
     $aliases = get_sector_aliases_helper();
     foreach ($aliases as $alias => $standard) {
-        if (strpos($code, $alias . '_') === 0) {
-            return $standard . substr($code, strlen($alias));
+        $alias_upper = mb_strtoupper($alias, 'UTF-8');
+        if (mb_strpos($code, $alias_upper . '_', 0, 'UTF-8') === 0) {
+            return $standard . mb_substr($code, mb_strlen($alias_upper, 'UTF-8'), null, 'UTF-8');
         }
     }
     return $code;
@@ -244,27 +245,29 @@ function get_framework_competencies($frameworkid, $sector) {
 
 /**
  * Verifica se un codice competenza è valido (case-insensitive, con alias)
+ * Usa mb_strtoupper per supporto UTF-8 (caratteri accentati)
  */
 function is_valid_competency($code, $valid_competencies) {
     // Normalizza il codice (maiuscolo + alias)
     $normalized = normalize_competency_code_helper($code);
 
-    // Crea array di competenze valide in maiuscolo per confronto
-    $valid_upper = array_map('strtoupper', $valid_competencies);
+    // Crea array di competenze valide in maiuscolo per confronto (UTF-8)
+    $valid_upper = array_map(function($c) { return mb_strtoupper($c, 'UTF-8'); }, $valid_competencies);
 
     return in_array($normalized, $valid_upper);
 }
 
 /**
  * Trova il codice competenza corretto nel framework (case-insensitive, con alias)
+ * Usa mb_strtoupper per supporto UTF-8 (caratteri accentati)
  */
 function find_matching_competency($code, $valid_competencies) {
     // Normalizza il codice (maiuscolo + alias)
     $normalized = normalize_competency_code_helper($code);
 
-    // Cerca in modo case-insensitive
+    // Cerca in modo case-insensitive (UTF-8)
     foreach ($valid_competencies as $valid) {
-        if (strtoupper($valid) === $normalized) {
+        if (mb_strtoupper($valid, 'UTF-8') === $normalized) {
             return $valid; // Ritorna il codice originale dal framework
         }
     }

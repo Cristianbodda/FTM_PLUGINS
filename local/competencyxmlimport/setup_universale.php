@@ -553,6 +553,10 @@ function get_sector_competencies($frameworkid, $sector) {
  * Permette di usare nomi alternativi nei file Word/Excel
  */
 function get_sector_aliases() {
+    // Mappatura alias → settore standard nel framework FTM
+    // IMPORTANTE: I settori nel framework sono:
+    // 01=AUTOMOBILE, 02=CHIMFARM, 03=ELETTRICITÀ, 04=AUTOMAZIONE,
+    // 05=LOGISTICA, 06=MECCANICA, 07=METALCOSTRUZIONE
     return [
         // Automobile (NON usare AUTO - ambiguo con AUTOMAZIONE)
         'AUTOVEICOLO' => 'AUTOMOBILE',
@@ -572,17 +576,13 @@ function get_sector_aliases() {
         'CHIMICA' => 'CHIMFARM',
         'FARMACEUTICA' => 'CHIMFARM',
 
-        // Elettricità
-        'ELETTR' => 'ELETTRICITA',
-        'ELETT' => 'ELETTRICITA',
+        // Elettricità (NOTA: nel database ha l'accento À)
+        'ELETTRICITA' => 'ELETTRICITÀ',  // Senza accento → con accento
+        'ELETTR' => 'ELETTRICITÀ',
+        'ELETT' => 'ELETTRICITÀ',
 
-        // Elettronica (diverso da Elettricità)
-        'ELETTRO' => 'ELETTRONICA',
-
-        // Altri settori
+        // Logistica
         'LOG' => 'LOGISTICA',
-        'INFO' => 'INFORMATICA',
-        'IT' => 'INFORMATICA',
     ];
 }
 
@@ -592,13 +592,15 @@ function get_sector_aliases() {
  * Gestisce anche il case (MAu → MAU)
  */
 function normalize_competency_code($code) {
-    // Prima converti tutto in maiuscolo per uniformità
-    $code = strtoupper(trim($code));
+    // Prima converti tutto in maiuscolo per uniformità (mb_strtoupper per UTF-8)
+    $code = mb_strtoupper(trim($code), 'UTF-8');
 
     $aliases = get_sector_aliases();
     foreach ($aliases as $alias => $standard) {
-        if (strpos($code, $alias . '_') === 0) {
-            return $standard . substr($code, strlen($alias));
+        // Converti anche l'alias in maiuscolo per confronto sicuro
+        $alias_upper = mb_strtoupper($alias, 'UTF-8');
+        if (mb_strpos($code, $alias_upper . '_', 0, 'UTF-8') === 0) {
+            return $standard . mb_substr($code, mb_strlen($alias_upper, 'UTF-8'), null, 'UTF-8');
         }
     }
     return $code;
@@ -610,19 +612,36 @@ function normalize_competency_code($code) {
  */
 function extract_competency_code($text, $sector) {
     // Prima prova con il settore standard
-    $pattern = '/(' . preg_quote($sector, '/') . '_[A-Za-z]+_[A-Z0-9]+)/i';
+    $pattern = '/(' . preg_quote($sector, '/') . '_[A-Za-z]+_[A-Z0-9]+)/ui';
     if (preg_match($pattern, $text, $m)) {
-        return strtoupper($m[1]);
+        return mb_strtoupper($m[1], 'UTF-8');
     }
 
     // Poi prova con tutti gli alias che mappano a questo settore
     $aliases = get_sector_aliases();
     foreach ($aliases as $alias => $standard) {
         if ($standard === $sector) {
-            $pattern = '/(' . preg_quote($alias, '/') . '_[A-Za-z]+_[A-Z0-9]+)/i';
+            $pattern = '/(' . preg_quote($alias, '/') . '_[A-Za-z]+_[A-Z0-9]+)/ui';
             if (preg_match($pattern, $text, $m)) {
-                // Converti l'alias nel nome standard
-                return normalize_competency_code(strtoupper($m[1]));
+                // Converti l'alias nel nome standard (con normalizzazione UTF-8)
+                return normalize_competency_code(mb_strtoupper($m[1], 'UTF-8'));
+            }
+        }
+    }
+
+    // Caso speciale: cerca anche gli alias che puntano al settore corrente
+    // Utile per ELETTRICITÀ dove il testo potrebbe avere ELETTRICITA
+    foreach ($aliases as $alias => $standard) {
+        // Se il settore standard è quello cercato, prova a trovare l'alias nel testo
+        if (mb_strtoupper($standard, 'UTF-8') === mb_strtoupper($sector, 'UTF-8')) {
+            continue; // Già cercato sopra
+        }
+        // Se l'alias normalizzato corrisponde al settore, cerca anche quello
+        if (mb_strtoupper($alias, 'UTF-8') === mb_strtoupper($sector, 'UTF-8')) {
+            // Il settore passato è un alias, cerca anche con il nome standard
+            $pattern = '/(' . preg_quote($standard, '/') . '_[A-Za-z]+_[A-Z0-9]+)/ui';
+            if (preg_match($pattern, $text, $m)) {
+                return mb_strtoupper($m[1], 'UTF-8');
             }
         }
     }
@@ -2000,10 +2019,10 @@ if ($step == 5 && $action === 'execute'):
     
     // Carica competenze del settore
     $competencies = get_sector_competencies($frameworkid, $sector);
-    // Crea lookup con chiavi MAIUSCOLE per matching case-insensitive
+    // Crea lookup con chiavi MAIUSCOLE per matching case-insensitive (UTF-8)
     $comp_lookup = [];
     foreach ($competencies as $c) {
-        $comp_lookup[strtoupper($c->idnumber)] = $c->id;
+        $comp_lookup[mb_strtoupper($c->idnumber, 'UTF-8')] = $c->id;
     }
 ?>
 
