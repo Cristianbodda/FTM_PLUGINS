@@ -43,8 +43,9 @@
  * 13. FORMATO_13_ELET_DOT     - Q01. Testo + Codice competenza:
  * 14. FORMATO_14_ELET_NEWLINE - Q01\nCompetenza: desc\nCodice: ELETTRICITÀ_XX
  * 
- * LOGISTICA (1 formato):
+ * LOGISTICA (2 formati):
  * 15. FORMATO_15_LOGISTICA    - 1. LOG_BASE_Q01 + Competenza: LOGISTICA_XX
+ * 16. FORMATO_16_LOG_APPR     - LOG_APPR01_Q01 + Competenza: LOGISTICA_XX (senza numero)
  *
  * GENERICO:
  *  9. FORMATO_9_NO_COMP       - File senza competenze (richiede Excel)
@@ -113,8 +114,9 @@ class word_parser {
     const FORMAT_13_ELET_DOT = 'FORMATO_13_ELET_DOT';
     const FORMAT_14_ELET_NEWLINE = 'FORMATO_14_ELET_NEWLINE';
     
-    // LOGISTICA (1 formato)
+    // LOGISTICA (2 formati)
     const FORMAT_15_LOGISTICA = 'FORMATO_15_LOGISTICA';
+    const FORMAT_16_LOG_APPR = 'FORMATO_16_LOG_APPR';
 
     // GENERICI
     const FORMAT_9_NO_COMP = 'FORMATO_9_NO_COMP';
@@ -230,6 +232,7 @@ class word_parser {
         
         // Pattern LOGISTICA
         $has_numbered_log_q = (bool) preg_match('/\n\d+\.\s*[A-Z_]+_Q\d+\n/u', $text);
+        $has_log_appr_q = (bool) preg_match('/\nLOG_APPR\d+_Q\d+\n/u', $text);
         $has_competenza_logistica = (bool) preg_match('/Competenza:\s*LOGISTICA_/ui', $text);
 
         // Nessuna competenza
@@ -273,9 +276,14 @@ class word_parser {
         
         // --- LOGISTICA ---
 
-        // FORMATO 15: LOGISTICA - 1. LOG_BASE_Q01 + Competenza: LOGISTICA_XX
+        // FORMATO 15: LOGISTICA Test Base - 1. LOG_BASE_Q01 + Competenza: LOGISTICA_XX
         if ($has_numbered_log_q && $has_competenza_logistica) {
             return self::FORMAT_15_LOGISTICA;
+        }
+
+        // FORMATO 16: LOGISTICA Approfondimenti - LOG_APPR01_Q01 + Competenza: LOGISTICA_XX
+        if ($has_log_appr_q && $has_competenza_logistica) {
+            return self::FORMAT_16_LOG_APPR;
         }
 
         // --- AUTOVEICOLO ---
@@ -476,6 +484,10 @@ class word_parser {
                 // Split su "1. LOG_BASE_Q01" (numero + punto + codice)
                 return preg_split('/\n\d+\.\s*([A-Z_]+_Q\d+)\n/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
 
+            case self::FORMAT_16_LOG_APPR:
+                // Split su "LOG_APPR01_Q01" (codice senza numero)
+                return preg_split('/\n(LOG_APPR\d+_Q\d+)\n/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
             default:
                 // Split su Q## semplice (tutti gli altri formati)
                 return preg_split('/\n(Q\d+)\n/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
@@ -650,6 +662,7 @@ class word_parser {
 
             // --- LOGISTICA ---
             case self::FORMAT_15_LOGISTICA:
+            case self::FORMAT_16_LOG_APPR:
                 // Competenza: LOGISTICA_LO_F5
                 if (preg_match('/Competenza:\s*([A-Z_]+_[A-Z0-9_]+)/i', $content, $m)) {
                     $result['code'] = $this->clean_competency_code($m[1]);
@@ -776,8 +789,8 @@ class word_parser {
             $text = preg_replace('/^Codice:\s*[A-Z_ÀÈÉÌÒÙ]+_[A-Z0-9_]+\s*\n/imu', '', $text);
         }
 
-        // Per FORMATO_15 LOGISTICA, rimuovi "Competenza: LOGISTICA_XX" all'inizio
-        if ($format === self::FORMAT_15_LOGISTICA) {
+        // Per FORMATO_15/16 LOGISTICA, rimuovi "Competenza: LOGISTICA_XX" all'inizio
+        if ($format === self::FORMAT_15_LOGISTICA || $format === self::FORMAT_16_LOG_APPR) {
             $text = preg_replace('/^Competenza:\s*[A-Z_]+_[A-Z0-9_]+\s*\n/im', '', trim($text));
         }
 
@@ -785,7 +798,8 @@ class word_parser {
         $skip_competenza_marker = in_array($format, [
             self::FORMAT_3_ELETT_BASE,
             self::FORMAT_14_ELET_NEWLINE,
-            self::FORMAT_15_LOGISTICA
+            self::FORMAT_15_LOGISTICA,
+            self::FORMAT_16_LOG_APPR
         ]);
 
         foreach (['Risposta corretta', 'Competenza collegata', 'Competenza (CO)',
@@ -856,7 +870,7 @@ class word_parser {
         $clean_content = $content;
         
         // Per LOGISTICA, rimuovi la riga Competenza: all'inizio prima di cercare risposte
-        if ($format === self::FORMAT_15_LOGISTICA) {
+        if ($format === self::FORMAT_15_LOGISTICA || $format === self::FORMAT_16_LOG_APPR) {
             $clean_content = preg_replace('/^Competenza:\s*[A-Z_]+_[A-Z0-9_]+\s*\n/im', '', trim($clean_content));
         }
 
@@ -864,7 +878,7 @@ class word_parser {
         // FORMATO_13_ELET_DOT ha Codice competenza PRIMA delle risposte, quindi non tagliare
         if (!in_array($format, [self::FORMAT_7_AUTOV_APPR36, self::FORMAT_3_ELETT_BASE,
                                 self::FORMAT_14_ELET_NEWLINE, self::FORMAT_13_ELET_DOT,
-                                self::FORMAT_15_LOGISTICA])) {
+                                self::FORMAT_15_LOGISTICA, self::FORMAT_16_LOG_APPR])) {
             // Taglia prima di markers di competenza
             foreach (['Competenza collegata', 'Competenza (CO)', 'Competenza (F2)',
                       'Competenza:', 'Codice competenza:', 'Codice:'] as $marker) {
@@ -1198,7 +1212,8 @@ class word_parser {
             self::FORMAT_14_ELET_NEWLINE => 'ELETTRICITÀ Appr03/05/06 (Q##\nCodice: ELETTRICITÀ)',
             
             // LOGISTICA
-            self::FORMAT_15_LOGISTICA => 'LOGISTICA (1. LOG_BASE_Q01 + Competenza: LOGISTICA_XX)',
+            self::FORMAT_15_LOGISTICA => 'LOGISTICA Test Base (1. LOG_BASE_Q01 + Competenza:)',
+            self::FORMAT_16_LOG_APPR => 'LOGISTICA Approfondimenti (LOG_APPR01_Q01 + Competenza:)',
 
             // GENERICI
             self::FORMAT_9_NO_COMP => 'File senza competenze (richiede Excel)',
@@ -1237,7 +1252,8 @@ class word_parser {
             self::FORMAT_14_ELET_NEWLINE => 'ELETTRICITÀ Appr03/05/06 (Newline)',
             
             // LOGISTICA
-            self::FORMAT_15_LOGISTICA => 'LOGISTICA',
+            self::FORMAT_15_LOGISTICA => 'LOGISTICA Test Base',
+            self::FORMAT_16_LOG_APPR => 'LOGISTICA Approfondimenti',
 
             // GENERICI
             self::FORMAT_9_NO_COMP => 'File senza competenze',
