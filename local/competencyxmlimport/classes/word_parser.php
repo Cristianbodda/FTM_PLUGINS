@@ -43,6 +43,9 @@
  * 13. FORMATO_13_ELET_DOT     - Q01. Testo + Codice competenza:
  * 14. FORMATO_14_ELET_NEWLINE - Q01\nCompetenza: desc\nCodice: ELETTRICITÀ_XX
  * 
+ * LOGISTICA (1 formato):
+ * 15. FORMATO_15_LOGISTICA    - 1. LOG_BASE_Q01 + Competenza: LOGISTICA_XX
+ *
  * GENERICO:
  *  9. FORMATO_9_NO_COMP       - File senza competenze (richiede Excel)
  *
@@ -110,6 +113,9 @@ class word_parser {
     const FORMAT_13_ELET_DOT = 'FORMATO_13_ELET_DOT';
     const FORMAT_14_ELET_NEWLINE = 'FORMATO_14_ELET_NEWLINE';
     
+    // LOGISTICA (1 formato)
+    const FORMAT_15_LOGISTICA = 'FORMATO_15_LOGISTICA';
+
     // GENERICI
     const FORMAT_9_NO_COMP = 'FORMATO_9_NO_COMP';
     const FORMAT_UNKNOWN = 'FORMATO_SCONOSCIUTO';
@@ -222,13 +228,17 @@ class word_parser {
                             (bool) preg_match('/Codice\s*competenza:\s*ELETTRICITÀ/ui', $text);
         $has_codice_newline = (bool) preg_match('/\nCodice:\s*ELETTRICITÀ/ui', $text);
         
+        // Pattern LOGISTICA
+        $has_numbered_log_q = (bool) preg_match('/\n\d+\.\s*[A-Z_]+_Q\d+\n/u', $text);
+        $has_competenza_logistica = (bool) preg_match('/Competenza:\s*LOGISTICA_/ui', $text);
+
         // Nessuna competenza
-        $has_no_competency = !$has_competenza_collegata && !$has_competenza_co && 
+        $has_no_competency = !$has_competenza_collegata && !$has_competenza_co &&
                             !$has_competenza_f2 && !$has_competenza_inline &&
                             !$has_q_dash_comp_code && !$has_q_dash_competenza &&
-                            !$has_elet_base_q && !$has_q_pipe_codice && 
+                            !$has_elet_base_q && !$has_q_pipe_codice &&
                             !$has_q_dot_codice && !$has_codice_newline &&
-                            !$has_bullet_checkmark;
+                            !$has_bullet_checkmark && !$has_competenza_logistica;
         
         // =====================================================================
         // RILEVAMENTO FORMATO CON PRIORITÀ
@@ -261,8 +271,15 @@ class word_parser {
             return self::FORMAT_13_ELET_DOT;
         }
         
+        // --- LOGISTICA ---
+
+        // FORMATO 15: LOGISTICA - 1. LOG_BASE_Q01 + Competenza: LOGISTICA_XX
+        if ($has_numbered_log_q && $has_competenza_logistica) {
+            return self::FORMAT_15_LOGISTICA;
+        }
+
         // --- AUTOVEICOLO ---
-        
+
         // FORMATO 1: AUTOVEICOLO Test Base - AUT_BASE_Q01 + Competenza collegata
         if ($has_prefix_aut_q && $has_competenza_collegata) {
             return self::FORMAT_1_AUTOV_BASE;
@@ -453,7 +470,12 @@ class word_parser {
             case self::FORMAT_14_ELET_NEWLINE:
                 // Split su Q## semplice (numero su riga singola)
                 return preg_split('/\n(Q\d+)\n/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
-            
+
+            // --- LOGISTICA ---
+            case self::FORMAT_15_LOGISTICA:
+                // Split su "1. LOG_BASE_Q01" (numero + punto + codice)
+                return preg_split('/\n\d+\.\s*([A-Z_]+_Q\d+)\n/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
             default:
                 // Split su Q## semplice (tutti gli altri formati)
                 return preg_split('/\n(Q\d+)\n/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
@@ -625,8 +647,17 @@ class word_parser {
             case self::FORMAT_9_NO_COMP:
                 // Nessuna competenza nel file
                 return $result;
+
+            // --- LOGISTICA ---
+            case self::FORMAT_15_LOGISTICA:
+                // Competenza: LOGISTICA_LO_F5
+                if (preg_match('/Competenza:\s*([A-Z_]+_[A-Z0-9_]+)/i', $content, $m)) {
+                    $result['code'] = $this->clean_competency_code($m[1]);
+                    return $result;
+                }
+                break;
         }
-        
+
         // Fallback generico: cerca pattern SETTORE_XX_YY ovunque
         if (preg_match('/([A-Z]{3,}_[A-Z0-9]+_[A-Z0-9]+)/i', $content, $m)) {
             $result['code'] = strtoupper($m[1]);
@@ -1149,11 +1180,14 @@ class word_parser {
             self::FORMAT_13_ELET_DOT => 'ELETTRICITÀ Appr01/02 (Q01. + Codice competenza:)',
             self::FORMAT_14_ELET_NEWLINE => 'ELETTRICITÀ Appr03/05/06 (Q##\nCodice: ELETTRICITÀ)',
             
+            // LOGISTICA
+            self::FORMAT_15_LOGISTICA => 'LOGISTICA (1. LOG_BASE_Q01 + Competenza: LOGISTICA_XX)',
+
             // GENERICI
             self::FORMAT_9_NO_COMP => 'File senza competenze (richiede Excel)',
             self::FORMAT_UNKNOWN => 'Formato non riconosciuto'
         ];
-        
+
         return $descriptions[$this->detected_format] ?? 'Formato sconosciuto';
     }
     
@@ -1185,6 +1219,9 @@ class word_parser {
             self::FORMAT_13_ELET_DOT => 'ELETTRICITÀ Appr01/02 (Dot)',
             self::FORMAT_14_ELET_NEWLINE => 'ELETTRICITÀ Appr03/05/06 (Newline)',
             
+            // LOGISTICA
+            self::FORMAT_15_LOGISTICA => 'LOGISTICA',
+
             // GENERICI
             self::FORMAT_9_NO_COMP => 'File senza competenze',
         ];
