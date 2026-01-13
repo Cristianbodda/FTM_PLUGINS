@@ -2117,8 +2117,8 @@ if ($step == 5 && $action === 'execute'):
         $question_ids = [];
         
         foreach ($matches[0] as $qxml) {
-            // Estrai nome
-            preg_match('/<n><text>(.*?)<\/text><\/n>/', $qxml, $name_match);
+            // Estrai nome (tag <name> nel formato Moodle XML)
+            preg_match('/<name><text>(.*?)<\/text><\/name>/', $qxml, $name_match);
             $full_name = isset($name_match[1]) ? trim($name_match[1]) : 'Domanda';
             
             // Estrai testo
