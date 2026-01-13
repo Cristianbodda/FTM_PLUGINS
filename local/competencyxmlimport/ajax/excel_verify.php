@@ -149,14 +149,20 @@ try {
                 $code = strtoupper(trim($code));
 
                 $aliases = [
+                    // Automobile (NON usare AUTO - ambiguo con AUTOMAZIONE)
                     'AUTOVEICOLO' => 'AUTOMOBILE',
-                    'AUTO' => 'AUTOMOBILE',
+                    // Automazione
+                    'AUTOM' => 'AUTOMAZIONE',
+                    'AUTOMAZ' => 'AUTOMAZIONE',
+                    // Meccanica
                     'MECC' => 'MECCANICA',
                     'METAL' => 'MECCANICA',
                     'METALCOSTRUZIONE' => 'MECCANICA',
+                    // Chimica/Farmaceutica
                     'CHIM' => 'CHIMFARM',
                     'CHIMICA' => 'CHIMFARM',
                     'FARMACEUTICA' => 'CHIMFARM',
+                    // Altri
                     'LOG' => 'LOGISTICA',
                     'ELETTRO' => 'ELETTRONICA',
                     'INFO' => 'INFORMATICA',

@@ -554,14 +554,24 @@ function get_sector_competencies($frameworkid, $sector) {
  */
 function get_sector_aliases() {
     return [
+        // Automobile (NON usare AUTO - ambiguo con AUTOMAZIONE)
         'AUTOVEICOLO' => 'AUTOMOBILE',
-        'AUTO' => 'AUTOMOBILE',
+
+        // Automazione
+        'AUTOM' => 'AUTOMAZIONE',
+        'AUTOMAZ' => 'AUTOMAZIONE',
+
+        // Meccanica
         'MECC' => 'MECCANICA',
         'METAL' => 'MECCANICA',
         'METALCOSTRUZIONE' => 'MECCANICA',
+
+        // Chimica/Farmaceutica
         'CHIM' => 'CHIMFARM',
         'CHIMICA' => 'CHIMFARM',
         'FARMACEUTICA' => 'CHIMFARM',
+
+        // Altri settori
         'LOG' => 'LOGISTICA',
         'ELETTRO' => 'ELETTRONICA',
         'INFO' => 'INFORMATICA',
