@@ -893,12 +893,21 @@ if ($step == 3):
                 
                 // === GESTIONE FILE WORD (.docx) ===
                 if ($ext === 'docx') {
+                    // PULISCI SESSIONE PRECEDENTE prima di nuovo upload
+                    unset($SESSION->word_import_questions);
+                    unset($SESSION->word_import_filename);
+                    unset($SESSION->word_import_suggested_name);
+                    unset($SESSION->word_import_valid_competencies);
+                    unset($SESSION->word_import_sector);
+                    unset($SESSION->excel_verify_path);
+                    unset($SESSION->excel_verify_results);
+
                     $file_data = [
                         'name' => $filename,
                         'tmp_name' => $tmp_name,
                         'error' => $_FILES['xmlfiles']['error'][$key]
                     ];
-                    
+
                     $word_result = process_word_upload($file_data, $sector, $frameworkid);
                     
                     if ($word_result['success']) {

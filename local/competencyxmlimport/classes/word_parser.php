@@ -122,8 +122,10 @@ class word_parser {
      */
     public function __construct($sector = '', $valid_competencies = []) {
         $this->sector = $sector;
-        // Normalizza tutte le competenze in UPPERCASE per confronto case-insensitive
-        $this->valid_competencies = array_map('strtoupper', $valid_competencies);
+        // Normalizza tutte le competenze in UPPERCASE per confronto case-insensitive (UTF-8)
+        $this->valid_competencies = array_map(function($c) {
+            return mb_strtoupper($c, 'UTF-8');
+        }, $valid_competencies);
     }
     
     /**
@@ -644,8 +646,8 @@ class word_parser {
     private function clean_competency_code($code) {
         $code = str_replace(['\\', '  '], ['', ' '], $code);
         $code = trim($code);
-        $code = strtoupper($code);
-        // Normalizza ELETTRICITA -> ELETTRICITÀ
+        $code = mb_strtoupper($code, 'UTF-8');
+        // Normalizza ELETTRICITA -> ELETTRICITÀ (se non ha già l'accento)
         $code = preg_replace('/ELETTRICITA(?!À)/u', 'ELETTRICITÀ', $code);
         return $code;
     }
