@@ -759,26 +759,37 @@ class word_parser {
      */
     private function extract_question_text($content, $format) {
         $text = $content;
-        
+
         // Per FORMATO_7 AUTOVEICOLO, rimuovi la competenza all'inizio
         if ($format === self::FORMAT_7_AUTOV_APPR36) {
             $text = preg_replace('/^[A-Z_]+_[A-Z0-9_]+\s*\n/i', '', trim($text));
         }
-        
+
         // Per FORMATO_3 ELETTRONICA, la competenza è dopo Q01 ma prima della domanda
         if ($format === self::FORMAT_3_ELETT_BASE) {
             $text = preg_replace('/^Competenza:\s*[A-Z_]+_[A-Z0-9_]+\s*\n/im', '', $text);
         }
-        
+
         // Per FORMATO_14 ELETTRICITÀ, rimuovi Competenza: e Codice: all'inizio
         if ($format === self::FORMAT_14_ELET_NEWLINE) {
             $text = preg_replace('/^Competenza:[^\n]+\n/im', '', $text);
             $text = preg_replace('/^Codice:\s*[A-Z_ÀÈÉÌÒÙ]+_[A-Z0-9_]+\s*\n/imu', '', $text);
         }
-        
-        // Taglia prima di markers finali
-        foreach (['Risposta corretta', 'Competenza collegata', 'Competenza (CO)', 
-                  'Competenza (F2)', 'Competenza:', 'Codice competenza:', 'Codice:',
+
+        // Per FORMATO_15 LOGISTICA, rimuovi "Competenza: LOGISTICA_XX" all'inizio
+        if ($format === self::FORMAT_15_LOGISTICA) {
+            $text = preg_replace('/^Competenza:\s*[A-Z_]+_[A-Z0-9_]+\s*\n/im', '', trim($text));
+        }
+
+        // Taglia prima di markers finali (ma NON per formati che hanno Competenza: all'inizio)
+        $skip_competenza_marker = in_array($format, [
+            self::FORMAT_3_ELETT_BASE,
+            self::FORMAT_14_ELET_NEWLINE,
+            self::FORMAT_15_LOGISTICA
+        ]);
+
+        foreach (['Risposta corretta', 'Competenza collegata', 'Competenza (CO)',
+                  'Competenza (F2)', 'Codice competenza:', 'Codice:',
                   'Rif. Master', 'Confidenza:'] as $marker) {
             $pos = stripos($text, $marker);
             if ($pos !== false) {
@@ -844,12 +855,18 @@ class word_parser {
         // Prepara il contenuto in base al formato
         $clean_content = $content;
         
+        // Per LOGISTICA, rimuovi la riga Competenza: all'inizio prima di cercare risposte
+        if ($format === self::FORMAT_15_LOGISTICA) {
+            $clean_content = preg_replace('/^Competenza:\s*[A-Z_]+_[A-Z0-9_]+\s*\n/im', '', trim($clean_content));
+        }
+
         // Per alcuni formati, NON tagliare prima di "Competenza" perché è all'inizio/nel mezzo
         // FORMATO_13_ELET_DOT ha Codice competenza PRIMA delle risposte, quindi non tagliare
-        if (!in_array($format, [self::FORMAT_7_AUTOV_APPR36, self::FORMAT_3_ELETT_BASE, 
-                                self::FORMAT_14_ELET_NEWLINE, self::FORMAT_13_ELET_DOT])) {
+        if (!in_array($format, [self::FORMAT_7_AUTOV_APPR36, self::FORMAT_3_ELETT_BASE,
+                                self::FORMAT_14_ELET_NEWLINE, self::FORMAT_13_ELET_DOT,
+                                self::FORMAT_15_LOGISTICA])) {
             // Taglia prima di markers di competenza
-            foreach (['Competenza collegata', 'Competenza (CO)', 'Competenza (F2)', 
+            foreach (['Competenza collegata', 'Competenza (CO)', 'Competenza (F2)',
                       'Competenza:', 'Codice competenza:', 'Codice:'] as $marker) {
                 $pos = stripos($clean_content, $marker);
                 if ($pos !== false) {
