@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/ftm_scheduler/db" VERSION="20260112" COMMENT="FTM Scheduler tables">
+  <TABLES>
+    
+    <!-- GRUPPI (ex Coorti) -->
+    <TABLE NAME="local_ftm_groups" COMMENT="Gruppi di studenti (Giallo, Grigio, Rosso, Marrone, Viola)">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="100" NOTNULL="true" COMMENT="Nome gruppo es: Gruppo Giallo - KW04"/>
+        <FIELD NAME="color" TYPE="char" LENGTH="20" NOTNULL="true" COMMENT="giallo, grigio, rosso, marrone, viola"/>
+        <FIELD NAME="color_hex" TYPE="char" LENGTH="7" NOTNULL="true" COMMENT="Colore HEX es: #FFFF00"/>
+        <FIELD NAME="entry_date" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Data inizio gruppo (timestamp)"/>
+        <FIELD NAME="planned_end_date" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Data fine prevista"/>
+        <FIELD NAME="calendar_week" TYPE="int" LENGTH="2" NOTNULL="false" COMMENT="Settimana calendario KW"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="planning" COMMENT="planning, active, completed"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="createdby" TYPE="int" LENGTH="10" NOTNULL="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="createdby" TYPE="foreign" FIELDS="createdby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="entry_date" UNIQUE="false" FIELDS="entry_date"/>
+        <INDEX NAME="color" UNIQUE="false" FIELDS="color"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- MEMBRI GRUPPO -->
+    <TABLE NAME="local_ftm_group_members" COMMENT="Membri dei gruppi">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="groupid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="current_week" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" COMMENT="Settimana corrente 1-10"/>
+        <FIELD NAME="extended_weeks" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" COMMENT="Settimane estensione oltre le 6"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" COMMENT="active, delayed, completed, withdrawn"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="groupid" TYPE="foreign" FIELDS="groupid" REFTABLE="local_ftm_groups" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="groupid_userid" UNIQUE="true" FIELDS="groupid, userid"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- AULE -->
+    <TABLE NAME="local_ftm_rooms" COMMENT="Aule disponibili">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="100" NOTNULL="true" COMMENT="Nome aula es: AULA 1"/>
+        <FIELD NAME="shortname" TYPE="char" LENGTH="20" NOTNULL="true" COMMENT="Nome breve es: A1"/>
+        <FIELD NAME="capacity" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="10" COMMENT="Numero postazioni"/>
+        <FIELD NAME="is_lab" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="1=laboratorio, 0=teoria"/>
+        <FIELD NAME="capabilities_json" TYPE="text" NOTNULL="false" COMMENT="JSON con attrezzature disponibili"/>
+        <FIELD NAME="color_hex" TYPE="char" LENGTH="7" NOTNULL="false" COMMENT="Colore per visualizzazione"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="shortname" UNIQUE="true" FIELDS="shortname"/>
+        <INDEX NAME="active" UNIQUE="false" FIELDS="active"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- TEMPLATE SETTIMANA 1 -->
+    <TABLE NAME="local_ftm_week1_template" COMMENT="Template attività fisse settimana 1">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Nome attività"/>
+        <FIELD NAME="day_of_week" TYPE="int" LENGTH="1" NOTNULL="true" COMMENT="1=Lun, 2=Mar, 3=Mer, 4=Gio, 5=Ven"/>
+        <FIELD NAME="time_slot" TYPE="char" LENGTH="10" NOTNULL="true" COMMENT="matt, pom"/>
+        <FIELD NAME="time_start" TYPE="char" LENGTH="5" NOTNULL="true" COMMENT="08:30"/>
+        <FIELD NAME="time_end" TYPE="char" LENGTH="5" NOTNULL="true" COMMENT="11:45"/>
+        <FIELD NAME="default_roomid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="is_mandatory" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="is_remote" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="default_roomid" TYPE="foreign" FIELDS="default_roomid" REFTABLE="local_ftm_rooms" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="day_slot" UNIQUE="false" FIELDS="day_of_week, time_slot"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- CATALOGO ATELIER -->
+    <TABLE NAME="local_ftm_atelier_catalog" COMMENT="Catalogo atelier disponibili settimane 3-6">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Nome atelier"/>
+        <FIELD NAME="shortname" TYPE="char" LENGTH="50" NOTNULL="true" COMMENT="Codice es: At. CV"/>
+        <FIELD NAME="typical_week_start" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="3"/>
+        <FIELD NAME="typical_week_end" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="6"/>
+        <FIELD NAME="typical_day" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Giorno tipico 1-5"/>
+        <FIELD NAME="typical_slot" TYPE="char" LENGTH="10" NOTNULL="false" COMMENT="matt, pom"/>
+        <FIELD NAME="max_participants" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="10"/>
+        <FIELD NAME="is_mandatory" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="1=obbligatorio (es. Bilancio)"/>
+        <FIELD NAME="mandatory_week" TYPE="int" LENGTH="2" NOTNULL="false" COMMENT="Settimana obbligatoria se is_mandatory"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="shortname" UNIQUE="true" FIELDS="shortname"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- ATTIVITÀ (istanze reali) -->
+    <TABLE NAME="local_ftm_activities" COMMENT="Attività pianificate (istanze reali)">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true"/>
+        <FIELD NAME="activity_type" TYPE="char" LENGTH="30" NOTNULL="true" COMMENT="week1, week2_test, week2_lab, atelier, external"/>
+        <FIELD NAME="groupid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Gruppo associato (null per esterni)"/>
+        <FIELD NAME="target_week" TYPE="int" LENGTH="2" NOTNULL="false" COMMENT="Settimana target 1-10"/>
+        <FIELD NAME="date_start" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="date_end" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="roomid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="teacherid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Coach/Docente assegnato"/>
+        <FIELD NAME="max_participants" TYPE="int" LENGTH="3" NOTNULL="false"/>
+        <FIELD NAME="atelierid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Riferimento catalogo atelier"/>
+        <FIELD NAME="templateid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Riferimento template sett.1"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="scheduled" COMMENT="scheduled, in_progress, completed, cancelled"/>
+        <FIELD NAME="has_conflict" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="createdby" TYPE="int" LENGTH="10" NOTNULL="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="groupid" TYPE="foreign" FIELDS="groupid" REFTABLE="local_ftm_groups" REFFIELDS="id"/>
+        <KEY NAME="roomid" TYPE="foreign" FIELDS="roomid" REFTABLE="local_ftm_rooms" REFFIELDS="id"/>
+        <KEY NAME="teacherid" TYPE="foreign" FIELDS="teacherid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="atelierid" TYPE="foreign" FIELDS="atelierid" REFTABLE="local_ftm_atelier_catalog" REFFIELDS="id"/>
+        <KEY NAME="templateid" TYPE="foreign" FIELDS="templateid" REFTABLE="local_ftm_week1_template" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="date_start" UNIQUE="false" FIELDS="date_start"/>
+        <INDEX NAME="activity_type" UNIQUE="false" FIELDS="activity_type"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="groupid_week" UNIQUE="false" FIELDS="groupid, target_week"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- ISCRIZIONI -->
+    <TABLE NAME="local_ftm_enrollments" COMMENT="Iscrizioni studenti alle attività">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="activityid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="groupid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="enrolledby" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Chi ha iscritto (coach/segreteria)"/>
+        <FIELD NAME="enrollment_type" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="auto" COMMENT="auto, manual, coach"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="enrolled" COMMENT="enrolled, attended, absent, cancelled"/>
+        <FIELD NAME="attended" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="1=presente, 0=assente"/>
+        <FIELD NAME="notification_sent" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="reminder_sent" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="calendar_eventid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="ID evento calendario Moodle"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="activityid" TYPE="foreign" FIELDS="activityid" REFTABLE="local_ftm_activities" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="groupid" TYPE="foreign" FIELDS="groupid" REFTABLE="local_ftm_groups" REFFIELDS="id"/>
+        <KEY NAME="enrolledby" TYPE="foreign" FIELDS="enrolledby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="activityid_userid" UNIQUE="true" FIELDS="activityid, userid"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- SCELTE SETTIMANA 2 -->
+    <TABLE NAME="local_ftm_week2_choices" COMMENT="Scelte test/lab settimana 2 per studente">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="groupid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="test_mon_quizid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Quiz Lunedì"/>
+        <FIELD NAME="test_thu_quizid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Quiz Giovedì"/>
+        <FIELD NAME="lab_tue_type" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="Tipo lab Martedì"/>
+        <FIELD NAME="lab_fri_type" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="Tipo lab Venerdì"/>
+        <FIELD NAME="chosen_by" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Coach che ha scelto"/>
+        <FIELD NAME="approved_at" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" COMMENT="pending, confirmed"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="groupid" TYPE="foreign" FIELDS="groupid" REFTABLE="local_ftm_groups" REFFIELDS="id"/>
+        <KEY NAME="chosen_by" TYPE="foreign" FIELDS="chosen_by" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_groupid" UNIQUE="true" FIELDS="userid, groupid"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- PRENOTAZIONI ESTERNE -->
+    <TABLE NAME="local_ftm_external_bookings" COMMENT="Prenotazioni aule per progetti esterni (URAR, AI, Extra-LADI)">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="project_name" TYPE="char" LENGTH="100" NOTNULL="true" COMMENT="BIT URAR, BIT AI, Corso Extra LADI"/>
+        <FIELD NAME="roomid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="date_start" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="date_end" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="responsible" TYPE="char" LENGTH="10" NOTNULL="false" COMMENT="Iniziali responsabile es: GM, RB"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="recurring" TYPE="char" LENGTH="20" NOTNULL="false" COMMENT="none, weekly, biweekly"/>
+        <FIELD NAME="recurring_until" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="createdby" TYPE="int" LENGTH="10" NOTNULL="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="roomid" TYPE="foreign" FIELDS="roomid" REFTABLE="local_ftm_rooms" REFFIELDS="id"/>
+        <KEY NAME="createdby" TYPE="foreign" FIELDS="createdby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="date_start" UNIQUE="false" FIELDS="date_start"/>
+        <INDEX NAME="project_name" UNIQUE="false" FIELDS="project_name"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- COACH (mapping iniziali -> utente) -->
+    <TABLE NAME="local_ftm_coaches" COMMENT="Mapping coach iniziali e ruoli">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="initials" TYPE="char" LENGTH="5" NOTNULL="true" COMMENT="GM, RB, CB, FM, NC"/>
+        <FIELD NAME="role" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="coach" COMMENT="coach, secretary, teacher"/>
+        <FIELD NAME="can_week2_mon_tue" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Può fare sett.2 Lun-Mar"/>
+        <FIELD NAME="can_week2_thu_fri" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Può fare sett.2 Gio-Ven"/>
+        <FIELD NAME="active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="initials" UNIQUE="true" FIELDS="initials"/>
+        <INDEX NAME="userid" UNIQUE="true" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+    
+  </TABLES>
+</XMLDB>

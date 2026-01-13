@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/labeval/db" VERSION="20241230" COMMENT="XMLDB file for local_labeval">
+  <TABLES>
+    
+    <!-- Template prove pratiche -->
+    <TABLE NAME="local_labeval_templates" COMMENT="Templates for practical lab evaluations">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Template name"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Template description"/>
+        <FIELD NAME="sectorcode" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Sector code e.g. MECCANICA"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active, archived"/>
+        <FIELD NAME="createdby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="User who created"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="createdby" TYPE="foreign" FIELDS="createdby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="sectorcode" UNIQUE="false" FIELDS="sectorcode"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Comportamenti osservabili -->
+    <TABLE NAME="local_labeval_behaviors" COMMENT="Observable behaviors for each template">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="templateid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Behavior description"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="templateid" TYPE="foreign" FIELDS="templateid" REFTABLE="local_labeval_templates" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="template_sort" UNIQUE="false" FIELDS="templateid, sortorder"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Mapping comportamento -> competenza con peso -->
+    <TABLE NAME="local_labeval_behavior_comp" COMMENT="Mapping behaviors to competencies with weight">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="behaviorid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="competencyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Moodle competency ID"/>
+        <FIELD NAME="competencycode" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Competency code e.g. MECCANICA_MIS_01"/>
+        <FIELD NAME="weight" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Weight 1 or 3"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="behaviorid" TYPE="foreign" FIELDS="behaviorid" REFTABLE="local_labeval_behaviors" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="behavior_comp" UNIQUE="true" FIELDS="behaviorid, competencyid"/>
+        <INDEX NAME="competencycode" UNIQUE="false" FIELDS="competencycode"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Assegnazioni prove a studenti -->
+    <TABLE NAME="local_labeval_assignments" COMMENT="Lab evaluation assignments to students">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="templateid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="assignedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Coach who assigned"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="duedate" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Optional due date"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending, completed, expired"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="templateid" TYPE="foreign" FIELDS="templateid" REFTABLE="local_labeval_templates" REFFIELDS="id"/>
+        <KEY NAME="studentid" TYPE="foreign" FIELDS="studentid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="assignedby" TYPE="foreign" FIELDS="assignedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="student_status" UNIQUE="false" FIELDS="studentid, status"/>
+        <INDEX NAME="template_student" UNIQUE="false" FIELDS="templateid, studentid"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Sessioni di valutazione -->
+    <TABLE NAME="local_labeval_sessions" COMMENT="Evaluation sessions">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="assignmentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="assessorid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Coach who evaluated"/>
+        <FIELD NAME="totalscore" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="maxscore" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="percentage" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="General notes"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="draft" SEQUENCE="false" COMMENT="draft, completed"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecompleted" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="assignmentid" TYPE="foreign" FIELDS="assignmentid" REFTABLE="local_labeval_assignments" REFFIELDS="id"/>
+        <KEY NAME="assessorid" TYPE="foreign" FIELDS="assessorid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="assignment_status" UNIQUE="false" FIELDS="assignmentid, status"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Valutazioni singoli comportamenti -->
+    <TABLE NAME="local_labeval_ratings" COMMENT="Individual behavior ratings">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="behaviorid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="rating" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0, 1, or 3"/>
+        <FIELD NAME="notes" TYPE="char" LENGTH="500" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="local_labeval_sessions" REFFIELDS="id"/>
+        <KEY NAME="behaviorid" TYPE="foreign" FIELDS="behaviorid" REFTABLE="local_labeval_behaviors" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="session_behavior" UNIQUE="true" FIELDS="sessionid, behaviorid"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Cache punteggi per competenza -->
+    <TABLE NAME="local_labeval_comp_scores" COMMENT="Cached competency scores per session">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="competencyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="competencycode" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="score" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="maxscore" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="percentage" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid" TYPE="foreign" FIELDS="sessionid" REFTABLE="local_labeval_sessions" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="session_comp" UNIQUE="true" FIELDS="sessionid, competencyid"/>
+        <INDEX NAME="compcode" UNIQUE="false" FIELDS="competencycode"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Autorizzazioni studenti a vedere report -->
+    <TABLE NAME="local_labeval_auth" COMMENT="Student authorizations to view reports">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="authorizedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="studentid" TYPE="foreign" FIELDS="studentid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="student_unique" UNIQUE="true" FIELDS="studentid"/>
+      </INDEXES>
+    </TABLE>
+    
+  </TABLES>
+</XMLDB>

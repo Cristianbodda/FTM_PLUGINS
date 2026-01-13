@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    TEMPLATE DOMANDE - ELETTRICITA                            ║
+║                    CODICI VERIFICATI NEL FRAMEWORK                           ║
+║                                                                              ║
+║  FORMATO CODICE: ELETTRICITA_[PROFILO]_[AREA][NUMERO]                        ║
+║                                                                              ║
+║  PROFILI:                                                                    ║
+║  - PE = Progettazione Elettrica                                              ║
+║  - IE = Installazione Elettrica                                              ║
+║  - EM = Elettricista Manutenzione                                            ║
+║  - ER = Elettricista Reti                                                    ║
+║                                                                              ║
+║  ESEMPI CODICI VALIDI:                                                       ║
+║  - ELETTRICITA_PE_A1, ELETTRICITA_PE_B1...                                   ║
+║  - ELETTRICITA_IE_A1, ELETTRICITA_IE_B1...                                   ║
+║  - ELETTRICITA_EM_A1, ELETTRICITA_ER_A1...                                   ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<quiz>
+
+<!-- DOMANDA 1: Progettazione Elettrica -->
+<question type="multichoice">
+    <n>
+        <text>ELETT_BASE_Q01 - ELETTRICITA_PE_A1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale normativa regola gli impianti elettrici in bassa tensione in Svizzera?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>NIBT (Norme sugli Impianti elettrici a Bassa Tensione)</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! La NIBT è la normativa svizzera per gli impianti BT.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>ISO 9001</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. ISO 9001 riguarda i sistemi di gestione qualità.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>DIN 5035</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Questa è una norma tedesca sull'illuminazione.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>UNI EN 12464</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Questa norma riguarda l'illuminazione dei luoghi di lavoro.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- DOMANDA 2: Installazione Elettrica -->
+<question type="multichoice">
+    <n>
+        <text>ELETT_BASE_Q02 - ELETTRICITA_IE_A1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale dispositivo protegge le persone dal contatto indiretto con parti in tensione?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Interruttore differenziale (salvavita)</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! L'interruttore differenziale rileva le correnti di dispersione.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Fusibile</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il fusibile protegge da sovracorrenti, non da contatti.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Trasformatore</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il trasformatore modifica la tensione.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Contattore</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il contattore è un dispositivo di comando.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- DOMANDA 3: Elettricista Manutenzione -->
+<question type="multichoice">
+    <n>
+        <text>ELETT_BASE_Q03 - ELETTRICITA_EM_A1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale strumento si utilizza per verificare l'assenza di tensione prima di un intervento?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Cercafase o multimetro in modalità voltmetro</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! Prima di ogni intervento è obbligatorio verificare l'assenza di tensione.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Amperometro a pinza</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. L'amperometro misura la corrente, non la tensione.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Termometro a infrarossi</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il termometro misura la temperatura.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Luxmetro</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il luxmetro misura l'illuminamento.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+</quiz>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/selfassessment/db" VERSION="20251224" COMMENT="XMLDB file for Self Assessment plugin">
+  <TABLES>
+    
+    <!-- Tabella principale autovalutazioni -->
+    <TABLE NAME="local_selfassessment" COMMENT="Autovalutazioni degli studenti per competenza">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID studente"/>
+        <FIELD NAME="competencyid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID competenza"/>
+        <FIELD NAME="level" TYPE="int" LENGTH="1" NOTNULL="true" COMMENT="Livello Bloom 1-6"/>
+        <FIELD NAME="comment" TYPE="text" NOTNULL="false" COMMENT="Commento opzionale studente"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="competencyid_fk" TYPE="foreign" FIELDS="competencyid" REFTABLE="competency" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_idx" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="competencyid_idx" UNIQUE="false" FIELDS="competencyid"/>
+        <INDEX NAME="user_competency_idx" UNIQUE="true" FIELDS="userid, competencyid" COMMENT="Una sola valutazione per studente/competenza"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Tabella stato abilitazione studenti -->
+    <TABLE NAME="local_selfassessment_status" COMMENT="Stato abilitazione autovalutazione per studente">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID studente"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" COMMENT="1=attivo, 0=disabilitato"/>
+        <FIELD NAME="disabledby" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Coach che ha disabilitato"/>
+        <FIELD NAME="reason" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Motivo disabilitazione"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_idx" UNIQUE="true" FIELDS="userid"/>
+        <INDEX NAME="enabled_idx" UNIQUE="false" FIELDS="enabled"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Tabella assegnazioni competenze da autovalutare -->
+    <TABLE NAME="local_selfassessment_assign" COMMENT="Competenze assegnate per autovalutazione">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID studente"/>
+        <FIELD NAME="competencyid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID competenza da autovalutare"/>
+        <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="quiz" COMMENT="quiz=da quiz svolto, coach_area=assegnata coach per area, coach_comp=assegnata coach singola"/>
+        <FIELD NAME="sourceid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="ID quiz o ID coach che ha assegnato"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="competencyid_fk" TYPE="foreign" FIELDS="competencyid" REFTABLE="competency" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_idx" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="user_competency_idx" UNIQUE="true" FIELDS="userid, competencyid" COMMENT="Una sola assegnazione per studente/competenza"/>
+        <INDEX NAME="source_idx" UNIQUE="false" FIELDS="source"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Tabella log reminder inviati -->
+    <TABLE NAME="local_selfassessment_reminders" COMMENT="Log dei reminder inviati">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Studente destinatario"/>
+        <FIELD NAME="sentby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Coach che ha inviato"/>
+        <FIELD NAME="message" TYPE="text" NOTNULL="false" COMMENT="Messaggio personalizzato"/>
+        <FIELD NAME="timesent" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_idx" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+    
+  </TABLES>
+</XMLDB>

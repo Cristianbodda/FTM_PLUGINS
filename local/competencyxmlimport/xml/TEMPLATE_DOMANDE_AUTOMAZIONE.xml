@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    TEMPLATE DOMANDE - AUTOMAZIONE                            ║
+║                    CODICI VERIFICATI NEL FRAMEWORK                           ║
+║                                                                              ║
+║  FORMATO CODICE: AUTOMAZIONE_[PROFILO]_[AREA][NUMERO]                        ║
+║                                                                              ║
+║  PROFILI:                                                                    ║
+║  - MA = Montatore Automazione                                                ║
+║  - OA = Operatore Automazione                                                ║
+║                                                                              ║
+║  ESEMPI CODICI VALIDI:                                                       ║
+║  - AUTOMAZIONE_MA_A1, AUTOMAZIONE_MA_B1, AUTOMAZIONE_MA_C1...                ║
+║  - AUTOMAZIONE_OA_A1, AUTOMAZIONE_OA_B1, AUTOMAZIONE_OA_C1...                ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<quiz>
+
+<!-- DOMANDA 1: Montatore Automazione -->
+<question type="multichoice">
+    <n>
+        <text>AUTOM_BASE_Q01 - AUTOMAZIONE_MA_A1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Cosa significa la sigla PLC nel contesto dell'automazione industriale?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Programmable Logic Controller - Controllore Logico Programmabile</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! Il PLC è il cuore dei sistemi di automazione industriale.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Power Line Connector</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Questa sigla non si riferisce all'automazione.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Precision Laser Control</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. PLC sta per Programmable Logic Controller.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Primary Level Circuit</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il significato corretto è Controllore Logico Programmabile.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- DOMANDA 2: Operatore Automazione -->
+<question type="multichoice">
+    <n>
+        <text>AUTOM_BASE_Q02 - AUTOMAZIONE_OA_A1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale componente converte un segnale fisico in un segnale elettrico in un sistema automatizzato?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Sensore (trasduttore)</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! I sensori convertono grandezze fisiche in segnali elettrici.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Attuatore</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. L'attuatore converte segnali elettrici in azioni fisiche (il contrario).</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Relè</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il relè è un dispositivo di commutazione.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Alimentatore</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. L'alimentatore fornisce energia elettrica.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- DOMANDA 3: Montatore Automazione - Area B -->
+<question type="multichoice">
+    <n>
+        <text>AUTOM_BASE_Q03 - AUTOMAZIONE_MA_B1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale protocollo di comunicazione industriale è comunemente utilizzato per collegare dispositivi di automazione?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Profibus, Profinet o Modbus</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! Questi sono i protocolli industriali più diffusi.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Bluetooth</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Bluetooth non è un protocollo industriale standard.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>WiFi domestico</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il WiFi domestico non è adatto all'automazione industriale.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>USB</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. USB non è un protocollo di comunicazione industriale.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+</quiz>

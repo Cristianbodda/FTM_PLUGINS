@@ -1,0 +1,70 @@
+# 🧹 ISTRUZIONI PULIZIA PLUGIN
+
+## FILE DA ELIMINARE dalla cartella /local/competencyxmlimport/
+
+Elimina questi file OBSOLETI:
+- assign_competencies (1).php  ← duplicato
+- assign_competencies_final.php  ← vecchio
+- assign_automobile_competencies.php  ← sostituito da reimport_autoveicolo.php
+- check_competencies.php  ← obsoleto
+- setup_meccanica2_v8.php  ← vecchio script meccanica
+- setup_autoveicolo.php  ← sostituito da reimport_autoveicolo.php
+- debug_questions.php  ← file temporaneo di debug
+
+## FILE DA TENERE (originali plugin)
+
+- classes/  (cartella)
+- lang/  (cartella)
+- import.php
+- import_DEBUG.php
+- create_categories_from_framework.php
+- cleanup_categories.php
+- version.php
+- mapping_competenze_livelli.csv
+
+## NUOVI FILE DA AGGIUNGERE (da questo ZIP)
+
+- dashboard.php  ← Dashboard principale (AGGIORNATA)
+- setup_universale.php  ← 🆕 SETUP UNIVERSALE per qualsiasi framework/settore
+- create_quiz.php  ← Wizard creazione quiz
+- assign_competencies.php  ← Assegnazione competenze
+- diagnostics.php  ← Diagnostica framework
+- cleanup_broken_quizzes.php  ← Pulizia quiz rotti
+- reimport_autoveicolo.php  ← Re-import Autoveicolo
+- fix_automobile_ma.php  ← Fix competenze AUTOMOBILE_MA
+- xml/  (cartella con file XML)
+
+## STRUTTURA FINALE CORRETTA
+
+```
+/local/competencyxmlimport/
+├── classes/
+├── lang/
+├── xml/
+│   ├── AUT_TEST_BASE_XML_Cristian.xml
+│   ├── AUT_APPR_ADAS_Sistemi_Assistenza_Guida.xml
+│   ├── AUT_APPR_ELET_Elettronica_Veicolo.xml
+│   ├── AUT_APPR_HVAC_Climatizzazione.xml
+│   ├── AUT_APPR_HV_Alta_Tensione.xml
+│   ├── AUT_APPR_MOT_Motore_Powertrain.xml
+│   └── AUT_APPR_MR_Meccanica_Riparazioni.xml
+├── assign_competencies.php
+├── cleanup_broken_quizzes.php
+├── cleanup_categories.php
+├── create_categories_from_framework.php
+├── create_quiz.php
+├── dashboard.php
+├── diagnostics.php
+├── import.php
+├── import_DEBUG.php
+├── mapping_competenze_livelli.csv
+├── reimport_autoveicolo.php
+└── version.php
+```
+
+## COME PROCEDERE
+
+1. Via FTP, elimina i file obsoleti elencati sopra
+2. Carica i nuovi file da questo ZIP
+3. Vai a: /local/competencyxmlimport/reimport_autoveicolo.php?courseid=8
+4. Clicca "Avvia Re-Import" per reimportare le domande con nomi corretti

@@ -1,0 +1,913 @@
+<?php
+/**
+ * FTM Coverage Manager - Diagnostica e gestione copertura competenze
+ * CON EXPORT EXCEL IDENTICO AL FORMATO RICHIESTO
+ * 
+ * @package    local_competencymanager
+ * @copyright  2026 FTM
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * 
+ * CREATO: 04/01/2026
+ * AGGIORNATO: 05/01/2026 - Aggiunto export Excel
+ */
+
+require_once(__DIR__ . '/../../config.php');
+require_login();
+
+// Verifica permessi admin
+$context = context_system::instance();
+require_capability('moodle/site:config', $context);
+
+// Parametri
+$courseid = optional_param('courseid', 0, PARAM_INT);
+$sector = optional_param('sector', '', PARAM_TEXT);
+$tab = optional_param('tab', 'overview', PARAM_ALPHA);
+$action = optional_param('action', '', PARAM_ALPHA);
+
+// ============================================
+// GESTIONE EXPORT EXCEL
+// ============================================
+if ($action === 'export' && $sector) {
+    export_excel($sector, $courseid);
+    exit;
+}
+
+// ============================================
+// FUNZIONE EXPORT EXCEL
+// ============================================
+function export_excel($sector, $courseid = 0) {
+    global $DB, $CFG;
+    
+    require_once($CFG->libdir . '/phpspreadsheet/vendor/autoload.php');
+    
+    use PhpOffice\PhpSpreadsheet\Spreadsheet;
+    use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+    use PhpOffice\PhpSpreadsheet\Style\Fill;
+    use PhpOffice\PhpSpreadsheet\Style\Font;
+    use PhpOffice\PhpSpreadsheet\Style\Alignment;
+    use PhpOffice\PhpSpreadsheet\Style\Border;
+    
+    $spreadsheet = new Spreadsheet();
+    
+    // Stili
+    $headerStyle = [
+        'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4472C4']],
+        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
+    ];
+    
+    $greenFill = ['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '90EE90']]];
+    $redFill = ['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FF6B6B']]];
+    $yellowFill = ['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFD700']]];
+    $borderStyle = ['borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]];
+    
+    // Recupera dati dal database
+    $coverage_data = get_coverage_data($sector, $courseid);
+    
+    // ============================================
+    // FOGLIO 1: RIEPILOGO COPERTURA
+    // ============================================
+    $sheet1 = $spreadsheet->getActiveSheet();
+    $sheet1->setTitle('RIEPILOGO COPERTURA');
+    
+    // Titolo
+    $sheet1->setCellValue('A1', "ANALISI COPERTURA COMPETENZE $sector");
+    $sheet1->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+    $sheet1->mergeCells('A1:G1');
+    
+    // Intestazioni
+    $headers = ['Area', 'Nome Area', 'Competenze Totali', 'Competenze Coperte', 'Competenze Mancanti', '% Copertura', 'Stato'];
+    $col = 'A';
+    foreach ($headers as $header) {
+        $sheet1->setCellValue($col . '3', $header);
+        $sheet1->getStyle($col . '3')->applyFromArray($headerStyle);
+        $col++;
+    }
+    
+    // Dati per area
+    $row = 4;
+    $totale_comp = 0;
+    $totale_coperte = 0;
+    
+    foreach ($coverage_data['by_area'] as $area => $data) {
+        $sheet1->setCellValue('A' . $row, $area);
+        $sheet1->setCellValue('B' . $row, $data['nome'] ?? '');
+        $sheet1->setCellValue('C' . $row, $data['totale']);
+        $sheet1->setCellValue('D' . $row, $data['coperte']);
+        $sheet1->setCellValue('E' . $row, $data['totale'] - $data['coperte']);
+        $percentuale = $data['totale'] > 0 ? round(($data['coperte'] / $data['totale']) * 100) : 0;
+        $sheet1->setCellValue('F' . $row, $percentuale . '%');
+        
+        // Stato con colore
+        $statoCell = $sheet1->getCell('G' . $row);
+        if ($percentuale == 100) {
+            $statoCell->setValue('✅ COMPLETA');
+            $sheet1->getStyle('G' . $row)->applyFromArray($greenFill);
+        } elseif ($percentuale >= 50) {
+            $statoCell->setValue('⚠️ PARZIALE');
+            $sheet1->getStyle('G' . $row)->applyFromArray($yellowFill);
+        } elseif ($percentuale > 0) {
+            $statoCell->setValue('⚠️ BASSA');
+            $sheet1->getStyle('G' . $row)->applyFromArray($yellowFill);
+        } else {
+            $statoCell->setValue('❌ MANCANTE');
+            $sheet1->getStyle('G' . $row)->applyFromArray($redFill);
+        }
+        
+        // Bordi
+        $sheet1->getStyle("A{$row}:G{$row}")->applyFromArray($borderStyle);
+        
+        $totale_comp += $data['totale'];
+        $totale_coperte += $data['coperte'];
+        $row++;
+    }
+    
+    // Riga totale
+    $row++;
+    $sheet1->setCellValue('A' . $row, 'TOTALE');
+    $sheet1->setCellValue('C' . $row, $totale_comp);
+    $sheet1->setCellValue('D' . $row, $totale_coperte);
+    $sheet1->setCellValue('E' . $row, $totale_comp - $totale_coperte);
+    $sheet1->setCellValue('F' . $row, $totale_comp > 0 ? round(($totale_coperte / $totale_comp) * 100) . '%' : '0%');
+    $sheet1->getStyle("A{$row}:F{$row}")->getFont()->setBold(true);
+    
+    // Larghezza colonne
+    $sheet1->getColumnDimension('A')->setWidth(8);
+    $sheet1->getColumnDimension('B')->setWidth(35);
+    $sheet1->getColumnDimension('C')->setWidth(18);
+    $sheet1->getColumnDimension('D')->setWidth(18);
+    $sheet1->getColumnDimension('E')->setWidth(18);
+    $sheet1->getColumnDimension('F')->setWidth(12);
+    $sheet1->getColumnDimension('G')->setWidth(15);
+    
+    // ============================================
+    // FOGLIO 2: DETTAGLIO COMPETENZE
+    // ============================================
+    $sheet2 = $spreadsheet->createSheet();
+    $sheet2->setTitle('DETTAGLIO COMPETENZE');
+    
+    // Titolo
+    $sheet2->setCellValue('A1', "DETTAGLIO TUTTE LE COMPETENZE DEL FRAMEWORK $sector");
+    $sheet2->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+    $sheet2->mergeCells('A1:E1');
+    
+    // Intestazioni
+    $headers2 = ['Area', 'Codice Competenza', 'Profilo', 'Stato', 'Quiz Associati'];
+    $col = 'A';
+    foreach ($headers2 as $header) {
+        $sheet2->setCellValue($col . '3', $header);
+        $sheet2->getStyle($col . '3')->applyFromArray($headerStyle);
+        $col++;
+    }
+    
+    // Dati competenze
+    $row = 4;
+    foreach ($coverage_data['competencies'] as $comp) {
+        $sheet2->setCellValue('A' . $row, $comp['area']);
+        $sheet2->setCellValue('B' . $row, $comp['idnumber']);
+        $sheet2->setCellValue('C' . $row, $comp['profilo']);
+        
+        $statoCell = $sheet2->getCell('D' . $row);
+        if ($comp['ha_domande']) {
+            $statoCell->setValue('✅ COPERTA');
+            $sheet2->getStyle('D' . $row)->applyFromArray($greenFill);
+        } else {
+            $statoCell->setValue('❌ MANCANTE');
+            $sheet2->getStyle('D' . $row)->applyFromArray($redFill);
+        }
+        
+        $sheet2->setCellValue('E' . $row, $comp['quiz_names'] ?? '-');
+        $sheet2->getStyle("A{$row}:E{$row}")->applyFromArray($borderStyle);
+        $row++;
+    }
+    
+    // Larghezza colonne
+    $sheet2->getColumnDimension('A')->setWidth(8);
+    $sheet2->getColumnDimension('B')->setWidth(30);
+    $sheet2->getColumnDimension('C')->setWidth(25);
+    $sheet2->getColumnDimension('D')->setWidth(15);
+    $sheet2->getColumnDimension('E')->setWidth(50);
+    
+    // ============================================
+    // FOGLIO 3: DOMANDE PER QUIZ
+    // ============================================
+    $sheet3 = $spreadsheet->createSheet();
+    $sheet3->setTitle('DOMANDE PER QUIZ');
+    
+    // Titolo
+    $sheet3->setCellValue('A1', 'DETTAGLIO DOMANDE ESTRATTE DAI QUIZ');
+    $sheet3->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+    $sheet3->mergeCells('A1:D1');
+    
+    // Intestazioni
+    $headers3 = ['Quiz', 'Competenza', 'Area', 'N. Domande'];
+    $col = 'A';
+    foreach ($headers3 as $header) {
+        $sheet3->setCellValue($col . '3', $header);
+        $sheet3->getStyle($col . '3')->applyFromArray($headerStyle);
+        $col++;
+    }
+    
+    // Dati domande
+    $row = 4;
+    foreach ($coverage_data['questions_by_quiz'] as $item) {
+        $sheet3->setCellValue('A' . $row, $item['quiz_name']);
+        $sheet3->setCellValue('B' . $row, $item['competency']);
+        $sheet3->setCellValue('C' . $row, $item['area']);
+        $sheet3->setCellValue('D' . $row, $item['count']);
+        $sheet3->getStyle("A{$row}:D{$row}")->applyFromArray($borderStyle);
+        $row++;
+    }
+    
+    // Larghezza colonne
+    $sheet3->getColumnDimension('A')->setWidth(40);
+    $sheet3->getColumnDimension('B')->setWidth(30);
+    $sheet3->getColumnDimension('C')->setWidth(8);
+    $sheet3->getColumnDimension('D')->setWidth(12);
+    
+    // ============================================
+    // FOGLIO 4: COMPETENZE MANCANTI
+    // ============================================
+    $sheet4 = $spreadsheet->createSheet();
+    $sheet4->setTitle('COMPETENZE MANCANTI');
+    
+    // Titolo
+    $sheet4->setCellValue('A1', 'COMPETENZE DA CREARE - NON PRESENTI NEI QUIZ');
+    $sheet4->getStyle('A1')->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('FF0000');
+    $sheet4->mergeCells('A1:C1');
+    
+    // Intestazioni
+    $headers4 = ['Area', 'Codice Competenza', 'Profilo'];
+    $col = 'A';
+    foreach ($headers4 as $header) {
+        $sheet4->setCellValue($col . '3', $header);
+        $sheet4->getStyle($col . '3')->applyFromArray(array_merge($headerStyle, $redFill));
+        $col++;
+    }
+    
+    // Dati competenze mancanti
+    $row = 4;
+    foreach ($coverage_data['missing'] as $comp) {
+        $sheet4->setCellValue('A' . $row, $comp['area']);
+        $sheet4->setCellValue('B' . $row, $comp['idnumber']);
+        $sheet4->getStyle('B' . $row)->applyFromArray($redFill);
+        $sheet4->setCellValue('C' . $row, $comp['profilo']);
+        $sheet4->getStyle("A{$row}:C{$row}")->applyFromArray($borderStyle);
+        $row++;
+    }
+    
+    // Larghezza colonne
+    $sheet4->getColumnDimension('A')->setWidth(8);
+    $sheet4->getColumnDimension('B')->setWidth(35);
+    $sheet4->getColumnDimension('C')->setWidth(30);
+    
+    // Output
+    $filename = "{$sector}_Analisi_Copertura_" . date('Ymd_His') . ".xlsx";
+    
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment;filename="' . $filename . '"');
+    header('Cache-Control: max-age=0');
+    
+    $writer = new Xlsx($spreadsheet);
+    $writer->save('php://output');
+    exit;
+}
+
+// ============================================
+// FUNZIONE PER RECUPERARE I DATI DI COPERTURA
+// ============================================
+function get_coverage_data($sector, $courseid = 0) {
+    global $DB;
+    
+    $result = [
+        'by_area' => [],
+        'competencies' => [],
+        'questions_by_quiz' => [],
+        'missing' => [],
+        'totals' => ['framework' => 0, 'covered' => 0, 'missing' => 0, 'duplicates' => 0]
+    ];
+    
+    // Nomi aree per settore
+    $area_names = get_area_names($sector);
+    
+    // Query per tutte le competenze del settore
+    $sql = "SELECT DISTINCT 
+                c.id,
+                c.idnumber,
+                c.shortname,
+                SUBSTRING_INDEX(SUBSTRING_INDEX(c.idnumber, '_', 2), '_', -1) as profilo,
+                SUBSTRING(SUBSTRING_INDEX(c.idnumber, '_', -1), 1, 1) as area
+            FROM {competency} c
+            WHERE c.idnumber LIKE :sector
+            AND c.idnumber NOT LIKE 'old%'
+            ORDER BY c.idnumber";
+    
+    $competencies = $DB->get_records_sql($sql, ['sector' => $sector . '_%']);
+    
+    // Query per competenze con domande
+    $sql_covered = "SELECT DISTINCT c.idnumber
+                    FROM {competency} c
+                    JOIN {qbank_competenciesbyquestion} qc ON qc.competencyid = c.id
+                    WHERE c.idnumber LIKE :sector";
+    $covered = $DB->get_records_sql($sql_covered, ['sector' => $sector . '_%']);
+    $covered_ids = array_column($covered, 'idnumber');
+    
+    // Query per domande per quiz (se courseid specificato)
+    if ($courseid) {
+        $sql_quiz = "SELECT 
+                        q.name as quiz_name,
+                        c.idnumber as competency,
+                        SUBSTRING(SUBSTRING_INDEX(c.idnumber, '_', -1), 1, 1) as area,
+                        COUNT(DISTINCT qc.questionid) as count
+                    FROM {quiz} q
+                    JOIN {quiz_slots} qs ON qs.quizid = q.id
+                    JOIN {question_references} qr ON qr.itemid = qs.id AND qr.component = 'mod_quiz' AND qr.questionarea = 'slot'
+                    JOIN {question_bank_entries} qbe ON qbe.id = qr.questionbankentryid
+                    JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
+                    JOIN {qbank_competenciesbyquestion} qc ON qc.questionid = qv.questionid
+                    JOIN {competency} c ON c.id = qc.competencyid
+                    WHERE q.course = :courseid
+                    AND c.idnumber LIKE :sector
+                    GROUP BY q.name, c.idnumber
+                    ORDER BY q.name, c.idnumber";
+        
+        $quiz_data = $DB->get_records_sql($sql_quiz, ['courseid' => $courseid, 'sector' => $sector . '_%']);
+        foreach ($quiz_data as $item) {
+            $result['questions_by_quiz'][] = [
+                'quiz_name' => $item->quiz_name,
+                'competency' => $item->competency,
+                'area' => $item->area,
+                'count' => $item->count
+            ];
+        }
+    }
+    
+    // Elabora competenze
+    $areas_data = [];
+    foreach ($competencies as $comp) {
+        $area = $comp->area;
+        $ha_domande = in_array($comp->idnumber, $covered_ids);
+        
+        // Inizializza area se non esiste
+        if (!isset($areas_data[$area])) {
+            $areas_data[$area] = [
+                'nome' => $area_names[$area] ?? "Area $area",
+                'totale' => 0,
+                'coperte' => 0
+            ];
+        }
+        
+        $areas_data[$area]['totale']++;
+        if ($ha_domande) {
+            $areas_data[$area]['coperte']++;
+        }
+        
+        // Aggiungi a lista competenze
+        $result['competencies'][] = [
+            'idnumber' => $comp->idnumber,
+            'profilo' => $comp->profilo,
+            'area' => $area,
+            'ha_domande' => $ha_domande,
+            'quiz_names' => ''
+        ];
+        
+        // Aggiungi a mancanti se necessario
+        if (!$ha_domande) {
+            $result['missing'][] = [
+                'idnumber' => $comp->idnumber,
+                'profilo' => $comp->profilo,
+                'area' => $area
+            ];
+        }
+    }
+    
+    $result['by_area'] = $areas_data;
+    
+    // Calcola totali
+    foreach ($areas_data as $data) {
+        $result['totals']['framework'] += $data['totale'];
+        $result['totals']['covered'] += $data['coperte'];
+    }
+    $result['totals']['missing'] = $result['totals']['framework'] - $result['totals']['covered'];
+    
+    return $result;
+}
+
+// ============================================
+// NOMI AREE PER SETTORE
+// ============================================
+function get_area_names($sector) {
+    $names = [
+        'AUTOMAZIONE' => [
+            'A' => 'A. Pianificazione & Documentazione',
+            'B' => 'B. Montaggio meccanico & Elettromeccanico',
+            'C' => 'C. Cablaggio elettrico & Quadri',
+            'D' => 'D. Automazione & PLC',
+            'E' => 'E. Strumentazione & Misure',
+            'F' => 'F. Reti & Comunicazione industriale',
+            'G' => 'G. Qualità, Sicurezza & Normative',
+            'H' => 'H. Manutenzione & Service'
+        ],
+        'ELETTRICITÀ' => [
+            'A' => 'A. Pianificazione & Progettazione',
+            'B' => 'B. Installazione impianti BT',
+            'C' => 'C. Montaggio & Cablaggio quadri',
+            'D' => 'D. Reti di distribuzione MT/BT',
+            'E' => 'E. Misure, collaudi & verifiche',
+            'F' => 'F. Sicurezza, norme & conformità',
+            'G' => 'G. Documentazione, qualità & CAD/BIM',
+            'H' => 'H. Manutenzione & Service'
+        ],
+        'MECCANICA' => [
+            'A' => 'A. Disegno tecnico & documentazione',
+            'B' => 'B. Misurazione & controllo qualità',
+            'C' => 'C. Lavorazioni convenzionali',
+            'D' => 'D. CNC & tecnologie digitali',
+            'E' => 'E. Materiali & trattamenti',
+            'F' => 'F. Assemblaggio & manutenzione',
+            'G' => 'G. Processi speciali',
+            'H' => 'H. Progettazione & industrializzazione'
+        ],
+        'AUTOMOBILE' => [
+            'A' => 'A. Accoglienza & diagnosi',
+            'B' => 'B. Motore & alimentazione',
+            'C' => 'C. Lubrificazione & raffreddamento',
+            'D' => 'D. Scarico & controllo emissioni',
+            'E' => 'E. Trasmissione & trazione',
+            'F' => 'F. Sospensioni, sterzo & freni',
+            'G' => 'G. Elettronica di bordo',
+            'H' => 'H. Sistemi ADAS',
+            'I' => 'I. Climatizzazione HVAC',
+            'J' => 'J. Veicoli ibridi & elettrici',
+            'K' => 'K. Carrozzeria & allestimenti',
+            'L' => 'L. Qualità, sicurezza & ambiente',
+            'M' => 'M. Relazione cliente',
+            'N' => 'N. Manutenzione programmata'
+        ],
+        'LOGISTICA' => [
+            'A' => 'A. Organizzazione mandati logistici',
+            'B' => 'B. Qualità ed efficienza processi',
+            'C' => 'C. Ricezione, controllo e stoccaggio',
+            'D' => 'D. Commissionamento e spedizione',
+            'E' => 'E. Accettazione invii e consulenza',
+            'F' => 'F. Recapito e servizi logistici',
+            'G' => 'G. Operazioni di magazzino',
+            'H' => 'H. Commissionamento e carico'
+        ],
+        'METALCOSTRUZIONE' => [
+            'A' => 'A. Pianificazione, Disegno & CAD',
+            'B' => 'B. Preparazione & Taglio',
+            'C' => 'C. Lavorazioni & Assemblaggio',
+            'D' => 'D. Saldatura',
+            'E' => 'E. Trattamenti superficiali',
+            'F' => 'F. Montaggio & Posa in opera',
+            'G' => 'G. Misure, Qualità & Conformità',
+            'H' => 'H. Sicurezza & Ambiente',
+            'I' => 'I. CAD/CAM & BIM',
+            'J' => 'J. Automazione & robotica'
+        ],
+        'CHIMFARM' => [
+            'A' => 'A. Sicurezza e ambiente',
+            'B' => 'B. Operazioni di laboratorio',
+            'C' => 'C. Analisi chimica',
+            'D' => 'D. Produzione industriale',
+            'E' => 'E. Controllo qualità',
+            'F' => 'F. Documentazione GMP'
+        ]
+    ];
+    
+    return $names[$sector] ?? [];
+}
+
+// ============================================
+// FUNZIONI HELPER (esistenti)
+// ============================================
+
+function get_sectors_list() {
+    global $DB;
+    
+    $sql = "SELECT 
+                SUBSTRING_INDEX(idnumber, '_', 1) as sector,
+                COUNT(DISTINCT idnumber) as unique_competencies,
+                COUNT(*) as total_records
+            FROM {competency} 
+            WHERE idnumber LIKE '%\\_%\\_%'
+            AND idnumber NOT LIKE 'old%'
+            AND idnumber NOT LIKE 'OLD%'
+            GROUP BY SUBSTRING_INDEX(idnumber, '_', 1)
+            ORDER BY sector";
+    
+    return $DB->get_records_sql($sql);
+}
+
+function get_courses_with_quiz() {
+    global $DB;
+    
+    $sql = "SELECT 
+                c.id,
+                c.shortname,
+                c.fullname,
+                COUNT(DISTINCT q.id) as num_quiz
+            FROM {course} c
+            JOIN {quiz} q ON q.course = c.id
+            WHERE c.id > 1
+            GROUP BY c.id, c.shortname, c.fullname
+            ORDER BY c.shortname";
+    
+    return $DB->get_records_sql($sql);
+}
+
+function detect_sector_from_course($coursename) {
+    $coursename = strtoupper($coursename);
+    
+    $mappings = [
+        'ELETTRIC' => 'ELETTRICITÀ',
+        'AUTOMAZ' => 'AUTOMAZIONE',
+        'ELETTRON' => 'AUTOMAZIONE',
+        'AUTOVEICOLO' => 'AUTOMOBILE',
+        'AUTO' => 'AUTOMOBILE',
+        'CHIMFARM' => 'CHIMFARM',
+        'CHIMICA' => 'CHIMFARM',
+        'LOGISTICA' => 'LOGISTICA',
+        'MECCANICA' => 'MECCANICA',
+        'MECC' => 'MECCANICA',
+        'METALCOSTRUZIONE' => 'METALCOSTRUZIONE',
+        'METAL' => 'METALCOSTRUZIONE',
+        'GENERICO' => 'GEN'
+    ];
+    
+    foreach ($mappings as $key => $value) {
+        if (strpos($coursename, $key) !== false) {
+            return $value;
+        }
+    }
+    return '';
+}
+
+function get_coverage_stats($sector, $courseid = 0) {
+    global $DB;
+    
+    // Competenze uniche nel framework
+    $sql_framework = "SELECT COUNT(DISTINCT idnumber) as count
+                      FROM {competency}
+                      WHERE idnumber LIKE :sector
+                      AND idnumber NOT LIKE 'old%'";
+    $framework_count = $DB->get_field_sql($sql_framework, ['sector' => $sector . '_%']);
+    
+    // Competenze con domande
+    $sql_covered = "SELECT COUNT(DISTINCT c.idnumber) as count
+                    FROM {competency} c
+                    JOIN {qbank_competenciesbyquestion} qc ON qc.competencyid = c.id
+                    WHERE c.idnumber LIKE :sector";
+    $covered_count = $DB->get_field_sql($sql_covered, ['sector' => $sector . '_%']);
+    
+    // Duplicati
+    $sql_duplicates = "SELECT COUNT(*) - COUNT(DISTINCT idnumber) as count
+                       FROM {competency}
+                       WHERE idnumber LIKE :sector
+                       AND idnumber NOT LIKE 'old%'";
+    $duplicates = $DB->get_field_sql($sql_duplicates, ['sector' => $sector . '_%']);
+    
+    $coverage = $framework_count > 0 ? round(($covered_count / $framework_count) * 100, 1) : 0;
+    
+    return [
+        'framework' => (int)$framework_count,
+        'covered' => (int)$covered_count,
+        'missing' => (int)$framework_count - (int)$covered_count,
+        'duplicates' => (int)$duplicates,
+        'coverage' => $coverage
+    ];
+}
+
+function get_coverage_by_profile($sector) {
+    global $DB;
+    
+    $sql = "SELECT 
+                SUBSTRING_INDEX(SUBSTRING_INDEX(c.idnumber, '_', 2), '_', -1) as profilo,
+                COUNT(DISTINCT c.idnumber) as framework,
+                COUNT(DISTINCT CASE WHEN qc.id IS NOT NULL THEN c.idnumber END) as covered
+            FROM {competency} c
+            LEFT JOIN {qbank_competenciesbyquestion} qc ON qc.competencyid = c.id
+            WHERE c.idnumber LIKE :sector
+            AND c.idnumber NOT LIKE 'old%'
+            GROUP BY profilo
+            ORDER BY profilo";
+    
+    return $DB->get_records_sql($sql, ['sector' => $sector . '_%']);
+}
+
+function get_missing_competencies($sector) {
+    global $DB;
+    
+    $sql = "SELECT DISTINCT 
+                c.idnumber,
+                c.shortname,
+                SUBSTRING_INDEX(SUBSTRING_INDEX(c.idnumber, '_', 2), '_', -1) as profilo
+            FROM {competency} c
+            LEFT JOIN {qbank_competenciesbyquestion} qc ON qc.competencyid = c.id
+            WHERE c.idnumber LIKE :sector
+            AND c.idnumber NOT LIKE 'old%'
+            AND qc.id IS NULL
+            ORDER BY c.idnumber";
+    
+    return $DB->get_records_sql($sql, ['sector' => $sector . '_%']);
+}
+
+function get_problems($sector, $courseid) {
+    global $DB;
+    $problems = [];
+    
+    // 1. Duplicati
+    $sql_dup = "SELECT COUNT(*) - COUNT(DISTINCT idnumber) as count
+                FROM {competency}
+                WHERE idnumber LIKE :sector
+                AND idnumber NOT LIKE 'old%'";
+    $dup_count = $DB->get_field_sql($sql_dup, ['sector' => $sector . '_%']);
+    if ($dup_count > 0) {
+        $problems[] = [
+            'type' => 'warning',
+            'icon' => '⚠️',
+            'title' => 'Competenze Duplicate',
+            'description' => "$dup_count competenze sono duplicate nel database",
+            'action' => 'fix_duplicates'
+        ];
+    }
+    
+    // 2. Competenze senza domande
+    $stats = get_coverage_stats($sector, $courseid);
+    if ($stats['missing'] > 0) {
+        $problems[] = [
+            'type' => 'danger',
+            'icon' => '❌',
+            'title' => 'Competenze senza domande',
+            'description' => "{$stats['missing']} competenze non hanno domande quiz associate",
+            'action' => 'view_missing'
+        ];
+    }
+    
+    return $problems;
+}
+
+// ============================================
+// INIZIO OUTPUT HTML
+// ============================================
+$PAGE->set_context($context);
+$PAGE->set_url(new moodle_url('/local/competencymanager/coverage_report.php'));
+$PAGE->set_title('FTM Coverage Manager');
+$PAGE->set_heading('FTM Coverage Manager');
+$PAGE->set_pagelayout('admin');
+
+echo $OUTPUT->header();
+
+// Recupera dati
+$sectors = get_sectors_list();
+$courses = get_courses_with_quiz();
+
+// Auto-detect settore se corso selezionato
+if ($courseid && !$sector) {
+    $course = $DB->get_record('course', ['id' => $courseid]);
+    if ($course) {
+        $sector = detect_sector_from_course($course->shortname);
+    }
+}
+
+// Statistiche se settore selezionato
+$stats = null;
+$profiles = null;
+$missing = null;
+$problems = null;
+
+if ($sector) {
+    $stats = get_coverage_stats($sector, $courseid);
+    $profiles = get_coverage_by_profile($sector);
+    $missing = get_missing_competencies($sector);
+    $problems = get_problems($sector, $courseid);
+}
+?>
+
+<style>
+.coverage-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+.coverage-card .card-header { background: #f8f9fa; padding: 15px; border-bottom: 1px solid #dee2e6; font-weight: bold; }
+.coverage-card .card-body { padding: 20px; }
+.stat-box { text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+.stat-box .number { font-size: 2.5em; font-weight: bold; color: #1e88e5; }
+.stat-box .label { color: #666; margin-top: 5px; }
+.progress-bar-custom { height: 25px; border-radius: 4px; background: #e9ecef; overflow: hidden; }
+.progress-bar-custom .fill { height: 100%; transition: width 0.3s; }
+.badge-success { background: #90EE90; color: #000; }
+.badge-warning { background: #FFD700; color: #000; }
+.badge-danger { background: #FF6B6B; color: #fff; }
+.nav-tabs .nav-link.active { background: #1e88e5; color: #fff; }
+.export-btn { background: #28a745; color: #fff; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.export-btn:hover { background: #218838; color: #fff; text-decoration: none; }
+</style>
+
+<div class="container-fluid">
+    <h2>📊 FTM Coverage Manager</h2>
+    <p class="text-muted">Diagnostica e gestione copertura competenze per corsi e framework</p>
+    
+    <!-- Selettori -->
+    <div class="row mb-4">
+        <div class="col-md-5">
+            <label><strong>📚 Corso</strong></label>
+            <select class="form-control" onchange="location.href='?courseid='+this.value+'&sector=<?php echo $sector; ?>'">
+                <option value="">-- Seleziona Corso --</option>
+                <?php foreach ($courses as $c): ?>
+                <option value="<?php echo $c->id; ?>" <?php echo $courseid == $c->id ? 'selected' : ''; ?>>
+                    <?php echo $c->shortname; ?> (<?php echo $c->num_quiz; ?> quiz)
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-md-5">
+            <label><strong>🎯 Framework/Settore</strong></label>
+            <select class="form-control" onchange="location.href='?courseid=<?php echo $courseid; ?>&sector='+this.value">
+                <option value="">-- Seleziona Settore --</option>
+                <?php foreach ($sectors as $s): ?>
+                <option value="<?php echo $s->sector; ?>" <?php echo $sector == $s->sector ? 'selected' : ''; ?>>
+                    <?php echo $s->sector; ?> (<?php echo $s->unique_competencies; ?> competenze)
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <?php if ($sector): ?>
+            <label>&nbsp;</label>
+            <a href="?action=export&sector=<?php echo $sector; ?>&courseid=<?php echo $courseid; ?>" class="export-btn btn btn-block">
+                📥 Esporta Excel
+            </a>
+            <?php endif; ?>
+        </div>
+    </div>
+    
+    <?php if ($sector && $stats): ?>
+    
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link <?php echo $tab == 'overview' ? 'active' : ''; ?>" href="?courseid=<?php echo $courseid; ?>&sector=<?php echo $sector; ?>&tab=overview">
+                📊 Panoramica
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php echo $tab == 'problems' ? 'active' : ''; ?>" href="?courseid=<?php echo $courseid; ?>&sector=<?php echo $sector; ?>&tab=problems">
+                ⚠️ Problemi (<?php echo count($problems); ?>)
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php echo $tab == 'missing' ? 'active' : ''; ?>" href="?courseid=<?php echo $courseid; ?>&sector=<?php echo $sector; ?>&tab=missing">
+                📝 Competenze Mancanti (<?php echo $stats['missing']; ?>)
+            </a>
+        </li>
+    </ul>
+    
+    <?php if ($tab == 'overview'): ?>
+    
+    <!-- Statistiche principali -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-box">
+                <div class="number"><?php echo $stats['framework']; ?></div>
+                <div class="label">🎯 Competenze Framework</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <div class="number"><?php echo $stats['coverage']; ?>%</div>
+                <div class="label">📊 Copertura</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <div class="number" style="color: #28a745;"><?php echo $stats['covered']; ?></div>
+                <div class="label">✅ Con Domande</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <div class="number" style="color: #dc3545;"><?php echo $stats['missing']; ?></div>
+                <div class="label">❌ Senza Domande</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Progress bar copertura -->
+    <div class="coverage-card">
+        <div class="card-header">📈 Copertura Globale: <?php echo $sector; ?></div>
+        <div class="card-body">
+            <div class="progress-bar-custom">
+                <div class="fill" style="width: <?php echo $stats['coverage']; ?>%; background: <?php echo $stats['coverage'] >= 70 ? '#28a745' : ($stats['coverage'] >= 40 ? '#ffc107' : '#dc3545'); ?>;">
+                </div>
+            </div>
+            <div class="text-center mt-2">
+                <strong><?php echo $stats['covered']; ?>/<?php echo $stats['framework']; ?></strong>
+                <span class="badge <?php echo $stats['coverage'] >= 70 ? 'badge-success' : ($stats['coverage'] >= 40 ? 'badge-warning' : 'badge-danger'); ?>">
+                    <?php echo $stats['coverage']; ?>%
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Copertura per profilo -->
+    <div class="coverage-card">
+        <div class="card-header">📊 Copertura per Profilo</div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Profilo</th>
+                        <th>Framework</th>
+                        <th>Coperte</th>
+                        <th>Gap</th>
+                        <th>Copertura</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($profiles as $p): 
+                        $pct = $p->framework > 0 ? round(($p->covered / $p->framework) * 100, 1) : 0;
+                        $gap = $p->framework - $p->covered;
+                    ?>
+                    <tr>
+                        <td><strong><?php echo $p->profilo; ?></strong></td>
+                        <td><?php echo $p->framework; ?></td>
+                        <td><?php echo $p->covered; ?></td>
+                        <td><?php echo $gap; ?></td>
+                        <td>
+                            <div class="progress-bar-custom" style="width: 150px; height: 20px;">
+                                <div class="fill" style="width: <?php echo $pct; ?>%; background: <?php echo $pct >= 70 ? '#28a745' : ($pct >= 40 ? '#ffc107' : '#dc3545'); ?>;"></div>
+                            </div>
+                            <small><?php echo $pct; ?>%</small>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <?php elseif ($tab == 'problems'): ?>
+    
+    <!-- Lista problemi -->
+    <div class="coverage-card">
+        <div class="card-header">⚠️ Problemi Rilevati</div>
+        <div class="card-body">
+            <?php if (empty($problems)): ?>
+            <div class="alert alert-success">✅ Nessun problema rilevato!</div>
+            <?php else: ?>
+            <?php foreach ($problems as $p): ?>
+            <div class="alert alert-<?php echo $p['type']; ?>">
+                <strong><?php echo $p['icon']; ?> <?php echo $p['title']; ?></strong><br>
+                <?php echo $p['description']; ?>
+            </div>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+    
+    <?php elseif ($tab == 'missing'): ?>
+    
+    <!-- Competenze mancanti -->
+    <div class="coverage-card">
+        <div class="card-header">📝 Competenze Senza Domande (<?php echo count($missing); ?>)</div>
+        <div class="card-body">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Codice</th>
+                        <th>Profilo</th>
+                        <th>Descrizione</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($missing as $m): ?>
+                    <tr>
+                        <td><code><?php echo $m->idnumber; ?></code></td>
+                        <td><?php echo $m->profilo; ?></td>
+                        <td><?php echo $m->shortname; ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <?php endif; ?>
+    
+    <?php endif; ?>
+    
+    <!-- Link rapidi -->
+    <div class="coverage-card">
+        <div class="card-header">🔗 Link Rapidi</div>
+        <div class="card-body">
+            <a href="../ftm_hub/index.php" class="btn btn-primary">🛠️ FTM Hub</a>
+            <a href="simulate_student.php" class="btn btn-success">🤖 Simulatore</a>
+            <?php if ($courseid): ?>
+            <a href="reports.php?courseid=<?php echo $courseid; ?>" class="btn btn-info">📊 Report Corso</a>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<?php
+echo $OUTPUT->footer();

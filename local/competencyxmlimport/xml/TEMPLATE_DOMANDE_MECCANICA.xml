@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    TEMPLATE DOMANDE - MECCANICA                              ║
+║                    CODICI VERIFICATI NEL FRAMEWORK                           ║
+║                                                                              ║
+║  FORMATO CODICE: MECCANICA_[AREA]_[NUMERO]                                   ║
+║                                                                              ║
+║  AREE (13 totali, 72 competenze):                                            ║
+║  - LMB  = Lavorazioni meccaniche di base (01-05)                             ║
+║  - LMC  = Lavorazioni su macchine convenzionali (01-05)                      ║
+║  - CNC  = Lavorazioni CNC e tecnologie digitali (01-05)                      ║
+║  - ASS  = Assemblaggio e montaggio meccanico (01-05)                         ║
+║  - MIS  = Misurazione e controllo qualità (01-05)                            ║
+║  - GEN  = Trattamenti e processi speciali (01-05)                            ║
+║  - MAN  = Manutenzione e revisione impianti (01-05)                          ║
+║  - DT   = Disegno tecnico e progettazione (01-05)                            ║
+║  - AUT  = Automazione e meccatronica (01-05)                                 ║
+║  - PIAN = Pianificazione e documentazione tecnica (01-05)                    ║
+║  - SAQ  = Sicurezza, ambiente e qualità (01-05)                              ║
+║  - CSP  = Collaborazione e sviluppo personale (01-05)                        ║
+║  - PRG  = Progettazione avanzata (01-12)                                     ║
+║                                                                              ║
+║  ESEMPI CODICI VALIDI:                                                       ║
+║  - MECCANICA_DT_01, MECCANICA_DT_02, MECCANICA_DT_03...                      ║
+║  - MECCANICA_CNC_01, MECCANICA_LMB_01, MECCANICA_ASS_01...                   ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<quiz>
+
+<!-- DOMANDA 1: Area DT - Disegno tecnico -->
+<question type="multichoice">
+    <n>
+        <text>MECC_BASE_Q01 - MECCANICA_DT_01</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale tipo di linea viene utilizzata nel disegno tecnico per rappresentare i contorni nascosti?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Linea tratteggiata</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! La linea tratteggiata indica i contorni non visibili.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Linea continua grossa</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La linea continua grossa indica i contorni visibili.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Linea a tratto e punto</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Questa linea indica gli assi di simmetria.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Linea continua sottile</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Questa linea è usata per le quote e i richiami.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- DOMANDA 2: Area CNC - Lavorazioni CNC -->
+<question type="multichoice">
+    <n>
+        <text>MECC_BASE_Q02 - MECCANICA_CNC_01</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Cosa significa la sigla CNC nel contesto delle macchine utensili?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Computer Numerical Control - Controllo Numerico Computerizzato</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! CNC indica le macchine controllate da computer.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Central Network Connection</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Questa sigla non si riferisce alle macchine utensili.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Certified New Component</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. CNC si riferisce al controllo numerico.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Continuous Numeric Calculation</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La C finale sta per Control.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- DOMANDA 3: Area LMB - Lavorazioni meccaniche di base -->
+<question type="multichoice">
+    <n>
+        <text>MECC_BASE_Q03 - MECCANICA_LMB_01</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale utensile si utilizza per la limatura manuale dei metalli?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Lima a mano con taglio appropriato al materiale</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! La lima è l'utensile base per la limatura manuale.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Trapano a colonna</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il trapano serve per forare, non per limare.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Tornio parallelo</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il tornio è una macchina utensile, non un utensile manuale.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Saldatrice TIG</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La saldatrice serve per unire, non per limare.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+</quiz>

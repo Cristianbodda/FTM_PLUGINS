@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="question/bank/competenciesbyquestion/db" VERSION="20251205" COMMENT="XMLDB file for Moodle question/bank/competenciesbyquestion"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="qbank_competenciesbyquestion" COMMENT="Stores the mapping between questions and competencies with difficulty level">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="questionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID of the question"/>
+        <FIELD NAME="competencyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID of the competency"/>
+        <FIELD NAME="difficultylevel" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Difficulty level: 1=Base, 2=Intermediate, 3=Advanced"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="questionid" TYPE="foreign" FIELDS="questionid" REFTABLE="question" REFFIELDS="id"/>
+        <KEY NAME="competencyid" TYPE="foreign" FIELDS="competencyid" REFTABLE="competency" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="questionid-idx" UNIQUE="false" FIELDS="questionid"/>
+        <INDEX NAME="competencyid-idx" UNIQUE="false" FIELDS="competencyid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

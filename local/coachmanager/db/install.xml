@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/coachmanager/db" VERSION="20251223" COMMENT="XMLDB file for CoachManager plugin">
+  <TABLES>
+    
+    <!-- Tabella per le note del coach sugli studenti -->
+    <TABLE NAME="local_coachmanager_notes" COMMENT="Note del coach sugli studenti durante il percorso">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID dello studente"/>
+        <FIELD NAME="coachid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID del coach che ha scritto le note"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" COMMENT="Testo delle note"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Timestamp creazione"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Timestamp ultima modifica"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="studentid_fk" TYPE="foreign" FIELDS="studentid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="coachid_fk" TYPE="foreign" FIELDS="coachid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="studentid_idx" UNIQUE="false" FIELDS="studentid"/>
+        <INDEX NAME="coachid_idx" UNIQUE="false" FIELDS="coachid"/>
+        <INDEX NAME="student_coach_idx" UNIQUE="true" FIELDS="studentid, coachid" COMMENT="Una sola nota per studente/coach"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Tabella per storico confronti studenti -->
+    <TABLE NAME="local_coachmanager_compare" COMMENT="Storico dei confronti tra studenti">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="coachid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID del coach"/>
+        <FIELD NAME="student1id" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID primo studente"/>
+        <FIELD NAME="student2id" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID secondo studente"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" COMMENT="Note sul confronto"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="coachid_idx" UNIQUE="false" FIELDS="coachid"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Tabella per matching annunci lavoro (futuro) -->
+    <TABLE NAME="local_coachmanager_jobs" COMMENT="Annunci di lavoro per matching">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="title" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Titolo annuncio"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false" COMMENT="Descrizione completa"/>
+        <FIELD NAME="company" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Nome azienda"/>
+        <FIELD NAME="location" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Località"/>
+        <FIELD NAME="competencies_required" TYPE="text" NOTNULL="false" COMMENT="JSON competenze richieste"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" COMMENT="1=attivo, 0=chiuso"/>
+        <FIELD NAME="createdby" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Tabella per risultati matching studente-lavoro -->
+    <TABLE NAME="local_coachmanager_matches" COMMENT="Risultati matching studente-annuncio">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="jobid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID annuncio"/>
+        <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="ID studente"/>
+        <FIELD NAME="matchscore" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" COMMENT="Percentuale match"/>
+        <FIELD NAME="details" TYPE="text" NOTNULL="false" COMMENT="JSON dettagli match"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="0=nuovo, 1=contattato, 2=colloquio, 3=assunto"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="jobid_fk" TYPE="foreign" FIELDS="jobid" REFTABLE="local_coachmanager_jobs" REFFIELDS="id"/>
+        <KEY NAME="studentid_fk" TYPE="foreign" FIELDS="studentid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="jobid_idx" UNIQUE="false" FIELDS="jobid"/>
+        <INDEX NAME="studentid_idx" UNIQUE="false" FIELDS="studentid"/>
+        <INDEX NAME="matchscore_idx" UNIQUE="false" FIELDS="matchscore"/>
+      </INDEXES>
+    </TABLE>
+    
+  </TABLES>
+</XMLDB>

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    TEMPLATE DOMANDE - METALCOSTRUZIONE                       ║
+║                    CODICI VERIFICATI NEL FRAMEWORK                           ║
+║                                                                              ║
+║  FORMATO CODICE: METALCOSTRUZIONE_[PROFILO]_[AREA][NUMERO]                   ║
+║                                                                              ║
+║  PROFILI:                                                                    ║
+║  - MC = Metalcostruttore                                                     ║
+║  - DF = Disegnatore/Fabbricatore                                             ║
+║                                                                              ║
+║  AREE:                                                                       ║
+║  - E = Trattamenti & Protezione                                              ║
+║  - F = Montaggio & Posa in opera                                             ║
+║  - G = Misure, Qualità & Conformità                                          ║
+║  - H = Sicurezza, Ambiente & Organizzazione                                  ║
+║  - I = CAD/CAM & BIM                                                         ║
+║  - J = Manutenzione & Ripristino                                             ║
+║                                                                              ║
+║  ESEMPI CODICI VALIDI:                                                       ║
+║  - METALCOSTRUZIONE_MC_E1, METALCOSTRUZIONE_MC_F1, METALCOSTRUZIONE_MC_G1... ║
+║  - METALCOSTRUZIONE_DF_E1, METALCOSTRUZIONE_DF_G2, METALCOSTRUZIONE_DF_I1... ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<quiz>
+
+<!-- DOMANDA 1: Metalcostruttore - Trattamenti -->
+<question type="multichoice">
+    <n>
+        <text>METAL_BASE_Q01 - METALCOSTRUZIONE_MC_E1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale trattamento superficiale protegge l'acciaio dalla corrosione mediante immersione in zinco fuso?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Zincatura a caldo (galvanizzazione)</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! La zincatura a caldo è il processo di immersione in zinco fuso.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Verniciatura a polvere</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La verniciatura non prevede immersione in metallo fuso.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Sabbiatura</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La sabbiatura è un trattamento di preparazione superficiale.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Anodizzazione</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. L'anodizzazione si applica all'alluminio, non all'acciaio.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- DOMANDA 2: Metalcostruttore - Montaggio -->
+<question type="multichoice">
+    <n>
+        <text>METAL_BASE_Q02 - METALCOSTRUZIONE_MC_F1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale tipo di collegamento è preferibile per strutture soggette a carichi dinamici e vibrazioni?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Bullonatura con bulloni ad alta resistenza precaricati</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! I bulloni HR precaricati resistono meglio ai carichi dinamici.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Rivettatura a freddo</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La rivettatura è meno adatta per carichi dinamici.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Incollaggio strutturale</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. L'incollaggio non è adatto per carichi dinamici elevati.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Chiodatura tradizionale</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La chiodatura è una tecnica obsoleta per queste applicazioni.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- DOMANDA 3: Disegnatore/Fabbricatore - CAD/CAM -->
+<question type="multichoice">
+    <n>
+        <text>METAL_BASE_Q03 - METALCOSTRUZIONE_DF_I1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Cosa significa la sigla BIM nel contesto della progettazione di strutture metalliche?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Building Information Modeling - Modellazione delle informazioni di costruzione</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! BIM integra tutte le informazioni del progetto in un modello 3D.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Basic Industrial Manufacturing</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. BIM si riferisce alla modellazione edilizia.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Bilateral Integration Method</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. BIM sta per Building Information Modeling.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Binary Input Module</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Questa sigla non si riferisce alla progettazione edilizia.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+</quiz>

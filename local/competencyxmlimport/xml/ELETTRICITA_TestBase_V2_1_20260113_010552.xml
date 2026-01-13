@@ -1,0 +1,721 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+<!-- Convertito automaticamente da Word -->
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q01 - ELETTRICITÀ_IE_F2</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q01. A cosa serve la messa a terra di un impianto elettrico?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A migliorare il rendimento dell’impianto&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A ridurre il consumo energetico&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;A proteggere le persone da contatti accidentali con parti in tensione&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A stabilizzare la tensione di rete&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q02 - ELETTRICITÀ_IE_F1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q02. Qual è lo scopo principale dell’interruttore differenziale (RCD)?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Proteggere il circuito dai sovraccarichi&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Interrompere il circuito in caso di dispersione verso terra&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Limitare la corrente assorbita&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Proteggere i cavi da surriscaldamento&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q03 - ELETTRICITÀ_PE_F4</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q03. A partire da quale intensità di corrente alternata il passaggio nel corpo umano può risultare letale?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;5 mA&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;15 mA&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;30 mA&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;50 mA&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q04 - ELETTRICITÀ_IE_F2</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q04. Quale dispositivo protegge sia da sovraccarico sia da cortocircuito?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Fusibile&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Interruttore differenziale&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Trasformatore di isolamento&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Interruttore magnetotermico&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q05 - ELETTRICITÀ_IE_B8</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q05. Qual è il colore del conduttore di protezione (PE)?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Blu&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Marrone&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Giallo-verde&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Nero&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q06 - ELETTRICITÀ_IE_F2</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q06. In quale caso l’interruttore differenziale non interviene?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Corrente di dispersione verso terra&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Sovraccarico del circuito&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Contatto diretto persona–fase&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Corrente sbilanciata tra fase e neutro&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q07 - ELETTRICITÀ_IE_B1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q07. Qual è l’unità di misura della tensione elettrica?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Ampere&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Volt&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Ohm&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Watt&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q08 - ELETTRICITÀ_PE_A2</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q08. La legge di Ohm mette in relazione:&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Tensione, corrente e resistenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Potenza, energia e tempo&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Corrente e frequenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Tensione e potenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q09 - ELETTRICITÀ_IE_B5</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q09. Qual è la frequenza della rete elettrica domestica in Svizzera?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;25 Hz&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;60 Hz&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;100 Hz&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;50 Hz&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q10 - ELETTRICITÀ_PE_A2</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q10. Da cosa dipende la resistenza elettrica di un conduttore?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Solo dalla tensione applicata&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Dal tipo di carico&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Da lunghezza, sezione e materiale&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Dalla frequenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q11 - ELETTRICITÀ_IE_E1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q11. Qual è l’unità di misura della potenza elettrica?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Joule&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Volt&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Ampere&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Watt&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q12 - ELETTRICITÀ_ER_D11</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q12. Perché l’energia elettrica viene trasportata ad alta tensione?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Per aumentare la corrente&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Per ridurre le perdite per effetto Joule&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Per semplificare gli impianti&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Per motivi di sicurezza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q13 - ELETTRICITÀ_EM_C4</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q13. Quale componente serve a limitare la corrente in un circuito?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Condensatore&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Trasformatore&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Resistenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Relè&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q14 - ELETTRICITÀ_EM_C5</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q14. Quale componente consente il passaggio della corrente in un solo verso?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Diodo&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Relè&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Contattore&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Fusibile&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q15 - ELETTRICITÀ_EM_C5</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q15. Qual è la funzione principale di un relè?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Trasformare la tensione&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Comandare un circuito tramite un altro circuito&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Limitare la corrente&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Misurare la potenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q16 - ELETTRICITÀ_PE_A6</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q16. Un trasformatore funziona correttamente solo con:&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Corrente continua&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Corrente impulsiva&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Corrente alternata&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Corrente stabilizzata&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q17 - ELETTRICITÀ_IE_B4</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q17. Quale elemento è tipico di un interruttore magnetotermico?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Trasformatore toroidale&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Lamina bimetallica&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Diodo Zener&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Condensatore&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q18 - ELETTRICITÀ_IE_B4</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q18. Quale dispositivo interrompe il circuito fondendo in caso di sovracorrente?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Relè&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Trasformatore&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Fusibile&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Contattore&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q19 - ELETTRICITÀ_EM_C4</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q19. Qual è la funzione principale di un contattore?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Misurare la corrente&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Stabilizzare la tensione&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Commutare carichi di potenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Proteggere da dispersioni&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q20 - ELETTRICITÀ_PE_A1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q20. Quale simbolo rappresenta una resistenza in uno schema elettrico?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;—||—&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;—&amp;gt;|—&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;—( )—&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;—///\—&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q21 - ELETTRICITÀ_PE_A1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q21. A cosa serve uno schema elettrico?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A ridurre i costi&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;A documentare e comprendere il funzionamento di un impianto&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A migliorare l’efficienza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A calcolare la potenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q22 - ELETTRICITÀ_PE_G1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q22. In uno schema elettrico, una linea tratteggiata indica generalmente:&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Collegamento elettrico&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Messa a terra&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Collegamento funzionale/meccanico&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Linea di potenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q23 - ELETTRICITÀ_EM_C5</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q23. Con quale lettera è normalmente indicata la bobina di un relè?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q24 - ELETTRICITÀ_IE_B8</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q24. Quale simbolo rappresenta la terra di protezione (PE)?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html"><text>&lt;p&gt;⏚&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;⏦&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;⏧&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;⏨&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q25 - ELETTRICITÀ_PE_G6</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q25. Perché è importante aggiornare gli schemi as-built a fine lavori?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Per motivi estetici&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Per facilitare future manutenzioni e verifiche&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Per ridurre i tempi di installazione&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Per migliorare il collaudo&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q26 - ELETTRICITÀ_IE_E1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q26. Con quale strumento si misura la tensione?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Amperometro&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Wattmetro&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Voltmetro&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Ohmmetro&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q27 - ELETTRICITÀ_IE_E1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q27. Come deve essere collegato un voltmetro?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;In serie&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;In parallelo&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A valle del carico&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A monte del carico&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q28 - ELETTRICITÀ_IE_E1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q28. Perché l’amperometro ha resistenza interna molto bassa?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Per proteggere il circuito&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Per non influenzare la corrente misurata&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Per dissipare meno calore&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Per aumentare la precisione&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q29 - ELETTRICITÀ_IE_E1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q29. A cosa serve il selettore AC/DC di un multimetro?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A cambiare scala&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;A distinguere corrente alternata e continua&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A proteggere lo strumento&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A misurare la potenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q30 - ELETTRICITÀ_IE_E1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q30. A cosa serve il trigger di un oscilloscopio?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A misurare la tensione&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A filtrare il segnale&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;A stabilizzare la visualizzazione&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A misurare la frequenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q31 - ELETTRICITÀ_IE_B13</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q31. In un circuito in serie la corrente:&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html"><text>&lt;p&gt;È uguale in tutti i componenti&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Si divide sui carichi&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Dipende dalla tensione&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;È nulla&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q32 - ELETTRICITÀ_IE_B13</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q32. In un circuito in parallelo la tensione sui rami è:&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Nulla&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Diversa&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Dipendente dalla resistenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Uguale&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q33 - ELETTRICITÀ_IE_B13</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q33. Quale collegamento produce la resistenza equivalente più bassa?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Serie&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Misto&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Parallelo&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Dipende dalla tensione&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q34 - ELETTRICITÀ_EM_C5</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q34. Un raddrizzatore a ponte di Graetz serve a:&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Ridurre la corrente&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Stabilizzare la tensione&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Trasformare CA in CC&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Aumentare la frequenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q35 - ELETTRICITÀ_EM_C5</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q35. In un circuito con relè, il circuito di comando serve a:&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Alimentare il carico&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Comandare la bobina&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Proteggere il carico&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Misurare la corrente&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q36 - ELETTRICITÀ_ER_D1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q36. In un sistema trifase, l’angolo di sfasamento tra le fasi è:&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;60°&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;90°&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;120°&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;180°&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q37 - ELETTRICITÀ_IE_H1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q37. Quale collegamento di un motore trifase comporta una tensione di fase più bassa?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Triangolo&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Stella&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Serie&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Parallelo&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q38 - ELETTRICITÀ_IE_H1</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q38. Qual è una caratteristica tipica di un motore asincrono trifase?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Funziona in corrente continua&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Ha un campo magnetico rotante&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Non necessita di protezioni&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;È monofase&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q39 - ELETTRICITÀ_ER_D4</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q39. A cosa serve un trasformatore trifase?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A raddrizzare la tensione&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;A variare livelli di tensione&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A misurare la potenza&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;A rifasare&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+<question type="multichoice">
+    <name><text>ELETTRICITA_TestBase_V2_1_Q40 - ELETTRICITÀ_ER_D8</text></name>
+    <questiontext format="html"><text>&lt;p&gt;Q40. Quale applicazione è tipica della rete trifase?&lt;/p&gt;</text></questiontext>
+    <generalfeedback format="html"><text></text></generalfeedback>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Illuminazione domestica&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Circuiti elettronici&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="100" format="html"><text>&lt;p&gt;Alimentazione di motori industriali&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Corretto!&lt;/p&gt;</text></feedback></answer>
+    <answer fraction="0" format="html"><text>&lt;p&gt;Batterie&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;Non corretto.&lt;/p&gt;</text></feedback></answer>
+    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>
+    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>
+</question>
+
+</quiz>

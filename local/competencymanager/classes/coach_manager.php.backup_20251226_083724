@@ -1,0 +1,59 @@
+<?php
+namespace local_competencymanager;
+
+defined('MOODLE_INTERNAL') || die();
+
+class coach_manager {
+    
+    public static function get_coach_students($coachid, $courseid = null) {
+        global $DB;
+        
+        $params = ['coachid' => $coachid];
+        $sql = "SELECT DISTINCT u.* FROM {user} u
+                JOIN {local_compmgr_coach_assign} ca ON ca.studentid = u.id
+                WHERE ca.coachid = :coachid";
+        
+        if ($courseid) {
+            $sql .= " AND ca.courseid = :courseid";
+            $params['courseid'] = $courseid;
+        }
+        
+        return $DB->get_records_sql($sql, $params);
+    }
+    
+    public static function is_coach($userid, $courseid = null) {
+        global $DB;
+        
+        $params = ['coachid' => $userid];
+        $sql = "SELECT COUNT(*) FROM {local_compmgr_coach_assign} WHERE coachid = :coachid";
+        
+        if ($courseid) {
+            $sql .= " AND courseid = :courseid";
+            $params['courseid'] = $courseid;
+        }
+        
+        return $DB->count_records_sql($sql, $params) > 0;
+    }
+    
+    public static function assign_coach($coachid, $studentid, $courseid) {
+        global $DB;
+        
+        $record = new \stdClass();
+        $record->coachid = $coachid;
+        $record->studentid = $studentid;
+        $record->courseid = $courseid;
+        $record->timecreated = time();
+        
+        return $DB->insert_record('local_compmgr_coach_assign', $record);
+    }
+    
+    public static function remove_coach($coachid, $studentid, $courseid) {
+        global $DB;
+        
+        return $DB->delete_records('local_compmgr_coach_assign', [
+            'coachid' => $coachid,
+            'studentid' => $studentid,
+            'courseid' => $courseid
+        ]);
+    }
+}

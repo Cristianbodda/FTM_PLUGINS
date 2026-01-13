@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    TEMPLATE DOMANDE - CHIMFARM                               ║
+║                    CODICI VERIFICATI NEL FRAMEWORK                           ║
+║                                                                              ║
+║  FORMATO CODICE COMPETENZA: CHIMFARM_[AREA]G_[NUMERO]                        ║
+║                                                                              ║
+║  AREE DISPONIBILI:                                                           ║
+║  - 1G = Gestione sostanze di processo                                        ║
+║  - 2G = Manipolazione vettori energetici                                     ║
+║  - 3G = Configurazione e riparazione                                         ║
+║                                                                              ║
+║  ESEMPI CODICI VALIDI:                                                       ║
+║  - CHIMFARM_1G_01, CHIMFARM_1G_02, CHIMFARM_1G_03...                         ║
+║  - CHIMFARM_2G_01, CHIMFARM_2G_02, CHIMFARM_2G_03...                         ║
+║  - CHIMFARM_3G_01, CHIMFARM_3G_02, CHIMFARM_3G_03...                         ║
+║                                                                              ║
+║  FORMATO NOME DOMANDA:                                                       ║
+║  [QUIZ]_Q[NN] - [CODICE_COMPETENZA]                                          ║
+║  Esempio: CHIMFARM_BASE_Q01 - CHIMFARM_1G_01                                 ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<quiz>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     DOMANDA 1: Gestione sostanze di processo (Area 1G)
+     CODICE: CHIMFARM_1G_01 ✅ VERIFICATO NEL FRAMEWORK
+     ══════════════════════════════════════════════════════════════════════════ -->
+<question type="multichoice">
+    <n>
+        <text>CHIMFARM_BASE_Q01 - CHIMFARM_1G_01</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale procedura è fondamentale per garantire la sterilità in un ambiente di produzione farmaceutica?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Sterilizzazione degli strumenti e uso di flusso laminare</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! La sterilizzazione e il flusso laminare sono essenziali per mantenere un ambiente asettico.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Pulizia ordinaria del pavimento</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La pulizia ordinaria non è sufficiente per garantire la sterilità.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Ventilazione naturale</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La ventilazione naturale può introdurre contaminanti.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Uso di guanti in lattice standard</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. I guanti standard non garantiscono la sterilità senza altre precauzioni.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     DOMANDA 2: Gestione sostanze di processo (Area 1G)
+     CODICE: CHIMFARM_1G_02 ✅ VERIFICATO NEL FRAMEWORK
+     ══════════════════════════════════════════════════════════════════════════ -->
+<question type="multichoice">
+    <n>
+        <text>CHIMFARM_BASE_Q02 - CHIMFARM_1G_02</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale documento è obbligatorio per la tracciabilità delle sostanze chimiche in un laboratorio farmaceutico?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Scheda di sicurezza (SDS) e registro di carico/scarico</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! La SDS e il registro sono obbligatori per la tracciabilità.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Solo la fattura di acquisto</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La fattura non fornisce informazioni sulla sicurezza.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Email del fornitore</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Le email non sono documenti ufficiali di tracciabilità.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Ordine interno del magazzino</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. L'ordine interno non contiene le informazioni di sicurezza richieste.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     DOMANDA 3: Manipolazione vettori energetici (Area 2G)
+     CODICE: CHIMFARM_2G_01 ✅ VERIFICATO NEL FRAMEWORK
+     ══════════════════════════════════════════════════════════════════════════ -->
+<question type="multichoice">
+    <n>
+        <text>CHIMFARM_BASE_Q03 - CHIMFARM_2G_01</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale sistema viene utilizzato per il trasporto sicuro di fluidi ad alta temperatura in un impianto chimico-farmaceutico?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Tubazioni coibentate con valvole di sicurezza</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! La coibentazione e le valvole di sicurezza sono essenziali per il trasporto di fluidi ad alta temperatura.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Tubi in plastica standard</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. I tubi in plastica non resistono alle alte temperature.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Secchi metallici trasportati manualmente</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il trasporto manuale di fluidi caldi è pericoloso e non conforme.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Canaline aperte in acciaio</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Le canaline aperte non garantiscono sicurezza e igiene.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     AGGIUNGI LE TUE DOMANDE QUI
+     
+     Ricorda:
+     1. Usa SEMPRE codici REALI: CHIMFARM_1G_XX, CHIMFARM_2G_XX, CHIMFARM_3G_XX
+     2. Formato nome: CHIMFARM_BASE_QNN - CHIMFARM_XG_XX
+     3. 4 risposte: 1 corretta (fraction="100"), 3 errate (fraction="0")
+     ══════════════════════════════════════════════════════════════════════════ -->
+
+</quiz>

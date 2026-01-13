@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    TEMPLATE DOMANDE - LOGISTICA                              ║
+║                    CODICI VERIFICATI NEL FRAMEWORK                           ║
+║                                                                              ║
+║  FORMATO CODICE: LOGISTICA_[PROFILO]_[AREA][NUMERO]                          ║
+║                                                                              ║
+║  PROFILI:                                                                    ║
+║  - LO = Logistica (profilo unico)                                            ║
+║                                                                              ║
+║  ESEMPI CODICI VALIDI:                                                       ║
+║  - LOGISTICA_LO_A1, LOGISTICA_LO_A2, LOGISTICA_LO_B1...                      ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<quiz>
+
+<!-- DOMANDA 1: Logistica base -->
+<question type="multichoice">
+    <n>
+        <text>LOG_BASE_Q01 - LOGISTICA_LO_A1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Cosa indica il codice a barre EAN-13 su un prodotto?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>Un codice univoco di 13 cifre che identifica il prodotto a livello internazionale</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! EAN-13 è lo standard europeo per l'identificazione dei prodotti.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>La data di scadenza del prodotto</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La data di scadenza è indicata separatamente.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Il peso del prodotto</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il peso è indicato sull'etichetta, non nel codice a barre.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Il prezzo di vendita</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il prezzo non è codificato nell'EAN-13.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- DOMANDA 2: Gestione magazzino -->
+<question type="multichoice">
+    <n>
+        <text>LOG_BASE_Q02 - LOGISTICA_LO_B1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Cosa significa la sigla FIFO nella gestione del magazzino?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>First In First Out - Il primo prodotto entrato è il primo ad uscire</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! FIFO garantisce la rotazione corretta delle scorte.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Fast Inventory For Operations</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. FIFO sta per First In First Out.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Final Inspection For Output</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Questa sigla non esiste in logistica.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Free Inventory Filing Order</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il significato corretto è First In First Out.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+<!-- DOMANDA 3: Trasporto -->
+<question type="multichoice">
+    <n>
+        <text>LOG_BASE_Q03 - LOGISTICA_LO_C1</text>
+    </n>
+    <questiontext format="html">
+        <text><![CDATA[<p>Quale documento accompagna obbligatoriamente le merci durante il trasporto su strada?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0000000</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <hidden>0</hidden>
+    <single>true</single>
+    <shuffleanswers>true</shuffleanswers>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="100" format="html">
+        <text><![CDATA[<p>DDT (Documento Di Trasporto) o CMR per trasporti internazionali</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Corretto! Il DDT/CMR è obbligatorio per la tracciabilità delle merci.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Carta d'identità dell'autista</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La carta d'identità non è un documento di trasporto merci.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Libretto del veicolo</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. Il libretto riguarda il veicolo, non le merci trasportate.</p>]]></text></feedback>
+    </answer>
+    <answer fraction="0" format="html">
+        <text><![CDATA[<p>Ricevuta del carburante</p>]]></text>
+        <feedback format="html"><text><![CDATA[<p>Non corretto. La ricevuta carburante non documenta le merci.</p>]]></text></feedback>
+    </answer>
+    <generalfeedback format="html"><text></text></generalfeedback>
+</question>
+
+</quiz>
