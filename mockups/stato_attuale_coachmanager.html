@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STATO ATTUALE - Coach Manager (local/coachmanager/index.php)</title>
+    <style>
+        /* COPIA FEDELE DEGLI STILI ESISTENTI */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+
+        .coachmanager-index {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .search-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-box input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .search-box input[type="text"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .search-box button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .students-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .student-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .student-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        .student-card .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3498db, #9b59b6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .student-card h3 {
+            margin: 0 0 5px 0;
+            font-size: 1.1em;
+            color: #2c3e50;
+        }
+
+        .student-card .email {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .student-card .stats {
+            display: flex;
+            gap: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .student-card .stat {
+            text-align: center;
+            flex: 1;
+        }
+
+        .student-card .stat-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #3498db;
+        }
+
+        .student-card .stat-label {
+            font-size: 0.75em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+
+        .pagination-info {
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, #3498db, #9b59b6);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .page-header h1 { margin: 0 0 5px; font-size: 1.8rem; }
+        .page-header p { margin: 0; opacity: 0.9; }
+
+        .mockup-note { background: #e3f2fd; border: 2px dashed #2196f3; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="coachmanager-index">
+
+    <div class="mockup-note">
+        <strong>MOCKUP STATO ATTUALE</strong> - File: local/coachmanager/index.php<br>
+        Questo mockup rappresenta l'interfaccia ESISTENTE della Lista Studenti Coach Manager.
+    </div>
+
+    <div class="page-header">
+        <h1>Lista Studenti</h1>
+        <p>Studenti con quiz completati - Clicca per vedere il report completo</p>
+    </div>
+
+    <div class="search-box">
+        <input type="text" placeholder="Cerca studente per nome o email...">
+        <button>Cerca</button>
+        <a href="#" style="padding: 12px 20px; background: #6c757d; color: white; border-radius: 8px; text-decoration: none;">Reset</a>
+    </div>
+
+    <div class="students-grid">
+
+        <a href="#" class="student-card">
+            <div class="avatar">MR</div>
+            <h3>Marco Rossi</h3>
+            <div class="email">marco.rossi@example.com</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">8</div>
+                    <div class="stat-label">Quiz</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">12/01</div>
+                    <div class="stat-label">Ultimo</div>
+                </div>
+            </div>
+        </a>
+
+        <a href="#" class="student-card">
+            <div class="avatar">LB</div>
+            <h3>Laura Bianchi</h3>
+            <div class="email">laura.bianchi@example.com</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">6</div>
+                    <div class="stat-label">Quiz</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">11/01</div>
+                    <div class="stat-label">Ultimo</div>
+                </div>
+            </div>
+        </a>
+
+        <a href="#" class="student-card">
+            <div class="avatar">GV</div>
+            <h3>Giuseppe Verdi</h3>
+            <div class="email">giuseppe.verdi@example.com</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">Quiz</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">10/01</div>
+                    <div class="stat-label">Ultimo</div>
+                </div>
+            </div>
+        </a>
+
+        <a href="#" class="student-card">
+            <div class="avatar">AN</div>
+            <h3>Anna Neri</h3>
+            <div class="email">anna.neri@example.com</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">4</div>
+                    <div class="stat-label">Quiz</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">09/01</div>
+                    <div class="stat-label">Ultimo</div>
+                </div>
+            </div>
+        </a>
+
+        <a href="#" class="student-card">
+            <div class="avatar">PG</div>
+            <h3>Paolo Gialli</h3>
+            <div class="email">paolo.gialli@example.com</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Quiz</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">08/01</div>
+                    <div class="stat-label">Ultimo</div>
+                </div>
+            </div>
+        </a>
+
+        <a href="#" class="student-card">
+            <div class="avatar">SB</div>
+            <h3>Sara Blu</h3>
+            <div class="email">sara.blu@example.com</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">2</div>
+                    <div class="stat-label">Quiz</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">05/01</div>
+                    <div class="stat-label">Ultimo</div>
+                </div>
+            </div>
+        </a>
+
+    </div>
+
+    <div class="pagination-info">
+        Visualizzati 6 di 47 studenti | Pagina 1 di 8
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -121,20 +121,47 @@ function process_word_upload($file_data, $sector, $frameworkid) {
         ];
     }
     
+    // Genera nome suggerito DAL NOME FILE ORIGINALE (non dal temp)
+    $suggested_name = generate_quiz_name_from_filename($filename);
+
     // Salva in sessione per revisione
     $SESSION->word_import_questions = $result['questions'];
     $SESSION->word_import_filename = $filename;
     $SESSION->word_import_valid_competencies = $valid_competencies;
     $SESSION->word_import_sector = $sector;
-    $SESSION->word_import_suggested_name = $parser->get_suggested_quiz_name();
-    
+    $SESSION->word_import_suggested_name = $suggested_name;
+
     return [
         'type' => 'word',
         'success' => true,
         'filename' => $filename,
         'result' => $result,
-        'suggested_name' => $parser->get_suggested_quiz_name()
+        'suggested_name' => $suggested_name
     ];
+}
+
+/**
+ * Genera il nome quiz suggerito dal nome file originale
+ *
+ * @param string $filename Nome file originale (es. "AUTOVEICOLO_Quiz_Base_V2.docx")
+ * @return string Nome quiz pulito (es. "AUTOVEICOLO Quiz Base")
+ */
+function generate_quiz_name_from_filename($filename) {
+    $name = $filename;
+
+    // Rimuovi estensione
+    $name = preg_replace('/\.docx?$/i', '', $name);
+
+    // Sostituisci underscore e trattini con spazi
+    $name = str_replace(['_', '-', '.'], ' ', $name);
+
+    // Rimuovi versioni e suffissi comuni
+    $name = preg_replace('/\s*(V\d+|GOLD|F2|LOGSTYLE|NOMI|FINAL|DRAFT)\s*/i', ' ', $name);
+
+    // Normalizza spazi multipli
+    $name = preg_replace('/\s+/', ' ', $name);
+
+    return trim($name);
 }
 
 /**

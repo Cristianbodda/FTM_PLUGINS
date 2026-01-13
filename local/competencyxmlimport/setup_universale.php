@@ -1255,14 +1255,48 @@ if ($step == 3):
     
     function showVerifyResults(results) {
         var container = document.getElementById('excelVerifyResults');
-        
-        var html = '<div style="display: flex; gap: 15px; margin-bottom: 15px;">';
+
+        // Salva risultati per l'editor competenze
+        excelVerifyData.results = results;
+        excelVerifyData.discrepancies = results.discrepancies || [];
+
+        var html = '<div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">';
         html += '<div style="padding: 10px 15px; border-radius: 6px; background: #d1fae5; color: #065f46; font-weight: 500;">✅ ' + results.matches + '/' + results.total_word + ' corrispondono</div>';
-        
+
         if (results.discrepancies.length > 0) {
             html += '<div style="padding: 10px 15px; border-radius: 6px; background: #fef3c7; color: #92400e; font-weight: 500;">⚠️ ' + results.discrepancies.length + ' discrepanze</div>';
         }
+
+        // Mostra verifica competenze nel database
+        if (results.competency_check) {
+            var cc = results.competency_check;
+            if (cc.all_valid) {
+                html += '<div style="padding: 10px 15px; border-radius: 6px; background: #d1fae5; color: #065f46; font-weight: 500;">🎯 Tutte le ' + cc.valid_in_excel + ' competenze esistono nel DB</div>';
+            } else {
+                html += '<div style="padding: 10px 15px; border-radius: 6px; background: #fee2e2; color: #991b1b; font-weight: 500;">🚫 ' + cc.invalid_in_excel + ' competenze NON trovate nel DB</div>';
+            }
+        }
         html += '</div>';
+
+        // Se ci sono competenze mancanti, mostra dettagli con possibilità di correggere
+        if (results.competency_check && !results.competency_check.all_valid) {
+            html += '<div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin-bottom: 15px;">';
+            html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">';
+            html += '<p style="margin: 0; font-weight: 600; color: #991b1b;">⚠️ Competenze non trovate nel framework:</p>';
+            html += '<button type="button" onclick="loadCompetencyEditor()" style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">🔧 Correggi Competenze</button>';
+            html += '</div>';
+
+            // Mostra riepilogo competenze mancanti
+            html += '<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px;">';
+            results.competency_check.missing_competencies.forEach(function(mc) {
+                html += '<span style="background: #fee2e2; padding: 4px 10px; border-radius: 4px; font-family: monospace; font-size: 13px;">' + mc.code + ' <small>(' + mc.count + ' dom.)</small></span>';
+            });
+            html += '</div>';
+
+            // Container per l'editor (inizialmente nascosto)
+            html += '<div id="competencyEditorContainer" style="display: none;"></div>';
+            html += '</div>';
+        }
         
         if (results.discrepancies.length > 0) {
             html += '<div style="max-height: 300px; overflow-y: auto;">';
@@ -1367,7 +1401,7 @@ if ($step == 3):
     function updateConvertButton() {
         var btn = document.querySelector('button[type="submit"]');
         var enableVerify = document.getElementById('enableExcelVerify');
-        
+
         if (btn) {
             // Se verifica non attiva o tutte risolte, abilita
             if (!enableVerify || !enableVerify.checked || excelVerifyData.discrepancies.length === 0) {
@@ -1379,6 +1413,269 @@ if ($step == 3):
             }
         }
     }
+
+    // ========== EDITOR COMPETENZE ==========
+    var competencyEditorData = {
+        competencies: null,
+        questionsToFix: []
+    };
+
+    function loadCompetencyEditor() {
+        var container = document.getElementById('competencyEditorContainer');
+        container.innerHTML = '<p style="color: #666;"><span class="loading-spinner"></span> Caricamento competenze...</p>';
+        container.style.display = 'block';
+
+        // Carica competenze dal framework
+        var formData = new FormData();
+        formData.append('action', 'getcompetencies');
+        formData.append('sesskey', M.cfg.sesskey);
+
+        fetch('ajax/word_import.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.success) {
+                competencyEditorData.competencies = data.grouped;
+                showCompetencyEditor(data);
+            } else {
+                container.innerHTML = '<p style="color: #c62828;">Errore: ' + data.error + '</p>';
+            }
+        })
+        .catch(function(err) {
+            container.innerHTML = '<p style="color: #c62828;">Errore di connessione</p>';
+        });
+    }
+
+    function showCompetencyEditor(data) {
+        var container = document.getElementById('competencyEditorContainer');
+
+        // Trova domande con competenze non valide
+        var questionsToFix = [];
+        if (excelVerifyData.results && excelVerifyData.results.details) {
+            excelVerifyData.results.details.forEach(function(d, idx) {
+                // Domande con competenza non valida
+                var isInvalid = false;
+                if (excelVerifyData.results.competency_check && excelVerifyData.results.competency_check.missing_competencies) {
+                    excelVerifyData.results.competency_check.missing_competencies.forEach(function(mc) {
+                        if (d.word_competency === mc.code || d.excel_competency === mc.code) {
+                            isInvalid = true;
+                        }
+                    });
+                }
+                if (isInvalid || !d.word_competency) {
+                    questionsToFix.push({
+                        index: d.index,
+                        question: d.question,
+                        currentCompetency: d.word_competency || d.excel_competency || '',
+                        text: d.word_competency ? 'Competenza non valida' : 'Competenza mancante'
+                    });
+                }
+            });
+        }
+
+        competencyEditorData.questionsToFix = questionsToFix;
+
+        var html = '<div style="border-top: 1px solid #fecaca; padding-top: 15px; margin-top: 10px;">';
+        html += '<h4 style="margin: 0 0 15px; color: #333;">✏️ Correggi Competenze (' + questionsToFix.length + ' domande)</h4>';
+
+        // Selector area competenze
+        html += '<div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">';
+        html += '<label style="font-weight: 500;">Filtra per area:</label>';
+        html += '<select id="competencyAreaFilter" onchange="filterCompetencyList()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; min-width: 200px;">';
+        html += '<option value="">-- Tutte le aree --</option>';
+        for (var area in data.grouped) {
+            html += '<option value="' + area + '">' + area + ' - ' + data.grouped[area].name + ' (' + data.grouped[area].items.length + ')</option>';
+        }
+        html += '</select>';
+        html += '<input type="text" id="competencySearchFilter" placeholder="Cerca codice..." oninput="filterCompetencyList()" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; width: 150px;">';
+        html += '</div>';
+
+        // Lista domande da correggere
+        html += '<div style="max-height: 400px; overflow-y: auto;">';
+
+        questionsToFix.forEach(function(q, idx) {
+            html += '<div class="question-fix-row" id="qfix-' + q.index + '" style="display: flex; align-items: center; gap: 10px; padding: 12px; margin-bottom: 8px; background: white; border: 1px solid #e5e7eb; border-radius: 8px;">';
+            html += '<span style="font-weight: 600; min-width: 50px; color: #374151;">' + q.question + '</span>';
+            html += '<span style="font-family: monospace; font-size: 13px; padding: 4px 8px; background: #fee2e2; border-radius: 4px; min-width: 150px;">' + (q.currentCompetency || 'MANCANTE') + '</span>';
+            html += '<span style="color: #666;">→</span>';
+
+            // Dropdown competenze
+            html += '<select id="compSelect-' + q.index + '" class="competency-select" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-family: monospace; font-size: 13px;">';
+            html += '<option value="">-- Seleziona competenza --</option>';
+            for (var area in data.grouped) {
+                html += '<optgroup label="' + area + ' - ' + data.grouped[area].name + '">';
+                data.grouped[area].items.forEach(function(comp) {
+                    var selected = (comp === q.currentCompetency) ? ' selected' : '';
+                    html += '<option value="' + comp + '"' + selected + '>' + comp + '</option>';
+                });
+                html += '</optgroup>';
+            }
+            html += '</select>';
+
+            html += '<button type="button" onclick="saveQuestionCompetency(' + q.index + ')" style="padding: 8px 15px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">✓ Salva</button>';
+            html += '</div>';
+        });
+
+        html += '</div>';
+
+        // Pulsante salva tutto
+        html += '<div style="margin-top: 15px; display: flex; gap: 10px;">';
+        html += '<button type="button" onclick="saveAllCompetencies()" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">💾 Salva Tutte le Modifiche</button>';
+        html += '<button type="button" onclick="closeCompetencyEditor()" style="padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 6px; cursor: pointer;">Chiudi</button>';
+        html += '</div>';
+
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    function filterCompetencyList() {
+        var areaFilter = document.getElementById('competencyAreaFilter').value;
+        var searchFilter = document.getElementById('competencySearchFilter').value.toUpperCase();
+
+        document.querySelectorAll('.competency-select').forEach(function(select) {
+            var options = select.querySelectorAll('option');
+            var optgroups = select.querySelectorAll('optgroup');
+
+            // Nascondi/mostra optgroup in base all'area
+            optgroups.forEach(function(og) {
+                var label = og.label.split(' - ')[0];
+                if (!areaFilter || label === areaFilter) {
+                    og.style.display = '';
+
+                    // Filtra opzioni per ricerca
+                    og.querySelectorAll('option').forEach(function(opt) {
+                        if (!searchFilter || opt.value.indexOf(searchFilter) !== -1) {
+                            opt.style.display = '';
+                        } else {
+                            opt.style.display = 'none';
+                        }
+                    });
+                } else {
+                    og.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    function saveQuestionCompetency(index) {
+        var select = document.getElementById('compSelect-' + index);
+        var competency = select.value;
+
+        if (!competency) {
+            alert('Seleziona una competenza');
+            return;
+        }
+
+        var row = document.getElementById('qfix-' + index);
+        row.style.opacity = '0.5';
+
+        var formData = new FormData();
+        formData.append('action', 'updatequestioncompetency');
+        formData.append('index', index);
+        formData.append('competency', competency);
+        formData.append('sesskey', M.cfg.sesskey);
+
+        fetch('ajax/word_import.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            row.style.opacity = '1';
+            if (data.success && data.is_valid) {
+                row.style.background = '#f0fdf4';
+                row.style.borderColor = '#86efac';
+                row.querySelector('span:nth-child(2)').style.background = '#d1fae5';
+                row.querySelector('span:nth-child(2)').textContent = competency;
+
+                // Rimuovi dalla lista da fixare
+                competencyEditorData.questionsToFix = competencyEditorData.questionsToFix.filter(function(q) {
+                    return q.index !== index;
+                });
+
+                // Aggiorna contatori
+                updateMissingCompetenciesDisplay();
+            } else {
+                alert('Errore: ' + (data.error || 'Competenza non valida'));
+            }
+        });
+    }
+
+    function saveAllCompetencies() {
+        var promises = [];
+        competencyEditorData.questionsToFix.forEach(function(q) {
+            var select = document.getElementById('compSelect-' + q.index);
+            if (select && select.value) {
+                promises.push(saveQuestionCompetencyAsync(q.index, select.value));
+            }
+        });
+
+        if (promises.length === 0) {
+            alert('Nessuna modifica da salvare');
+            return;
+        }
+
+        Promise.all(promises).then(function(results) {
+            var saved = results.filter(function(r) { return r.success; }).length;
+            alert('Salvate ' + saved + '/' + promises.length + ' competenze');
+            updateMissingCompetenciesDisplay();
+        });
+    }
+
+    function saveQuestionCompetencyAsync(index, competency) {
+        var formData = new FormData();
+        formData.append('action', 'updatequestioncompetency');
+        formData.append('index', index);
+        formData.append('competency', competency);
+        formData.append('sesskey', M.cfg.sesskey);
+
+        return fetch('ajax/word_import.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.success && data.is_valid) {
+                var row = document.getElementById('qfix-' + index);
+                if (row) {
+                    row.style.background = '#f0fdf4';
+                    row.style.borderColor = '#86efac';
+                }
+            }
+            return data;
+        });
+    }
+
+    function updateMissingCompetenciesDisplay() {
+        // Riesegui la verifica per aggiornare i contatori
+        var remaining = competencyEditorData.questionsToFix.length;
+        if (remaining === 0) {
+            // Tutte fixate! Aggiorna il display
+            var badgeContainer = document.querySelector('#excelVerifyResults > div:first-child');
+            if (badgeContainer) {
+                // Trova il badge delle competenze invalide e aggiornalo
+                var badges = badgeContainer.querySelectorAll('div');
+                badges.forEach(function(badge) {
+                    if (badge.textContent.indexOf('NON trovate') !== -1) {
+                        badge.style.background = '#d1fae5';
+                        badge.style.color = '#065f46';
+                        badge.innerHTML = '🎯 Tutte le competenze corrette!';
+                    }
+                });
+            }
+        }
+    }
+
+    function closeCompetencyEditor() {
+        var container = document.getElementById('competencyEditorContainer');
+        if (container) {
+            container.style.display = 'none';
+        }
+    }
+    // ========== FINE EDITOR COMPETENZE ==========
     </script>
     <?php endif; ?>
     

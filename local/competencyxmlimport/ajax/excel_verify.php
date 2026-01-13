@@ -114,26 +114,64 @@ try {
             $col_question = required_param('col_question', PARAM_INT);
             $col_competency = required_param('col_competency', PARAM_INT);
             $col_answer = optional_param('col_answer', -1, PARAM_INT);
-            
+
             if (!isset($SESSION->excel_verify_path) || !file_exists($SESSION->excel_verify_path)) {
                 throw new Exception('Nessun file Excel caricato');
             }
-            
+
             if (!isset($SESSION->word_import_questions)) {
                 throw new Exception('Nessun file Word caricato');
             }
-            
+
             $sheet_index = $SESSION->excel_verify_sheet ?? 0;
-            
+
             // Crea verifier
             $verifier = new \local_competencyxmlimport\excel_verifier();
             $verifier->load_excel($SESSION->excel_verify_path);
             $verifier->select_sheet($sheet_index);
             $verifier->set_column_mapping($col_question, $col_competency, $col_answer >= 0 ? $col_answer : null);
-            
+
             // Esegui verifica
             $results = $verifier->verify($SESSION->word_import_questions);
-            
+
+            // ========== VERIFICA COMPETENZE ESISTENTI NEL DATABASE ==========
+            $valid_competencies = $SESSION->word_import_valid_competencies ?? [];
+            $results['competency_check'] = [
+                'total_valid' => count($valid_competencies),
+                'missing_competencies' => [],
+                'valid_in_excel' => 0,
+                'invalid_in_excel' => 0
+            ];
+
+            // Ottieni tutte le competenze uniche trovate nelle domande
+            $found_competencies = [];
+            foreach ($SESSION->word_import_questions as $q) {
+                if (!empty($q['competency'])) {
+                    $comp = strtoupper(trim($q['competency']));
+                    if (!isset($found_competencies[$comp])) {
+                        $found_competencies[$comp] = ['count' => 0, 'exists' => false];
+                    }
+                    $found_competencies[$comp]['count']++;
+                    $found_competencies[$comp]['exists'] = in_array($comp, $valid_competencies);
+                }
+            }
+
+            // Conta e registra competenze mancanti
+            foreach ($found_competencies as $comp => $info) {
+                if ($info['exists']) {
+                    $results['competency_check']['valid_in_excel']++;
+                } else {
+                    $results['competency_check']['invalid_in_excel']++;
+                    $results['competency_check']['missing_competencies'][] = [
+                        'code' => $comp,
+                        'count' => $info['count']
+                    ];
+                }
+            }
+
+            $results['competency_check']['all_valid'] = empty($results['competency_check']['missing_competencies']);
+            // ========== FINE VERIFICA COMPETENZE ==========
+
             // Salva risultati in sessione
             $SESSION->excel_verify_results = $results;
             $SESSION->excel_verify_discrepancies = [];
@@ -145,7 +183,7 @@ try {
                     'excel_value' => $d['excel_value']
                 ];
             }
-            
+
             echo json_encode([
                 'success' => true,
                 'results' => $results

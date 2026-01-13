@@ -34,6 +34,44 @@ $action = required_param('action', PARAM_ALPHA);
 
 header('Content-Type: application/json; charset=utf-8');
 
+/**
+ * Restituisce il nome leggibile di un'area competenza
+ */
+function get_area_name($area_code) {
+    $names = [
+        // Autoveicolo
+        'MR' => 'Manutenzione e Riparazione',
+        'EM' => 'Elettromeccanica',
+        'DG' => 'Diagnostica',
+        'MT' => 'Motore e Trasmissione',
+        'SC' => 'Sicurezza',
+        'CA' => 'Carrozzeria',
+        'EL' => 'Elettronica',
+        // Meccanica
+        'TO' => 'Tornitura',
+        'FR' => 'Fresatura',
+        'SA' => 'Saldatura',
+        'CN' => 'CNC',
+        'ME' => 'Metrologia',
+        'DT' => 'Disegno Tecnico',
+        // Chimica
+        'AN' => 'Analisi',
+        'LA' => 'Laboratorio',
+        'PR' => 'Processi',
+        'SI' => 'Sicurezza e Igiene',
+        // Logistica
+        'MA' => 'Magazzino',
+        'TR' => 'Trasporti',
+        'GE' => 'Gestione',
+        // Generale
+        'QU' => 'Qualità',
+        'AM' => 'Ambiente',
+        'OR' => 'Organizzazione',
+        'CO' => 'Comunicazione',
+    ];
+    return $names[$area_code] ?? $area_code;
+}
+
 try {
     switch ($action) {
         
@@ -139,11 +177,11 @@ try {
             if (!isset($SESSION->word_import_questions)) {
                 throw new Exception('Nessun import in corso');
             }
-            
+
             $valid = 0;
             $warning = 0;
             $error = 0;
-            
+
             foreach ($SESSION->word_import_questions as $q) {
                 switch ($q['status']) {
                     case 'ok': $valid++; break;
@@ -151,7 +189,7 @@ try {
                     case 'error': $error++; break;
                 }
             }
-            
+
             echo json_encode([
                 'success' => true,
                 'total' => count($SESSION->word_import_questions),
@@ -161,7 +199,94 @@ try {
                 'can_import' => ($valid + $warning) > 0
             ]);
             break;
-            
+
+        case 'getcompetencies':
+            // Ottieni tutte le competenze del settore raggruppate per area/categoria
+            $sector = $SESSION->word_import_sector ?? '';
+
+            if (empty($SESSION->word_import_valid_competencies)) {
+                throw new Exception('Nessuna competenza caricata');
+            }
+
+            $competencies = $SESSION->word_import_valid_competencies;
+            $grouped = [];
+
+            // Raggruppa per area (es. AUTOVEICOLO_MR -> MR, AUTOVEICOLO_EM -> EM)
+            foreach ($competencies as $code) {
+                // Pattern: SETTORE_AREA_NUMERO (es. AUTOVEICOLO_MR_A1)
+                if (preg_match('/^([A-Z]+)_([A-Z]+)_(.+)$/i', $code, $matches)) {
+                    $area = $matches[2]; // MR, EM, DG, etc.
+                    if (!isset($grouped[$area])) {
+                        $grouped[$area] = [
+                            'name' => get_area_name($area),
+                            'items' => []
+                        ];
+                    }
+                    $grouped[$area]['items'][] = $code;
+                } else {
+                    // Se non matcha il pattern, metti in "Altro"
+                    if (!isset($grouped['ALTRO'])) {
+                        $grouped['ALTRO'] = ['name' => 'Altro', 'items' => []];
+                    }
+                    $grouped['ALTRO']['items'][] = $code;
+                }
+            }
+
+            // Ordina le aree
+            ksort($grouped);
+
+            echo json_encode([
+                'success' => true,
+                'sector' => $sector,
+                'total' => count($competencies),
+                'grouped' => $grouped
+            ]);
+            break;
+
+        case 'updatequestioncompetency':
+            // Aggiorna la competenza di una singola domanda
+            $index = required_param('index', PARAM_INT);
+            $competency = required_param('competency', PARAM_TEXT);
+
+            if (!isset($SESSION->word_import_questions[$index])) {
+                throw new Exception('Domanda non trovata');
+            }
+
+            $competency = strtoupper(clean_param($competency, PARAM_TEXT));
+
+            // Verifica che la competenza esista nel framework
+            $is_valid = in_array($competency, $SESSION->word_import_valid_competencies ?? []);
+
+            // Aggiorna la domanda
+            $SESSION->word_import_questions[$index]['competency'] = $competency;
+            $SESSION->word_import_questions[$index]['competency_valid'] = $is_valid;
+            $SESSION->word_import_questions[$index]['manually_corrected'] = true;
+
+            // Rivalida status
+            $q = &$SESSION->word_import_questions[$index];
+            $issues = [];
+            $status = 'ok';
+
+            if (!$is_valid) {
+                $issues[] = 'Competenza non nel framework';
+                $status = 'warning';
+            }
+
+            if (empty($q['correct_answer']) || !isset($q['answers'][$q['correct_answer']])) {
+                $issues[] = 'Risposta corretta non definita';
+                $status = 'error';
+            }
+
+            $q['status'] = $status;
+            $q['issues'] = $issues;
+
+            echo json_encode([
+                'success' => true,
+                'question' => $q,
+                'is_valid' => $is_valid
+            ]);
+            break;
+
         default:
             throw new Exception('Azione non riconosciuta');
     }

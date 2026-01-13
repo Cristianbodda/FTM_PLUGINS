@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STATO ATTUALE - FTM Hub (local/ftm_hub/index.php)</title>
+    <style>
+        /* COPIA FEDELE DEGLI STILI ESISTENTI */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+
+        .ftm-hub-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .ftm-hub-header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white; padding: 30px; border-radius: 16px; margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(40, 167, 69, 0.3);
+        }
+        .ftm-hub-header h1 { margin: 0 0 10px; font-size: 2rem; }
+        .ftm-hub-header p { margin: 0; opacity: 0.9; font-size: 1.1rem; }
+        .ftm-section-title {
+            font-size: 1.4rem; font-weight: 600; color: #333; margin: 30px 0 20px;
+            padding-bottom: 10px; border-bottom: 3px solid #28a745;
+            display: flex; align-items: center;
+        }
+        .ftm-section-title .icon { margin-right: 12px; font-size: 1.5rem; }
+        .ftm-cards-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px; margin-bottom: 30px;
+        }
+        .ftm-card {
+            background: white; border-radius: 12px; padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08); transition: all 0.3s;
+            border: 1px solid #e0e0e0; display: flex; flex-direction: column;
+        }
+        .ftm-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        .ftm-card-icon { font-size: 2.5rem; margin-bottom: 15px; }
+        .ftm-card h4 { margin: 0 0 10px; font-size: 1.15rem; font-weight: 600; color: #333; }
+        .ftm-card .description { color: #666; font-size: 0.9rem; line-height: 1.5; margin-bottom: 15px; flex-grow: 1; }
+        .ftm-card .btn {
+            display: inline-block; padding: 10px 20px; border-radius: 8px;
+            text-decoration: none; font-weight: 500; transition: all 0.2s;
+            font-size: 0.9rem; text-align: center;
+        }
+        .ftm-card .btn:hover { transform: translateY(-2px); text-decoration: none; }
+        .btn-green { background: linear-gradient(135deg, #28a745, #20c997); color: white !important; }
+        .btn-blue { background: linear-gradient(135deg, #667eea, #764ba2); color: white !important; }
+        .btn-orange { background: linear-gradient(135deg, #f39c12, #e67e22); color: white !important; }
+        .btn-teal { background: linear-gradient(135deg, #17a2b8, #138496); color: white !important; }
+        .btn-purple { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white !important; }
+        .btn-red { background: linear-gradient(135deg, #dc3545, #c82333); color: white !important; }
+        .ftm-card.highlight-green { border-left: 4px solid #28a745; }
+        .ftm-card.highlight-blue { border-left: 4px solid #667eea; }
+        .ftm-card.highlight-orange { border-left: 4px solid #f39c12; }
+        .ftm-card.highlight-teal { border-left: 4px solid #17a2b8; }
+        .ftm-card.highlight-purple { border-left: 4px solid #9b59b6; }
+        .ftm-card.highlight-red { border-left: 4px solid #dc3545; }
+        .course-selector { background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 30px; }
+        .course-selector label { font-weight: 600; margin-right: 15px; }
+        .course-selector select { padding: 10px 15px; border-radius: 8px; border: 1px solid #ddd; min-width: 300px; }
+        .no-course-warning { background: #fff3cd; border: 1px solid #ffc107; color: #856404; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; }
+
+        .mockup-note { background: #e3f2fd; border: 2px dashed #2196f3; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="ftm-hub-container">
+
+    <div class="mockup-note">
+        <strong>MOCKUP STATO ATTUALE</strong> - File: local/ftm_hub/index.php<br>
+        Questo mockup rappresenta l'interfaccia ESISTENTE del FTM Hub.
+    </div>
+
+    <div class="ftm-hub-header">
+        <h1>FTM Tools Hub</h1>
+        <p>Centro Strumenti per il Passaporto Tecnico - Gestione competenze, quiz, report e autovalutazioni</p>
+    </div>
+
+    <div class="course-selector">
+        <label>Corso attivo:</label>
+        <strong>Meccanica Base 2025</strong>
+        <a href="#" class="btn btn-sm btn-secondary ml-3" style="padding: 5px 10px; background: #6c757d; color: white; border-radius: 5px; text-decoration: none; margin-left: 10px;">Cambia corso</a>
+    </div>
+
+    <!-- AREA COACH -->
+    <h2 class="ftm-section-title"><span class="icon">Coach</span> Area Coach</h2>
+    <div class="ftm-cards-grid">
+        <div class="ftm-card highlight-blue">
+            <div class="ftm-card-icon">Report</div>
+            <h4>Report Classe</h4>
+            <p class="description">Visualizza la <strong>panoramica completa</strong> di tutti gli studenti del corso. Mostra le percentuali di competenza raggiunte, i quiz completati e lo stato delle autovalutazioni.</p>
+            <a href="#" class="btn btn-blue">Apri Report</a>
+        </div>
+        <div class="ftm-card highlight-green">
+            <div class="ftm-card-icon">Student</div>
+            <h4>Student Report</h4>
+            <p class="description">Report <strong>dettagliato per singolo studente</strong> con grafici radar interattivi, analisi per area di competenza, confronto tra performance quiz e autovalutazione (gap analysis).</p>
+            <a href="#" class="btn btn-green">Apri Report</a>
+        </div>
+        <div class="ftm-card highlight-teal">
+            <div class="ftm-card-icon">Lista</div>
+            <h4>Lista Studenti</h4>
+            <p class="description">Gestisci gli <strong>studenti assegnati</strong> a te come coach. Visualizza lo stato di avanzamento, le autovalutazioni completate e i quiz svolti.</p>
+            <a href="#" class="btn btn-teal">Gestisci</a>
+        </div>
+        <div class="ftm-card highlight-orange">
+            <div class="ftm-card-icon">Autoval</div>
+            <h4>Gestione Autovalutazioni</h4>
+            <p class="description">Controlla le <strong>autovalutazioni degli studenti</strong> basate sulla tassonomia di Bloom. Visualizza chi ha completato e confronta con le performance reali.</p>
+            <a href="#" class="btn btn-orange">Gestisci</a>
+        </div>
+        <div class="ftm-card highlight-purple">
+            <div class="ftm-card-icon">Colloqui</div>
+            <h4>Report Colloqui</h4>
+            <p class="description">Genera <strong>report strutturati per i colloqui</strong>. Include confronto autovalutazione/performance, identifica gap di percezione e fornisce spunti per la discussione.</p>
+            <a href="#" class="btn btn-purple">Genera Report</a>
+        </div>
+        <div class="ftm-card highlight-teal">
+            <div class="ftm-card-icon">Lab</div>
+            <h4>Valutazione Laboratorio</h4>
+            <p class="description">Gestisci le <strong>valutazioni pratiche di laboratorio</strong>. Registra osservazioni, assegna punteggi per competenze operative e integra con valutazioni teoriche.</p>
+            <a href="#" class="btn btn-teal">Apri LabEval</a>
+        </div>
+    </div>
+
+    <!-- STRUMENTI CORSO -->
+    <h2 class="ftm-section-title"><span class="icon">Tools</span> Strumenti Corso</h2>
+    <div class="ftm-cards-grid">
+        <div class="ftm-card highlight-green">
+            <div class="ftm-card-icon">Dashboard</div>
+            <h4>Dashboard</h4>
+            <p class="description"><strong>Centro di controllo principale</strong>. Statistiche su quiz, domande, competenze e studenti. Accesso rapido a tutte le funzionalità.</p>
+            <a href="#" class="btn btn-green">Apri Dashboard</a>
+        </div>
+        <div class="ftm-card highlight-blue">
+            <div class="ftm-card-icon">Quiz</div>
+            <h4>Crea Quiz</h4>
+            <p class="description"><strong>Importa quiz da file XML</strong> o crea da banco domande. Il sistema associa automaticamente le competenze leggendo i codici nel nome.</p>
+            <a href="#" class="btn btn-blue">Crea Quiz</a>
+        </div>
+        <div class="ftm-card highlight-purple">
+            <div class="ftm-card-icon">Comp</div>
+            <h4>Gestione Competenze</h4>
+            <p class="description"><strong>Visualizza e modifica</strong> le associazioni domande-competenze. Filtra per quiz, cerca competenze, modifica livelli Bloom.</p>
+            <a href="#" class="btn btn-purple">Gestisci</a>
+        </div>
+        <div class="ftm-card highlight-orange">
+            <div class="ftm-card-icon">Assign</div>
+            <h4>Assegna Competenze</h4>
+            <p class="description"><strong>Assegnazione automatica</strong> dalle domande. Legge il codice competenza dal nome (es. MECCANICA_OA_A1) e crea l'associazione.</p>
+            <a href="#" class="btn btn-orange">Assegna</a>
+        </div>
+        <div class="ftm-card highlight-teal">
+            <div class="ftm-card-icon">Auth</div>
+            <h4>Autorizzazioni</h4>
+            <p class="description"><strong>Gestisci chi può vedere i report</strong>. Autorizza studenti singoli o tutti insieme a visualizzare il proprio report competenze.</p>
+            <a href="#" class="btn btn-teal">Gestisci</a>
+        </div>
+        <div class="ftm-card highlight-green">
+            <div class="ftm-card-icon">Export</div>
+            <h4>Esporta Dati</h4>
+            <p class="description"><strong>Scarica i dati</strong> in formato CSV o Excel. Esporta performance studenti, risultati quiz e autovalutazioni per analisi esterne.</p>
+            <a href="#" class="btn btn-green">Esporta</a>
+        </div>
+    </div>
+
+    <!-- DEBUG & TEST -->
+    <h2 class="ftm-section-title"><span class="icon">Debug</span> Debug & Test</h2>
+    <div class="ftm-cards-grid">
+        <div class="ftm-card highlight-orange">
+            <div class="ftm-card-icon">Check</div>
+            <h4>Question Check</h4>
+            <p class="description"><strong>Verifica struttura domande</strong>. Controlla che ogni domanda abbia competenza assegnata, identifica domande orfane o con codici errati.</p>
+            <a href="#" class="btn btn-orange">Verifica</a>
+        </div>
+        <div class="ftm-card highlight-purple">
+            <div class="ftm-card-icon">Debug</div>
+            <h4>Debug Competencies</h4>
+            <p class="description"><strong>Analizza step-by-step</strong> il calcolo punteggi. Mostra come vengono aggregate le risposte, i pesi e il calcolo finale delle percentuali.</p>
+            <a href="#" class="btn btn-purple">Debug</a>
+        </div>
+        <div class="ftm-card highlight-red">
+            <div class="ftm-card-icon">Test</div>
+            <h4>Test Suite</h4>
+            <p class="description"><strong>Suite test automatici</strong>. Verifica connessione DB, tabelle, framework competenze, calcoli report e integrita dati.</p>
+            <a href="#" class="btn btn-red">Esegui Test</a>
+        </div>
+    </div>
+
+    <!-- AREA STUDENTE -->
+    <h2 class="ftm-section-title"><span class="icon">Student</span> Area Studente</h2>
+    <div class="ftm-cards-grid">
+        <div class="ftm-card highlight-blue">
+            <div class="ftm-card-icon">Report</div>
+            <h4>Il Mio Report</h4>
+            <p class="description">Visualizza il <strong>tuo report personale</strong>. Risultati quiz, aree di forza e miglioramento con grafici radar. Disponibile se autorizzato dal coach.</p>
+            <a href="#" class="btn btn-blue">Vedi Report</a>
+        </div>
+        <div class="ftm-card highlight-green">
+            <div class="ftm-card-icon">Autoval</div>
+            <h4>La Mia Autovalutazione</h4>
+            <p class="description"><strong>Compila l'autovalutazione</strong> basata su Bloom. Per ogni competenza indica il livello raggiunto (da "Conosco" a "Creo/Innovo").</p>
+            <a href="#" class="btn btn-green">Compila</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

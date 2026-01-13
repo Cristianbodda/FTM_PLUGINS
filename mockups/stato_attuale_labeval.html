@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STATO ATTUALE - LabEval Dashboard (local/labeval/index.php)</title>
+    <style>
+        /* COPIA FEDELE DEGLI STILI ESISTENTI da lib.php local_labeval_get_common_styles() */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+
+        .labeval-container { max-width: 1200px; margin: 0 auto; }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 20px 25px;
+        }
+        .card-header.primary {
+            background: linear-gradient(135deg, #F7941D, #ff6b35);
+            color: white;
+        }
+        .card-header h2, .card-header h3 { margin: 0; }
+        .card-body { padding: 20px 25px; }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border-top: 4px solid #28a745;
+        }
+        .stat-card.purple { border-top-color: #9b59b6; }
+        .stat-card.info { border-top-color: #17a2b8; }
+        .stat-card.warning { border-top-color: #ffc107; }
+        .stat-card .number { font-size: 2rem; font-weight: 700; color: #2c3e50; }
+        .stat-card .label { font-size: 0.85rem; color: #666; margin-top: 5px; }
+
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-success { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+        .btn-warning { background: linear-gradient(135deg, #ffc107, #fd7e14); color: #333; }
+        .btn-purple { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; }
+        .btn-info { background: linear-gradient(135deg, #17a2b8, #0dcaf0); color: white; }
+        .btn-primary { background: linear-gradient(135deg, #0d6efd, #0dcaf0); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
+
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        .table thead th { background: #f8f9fa; font-weight: 600; }
+        .table-danger { background: #f8d7da !important; }
+        .table-warning { background: #fff3cd !important; }
+
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+
+        .text-muted { color: #6c757d; }
+
+        /* Tabs */
+        .nav-tabs { display: flex; border-bottom: 2px solid #e9ecef; margin-bottom: 20px; }
+        .nav-tab { padding: 12px 20px; text-decoration: none; color: #6c757d; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .nav-tab.active { color: #F7941D; border-bottom-color: #F7941D; font-weight: 600; }
+
+        .mockup-note { background: #e3f2fd; border: 2px dashed #2196f3; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="labeval-container">
+
+    <div class="mockup-note">
+        <strong>MOCKUP STATO ATTUALE</strong> - File: local/labeval/index.php<br>
+        Questo mockup rappresenta l'interfaccia ESISTENTE della Dashboard LabEval.
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+        <a href="#" class="nav-tab active">Dashboard</a>
+        <a href="#" class="nav-tab">Template</a>
+        <a href="#" class="nav-tab">Assegnazioni</a>
+        <a href="#" class="nav-tab">Report</a>
+    </div>
+
+    <!-- Header -->
+    <div class="card">
+        <div class="card-header primary">
+            <h2>Valutazione Laboratorio</h2>
+            <p style="margin: 10px 0 0; opacity: 0.9;">Gestione valutazioni prove pratiche di laboratorio</p>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-row">
+        <div class="stat-card purple">
+            <div class="number">12</div>
+            <div class="label">Template Prove</div>
+        </div>
+        <div class="stat-card info">
+            <div class="number">85</div>
+            <div class="label">Prove Assegnate</div>
+        </div>
+        <div class="stat-card warning">
+            <div class="number">23</div>
+            <div class="label">In Attesa</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">62</div>
+            <div class="label">Completate</div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Azioni Rapide</h3>
+        </div>
+        <div class="card-body">
+            <div class="btn-group">
+                <a href="#" class="btn btn-success">Assegna Prova</a>
+                <a href="#" class="btn btn-warning">Valuta Prove in Attesa (23)</a>
+                <a href="#" class="btn btn-purple">Gestisci Template</a>
+                <a href="#" class="btn btn-info">Importa da Excel</a>
+                <a href="#" class="btn btn-primary">Report</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Evaluations -->
+    <div class="card">
+        <div class="card-header" style="background: linear-gradient(135deg, #ffc107, #fd7e14); color: #333;">
+            <h3 style="margin: 0;">Prove in Attesa di Valutazione</h3>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Studente</th>
+                        <th>Prova</th>
+                        <th>Settore</th>
+                        <th>Assegnata</th>
+                        <th>Scadenza</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="table-danger">
+                        <td>
+                            <strong>Marco Rossi</strong><br>
+                            <small class="text-muted">marco.rossi@example.com</small>
+                        </td>
+                        <td>Prova Tornio CNC</td>
+                        <td><span class="badge badge-info">MECCANICA</span></td>
+                        <td>05/01/2026</td>
+                        <td><span class="badge badge-danger">Scaduta</span></td>
+                        <td><a href="#" class="btn btn-success btn-sm">Valuta</a></td>
+                    </tr>
+                    <tr class="table-warning">
+                        <td>
+                            <strong>Laura Bianchi</strong><br>
+                            <small class="text-muted">laura.bianchi@example.com</small>
+                        </td>
+                        <td>Prova Saldatura</td>
+                        <td><span class="badge badge-info">MECCANICA</span></td>
+                        <td>08/01/2026</td>
+                        <td><span class="badge badge-warning">13/01/2026</span></td>
+                        <td><a href="#" class="btn btn-success btn-sm">Valuta</a></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>Giuseppe Verdi</strong><br>
+                            <small class="text-muted">giuseppe.verdi@example.com</small>
+                        </td>
+                        <td>Prova Diagnosi Motore</td>
+                        <td><span class="badge badge-info">AUTOMOBILE</span></td>
+                        <td>10/01/2026</td>
+                        <td>20/01/2026</td>
+                        <td><a href="#" class="btn btn-success btn-sm">Valuta</a></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>Anna Neri</strong><br>
+                            <small class="text-muted">anna.neri@example.com</small>
+                        </td>
+                        <td>Prova Assemblaggio</td>
+                        <td><span class="badge badge-info">MECCANICA</span></td>
+                        <td>11/01/2026</td>
+                        <td><span class="text-muted">-</span></td>
+                        <td><a href="#" class="btn btn-success btn-sm">Valuta</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STATO ATTUALE - Self Assessment Dashboard (local/selfassessment/index.php)</title>
+    <style>
+        /* COPIA FEDELE DEGLI STILI ESISTENTI */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+        }
+
+        .dashboard-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 1.8em;
+        }
+
+        .dashboard-header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .stat-card .icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .stat-card .label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+
+        .stat-card.completed { border-left: 4px solid #28a745; }
+        .stat-card.pending { border-left: 4px solid #ffc107; }
+        .stat-card.disabled { border-left: 4px solid #dc3545; }
+
+        .filters-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            border-color: #3498db;
+        }
+
+        .filter-btn.active {
+            background: #3498db;
+            border-color: #3498db;
+            color: white;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 0.95em;
+        }
+
+        .students-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .students-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .students-table th {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .students-table td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f1f1f1;
+            vertical-align: middle;
+        }
+
+        .students-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .status-badge.completed { background: #d4edda; color: #155724; }
+        .status-badge.pending { background: #fff3cd; color: #856404; }
+        .status-badge.disabled { background: #f8d7da; color: #721c24; }
+
+        .btn { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; font-size: 0.85rem; }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
+
+        .mockup-note { background: #e3f2fd; border: 2px dashed #2196f3; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+
+    <div class="mockup-note">
+        <strong>MOCKUP STATO ATTUALE</strong> - File: local/selfassessment/index.php<br>
+        Questo mockup rappresenta l'interfaccia ESISTENTE della Dashboard Autovalutazioni.
+    </div>
+
+    <div class="dashboard-header">
+        <h1>Gestione Autovalutazioni</h1>
+        <p>Monitora e gestisci le autovalutazioni degli studenti basate sulla Tassonomia di Bloom</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="icon">Users</div>
+            <div class="value">47</div>
+            <div class="label">Studenti Totali</div>
+        </div>
+        <div class="stat-card completed">
+            <div class="icon">Check</div>
+            <div class="value">32</div>
+            <div class="label">Completate</div>
+        </div>
+        <div class="stat-card pending">
+            <div class="icon">Clock</div>
+            <div class="value">12</div>
+            <div class="label">In Attesa</div>
+        </div>
+        <div class="stat-card disabled">
+            <div class="icon">Ban</div>
+            <div class="value">3</div>
+            <div class="label">Disabilitate</div>
+        </div>
+    </div>
+
+    <div class="filters-bar">
+        <div class="filter-group">
+            <button class="filter-btn active">Tutti</button>
+            <button class="filter-btn">Completate</button>
+            <button class="filter-btn">In attesa</button>
+            <button class="filter-btn">Disabilitate</button>
+        </div>
+        <div class="search-box">
+            <input type="text" placeholder="Cerca studente per nome o email...">
+        </div>
+    </div>
+
+    <div class="students-card">
+        <table class="students-table">
+            <thead>
+                <tr>
+                    <th>Studente</th>
+                    <th>Email</th>
+                    <th>Stato</th>
+                    <th>Completamento</th>
+                    <th>Ultimo Aggiornamento</th>
+                    <th>Azioni</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Marco Rossi</strong></td>
+                    <td>marco.rossi@example.com</td>
+                    <td><span class="status-badge completed">Completata</span></td>
+                    <td>42/42 (100%)</td>
+                    <td>12/01/2026</td>
+                    <td>
+                        <a href="#" class="btn btn-primary btn-sm">Visualizza</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Laura Bianchi</strong></td>
+                    <td>laura.bianchi@example.com</td>
+                    <td><span class="status-badge completed">Completata</span></td>
+                    <td>38/38 (100%)</td>
+                    <td>11/01/2026</td>
+                    <td>
+                        <a href="#" class="btn btn-primary btn-sm">Visualizza</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Giuseppe Verdi</strong></td>
+                    <td>giuseppe.verdi@example.com</td>
+                    <td><span class="status-badge pending">In attesa</span></td>
+                    <td>20/35 (57%)</td>
+                    <td>10/01/2026</td>
+                    <td>
+                        <a href="#" class="btn btn-primary btn-sm">Visualizza</a>
+                        <a href="#" class="btn btn-success btn-sm">Reminder</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Anna Neri</strong></td>
+                    <td>anna.neri@example.com</td>
+                    <td><span class="status-badge pending">In attesa</span></td>
+                    <td>0/40 (0%)</td>
+                    <td>-</td>
+                    <td>
+                        <a href="#" class="btn btn-primary btn-sm">Visualizza</a>
+                        <a href="#" class="btn btn-success btn-sm">Reminder</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Paolo Gialli</strong></td>
+                    <td>paolo.gialli@example.com</td>
+                    <td><span class="status-badge disabled">Disabilitata</span></td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>
+                        <a href="#" class="btn btn-success btn-sm">Abilita</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+</body>
+</html>

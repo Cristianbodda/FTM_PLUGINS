@@ -53,6 +53,17 @@ $stats = [
     'last_run' => !empty($history) ? reset($history) : null
 ];
 
+// Carica lista corsi per i link (tutti i corsi, non solo quelli con quiz)
+$courses_with_quiz = $DB->get_records_sql("
+    SELECT c.id, c.fullname, c.shortname, COUNT(q.id) as quiz_count
+    FROM {course} c
+    LEFT JOIN {quiz} q ON q.course = c.id
+    WHERE c.id > 1
+    GROUP BY c.id, c.fullname, c.shortname
+    ORDER BY c.fullname
+");
+$selected_courseid = optional_param('courseid', 0, PARAM_INT);
+
 echo $OUTPUT->header();
 ?>
 
@@ -366,13 +377,51 @@ echo $OUTPUT->header();
             <h3>🔗 Link Sistema FTM</h3>
         </div>
         <div class="card-body">
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <!-- Selettore Corso per link che richiedono courseid -->
+            <div style="margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #1976d2;">
+                <label style="font-weight: 600; display: block; margin-bottom: 10px;">📚 Seleziona corso per i link:</label>
+                <form method="get" action="" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <select name="courseid" style="flex: 1; min-width: 250px; padding: 10px; border: 2px solid #1976d2; border-radius: 6px; font-size: 14px;">
+                        <option value="0">-- Seleziona un corso --</option>
+                        <?php foreach ($courses_with_quiz as $c): ?>
+                        <option value="<?php echo $c->id; ?>" <?php echo ($selected_courseid == $c->id) ? 'selected' : ''; ?>>
+                            <?php echo format_string($c->fullname); ?> (<?php echo $c->quiz_count; ?> quiz)
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button type="submit" class="btn btn-primary" style="padding: 10px 20px;">Seleziona</button>
+                </form>
+                <?php if ($selected_courseid > 0): ?>
+                <p style="margin: 10px 0 0; color: #1565c0; font-size: 13px;">
+                    ✅ Corso selezionato: <strong><?php echo format_string($courses_with_quiz[$selected_courseid]->fullname ?? 'N/A'); ?></strong>
+                </p>
+                <?php endif; ?>
+            </div>
+
+            <!-- Link generali (senza courseid) -->
+            <p style="font-weight: 600; margin-bottom: 10px; color: #666;">Link Generali:</p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
                 <a href="../competencymanager/system_check.php" class="btn btn-primary">🔬 System Check</a>
                 <a href="../ftm_hub/index.php" class="btn btn-info">🛠️ FTM Hub</a>
-                <a href="../competencymanager/index.php" class="btn btn-success">📊 Competency Manager</a>
-                <a href="../coachmanager/index.php" class="btn btn-warning">👨‍🏫 Coach Manager</a>
                 <a href="../labeval/index.php" class="btn btn-danger">🔬 Lab Eval</a>
-                <a href="../competencymanager/simulate_student.php" class="btn btn-primary" style="background: #6f42c1;">🤖 Simulatore Studente</a>
+            </div>
+
+            <!-- Link che richiedono courseid -->
+            <p style="font-weight: 600; margin-bottom: 10px; color: #666;">Link con Corso (seleziona sopra):</p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <?php if ($selected_courseid > 0): ?>
+                <a href="../competencyxmlimport/setup_universale.php?courseid=<?php echo $selected_courseid; ?>" class="btn btn-success">📥 Setup Universale Quiz</a>
+                <a href="../competencymanager/dashboard.php?courseid=<?php echo $selected_courseid; ?>" class="btn btn-success">📊 Competency Manager</a>
+                <a href="../coachmanager/index.php?courseid=<?php echo $selected_courseid; ?>" class="btn btn-warning">👨‍🏫 Coach Manager</a>
+                <a href="../competencymanager/simulate_student.php?courseid=<?php echo $selected_courseid; ?>" class="btn btn-primary" style="background: #6f42c1;">🤖 Simulatore Studente</a>
+                <a href="../competencymanager/reports.php?courseid=<?php echo $selected_courseid; ?>" class="btn btn-info">📈 Report Classe</a>
+                <?php else: ?>
+                <span class="btn" style="background: #ccc; color: #666; cursor: not-allowed;">📥 Setup Universale Quiz</span>
+                <span class="btn" style="background: #ccc; color: #666; cursor: not-allowed;">📊 Competency Manager</span>
+                <span class="btn" style="background: #ccc; color: #666; cursor: not-allowed;">👨‍🏫 Coach Manager</span>
+                <span class="btn" style="background: #ccc; color: #666; cursor: not-allowed;">🤖 Simulatore Studente</span>
+                <span class="btn" style="background: #ccc; color: #666; cursor: not-allowed;">📈 Report Classe</span>
+                <?php endif; ?>
             </div>
         </div>
     </div>
