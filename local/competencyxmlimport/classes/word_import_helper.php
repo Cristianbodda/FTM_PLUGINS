@@ -187,11 +187,15 @@ function get_sector_aliases_helper() {
 /**
  * Normalizza un codice competenza convertendo alias in nomi standard
  * Es: AUTOVEICOLO_MR_A1 → AUTOMOBILE_MR_A1
+ * Es: automobile_mau_h2 → AUTOMOBILE_MAU_H2 (case-insensitive)
  */
 function normalize_competency_code_helper($code) {
+    // Prima converti tutto in maiuscolo per uniformità
+    $code = strtoupper(trim($code));
+
     $aliases = get_sector_aliases_helper();
     foreach ($aliases as $alias => $standard) {
-        if (stripos($code, $alias . '_') === 0) {
+        if (strpos($code, $alias . '_') === 0) {
             return $standard . substr($code, strlen($alias));
         }
     }
@@ -222,36 +226,30 @@ function get_framework_competencies($frameworkid, $sector) {
 }
 
 /**
- * Verifica se un codice competenza è valido (considerando anche gli alias)
+ * Verifica se un codice competenza è valido (case-insensitive, con alias)
  */
 function is_valid_competency($code, $valid_competencies) {
-    // Prima prova il codice così com'è
-    if (in_array($code, $valid_competencies)) {
-        return true;
-    }
-
-    // Poi prova normalizzandolo (convertendo alias)
+    // Normalizza il codice (maiuscolo + alias)
     $normalized = normalize_competency_code_helper($code);
-    if ($normalized !== $code && in_array($normalized, $valid_competencies)) {
-        return true;
-    }
 
-    return false;
+    // Crea array di competenze valide in maiuscolo per confronto
+    $valid_upper = array_map('strtoupper', $valid_competencies);
+
+    return in_array($normalized, $valid_upper);
 }
 
 /**
- * Trova il codice competenza corretto nel framework (gestendo alias)
+ * Trova il codice competenza corretto nel framework (case-insensitive, con alias)
  */
 function find_matching_competency($code, $valid_competencies) {
-    // Prima prova il codice così com'è
-    if (in_array($code, $valid_competencies)) {
-        return $code;
-    }
-
-    // Poi prova normalizzandolo
+    // Normalizza il codice (maiuscolo + alias)
     $normalized = normalize_competency_code_helper($code);
-    if (in_array($normalized, $valid_competencies)) {
-        return $normalized;
+
+    // Cerca in modo case-insensitive
+    foreach ($valid_competencies as $valid) {
+        if (strtoupper($valid) === $normalized) {
+            return $valid; // Ritorna il codice originale dal framework
+        }
     }
 
     return null;

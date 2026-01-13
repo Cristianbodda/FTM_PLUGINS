@@ -572,11 +572,15 @@ function get_sector_aliases() {
 /**
  * Converte un codice competenza da alias a nome standard
  * Es: AUTOVEICOLO_MR_A1 → AUTOMOBILE_MR_A1
+ * Gestisce anche il case (MAu → MAU)
  */
 function normalize_competency_code($code) {
+    // Prima converti tutto in maiuscolo per uniformità
+    $code = strtoupper(trim($code));
+
     $aliases = get_sector_aliases();
     foreach ($aliases as $alias => $standard) {
-        if (stripos($code, $alias . '_') === 0) {
+        if (strpos($code, $alias . '_') === 0) {
             return $standard . substr($code, strlen($alias));
         }
     }
@@ -1979,9 +1983,10 @@ if ($step == 5 && $action === 'execute'):
     
     // Carica competenze del settore
     $competencies = get_sector_competencies($frameworkid, $sector);
+    // Crea lookup con chiavi MAIUSCOLE per matching case-insensitive
     $comp_lookup = [];
     foreach ($competencies as $c) {
-        $comp_lookup[$c->idnumber] = $c->id;
+        $comp_lookup[strtoupper($c->idnumber)] = $c->id;
     }
 ?>
 

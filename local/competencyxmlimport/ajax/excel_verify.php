@@ -143,8 +143,11 @@ try {
                 'invalid_in_excel' => 0
             ];
 
-            // Funzione per normalizzare codici competenza (alias → standard)
+            // Funzione per normalizzare codici competenza (alias → standard, case-insensitive)
             $normalize_code = function($code) {
+                // Prima converti in maiuscolo
+                $code = strtoupper(trim($code));
+
                 $aliases = [
                     'AUTOVEICOLO' => 'AUTOMOBILE',
                     'AUTO' => 'AUTOMOBILE',
@@ -160,12 +163,15 @@ try {
                     'IT' => 'INFORMATICA',
                 ];
                 foreach ($aliases as $alias => $standard) {
-                    if (stripos($code, $alias . '_') === 0) {
+                    if (strpos($code, $alias . '_') === 0) {
                         return $standard . substr($code, strlen($alias));
                     }
                 }
                 return $code;
             };
+
+            // Crea array di competenze valide in MAIUSCOLO per confronto case-insensitive
+            $valid_competencies_upper = array_map('strtoupper', $valid_competencies);
 
             // Ottieni tutte le competenze uniche trovate nelle domande
             $found_competencies = [];
@@ -182,9 +188,9 @@ try {
                         ];
                     }
                     $found_competencies[$comp]['count']++;
-                    // Verifica sia il codice originale che quello normalizzato
-                    $found_competencies[$comp]['exists'] = in_array($comp, $valid_competencies)
-                        || in_array($normalized, $valid_competencies);
+                    // Verifica case-insensitive sia codice originale che normalizzato
+                    $found_competencies[$comp]['exists'] = in_array($comp, $valid_competencies_upper)
+                        || in_array($normalized, $valid_competencies_upper);
                 }
             }
 
