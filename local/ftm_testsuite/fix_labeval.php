@@ -92,6 +92,9 @@ $inconsistent_sessions = $DB->get_records_sql("
     JOIN {user} u ON u.id = a.studentid
     JOIN {local_labeval_templates} t ON t.id = a.templateid
     WHERE s.status = 'completed'
+    GROUP BY s.id, s.assignmentid, s.status, s.totalscore, s.maxscore, s.percentage,
+             s.timecreated, s.timecompleted, a.studentid, a.templateid,
+             u.firstname, u.lastname, u.username, t.name
     HAVING ABS(COALESCE(saved_score, 0) - COALESCE(calc_score, 0)) > 0.01
     ORDER BY s.timecreated DESC
 ");
