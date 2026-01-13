@@ -91,8 +91,46 @@ if (optional_param('clear_word', 0, PARAM_INT)) {
     unset($SESSION->word_import_suggested_name);
     unset($SESSION->word_import_valid_competencies);
     unset($SESSION->word_import_sector);
-    redirect(new moodle_url('/local/competencyxmlimport/setup_universale.php', 
+    redirect(new moodle_url('/local/competencyxmlimport/setup_universale.php',
         ['courseid' => $courseid, 'step' => 3]));
+}
+
+// Elimina file XML se richiesto
+if ($action === 'deletefile' && confirm_sesskey()) {
+    $filename = required_param('filename', PARAM_FILE);
+    $xml_dir = __DIR__ . '/xml/';
+    $filepath = $xml_dir . $filename;
+
+    // Sicurezza: verifica che il file sia nella cartella xml e sia un .xml
+    if (file_exists($filepath) &&
+        realpath(dirname($filepath)) === realpath($xml_dir) &&
+        strtolower(pathinfo($filename, PATHINFO_EXTENSION)) === 'xml') {
+        unlink($filepath);
+        redirect(new moodle_url('/local/competencyxmlimport/setup_universale.php',
+            ['courseid' => $courseid, 'step' => 3]),
+            '🗑️ File eliminato: ' . $filename,
+            null,
+            \core\output\notification::NOTIFY_INFO
+        );
+    }
+}
+
+// Elimina TUTTI i file XML se richiesto
+if ($action === 'deleteallxml' && confirm_sesskey()) {
+    $xml_dir = __DIR__ . '/xml/';
+    $deleted = 0;
+    if (is_dir($xml_dir)) {
+        foreach (glob($xml_dir . '*.xml') as $file) {
+            unlink($file);
+            $deleted++;
+        }
+    }
+    redirect(new moodle_url('/local/competencyxmlimport/setup_universale.php',
+        ['courseid' => $courseid, 'step' => 3]),
+        '🗑️ Eliminati ' . $deleted . ' file XML',
+        null,
+        \core\output\notification::NOTIFY_INFO
+    );
 }
 
 // CSS Completo
@@ -1780,14 +1818,21 @@ if ($step == 3):
     
     <?php if (!empty($sector_files)): ?>
     <div class="panel">
-        <h3><span class="icon"><?php echo $can_proceed ? '✅' : '⚠️'; ?></span> File per <?php echo $sector; ?> (<?php echo count($sector_files); ?>)</h3>
-        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin: 0;"><span class="icon"><?php echo $can_proceed ? '✅' : '⚠️'; ?></span> File per <?php echo $sector; ?> (<?php echo count($sector_files); ?>)</h3>
+            <a href="?courseid=<?php echo $courseid; ?>&step=3&action=deleteallxml&sesskey=<?php echo sesskey(); ?>"
+               onclick="return confirm('Eliminare TUTTI i file XML? Questa azione non può essere annullata.');"
+               class="btn btn-secondary" style="background: #dc2626; border-color: #dc2626; font-size: 13px; padding: 6px 12px;">
+                🗑️ Elimina tutti i file
+            </a>
+        </div>
+
         <?php if (!$can_proceed): ?>
         <div style="background: #ffebee; color: #c62828; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px;">
             ❌ <strong>Alcuni file contengono errori.</strong> Correggi i problemi indicati prima di procedere.
         </div>
         <?php endif; ?>
-        
+
         <div class="file-list">
             <?php $file_index = 0; foreach ($sector_files as $file): $file_index++; ?>
             <?php 
@@ -1822,11 +1867,15 @@ if ($step == 3):
                         <?php endif; ?>
                     </div>
                 </div>
-                <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="validation-badge <?php echo $status_class; ?>"><?php echo $status_text; ?></span>
                     <?php if ($v && ($v['errors'] > 0 || $v['warnings'] > 0)): ?>
                     <span class="validation-details-toggle" onclick="toggleDetails(<?php echo $file_index; ?>)">Dettagli ▼</span>
                     <?php endif; ?>
+                    <a href="?courseid=<?php echo $courseid; ?>&step=3&action=deletefile&filename=<?php echo urlencode($file['name']); ?>&sesskey=<?php echo sesskey(); ?>"
+                       onclick="return confirm('Eliminare il file <?php echo htmlspecialchars($file['name']); ?>?');"
+                       style="color: #dc2626; text-decoration: none; font-size: 14px; padding: 4px 8px;"
+                       title="Elimina file">🗑️</a>
                 </div>
             </div>
             
@@ -1949,23 +1998,46 @@ if ($step == 4):
     
     <div class="panel">
         <h3><span class="icon">⚙️</span> Step 4: Configura Quiz</h3>
-        
+
         <form method="post" action="?courseid=<?php echo $courseid; ?>&step=5&action=execute">
             <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
-            
-            <p>Configura i quiz che verranno creati da ciascun file XML:</p>
-            
-            <?php foreach ($files as $i => $file): ?>
-            <div class="quiz-config-item">
-                <div class="quiz-header">
+
+            <p>Seleziona i quiz da creare. I quiz già esistenti sono evidenziati.</p>
+
+            <div style="margin-bottom: 15px; padding: 10px; background: #f0f4f8; border-radius: 8px;">
+                <label style="cursor: pointer; font-weight: 600;">
+                    <input type="checkbox" id="selectAllQuizzes" onchange="toggleAllQuizzes(this)" checked>
+                    Seleziona/Deseleziona tutti
+                </label>
+            </div>
+
+            <?php
+            // Verifica quiz già esistenti nel corso
+            $existing_quizzes = $DB->get_records('quiz', ['course' => $courseid], '', 'id,name');
+            $existing_names = array_map(function($q) { return strtolower(trim($q->name)); }, $existing_quizzes);
+
+            foreach ($files as $i => $file):
+                $default_name = $sector . ' - ' . pathinfo($file['name'], PATHINFO_FILENAME);
+                $quiz_exists = in_array(strtolower(trim($default_name)), $existing_names);
+            ?>
+            <div class="quiz-config-item" style="<?php echo $quiz_exists ? 'border: 2px solid #f59e0b; background: #fffbeb;' : ''; ?>">
+                <div class="quiz-header" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" name="quiz[<?php echo $i; ?>][enabled]" value="1"
+                           class="quiz-checkbox" <?php echo $quiz_exists ? '' : 'checked'; ?>
+                           style="width: 20px; height: 20px; cursor: pointer;">
                     <span class="quiz-title">📄 <?php echo $file['name']; ?></span>
                     <span class="quiz-badge badge-base"><?php echo $file['questions']; ?> domande</span>
+                    <?php if ($quiz_exists): ?>
+                    <span style="background: #f59e0b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">
+                        ⚠️ GIÀ ESISTENTE
+                    </span>
+                    <?php endif; ?>
                 </div>
                 <div class="quiz-fields">
                     <div>
                         <label>Nome Quiz</label>
-                        <input type="text" name="quiz[<?php echo $i; ?>][name]" 
-                               value="<?php echo $sector; ?> - <?php echo pathinfo($file['name'], PATHINFO_FILENAME); ?>" required>
+                        <input type="text" name="quiz[<?php echo $i; ?>][name]"
+                               value="<?php echo htmlspecialchars($default_name); ?>">
                     </div>
                     <div>
                         <label>Livello</label>
@@ -1977,7 +2049,7 @@ if ($step == 4):
                     </div>
                     <div>
                         <label>Categoria</label>
-                        <input type="text" name="quiz[<?php echo $i; ?>][category]" 
+                        <input type="text" name="quiz[<?php echo $i; ?>][category]"
                                value="<?php echo pathinfo($file['name'], PATHINFO_FILENAME); ?>">
                     </div>
                 </div>
@@ -1985,6 +2057,14 @@ if ($step == 4):
                 <input type="hidden" name="quiz[<?php echo $i; ?>][questions]" value="<?php echo $file['questions']; ?>">
             </div>
             <?php endforeach; ?>
+
+            <script>
+            function toggleAllQuizzes(master) {
+                document.querySelectorAll('.quiz-checkbox').forEach(function(cb) {
+                    cb.checked = master.checked;
+                });
+            }
+            </script>
             
             <div class="form-group" style="margin-top: 20px;">
                 <label>
@@ -2087,14 +2167,22 @@ if ($step == 5 && $action === 'execute'):
     $section = $DB->get_record('course_sections', ['course' => $courseid, 'section' => 0]);
     
     // Processa ogni quiz
+    $skipped_count = 0;
     foreach ($quizzes_config as $config) {
+        // Salta se non selezionato
+        if (empty($config['enabled'])) {
+            $skipped_count++;
+            echo '<div class="log-line" style="color: #888;">⏭️ Saltato: ' . basename($config['file']) . ' (non selezionato)</div>';
+            continue;
+        }
+
         $filepath = $config['file'];
         $quiz_name = $config['name'];
         $level = (int)$config['level'];
         $category_name = $config['category'];
-        
+
         echo '<div class="log-line info">📄 Processo: ' . basename($filepath) . '</div>';
-        
+
         if (!file_exists($filepath)) {
             echo '<div class="log-line error">❌ File non trovato: ' . $filepath . '</div>';
             continue;
