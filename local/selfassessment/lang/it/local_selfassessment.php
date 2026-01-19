@@ -108,3 +108,34 @@ $string['area_disegno'] = 'Disegno Tecnico';
 $string['area_misurazione'] = 'Misurazione';
 $string['area_pianificazione'] = 'Pianificazione';
 $string['area_sicurezza'] = 'Sicurezza e Qualità';
+
+// Message providers
+$string['messageprovider:reminder'] = 'Reminder autovalutazione dal coach';
+$string['messageprovider:assignment'] = 'Nuove competenze assegnate per autovalutazione';
+
+// Notification messages
+$string['notification_assignment_subject'] = 'Nuove competenze da autovalutare';
+$string['notification_assignment_body'] = 'Ciao {$a->fullname},
+
+dopo aver completato il quiz "{$a->quizname}", ti sono state assegnate {$a->count} nuove competenze da autovalutare.
+
+Accedi alla tua area autovalutazione per compilarle:
+{$a->url}
+
+Questa autovalutazione aiuterà il tuo coach a capire dove hai bisogno di supporto.';
+$string['notification_assignment_small'] = '{$a->count} nuove competenze da autovalutare';
+
+$string['notification_reminder_subject'] = 'Reminder: Completa la tua autovalutazione';
+$string['notification_reminder_body'] = 'Ciao {$a->fullname},
+
+il tuo coach {$a->coachname} ti ricorda di completare la tua autovalutazione delle competenze.
+
+{$a->message}
+
+Accedi qui per compilarla:
+{$a->url}';
+$string['notification_reminder_small'] = 'Reminder autovalutazione dal coach';
+
+// No competencies
+$string['no_competencies'] = 'Nessuna competenza da autovalutare';
+$string['no_competencies_desc'] = 'Al momento non hai competenze assegnate per l\'autovalutazione. Completa un quiz con domande associate a competenze per sbloccare questa funzione.';

@@ -15,37 +15,42 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Parser per file Word (.docx) contenenti domande quiz - VERSIONE 3.0 MULTI-FORMATO
- * 
+ * Parser per file Word (.docx) contenenti domande quiz - VERSIONE 4.0 MULTI-FORMATO
+ *
  * Estrae domande, risposte e competenze da file Word nel formato FTM.
- * Supporta 14 formati diversi per AUTOVEICOLO, ELETTRONICA, CHIMICA, ELETTRICITÀ.
+ * Supporta 19 formati diversi per AUTOVEICOLO, ELETTRONICA, CHIMICA, ELETTRICITÀ, LOGISTICA, MECCANICA.
  *
  * FORMATI SUPPORTATI:
- * 
+ *
  * AUTOVEICOLO (3 formati):
  *  1. FORMATO_1_AUTOV_BASE    - AUT_BASE_Q01 + Competenza collegata:
  *  2. FORMATO_2_AUTOV_APPR    - Q01 (ID) + checkmark ✔ + Competenza (CO):
  *  7. FORMATO_7_AUTOV_APPR36  - Q01 – Competenza: AUTOMOBILE_XXX
- * 
+ *
  * ELETTRONICA (2 formati):
  *  3. FORMATO_3_ELETT_BASE    - Q01 + Competenza: all'inizio blocco
  *  4. FORMATO_4_ELETT_APPR06  - Q01 – COMP_CODE (codice nel header)
- * 
+ *
  * CHIMICA (3 formati):
  *  5. FORMATO_5_CHIM_BASE     - Q01 + Competenza: XXX | Risposta: X |
  *  6. FORMATO_6_CHIM_APPR00   - Q01 (ID) + Competenza (F2):
  *  8. FORMATO_8_CHIM_APPR23   - Q01 + Competenza (F2): dopo risposte
- * 
+ *
  * ELETTRICITÀ (5 formati):
  * 10. FORMATO_10_ELET_BASE    - ELET_BASE_Q01 — ELETTRICITÀ_XX_YY
  * 11. FORMATO_11_ELET_BULLET  - Bullet list (-) + checkmark ✔ + Competenza:
  * 12. FORMATO_12_ELET_PIPE    - Q01 | Codice competenza: ELETTRICITÀ_XX
  * 13. FORMATO_13_ELET_DOT     - Q01. Testo + Codice competenza:
  * 14. FORMATO_14_ELET_NEWLINE - Q01\nCompetenza: desc\nCodice: ELETTRICITÀ_XX
- * 
- * LOGISTICA (2 formati):
+ *
+ * LOGISTICA (4 formati):
  * 15. FORMATO_15_LOGISTICA    - 1. LOG_BASE_Q01 + Competenza: LOGISTICA_XX
  * 16. FORMATO_16_LOG_APPR     - LOG_APPR01_Q01 + Competenza: LOGISTICA_XX (senza numero)
+ * 17. FORMATO_17_LOG_APPR_DASH - LOG_APPR04_Q01 – LOGISTICA_XX (comp su stessa riga)
+ * 18. FORMATO_18_LOG_Q_DASH   - Q1 – LOGISTICA_XX (Q semplice + comp su stessa riga)
+ *
+ * MECCANICA (1 formato):
+ * 19. FORMATO_19_MECCANICA    - [A-H]?##. Testo + Codice competenza: MECCANICA_XX
  *
  * GENERICO:
  *  9. FORMATO_9_NO_COMP       - File senza competenze (richiede Excel)
@@ -53,7 +58,7 @@
  * @package    local_competencyxmlimport
  * @copyright  2025 FTM - Fondazione Terzo Millennio
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    3.0 - Aggiunto supporto ELETTRICITÀ (5 formati)
+ * @version    4.0 - Aggiunto supporto MECCANICA
  */
 
 namespace local_competencyxmlimport;
@@ -114,9 +119,14 @@ class word_parser {
     const FORMAT_13_ELET_DOT = 'FORMATO_13_ELET_DOT';
     const FORMAT_14_ELET_NEWLINE = 'FORMATO_14_ELET_NEWLINE';
     
-    // LOGISTICA (2 formati)
+    // LOGISTICA (4 formati)
     const FORMAT_15_LOGISTICA = 'FORMATO_15_LOGISTICA';
     const FORMAT_16_LOG_APPR = 'FORMATO_16_LOG_APPR';
+    const FORMAT_17_LOG_APPR_DASH = 'FORMATO_17_LOG_APPR_DASH';
+    const FORMAT_18_LOG_Q_DASH = 'FORMATO_18_LOG_Q_DASH';
+
+    // MECCANICA (1 formato)
+    const FORMAT_19_MECCANICA = 'FORMATO_19_MECCANICA';
 
     // GENERICI
     const FORMAT_9_NO_COMP = 'FORMATO_9_NO_COMP';
@@ -230,10 +240,17 @@ class word_parser {
                             (bool) preg_match('/Codice\s*competenza:\s*ELETTRICITÀ/ui', $text);
         $has_codice_newline = (bool) preg_match('/\nCodice:\s*ELETTRICITÀ/ui', $text);
         
-        // Pattern LOGISTICA
-        $has_numbered_log_q = (bool) preg_match('/\n\d+\.\s*[A-Z_]+_Q\d+\n/u', $text);
-        $has_log_appr_q = (bool) preg_match('/\nLOG_APPR\d+_Q\d+\n/u', $text);
+        // Pattern LOGISTICA ((?:^|\n) permette match sia a inizio testo che dopo newline)
+        // IMPORTANTE: [A-Z0-9_]+ include numeri per matchare LOG_APPR05_Q01
+        $has_numbered_log_q = (bool) preg_match('/(?:^|\n)\d+\.\s*[A-Z0-9_]+_Q\d+\s*$/um', $text);
+        $has_log_appr_q = (bool) preg_match('/(?:^|\n)LOG_APPR\d+_Q\d+\s*$/um', $text);
+        $has_log_appr_dash = (bool) preg_match('/(?:^|\n)LOG_APPR\d+_Q\d+\s*[–—-]\s*LOGISTICA_/um', $text);
+        $has_q_dash_logistica = (bool) preg_match('/(?:^|\n)Q\d+\s*[–—-]\s*LOGISTICA_/um', $text);
         $has_competenza_logistica = (bool) preg_match('/Competenza:\s*LOGISTICA_/ui', $text);
+
+        // Pattern MECCANICA - Formato: [A-H]?##. testo + Codice competenza: MECCANICA_XX_YY
+        $has_codice_meccanica = (bool) preg_match('/Codice\s*competenza:\s*MECCANICA_/ui', $text);
+        $has_numbered_question = (bool) preg_match('/(?:^|\n)[A-H]?\d+\.\s+[A-Z]/um', $text);
 
         // Nessuna competenza
         $has_no_competency = !$has_competenza_collegata && !$has_competenza_co &&
@@ -241,7 +258,8 @@ class word_parser {
                             !$has_q_dash_comp_code && !$has_q_dash_competenza &&
                             !$has_elet_base_q && !$has_q_pipe_codice &&
                             !$has_q_dot_codice && !$has_codice_newline &&
-                            !$has_bullet_checkmark && !$has_competenza_logistica;
+                            !$has_bullet_checkmark && !$has_competenza_logistica &&
+                            !$has_codice_meccanica;
         
         // =====================================================================
         // RILEVAMENTO FORMATO CON PRIORITÀ
@@ -281,9 +299,26 @@ class word_parser {
             return self::FORMAT_15_LOGISTICA;
         }
 
+        // FORMATO 17: LOGISTICA APPR04+ - LOG_APPR04_Q01 – LOGISTICA_XX (competenza su stessa riga)
+        if ($has_log_appr_dash) {
+            return self::FORMAT_17_LOG_APPR_DASH;
+        }
+
+        // FORMATO 18: LOGISTICA APPR06 - Q1 – LOGISTICA_XX (Q semplice + dash + comp)
+        if ($has_q_dash_logistica) {
+            return self::FORMAT_18_LOG_Q_DASH;
+        }
+
         // FORMATO 16: LOGISTICA Approfondimenti - LOG_APPR01_Q01 + Competenza: LOGISTICA_XX
         if ($has_log_appr_q && $has_competenza_logistica) {
             return self::FORMAT_16_LOG_APPR;
+        }
+
+        // --- MECCANICA ---
+
+        // FORMATO 19: MECCANICA - [A-H]?##. Testo + Codice competenza: MECCANICA_XX_YY
+        if ($has_codice_meccanica && $has_numbered_question) {
+            return self::FORMAT_19_MECCANICA;
         }
 
         // --- AUTOVEICOLO ---
@@ -381,15 +416,22 @@ class word_parser {
         preg_match_all('/<w:p[^>]*>(.*?)<\/w:p>/s', $xml_content, $matches);
 
         foreach ($matches[1] as $p_content) {
-            // Sostituisci <w:br/> e <w:br></w:br> con un marker temporaneo
-            $p_content = preg_replace('/<w:br\s*\/?>/i', '|||LINEBREAK|||', $p_content);
+            // Estrai elementi <w:br/> e <w:t> nell'ordine in cui appaiono
+            // Pattern matcha: <w:br.../> OPPURE <w:t...>contenuto</w:t>
+            preg_match_all('/<w:br[^>]*\/?>|<w:t[^>]*>([^<]*)<\/w:t>/i', $p_content, $elem_matches, PREG_SET_ORDER);
 
-            // Estrai testo da ogni <w:t>...</w:t>
-            preg_match_all('/<w:t[^>]*>([^<]*)<\/w:t>/', $p_content, $text_matches);
-            $paragraph_text = implode('', $text_matches[1]);
+            $text_parts = [];
+            foreach ($elem_matches as $match) {
+                if (stripos($match[0], '<w:br') !== false) {
+                    // È un line break
+                    $text_parts[] = "\n";
+                } elseif (isset($match[1])) {
+                    // È contenuto testuale
+                    $text_parts[] = $match[1];
+                }
+            }
 
-            // Converti il marker in newline
-            $paragraph_text = str_replace('|||LINEBREAK|||', "\n", $paragraph_text);
+            $paragraph_text = implode('', $text_parts);
 
             // Se il paragrafo contiene newline interni, splitta in più linee
             $lines = explode("\n", $paragraph_text);
@@ -400,7 +442,7 @@ class word_parser {
                 }
             }
         }
-        
+
         return implode("\n", $paragraphs);
     }
     
@@ -415,8 +457,8 @@ class word_parser {
         // Split in base al formato
         $parts = $this->split_questions_by_format($text, $format);
         
-        // Gestione speciale per formati che catturano gruppi multipli
-        if (in_array($format, [self::FORMAT_4_ELETT_APPR06, self::FORMAT_10_ELET_BASE, self::FORMAT_12_ELET_PIPE])) {
+        // Gestione speciale per formati che catturano gruppi multipli (ID, COMP, content)
+        if (in_array($format, [self::FORMAT_4_ELETT_APPR06, self::FORMAT_10_ELET_BASE, self::FORMAT_12_ELET_PIPE, self::FORMAT_17_LOG_APPR_DASH, self::FORMAT_18_LOG_Q_DASH])) {
             // parts[0] = header, poi (Q##, COMP, content), (Q##, COMP, content), ...
             for ($i = 1; $i < count($parts) - 2; $i += 3) {
                 $question_id = $parts[$i];
@@ -493,12 +535,27 @@ class word_parser {
 
             // --- LOGISTICA ---
             case self::FORMAT_15_LOGISTICA:
-                // Split su "1. LOG_BASE_Q01" (numero + punto + codice)
-                return preg_split('/\n\d+\.\s*([A-Z_]+_Q\d+)\n/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+                // Split su "1. LOG_BASE_Q01" o "1. LOG_APPR05_Q01" (numero + punto + codice)
+                // [A-Z0-9_]+ include numeri per matchare APPR05, ecc.
+                return preg_split('/(?:^|\n)\d+\.\s*([A-Z0-9_]+_Q\d+)\s*$/um', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
 
             case self::FORMAT_16_LOG_APPR:
                 // Split su "LOG_APPR01_Q01" (codice senza numero)
-                return preg_split('/\n(LOG_APPR\d+_Q\d+)\n/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+                return preg_split('/(?:^|\n)(LOG_APPR\d+_Q\d+)\s*\n/um', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+            case self::FORMAT_17_LOG_APPR_DASH:
+                // Split su "LOG_APPR04_Q01 – LOGISTICA_XX" (cattura ID e COMP separatamente)
+                return preg_split('/(?:^|\n)(LOG_APPR\d+_Q\d+)\s*[–—-]\s*([A-Z_]+_[A-Z0-9_]+)\s*\n/um', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+            case self::FORMAT_18_LOG_Q_DASH:
+                // Split su "Q1 – LOGISTICA_XX" (cattura Q## e COMP separatamente)
+                return preg_split('/(?:^|\n)(Q\d+)\s*[–—-]\s*([A-Z_]+_[A-Z0-9_]+)\s*\n/um', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+            // --- MECCANICA ---
+            case self::FORMAT_19_MECCANICA:
+                // Split su "[A-H]?##." (es. "1.", "A1.", "B2.")
+                // Cattura il numero domanda con eventuale prefisso lettera
+                return preg_split('/(?:^|\n)([A-H]?\d+)\.\s+/um', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
 
             default:
                 // Split su Q## semplice (tutti gli altri formati)
@@ -517,7 +574,14 @@ class word_parser {
      */
     private function parse_single_question($id, $content, $format, $pre_extracted_competency = '') {
         // Estrai numero domanda dall'ID
-        if (preg_match('/Q?(\d+)/', $id, $m)) {
+        // Per formati come LOG_APPR01_Q01, cerca _Q## alla fine (priorità)
+        if (preg_match('/_Q(\d+)$/i', $id, $m)) {
+            $num = str_pad($m[1], 2, '0', STR_PAD_LEFT);
+        } elseif (preg_match('/Q(\d+)/i', $id, $m)) {
+            // Per formati come Q01, AUT_BASE_Q01
+            $num = str_pad($m[1], 2, '0', STR_PAD_LEFT);
+        } elseif (preg_match('/(\d+)/', $id, $m)) {
+            // Fallback: prendi qualsiasi numero
             $num = str_pad($m[1], 2, '0', STR_PAD_LEFT);
         } else {
             $num = $id;
@@ -677,6 +741,15 @@ class word_parser {
             case self::FORMAT_16_LOG_APPR:
                 // Competenza: LOGISTICA_LO_F5
                 if (preg_match('/Competenza:\s*([A-Z_]+_[A-Z0-9_]+)/i', $content, $m)) {
+                    $result['code'] = $this->clean_competency_code($m[1]);
+                    return $result;
+                }
+                break;
+
+            // --- MECCANICA ---
+            case self::FORMAT_19_MECCANICA:
+                // Codice competenza: MECCANICA_XX_YY
+                if (preg_match('/Codice\s*competenza:\s*(MECCANICA_[A-Z0-9_]+)/ui', $content, $m)) {
                     $result['code'] = $this->clean_competency_code($m[1]);
                     return $result;
                 }
@@ -1226,6 +1299,11 @@ class word_parser {
             // LOGISTICA
             self::FORMAT_15_LOGISTICA => 'LOGISTICA Test Base (1. LOG_BASE_Q01 + Competenza:)',
             self::FORMAT_16_LOG_APPR => 'LOGISTICA Approfondimenti (LOG_APPR01_Q01 + Competenza:)',
+            self::FORMAT_17_LOG_APPR_DASH => 'LOGISTICA Appr04+ (LOG_APPR04_Q01 – LOGISTICA_XX)',
+            self::FORMAT_18_LOG_Q_DASH => 'LOGISTICA Appr06 (Q1 – LOGISTICA_XX)',
+
+            // MECCANICA
+            self::FORMAT_19_MECCANICA => 'MECCANICA ([A-H]?##. + Codice competenza: MECCANICA_XX)',
 
             // GENERICI
             self::FORMAT_9_NO_COMP => 'File senza competenze (richiede Excel)',
@@ -1234,10 +1312,10 @@ class word_parser {
 
         return $descriptions[$this->detected_format] ?? 'Formato sconosciuto';
     }
-    
+
     /**
      * Restituisce tutti i formati supportati
-     * 
+     *
      * @return array Array di [costante => descrizione]
      */
     public static function get_supported_formats() {
@@ -1246,26 +1324,31 @@ class word_parser {
             self::FORMAT_1_AUTOV_BASE => 'AUTOVEICOLO Test Base',
             self::FORMAT_2_AUTOV_APPR => 'AUTOVEICOLO Approfondimenti 0-2',
             self::FORMAT_7_AUTOV_APPR36 => 'AUTOVEICOLO Approfondimenti 3-6',
-            
+
             // ELETTRONICA
             self::FORMAT_3_ELETT_BASE => 'ELETTRONICA Base/Appr',
             self::FORMAT_4_ELETT_APPR06 => 'ELETTRONICA Appr03/06',
-            
+
             // CHIMICA
             self::FORMAT_5_CHIM_BASE => 'CHIMICA Base/Appr01',
             self::FORMAT_6_CHIM_APPR00 => 'CHIMICA Appr00',
             self::FORMAT_8_CHIM_APPR23 => 'CHIMICA Appr02/03',
-            
+
             // ELETTRICITÀ
             self::FORMAT_10_ELET_BASE => 'ELETTRICITÀ Test Base',
             self::FORMAT_11_ELET_BULLET => 'ELETTRICITÀ Appr00 (Bullet)',
             self::FORMAT_12_ELET_PIPE => 'ELETTRICITÀ Appr04 (Pipe)',
             self::FORMAT_13_ELET_DOT => 'ELETTRICITÀ Appr01/02 (Dot)',
             self::FORMAT_14_ELET_NEWLINE => 'ELETTRICITÀ Appr03/05/06 (Newline)',
-            
+
             // LOGISTICA
             self::FORMAT_15_LOGISTICA => 'LOGISTICA Test Base',
             self::FORMAT_16_LOG_APPR => 'LOGISTICA Approfondimenti',
+            self::FORMAT_17_LOG_APPR_DASH => 'LOGISTICA Appr04 (Dash)',
+            self::FORMAT_18_LOG_Q_DASH => 'LOGISTICA Appr06 (Q-Dash)',
+
+            // MECCANICA
+            self::FORMAT_19_MECCANICA => 'MECCANICA (Codice competenza)',
 
             // GENERICI
             self::FORMAT_9_NO_COMP => 'File senza competenze',

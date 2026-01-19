@@ -30,7 +30,7 @@ require_sesskey();
 
 $context = context_system::instance();
 
-$action = required_param('action', PARAM_ALPHA);
+$action = required_param('action', PARAM_ALPHANUMEXT);
 
 $returnurl = new moodle_url('/local/ftm_scheduler/index.php');
 
@@ -93,17 +93,42 @@ switch ($action) {
         
     case 'add_group_members':
         require_capability('local/ftm_scheduler:enrollstudents', $context);
-        
+
         $groupid = required_param('groupid', PARAM_INT);
         $userids = required_param_array('userids', PARAM_INT);
-        
+
         \local_ftm_scheduler\manager::add_group_members($groupid, $userids);
-        
+
         \core\notification::success('Studenti aggiunti al gruppo');
-        
+
         $returnurl = new moodle_url('/local/ftm_scheduler/members.php', ['groupid' => $groupid]);
         break;
-        
+
+    case 'remove_group_member':
+        require_capability('local/ftm_scheduler:enrollstudents', $context);
+
+        $groupid = required_param('groupid', PARAM_INT);
+        $userid = required_param('userid', PARAM_INT);
+
+        global $DB;
+
+        // Remove member from group
+        $DB->delete_records('local_ftm_group_members', [
+            'groupid' => $groupid,
+            'userid' => $userid
+        ]);
+
+        // Also remove any enrollments for this user in activities of this group
+        $DB->delete_records('local_ftm_enrollments', [
+            'groupid' => $groupid,
+            'userid' => $userid
+        ]);
+
+        \core\notification::success('Studente rimosso dal gruppo');
+
+        $returnurl = new moodle_url('/local/ftm_scheduler/members.php', ['groupid' => $groupid]);
+        break;
+
     default:
         throw new moodle_exception('invalidaction', 'error');
 }

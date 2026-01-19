@@ -32,7 +32,7 @@ require_login();
 $context = context_system::instance();
 require_capability('local/ftm_scheduler:view', $context);
 
-$action = required_param('action', PARAM_ALPHA);
+$action = required_param('action', PARAM_ALPHANUMEXT);
 
 header('Content-Type: application/json');
 

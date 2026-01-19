@@ -148,22 +148,31 @@ class excel_verifier {
     }
     
     /**
-     * Normalizza il numero della domanda (Q01, Q1, 01, 1 -> Q01)
-     * 
+     * Normalizza il numero della domanda (Q01, Q1, 01, 1, LOG_APPR01_Q01 -> Q01)
+     *
      * @param string $q Numero domanda
      * @return string Numero normalizzato
      */
     private function normalize_question_num($q) {
         $q = trim($q);
-        
-        // Rimuovi "Q" se presente
-        $num = preg_replace('/^Q/i', '', $q);
-        
-        // Prendi solo numeri
-        $num = preg_replace('/[^0-9]/', '', $num);
-        
-        // Pad a 2 cifre
-        return 'Q' . str_pad($num, 2, '0', STR_PAD_LEFT);
+
+        // Prima cerca pattern _Q## alla fine (es. LOG_APPR01_Q01 -> Q01)
+        if (preg_match('/_Q(\d+)$/i', $q, $matches)) {
+            return 'Q' . str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+        }
+
+        // Poi cerca Q## in qualsiasi posizione
+        if (preg_match('/Q(\d+)/i', $q, $matches)) {
+            return 'Q' . str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+        }
+
+        // Fallback: prendi solo numeri (per formati come "01", "1")
+        $num = preg_replace('/[^0-9]/', '', $q);
+        if (!empty($num)) {
+            return 'Q' . str_pad($num, 2, '0', STR_PAD_LEFT);
+        }
+
+        return 'Q00'; // fallback
     }
     
     /**
@@ -666,19 +675,47 @@ function get_excel_verification_js($courseid) {
     
     function showVerifyResults(results) {
         var container = document.getElementById("excelVerifyResults");
-        
+
         var html = \'<div class="verify-summary">\';
-        html += \'<div class="verify-stat ok">✅ \' + results.matches + \'/\' + results.total_word + \' corrispondono</div>\';
-        
+
+        // Mostra match con colore appropriato
+        var matchClass = results.matches === results.total_word ? "ok" : (results.matches > 0 ? "warning" : "error");
+        html += \'<div class="verify-stat \' + matchClass + \'">✅ \' + results.matches + \'/\' + results.total_word + \' corrispondono</div>\';
+
         if (results.discrepancies.length > 0) {
             html += \'<div class="verify-stat warning">⚠️ \' + results.discrepancies.length + \' discrepanze</div>\';
         }
+
+        // Mostra warning per domande non trovate in Excel
+        if (results.missing_in_excel && results.missing_in_excel.length > 0) {
+            html += \'<div class="verify-stat error">❌ \' + results.missing_in_excel.length + \' non trovate in Excel</div>\';
+        }
         html += \'</div>\';
-        
+
+        // Mostra competenze mancanti dal DB
+        if (results.competency_check && !results.competency_check.all_valid) {
+            html += \'<div class="verify-stat warning" style="margin-top: 10px;">⚠️ Competenze non trovate nel DB: \';
+            results.competency_check.missing_competencies.forEach(function(c) {
+                html += \'<code>\' + c.code + \'</code> \';
+            });
+            html += \'</div>\';
+        } else if (results.competency_check && results.competency_check.all_valid) {
+            html += \'<div class="verify-stat ok" style="margin-top: 10px;">🎯 Tutte le \' + results.competency_check.total_valid + \' competenze esistono nel DB</div>\';
+        }
+
+        // Mostra elenco domande non trovate in Excel
+        if (results.missing_in_excel && results.missing_in_excel.length > 0) {
+            html += \'<div class="discrepancy-list" style="margin-top: 15px; background: #fee2e2; padding: 10px; border-radius: 6px;">\';
+            html += \'<p><strong>❌ Domande Word non trovate in Excel:</strong></p>\';
+            html += \'<p style="font-family: monospace;">\' + results.missing_in_excel.join(\', \') + \'</p>\';
+            html += \'<p style="font-size: 12px; color: #666;">Verifica che la colonna "Domanda" dell\\\'Excel contenga gli stessi identificativi del Word (es. Q01, Q02, LOG_APPR01_Q01, ecc.)</p>\';
+            html += \'</div>\';
+        }
+
         if (results.discrepancies.length > 0) {
             html += \'<div class="discrepancy-list">\';
             html += \'<p><strong>Risolvi le discrepanze:</strong></p>\';
-            
+
             results.discrepancies.forEach(function(d) {
                 var typeLabel = d.type === "competency" ? "Competenza" : "Risposta";
                 html += \'<div class="discrepancy-item" id="disc-\' + d.index + \'-\' + d.type + \'">\';
@@ -694,16 +731,16 @@ function get_excel_verification_js($courseid) {
                 html += \'</span>\';
                 html += \'</div>\';
             });
-            
+
             html += \'</div>\';
             html += \'<p id="discrepancyWarning" class="verify-stat error">❌ Risolvi tutte le discrepanze prima di procedere</p>\';
-        } else {
+        } else if (results.missing_in_excel && results.missing_in_excel.length === 0) {
             html += \'<p class="verify-stat ok">✅ Tutte le domande corrispondono!</p>\';
         }
-        
+
         container.innerHTML = html;
         container.style.display = "block";
-        
+
         updateConvertButton();
     }
     

@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FTM Scheduler - Vista Coach</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        /* =============================================
+           COLORI ARMONIZZATI CON student_report.php
+           - Gradiente viola: #667eea -> #764ba2
+           - Verde: #28a745 / #20c997
+           - Arancione: #fd7e14 / #ffc107
+           - Rosso: #dc3545
+           ============================================= */
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 { font-size: 18px; font-weight: 500; }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .mockup-notice {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 12px 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .breadcrumb {
+            background: white;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .breadcrumb a { color: #667eea; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: calc(100vh - 150px);
+        }
+
+        /* Sidebar - Armonizzata */
+        .sidebar {
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px;
+        }
+
+        .sidebar-section { margin-bottom: 25px; }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #764ba2;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-menu { list-style: none; }
+        .sidebar-menu li { margin-bottom: 5px; }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .sidebar-menu a:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .sidebar-menu a.active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+            color: #667eea;
+            font-weight: 600;
+            border-left: 3px solid #667eea;
+        }
+
+        .sidebar-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            margin-left: auto;
+            font-weight: 600;
+        }
+
+        .sidebar-badge.alert { background: #dc3545; color: white; }
+        .sidebar-badge.warning { background: #fd7e14; color: white; }
+        .sidebar-badge.success { background: #28a745; color: white; }
+
+        /* Main Content */
+        .main-content {
+            padding: 20px;
+            max-width: 1400px;
+        }
+
+        .page-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .page-title h2 {
+            font-size: 24px;
+            color: #333;
+        }
+
+        /* Buttons - Stile student_report */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-sm { padding: 6px 14px; font-size: 13px; }
+
+        /* Colori Gruppi Studenti - MANTENUTI */
+        .gruppo-giallo { background: #FFFF00; color: #333; }
+        .gruppo-grigio { background: #808080; color: white; }
+        .gruppo-rosso { background: #FF0000; color: white; }
+        .gruppo-marrone { background: #996633; color: white; }
+        .gruppo-viola { background: #7030A0; color: white; }
+
+        .gruppo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Deadline Box - Armonizzato */
+        .deadline-box {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border: 2px solid #dc3545;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.15);
+        }
+
+        .deadline-icon {
+            font-size: 48px;
+            background: white;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .deadline-content h3 { color: #721c24; margin-bottom: 5px; font-size: 18px; }
+        .deadline-content p { color: #721c24; font-size: 14px; }
+
+        .deadline-timer {
+            margin-left: auto;
+            text-align: center;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .deadline-timer .time {
+            font-size: 32px;
+            font-weight: 700;
+            color: #dc3545;
+        }
+
+        .deadline-timer .label {
+            font-size: 12px;
+            color: #721c24;
+        }
+
+        /* Stats - Colori student_report */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 18px 20px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .stat-card.violet { border-left: 4px solid #667eea; }
+        .stat-card.violet .stat-number { color: #667eea; }
+
+        .stat-card.blue { border-left: 4px solid #4facfe; }
+        .stat-card.blue .stat-number { color: #4facfe; }
+
+        .stat-card.green { border-left: 4px solid #28a745; }
+        .stat-card.green .stat-number { color: #28a745; }
+
+        .stat-card.orange { border-left: 4px solid #fd7e14; }
+        .stat-card.orange .stat-number { color: #fd7e14; }
+
+        .stat-card.red { border-left: 4px solid #dc3545; }
+        .stat-card.red .stat-number { color: #dc3545; }
+
+        .stat-number { font-size: 28px; font-weight: 700; }
+        .stat-label { font-size: 12px; color: #666; margin-top: 5px; }
+
+        /* Mini Calendar */
+        .mini-calendar {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .mini-calendar h4 {
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #667eea;
+        }
+
+        .calendar-week-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .calendar-day {
+            text-align: center;
+            padding: 8px 5px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .calendar-day.header {
+            font-weight: 600;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            color: #667eea;
+        }
+
+        /* Mantiene colore gruppo per calendario */
+        .calendar-day.giallo {
+            background: #FEF9C3;
+            border: 1px solid #EAB308;
+            color: #92400E;
+        }
+
+        .calendar-day.empty {
+            background: #f8f9fa;
+            color: #999;
+        }
+
+        /* Quick filters */
+        .quick-filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .quick-filter {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-filter:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .quick-filter.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* Student Cards */
+        .students-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 20px;
+        }
+
+        .student-card {
+            background: white;
+            border-radius: 16px;
+            border: 2px solid #e0e0e0;
+            overflow: hidden;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .student-card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+            transform: translateY(-2px);
+        }
+
+        .student-card.alert-border {
+            border-color: #dc3545;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.15);
+        }
+
+        /* Header card mantiene colore gruppo */
+        .student-card-header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .student-card-header:hover {
+            filter: brightness(0.97);
+        }
+
+        /* COLORE GRUPPO - Mantiene giallo per Gruppo Giallo */
+        .student-card-header.giallo {
+            background: linear-gradient(135deg, #FEF9C3 0%, #FDE68A 100%);
+            border-left: 4px solid #EAB308;
+        }
+
+        .student-info-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .collapse-toggle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease, background 0.2s;
+            font-size: 14px;
+        }
+
+        .collapse-toggle:hover {
+            background: rgba(0,0,0,0.15);
+        }
+
+        .student-card.collapsed .collapse-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .student-name { font-size: 16px; font-weight: 600; color: #333; }
+        .student-email { font-size: 12px; color: #666; }
+
+        /* Week badge mantiene colore gruppo */
+        .week-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #EAB308;
+            color: #333;
+        }
+
+        .settore-badge {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Collapsible */
+        .student-card-collapsible {
+            max-height: 600px;
+            overflow: hidden;
+            transition: max-height 0.35s ease-out, opacity 0.25s ease;
+            opacity: 1;
+        }
+
+        .student-card.collapsed .student-card-collapsible {
+            max-height: 0;
+            opacity: 0;
+        }
+
+        .student-card-body { padding: 20px; }
+
+        /* Progress Section - Colori student_report */
+        .progress-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .progress-item {
+            text-align: center;
+            padding: 12px 8px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .progress-item .value {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .progress-item .label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        /* Colori armonizzati con student_report */
+        .progress-item.competenze { border-left: 3px solid #667eea; }
+        .progress-item.competenze .value { color: #667eea; }
+
+        .progress-item.autoval { border-left: 3px solid #20c997; }
+        .progress-item.autoval .value { color: #20c997; }
+
+        .progress-item.lab { border-left: 3px solid #fd7e14; }
+        .progress-item.lab .value { color: #fd7e14; }
+
+        .progress-item.danger {
+            border-left: 3px solid #dc3545;
+            background: #f8d7da;
+        }
+        .progress-item.danger .value { color: #dc3545; }
+
+        /* Mini Progress Bar */
+        .mini-progress {
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+
+        .mini-progress-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        .mini-progress-fill.violet { background: linear-gradient(90deg, #667eea, #764ba2); }
+        .mini-progress-fill.teal { background: linear-gradient(90deg, #11998e, #38ef7d); }
+        .mini-progress-fill.orange { background: #fd7e14; }
+        .mini-progress-fill.red { background: #dc3545; }
+
+        /* Status Row - Colori student_report */
+        .status-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        /* Badge con colori student_report */
+        .status-badge.done { background: #d4edda; color: #155724; }
+        .status-badge.pending { background: #fff3cd; color: #856404; }
+        .status-badge.missing { background: #f8d7da; color: #721c24; }
+
+        /* Week Choices - Mantiene riferimento gruppo ma con stile armonizzato */
+        .week2-choices {
+            margin-top: 15px;
+            padding: 15px;
+            background: linear-gradient(135deg, #FEF9C3 0%, #FDE68A 100%);
+            border-radius: 10px;
+            border: 1px solid #EAB308;
+        }
+
+        .week2-choices h4 {
+            font-size: 13px;
+            margin-bottom: 10px;
+            color: #92400E;
+        }
+
+        .choice-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(234, 179, 8, 0.3);
+            font-size: 13px;
+        }
+
+        .choice-row:last-child { border-bottom: none; }
+
+        .choice-label { color: #92400E; }
+
+        .choice-select {
+            padding: 6px 12px;
+            border: 1px solid #EAB308;
+            border-radius: 6px;
+            font-size: 13px;
+            background: white;
+            min-width: 180px;
+        }
+
+        .choice-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .student-card-footer {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .student-card-footer .btn { flex: 1; justify-content: center; }
+
+        /* Gruppo chip in sidebar - Mantiene colore gruppo */
+        .gruppo-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 15px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .gruppo-chip.giallo {
+            background: #FEF9C3;
+            border: 2px solid #EAB308;
+        }
+
+        .gruppo-chip .week {
+            background: #EAB308;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: auto;
+            font-weight: 600;
+        }
+
+        /* Expand/Collapse All */
+        .expand-collapse-all {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .expand-collapse-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .expand-collapse-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .stats-row { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .students-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="mockup-notice">
+        <strong>MOCKUP v4 - Vista Coach Integrata</strong> |
+        Colori armonizzati con student_report.php + Colori Gruppo mantenuti
+    </div>
+
+    <div class="header">
+        <h1>Moodle - Fondazione Terzo Millennio</h1>
+        <div class="user-info">
+            <span>Graziano M. (Coach)</span>
+            <div class="user-avatar">GM</div>
+        </div>
+    </div>
+
+    <div class="breadcrumb">
+        <a href="#">Home</a> / <a href="#">FTM</a> / <a href="#">CoachManager</a> / <strong>I Miei Studenti</strong>
+    </div>
+
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">FTM Coach</div>
+                <ul class="sidebar-menu">
+                    <li><a href="#" class="active">I Miei Studenti</a></li>
+                    <li>
+                        <a href="#">
+                            Scelte Settimana 2
+                            <span class="sidebar-badge alert">8</span>
+                        </a>
+                    </li>
+                    <li><a href="#">Calendario</a></li>
+                    <li>
+                        <a href="#">
+                            Autovalutazioni
+                            <span class="sidebar-badge warning">3</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            Laboratori
+                            <span class="sidebar-badge success">5</span>
+                        </a>
+                    </li>
+                    <li><a href="#">Report Classe</a></li>
+                    <li><a href="#">Report Colloquio</a></li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">I Miei Gruppi</div>
+                <div class="gruppo-chip giallo">
+                    <span>Gruppo Giallo</span>
+                    <span class="week">Sett. 2</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Prossime Attivita</div>
+                <div style="font-size: 13px; padding: 12px; background: #FEF9C3; border-radius: 8px; border: 1px solid #EAB308;">
+                    <p style="margin-bottom: 8px;"><strong>Oggi Lun 26:</strong></p>
+                    <p style="margin-bottom: 5px; color: #92400E;">08:30 Test Approfondimento</p>
+                    <p style="color: #92400E;">13:15 Lab Pratico</p>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Link Rapidi</div>
+                <ul class="sidebar-menu">
+                    <li><a href="#">Student Report</a></li>
+                    <li><a href="#">Esporta Excel</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="page-title">
+                <h2>I Miei Studenti - Gruppo Giallo</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-warning">Scelte Rapide Settimana 3</button>
+                    <button class="btn btn-primary">Report Classe</button>
+                </div>
+            </div>
+
+            <!-- DEADLINE ALERT -->
+            <div class="deadline-box">
+                <div class="deadline-icon">!</div>
+                <div class="deadline-content">
+                    <h3>DEADLINE: Scelte Settimana 3</h3>
+                    <p>Devi scegliere i test di approfondimento per i tuoi studenti entro <strong>Venerdi 30 Gennaio</strong></p>
+                    <p style="margin-top: 5px;">8 studenti ancora da configurare</p>
+                </div>
+                <div class="deadline-timer">
+                    <div class="time">4 giorni</div>
+                    <div class="label">rimanenti</div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row">
+                <div class="stat-card violet">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">Studenti assegnati</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-number">72%</div>
+                    <div class="stat-label">Media Competenze</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-number">9/12</div>
+                    <div class="stat-label">Autoval. Complete</div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-number">7/12</div>
+                    <div class="stat-label">Lab Valutati</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">Sotto Soglia 50%</div>
+                </div>
+            </div>
+
+            <!-- Quick Filters -->
+            <div class="quick-filters">
+                <button class="quick-filter active">Tutti (12)</button>
+                <button class="quick-filter">Sett.3 da scegliere (8)</button>
+                <button class="quick-filter">Autoval. mancanti (3)</button>
+                <button class="quick-filter">Lab da valutare (5)</button>
+                <button class="quick-filter">Sotto soglia (3)</button>
+            </div>
+
+            <!-- Mini Calendar -->
+            <div class="mini-calendar">
+                <h4>Settimana 2 - Gruppo Giallo (KW05: 26-30 Gennaio)</h4>
+                <div class="calendar-week-row">
+                    <div class="calendar-day header">Lun 26</div>
+                    <div class="calendar-day header">Mar 27</div>
+                    <div class="calendar-day header">Mer 28</div>
+                    <div class="calendar-day header">Gio 29</div>
+                    <div class="calendar-day header">Ven 30</div>
+                </div>
+                <div class="calendar-week-row">
+                    <div class="calendar-day giallo">Test Appr.</div>
+                    <div class="calendar-day giallo">Lab</div>
+                    <div class="calendar-day empty">REMOTO</div>
+                    <div class="calendar-day giallo">Test Appr.</div>
+                    <div class="calendar-day giallo">Lab</div>
+                </div>
+            </div>
+
+            <!-- Expand/Collapse All -->
+            <div class="expand-collapse-all">
+                <button class="expand-collapse-btn" onclick="expandAll()">
+                    <span>&#9660;</span> Espandi tutti
+                </button>
+                <button class="expand-collapse-btn" onclick="collapseAll()">
+                    <span>&#9650;</span> Comprimi tutti
+                </button>
+            </div>
+
+            <!-- Students Grid -->
+            <div class="students-grid">
+                <!-- Student 1 - Marco Bianchi -->
+                <div class="student-card" id="student-1">
+                    <div class="student-card-header giallo" onclick="toggleCard('student-1')">
+                        <div class="student-info-left">
+                            <div class="collapse-toggle">&#9660;</div>
+                            <div>
+                                <div class="student-name">Marco Bianchi</div>
+                                <div class="student-email">marco.bianchi@email.com</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="settore-badge">MECCANICA</span>
+                            <span class="week-badge">Sett. 2</span>
+                        </div>
+                    </div>
+                    <div class="student-card-collapsible">
+                        <div class="student-card-body">
+                            <div class="progress-section">
+                                <div class="progress-item competenze">
+                                    <div class="value">85%</div>
+                                    <div class="label">Competenze</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill violet" style="width: 85%;"></div>
+                                    </div>
+                                </div>
+                                <div class="progress-item autoval">
+                                    <div class="value">4.2</div>
+                                    <div class="label">Autovalutaz.</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill teal" style="width: 84%;"></div>
+                                    </div>
+                                </div>
+                                <div class="progress-item lab">
+                                    <div class="value">3.8</div>
+                                    <div class="label">Laboratorio</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill orange" style="width: 76%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="status-row">
+                                <span class="status-badge done">Quiz fatto</span>
+                                <span class="status-badge done">Autoval. completa</span>
+                                <span class="status-badge done">Lab valutato</span>
+                            </div>
+
+                            <div class="week2-choices">
+                                <h4>Scelte Settimana 3 (da completare)</h4>
+                                <div class="choice-row">
+                                    <span class="choice-label">Lun 02 - Test Teorico:</span>
+                                    <select class="choice-select">
+                                        <option value="">-- Seleziona Test --</option>
+                                        <option value="mec">Quiz Meccanica Avanzato</option>
+                                        <option value="cnc">Quiz CNC</option>
+                                        <option value="dis">Quiz Disegno Tecnico</option>
+                                    </select>
+                                </div>
+                                <div class="choice-row">
+                                    <span class="choice-label">Mar 03 - Lab Pratico:</span>
+                                    <select class="choice-select">
+                                        <option value="">-- Seleziona Lab --</option>
+                                        <option value="cnc">Lab CNC Base</option>
+                                        <option value="tornio">Lab Tornio</option>
+                                        <option value="fresa">Lab Fresatura</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="student-card-footer">
+                            <button class="btn btn-secondary btn-sm">Report</button>
+                            <button class="btn btn-primary btn-sm">Dettagli</button>
+                            <button class="btn btn-success btn-sm">Salva Scelte</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student 2 - Laura Verdi -->
+                <div class="student-card" id="student-2">
+                    <div class="student-card-header giallo" onclick="toggleCard('student-2')">
+                        <div class="student-info-left">
+                            <div class="collapse-toggle">&#9660;</div>
+                            <div>
+                                <div class="student-name">Laura Verdi</div>
+                                <div class="student-email">laura.verdi@email.com</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="settore-badge">ELETTRICITA</span>
+                            <span class="week-badge">Sett. 2</span>
+                        </div>
+                    </div>
+                    <div class="student-card-collapsible">
+                        <div class="student-card-body">
+                            <div class="progress-section">
+                                <div class="progress-item competenze">
+                                    <div class="value">72%</div>
+                                    <div class="label">Competenze</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill violet" style="width: 72%;"></div>
+                                    </div>
+                                </div>
+                                <div class="progress-item autoval">
+                                    <div class="value">--</div>
+                                    <div class="label">Autovalutaz.</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill teal" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                                <div class="progress-item lab">
+                                    <div class="value">3.5</div>
+                                    <div class="label">Laboratorio</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill orange" style="width: 70%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="status-row">
+                                <span class="status-badge done">Quiz fatto</span>
+                                <span class="status-badge missing">Autoval. mancante</span>
+                                <span class="status-badge done">Lab valutato</span>
+                            </div>
+
+                            <div class="week2-choices">
+                                <h4>Scelte Settimana 3 (da completare)</h4>
+                                <div class="choice-row">
+                                    <span class="choice-label">Lun 02 - Test Teorico:</span>
+                                    <select class="choice-select">
+                                        <option value="">-- Seleziona Test --</option>
+                                        <option value="ele">Quiz Elettricita</option>
+                                        <option value="aut">Quiz Automazione</option>
+                                    </select>
+                                </div>
+                                <div class="choice-row">
+                                    <span class="choice-label">Mar 03 - Lab Pratico:</span>
+                                    <select class="choice-select">
+                                        <option value="">-- Seleziona Lab --</option>
+                                        <option value="ele">Lab Impianti</option>
+                                        <option value="plc">Lab PLC</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="student-card-footer">
+                            <button class="btn btn-secondary btn-sm">Report</button>
+                            <button class="btn btn-warning btn-sm">Sollecita Autoval</button>
+                            <button class="btn btn-success btn-sm">Salva</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student 3 - Giuseppe Rossi - SOTTO SOGLIA -->
+                <div class="student-card alert-border" id="student-3">
+                    <div class="student-card-header giallo" onclick="toggleCard('student-3')">
+                        <div class="student-info-left">
+                            <div class="collapse-toggle">&#9660;</div>
+                            <div>
+                                <div class="student-name">Giuseppe Rossi</div>
+                                <div class="student-email">giuseppe.rossi@email.com</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="settore-badge">MECCANICA</span>
+                            <span class="week-badge">Sett. 2</span>
+                        </div>
+                    </div>
+                    <div class="student-card-collapsible">
+                        <div class="student-card-body">
+                            <div class="progress-section">
+                                <div class="progress-item danger">
+                                    <div class="value">42%</div>
+                                    <div class="label">Competenze</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill red" style="width: 42%;"></div>
+                                    </div>
+                                </div>
+                                <div class="progress-item autoval">
+                                    <div class="value">2.8</div>
+                                    <div class="label">Autovalutaz.</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill teal" style="width: 56%;"></div>
+                                    </div>
+                                </div>
+                                <div class="progress-item lab">
+                                    <div class="value">--</div>
+                                    <div class="label">Laboratorio</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill orange" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="status-row">
+                                <span class="status-badge missing">Sotto soglia 50%</span>
+                                <span class="status-badge done">Autoval. completa</span>
+                                <span class="status-badge pending">Lab in attesa</span>
+                            </div>
+
+                            <div class="week2-choices">
+                                <h4>Scelte Settimana 3 - Percorso Recupero</h4>
+                                <div class="choice-row">
+                                    <span class="choice-label">Lun 02 - Test:</span>
+                                    <select class="choice-select">
+                                        <option selected>Quiz Recupero Base</option>
+                                    </select>
+                                </div>
+                                <div class="choice-row">
+                                    <span class="choice-label">Mar 03 - Lab:</span>
+                                    <select class="choice-select">
+                                        <option selected>Lab Recupero Guidato</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="student-card-footer">
+                            <button class="btn btn-secondary btn-sm">Report</button>
+                            <button class="btn btn-primary btn-sm">Colloquio</button>
+                            <button class="btn btn-success btn-sm">Salva</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student 4 - Anna Neri - Collassato -->
+                <div class="student-card collapsed" id="student-4">
+                    <div class="student-card-header giallo" onclick="toggleCard('student-4')">
+                        <div class="student-info-left">
+                            <div class="collapse-toggle">&#9660;</div>
+                            <div>
+                                <div class="student-name">Anna Neri</div>
+                                <div class="student-email">anna.neri@email.com</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="settore-badge">INFORMATICA</span>
+                            <span class="week-badge">Sett. 2</span>
+                        </div>
+                    </div>
+                    <div class="student-card-collapsible">
+                        <div class="student-card-body">
+                            <div class="progress-section">
+                                <div class="progress-item competenze">
+                                    <div class="value">91%</div>
+                                    <div class="label">Competenze</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill violet" style="width: 91%;"></div>
+                                    </div>
+                                </div>
+                                <div class="progress-item autoval">
+                                    <div class="value">4.5</div>
+                                    <div class="label">Autovalutaz.</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill teal" style="width: 90%;"></div>
+                                    </div>
+                                </div>
+                                <div class="progress-item lab">
+                                    <div class="value">4.2</div>
+                                    <div class="label">Laboratorio</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill orange" style="width: 84%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="status-row">
+                                <span class="status-badge done">Quiz fatto</span>
+                                <span class="status-badge done">Autoval. completa</span>
+                                <span class="status-badge done">Lab valutato</span>
+                            </div>
+                        </div>
+                        <div class="student-card-footer">
+                            <button class="btn btn-secondary btn-sm">Report</button>
+                            <button class="btn btn-primary btn-sm">Dettagli</button>
+                            <button class="btn btn-success btn-sm">Salva</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student 5 - Collassato -->
+                <div class="student-card collapsed" id="student-5">
+                    <div class="student-card-header giallo" onclick="toggleCard('student-5')">
+                        <div class="student-info-left">
+                            <div class="collapse-toggle">&#9660;</div>
+                            <div>
+                                <div class="student-name">Paolo Gialli</div>
+                                <div class="student-email">paolo.gialli@email.com</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="settore-badge">MECCANICA</span>
+                            <span class="week-badge">Sett. 2</span>
+                        </div>
+                    </div>
+                    <div class="student-card-collapsible">
+                        <div class="student-card-body">
+                            <div class="progress-section">
+                                <div class="progress-item competenze">
+                                    <div class="value">68%</div>
+                                    <div class="label">Competenze</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill violet" style="width: 68%;"></div>
+                                    </div>
+                                </div>
+                                <div class="progress-item autoval">
+                                    <div class="value">3.6</div>
+                                    <div class="label">Autovalutaz.</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill teal" style="width: 72%;"></div>
+                                    </div>
+                                </div>
+                                <div class="progress-item lab">
+                                    <div class="value">--</div>
+                                    <div class="label">Laboratorio</div>
+                                    <div class="mini-progress">
+                                        <div class="mini-progress-fill orange" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="status-row">
+                                <span class="status-badge done">Quiz fatto</span>
+                                <span class="status-badge done">Autoval. completa</span>
+                                <span class="status-badge pending">Lab in attesa</span>
+                            </div>
+                        </div>
+                        <div class="student-card-footer">
+                            <button class="btn btn-secondary btn-sm">Report</button>
+                            <button class="btn btn-primary btn-sm">Dettagli</button>
+                            <button class="btn btn-success btn-sm">Salva</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Placeholder -->
+                <div class="student-card" style="display: flex; align-items: center; justify-content: center; min-height: 120px; background: linear-gradient(135deg, #FEF9C3 0%, #FDE68A 100%);">
+                    <div style="text-align: center; color: #92400E;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">+ altri 7 studenti</div>
+                        <div style="font-size: 13px;">da configurare per Settimana 3</div>
+                        <button class="btn btn-warning btn-sm" style="margin-top: 15px;">
+                            Configura tutti insieme
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Note -->
+    <div style="max-width: 1400px; margin: 20px auto; padding: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 12px; border: 1px solid rgba(102, 126, 234, 0.3);">
+        <strong style="color: #667eea;">Modifiche v4 - Colori armonizzati:</strong>
+        <ul style="margin-top: 10px; color: #555; font-size: 14px;">
+            <li><strong>Header:</strong> Gradiente viola #667eea -> #764ba2 (come student_report.php)</li>
+            <li><strong>Pulsanti:</strong> Gradienti viola (primario), verde (success), rosa (warning)</li>
+            <li><strong>Stat cards:</strong> Bordi colorati viola, blu, verde, arancione, rosso</li>
+            <li><strong>Progress bars:</strong> Gradiente viola per competenze, teal per autoval</li>
+            <li><strong>Badge settore:</strong> Gradiente viola</li>
+            <li><strong>MANTENUTO:</strong> Colori gruppo studente (giallo per Gruppo Giallo)</li>
+            <li><strong>MANTENUTO:</strong> Week badge giallo, calendario giallo, scelte settimana giallo</li>
+        </ul>
+    </div>
+
+    <script>
+        function toggleCard(cardId) {
+            const card = document.getElementById(cardId);
+            card.classList.toggle('collapsed');
+        }
+
+        function expandAll() {
+            const cards = document.querySelectorAll('.student-card');
+            cards.forEach(card => {
+                card.classList.remove('collapsed');
+            });
+        }
+
+        function collapseAll() {
+            const cards = document.querySelectorAll('.student-card');
+            cards.forEach(card => {
+                if (card.querySelector('.student-card-collapsible')) {
+                    card.classList.add('collapsed');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

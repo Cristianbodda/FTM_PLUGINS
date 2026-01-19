@@ -20,9 +20,14 @@ defined('MOODLE_INTERNAL') || die();
             <option value="planning">In arrivo</option>
         </select>
     </div>
-    <button class="ftm-btn ftm-btn-success" style="align-self: flex-end;" onclick="ftmOpenModal('newGruppo')">
-        ➕ Nuovo Gruppo
-    </button>
+    <div style="display: flex; gap: 10px; align-self: flex-end;">
+        <a href="<?php echo new moodle_url('/local/competencymanager/sector_admin.php'); ?>" class="ftm-btn ftm-btn-secondary">
+            👥 Gestione Settori
+        </a>
+        <button class="ftm-btn ftm-btn-success" onclick="ftmOpenModal('newGruppo')">
+            ➕ Nuovo Gruppo
+        </button>
+    </div>
 </div>
 
 <!-- Gruppi Grid -->

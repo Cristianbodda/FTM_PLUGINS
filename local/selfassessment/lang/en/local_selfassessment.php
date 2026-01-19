@@ -98,3 +98,44 @@ $string['error_disabled'] = 'Self assessment is disabled for your account.';
 $string['progress'] = 'Progress';
 $string['areas_completed'] = '{$a->completed} of {$a->total} areas rated';
 $string['completion_percent'] = '{$a}% complete';
+
+// Areas (for display)
+$string['area_manutenzione_auto'] = 'Car Maintenance';
+$string['area_assemblaggio'] = 'Assembly';
+$string['area_automazione'] = 'Automation';
+$string['area_cnc'] = 'CNC Control';
+$string['area_disegno'] = 'Technical Drawing';
+$string['area_misurazione'] = 'Measurement';
+$string['area_pianificazione'] = 'Planning';
+$string['area_sicurezza'] = 'Safety and Quality';
+
+// Message providers
+$string['messageprovider:reminder'] = 'Self assessment reminder from coach';
+$string['messageprovider:assignment'] = 'New competencies assigned for self assessment';
+
+// Notification messages
+$string['notification_assignment_subject'] = 'New competencies to self-assess';
+$string['notification_assignment_body'] = 'Hello {$a->fullname},
+
+After completing the quiz "{$a->quizname}", you have been assigned {$a->count} new competencies to self-assess.
+
+Access your self assessment area to complete them:
+{$a->url}
+
+This self-assessment will help your coach understand where you need support.';
+$string['notification_assignment_small'] = '{$a->count} new competencies to self-assess';
+
+$string['notification_reminder_subject'] = 'Reminder: Complete your self assessment';
+$string['notification_reminder_body'] = 'Hello {$a->fullname},
+
+Your coach {$a->coachname} reminds you to complete your competency self-assessment.
+
+{$a->message}
+
+Click here to complete it:
+{$a->url}';
+$string['notification_reminder_small'] = 'Self assessment reminder from coach';
+
+// No competencies
+$string['no_competencies'] = 'No competencies to self-assess';
+$string['no_competencies_desc'] = 'You currently have no competencies assigned for self-assessment. Complete a quiz with questions linked to competencies to unlock this feature.';

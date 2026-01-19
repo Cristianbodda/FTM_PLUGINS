@@ -555,13 +555,14 @@ function get_frameworks() {
  */
 function get_framework_sectors($frameworkid) {
     global $DB;
-    
+
     $competencies = $DB->get_records('competency', ['competencyframeworkid' => $frameworkid], '', 'id, idnumber');
-    
+
     $sectors = [];
     foreach ($competencies as $c) {
-        // Estrae il prefisso (es. AUTOMOBILE, MECCANICA, ecc.)
-        if (preg_match('/^([A-Z]+)_/', $c->idnumber, $m)) {
+        // Estrae il prefisso (tutto prima del primo underscore)
+        // Supporta anche caratteri accentati come ELETTRICITÀ
+        if (preg_match('/^([A-ZÀ-Ž]+)_/u', $c->idnumber, $m)) {
             $prefix = $m[1];
             if (!isset($sectors[$prefix])) {
                 $sectors[$prefix] = ['name' => $prefix, 'count' => 0];
@@ -569,7 +570,10 @@ function get_framework_sectors($frameworkid) {
             $sectors[$prefix]['count']++;
         }
     }
-    
+
+    // Ordina alfabeticamente
+    ksort($sectors);
+
     return $sectors;
 }
 
@@ -649,8 +653,11 @@ function normalize_competency_code($code) {
  * Supporta sia il settore standard che gli alias
  */
 function extract_competency_code($text, $sector) {
-    // Prima prova con il settore standard
-    $pattern = '/(' . preg_quote($sector, '/') . '_[A-Za-z]+_[A-Z0-9]+)/ui';
+    // Pattern base: SETTORE_CODICE_LIVELLO (es: AUTOMOBILE_MO_A1, ELETTRICITÀ_IE_F2)
+    // Usiamo [A-Za-z0-9]+ per permettere codici misti lettere/numeri
+
+    // Prima prova con il settore standard - pattern completo
+    $pattern = '/(' . preg_quote($sector, '/') . '_[A-Za-z0-9]+_[A-Za-z0-9]+)/ui';
     if (preg_match($pattern, $text, $m)) {
         return mb_strtoupper($m[1], 'UTF-8');
     }
@@ -659,7 +666,7 @@ function extract_competency_code($text, $sector) {
     $aliases = get_sector_aliases();
     foreach ($aliases as $alias => $standard) {
         if ($standard === $sector) {
-            $pattern = '/(' . preg_quote($alias, '/') . '_[A-Za-z]+_[A-Z0-9]+)/ui';
+            $pattern = '/(' . preg_quote($alias, '/') . '_[A-Za-z0-9]+_[A-Za-z0-9]+)/ui';
             if (preg_match($pattern, $text, $m)) {
                 // Converti l'alias nel nome standard (con normalizzazione UTF-8)
                 return normalize_competency_code(mb_strtoupper($m[1], 'UTF-8'));
@@ -670,14 +677,11 @@ function extract_competency_code($text, $sector) {
     // Caso speciale: cerca anche gli alias che puntano al settore corrente
     // Utile per ELETTRICITÀ dove il testo potrebbe avere ELETTRICITA
     foreach ($aliases as $alias => $standard) {
-        // Se il settore standard è quello cercato, prova a trovare l'alias nel testo
         if (mb_strtoupper($standard, 'UTF-8') === mb_strtoupper($sector, 'UTF-8')) {
             continue; // Già cercato sopra
         }
-        // Se l'alias normalizzato corrisponde al settore, cerca anche quello
         if (mb_strtoupper($alias, 'UTF-8') === mb_strtoupper($sector, 'UTF-8')) {
-            // Il settore passato è un alias, cerca anche con il nome standard
-            $pattern = '/(' . preg_quote($standard, '/') . '_[A-Za-z]+_[A-Z0-9]+)/ui';
+            $pattern = '/(' . preg_quote($standard, '/') . '_[A-Za-z0-9]+_[A-Za-z0-9]+)/ui';
             if (preg_match($pattern, $text, $m)) {
                 return mb_strtoupper($m[1], 'UTF-8');
             }
@@ -695,8 +699,13 @@ function get_sector_icon($sector) {
         'AUTOMOBILE' => '🚗',
         'MECCANICA' => '⚙️',
         'ELETTRONICA' => '🔌',
-        'INFORMATICA' => '💻',
+        'ELETTRICITÀ' => '⚡',
+        'AUTOMAZIONE' => '🤖',
+        'CHIMFARM' => '🧪',
+        'METALCOSTRUZIONE' => '🔩',
         'LOGISTICA' => '📦',
+        'GENERICO' => '📝',
+        'INFORMATICA' => '💻',
         'CUCINA' => '👨‍🍳',
         'SERVIZIO' => '🍽️',
         'VENDITA' => '🛒',
@@ -2139,10 +2148,17 @@ if ($step == 5 && $action === 'execute'):
     
     $total_questions = 0;
     $total_competencies = 0;
+    $total_levels_updated = 0;
     $quizzes_created = [];
     
     echo '<div class="log-line info">🔄 Inizio setup...</div>';
     echo '<div class="log-line">📊 Caricate ' . count($comp_lookup) . ' competenze per settore ' . $sector . '</div>';
+
+    // Debug: mostra primi 5 codici competenza disponibili
+    $sample_codes = array_slice(array_keys($comp_lookup), 0, 5);
+    if (!empty($sample_codes)) {
+        echo '<div class="log-line" style="font-size:11px;color:#666;">🔍 Esempio codici nel DB: ' . implode(', ', $sample_codes) . '</div>';
+    }
     
     // Crea categoria madre
     $parent_cat = $DB->get_record('question_categories', [
@@ -2227,6 +2243,14 @@ if ($step == 5 && $action === 'execute'):
             if (!$comp_code) {
                 $comp_code = extract_competency_code($qtext, $sector);
             }
+
+            // Debug: mostra prima domanda di ogni file per diagnostica
+            static $debug_count = 0;
+            if ($debug_count < 3) {
+                $found_in_lookup = ($comp_code && isset($comp_lookup[$comp_code])) ? '✅' : '❌';
+                echo '<div class="log-line" style="font-size:10px;color:#888;">   🔎 Debug Q' . ($debug_count+1) . ': name="' . htmlspecialchars(substr($full_name, 0, 60)) . '..." → code=' . ($comp_code ?: 'NULL') . ' ' . $found_in_lookup . '</div>';
+                $debug_count++;
+            }
             
             // Verifica se domanda esiste già
             $existing = $DB->get_record_sql("
@@ -2235,9 +2259,27 @@ if ($step == 5 && $action === 'execute'):
                 JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
                 WHERE qbe.questioncategoryid = ? AND q.name = ?
             ", [$sub_cat->id, $full_name]);
-            
+
             if ($existing) {
                 $question_ids[] = $existing->id;
+
+                // Assegna competenza anche a domande esistenti (o aggiorna livello se già assegnata)
+                if ($assign_competencies && $comp_code && isset($comp_lookup[$comp_code])) {
+                    $existing_comp = $DB->get_record('qbank_competenciesbyquestion', ['questionid' => $existing->id]);
+                    if (!$existing_comp) {
+                        // Nuova assegnazione
+                        $rec = new stdClass();
+                        $rec->questionid = $existing->id;
+                        $rec->competencyid = $comp_lookup[$comp_code];
+                        $rec->difficultylevel = $level;
+                        $DB->insert_record('qbank_competenciesbyquestion', $rec);
+                        $total_competencies++;
+                    } else if ($existing_comp->difficultylevel != $level) {
+                        // Aggiorna livello difficoltà se diverso
+                        $DB->set_field('qbank_competenciesbyquestion', 'difficultylevel', $level, ['id' => $existing_comp->id]);
+                        $total_levels_updated++;
+                    }
+                }
                 continue;
             }
             
@@ -2410,7 +2452,8 @@ if ($step == 5 && $action === 'execute'):
         $quizzes_created[] = [
             'name' => $quiz_name,
             'cmid' => $cm->id,
-            'questions' => $slot
+            'questions' => $slot,
+            'level' => $level
         ];
     }
     
@@ -2440,6 +2483,10 @@ if ($step == 5 && $action === 'execute'):
             <div class="stat-value"><?php echo $total_competencies; ?></div>
             <div class="stat-label">Competenze Assegnate</div>
         </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);">
+            <div class="stat-value"><?php echo $total_levels_updated; ?></div>
+            <div class="stat-label">Livelli Aggiornati</div>
+        </div>
         <div class="stat-card">
             <div class="stat-value"><?php echo count($comp_lookup); ?></div>
             <div class="stat-label">Competenze Disponibili</div>
@@ -2453,12 +2500,17 @@ if ($step == 5 && $action === 'execute'):
             <tr>
                 <th>Quiz</th>
                 <th>Domande</th>
+                <th>Livello</th>
                 <th>Azione</th>
             </tr>
-            <?php foreach ($quizzes_created as $qc): ?>
+            <?php
+            $level_labels = [1 => '⭐ Base', 2 => '⭐⭐ Intermedio', 3 => '⭐⭐⭐ Avanzato'];
+            foreach ($quizzes_created as $qc):
+            ?>
             <tr>
                 <td><?php echo $qc['name']; ?></td>
                 <td><?php echo $qc['questions']; ?></td>
+                <td><?php echo $level_labels[$qc['level']] ?? '⭐⭐ Intermedio'; ?></td>
                 <td><a href="<?php echo $CFG->wwwroot; ?>/mod/quiz/view.php?id=<?php echo $qc['cmid']; ?>" class="btn btn-success" style="padding: 8px 16px; font-size: 13px;">Apri Quiz</a></td>
             </tr>
             <?php endforeach; ?>

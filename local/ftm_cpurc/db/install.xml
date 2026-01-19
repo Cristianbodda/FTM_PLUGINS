@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/ftm_cpurc/db" VERSION="20260116" COMMENT="FTM CPURC database tables">
+  <TABLES>
+    <!-- Tabella 1: Dati anagrafici estesi studenti CPURC -->
+    <TABLE NAME="local_ftm_cpurc_students" COMMENT="Extended student data from CPURC CSV import">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK to Moodle user table"/>
+        <FIELD NAME="cpurc_id" TYPE="char" LENGTH="20" NOTNULL="false" COMMENT="Original CPURC ID (#)"/>
+
+        <!-- DATI ANAGRAFICI BASE -->
+        <FIELD NAME="gender" TYPE="char" LENGTH="1" NOTNULL="false" COMMENT="M/F"/>
+        <FIELD NAME="title" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="Egregio signor, etc"/>
+        <FIELD NAME="address_street" TYPE="char" LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="address_cap" TYPE="char" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="address_city" TYPE="char" LENGTH="100" NOTNULL="false"/>
+
+        <!-- DATI ANAGRAFICI ALTRI -->
+        <FIELD NAME="birthdate" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Birthdate timestamp"/>
+        <FIELD NAME="civil_status" TYPE="char" LENGTH="50" NOTNULL="false"/>
+        <FIELD NAME="avs_number" TYPE="char" LENGTH="20" NOTNULL="false" COMMENT="Nr. AVS"/>
+        <FIELD NAME="nationality" TYPE="char" LENGTH="50" NOTNULL="false"/>
+        <FIELD NAME="permit" TYPE="char" LENGTH="20" NOTNULL="false" COMMENT="B, C, L, etc"/>
+        <FIELD NAME="iban" TYPE="char" LENGTH="34" NOTNULL="false"/>
+        <FIELD NAME="phone" TYPE="char" LENGTH="20" NOTNULL="false"/>
+        <FIELD NAME="mobile" TYPE="char" LENGTH="20" NOTNULL="false"/>
+
+        <!-- DATI PERCORSO BASE -->
+        <FIELD NAME="personal_number" TYPE="char" LENGTH="20" NOTNULL="false" COMMENT="Numero personale"/>
+        <FIELD NAME="measure" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="Misura"/>
+        <FIELD NAME="trainer" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="Formatore"/>
+        <FIELD NAME="signal_date" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Data segnalazione"/>
+        <FIELD NAME="date_start" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Inizio percorso"/>
+        <FIELD NAME="date_end_planned" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Fine prevista"/>
+        <FIELD NAME="date_end_actual" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Fine effettiva"/>
+        <FIELD NAME="occupation_grade" TYPE="int" LENGTH="3" NOTNULL="false" COMMENT="Grado occupazione %"/>
+        <FIELD NAME="urc_office" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="Ufficio URC"/>
+        <FIELD NAME="urc_consultant" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="Consulente URC"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="false" DEFAULT="active" COMMENT="active/closed"/>
+        <FIELD NAME="exit_reason" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="Motivo uscita"/>
+        <FIELD NAME="company" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="Ditta"/>
+        <FIELD NAME="observations" TYPE="text" NOTNULL="false"/>
+
+        <!-- ASSENZE (X, O, A-I) -->
+        <FIELD NAME="absence_x" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_o" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_a" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_b" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_c" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_d" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_e" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_f" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_g" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_h" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_i" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_total" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+
+        <!-- ALTRI DATI PERCORSO -->
+        <FIELD NAME="interviews" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" COMMENT="Colloqui assunzione"/>
+        <FIELD NAME="stages_count" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" COMMENT="Stage svolti"/>
+        <FIELD NAME="stage_days" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" COMMENT="Giorni stage"/>
+        <FIELD NAME="last_profession" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Ultima professione"/>
+        <FIELD NAME="priority" TYPE="char" LENGTH="20" NOTNULL="false" COMMENT="Alta/Media/Bassa"/>
+        <FIELD NAME="financier" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="LADI/etc"/>
+        <FIELD NAME="unemployment_fund" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="Cassa"/>
+        <FIELD NAME="framework_start" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Periodo quadro inizio"/>
+        <FIELD NAME="framework_end" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Periodo quadro fine"/>
+        <FIELD NAME="framework_allowance" TYPE="int" LENGTH="5" NOTNULL="false" COMMENT="Indennita"/>
+        <FIELD NAME="framework_art59d" TYPE="char" LENGTH="5" NOTNULL="false" COMMENT="SI/NO"/>
+
+        <!-- STAGE -->
+        <FIELD NAME="stage_start" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="stage_end" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="stage_responsible" TYPE="char" LENGTH="100" NOTNULL="false"/>
+        <FIELD NAME="stage_company_name" TYPE="char" LENGTH="100" NOTNULL="false"/>
+        <FIELD NAME="stage_company_cap" TYPE="char" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="stage_company_city" TYPE="char" LENGTH="100" NOTNULL="false"/>
+        <FIELD NAME="stage_company_street" TYPE="char" LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="stage_contact_name" TYPE="char" LENGTH="100" NOTNULL="false"/>
+        <FIELD NAME="stage_contact_phone" TYPE="char" LENGTH="20" NOTNULL="false"/>
+        <FIELD NAME="stage_contact_email" TYPE="char" LENGTH="100" NOTNULL="false"/>
+        <FIELD NAME="stage_percentage" TYPE="int" LENGTH="3" NOTNULL="false"/>
+        <FIELD NAME="stage_function" TYPE="char" LENGTH="100" NOTNULL="false"/>
+        <FIELD NAME="conclusion_date" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="conclusion_type" TYPE="char" LENGTH="50" NOTNULL="false"/>
+        <FIELD NAME="conclusion_reason" TYPE="char" LENGTH="255" NOTNULL="false"/>
+
+        <!-- METADATI -->
+        <FIELD NAME="sector_detected" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="Sector detected from profession"/>
+        <FIELD NAME="import_batch" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="Import batch ID"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign-unique" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="cpurc_id_idx" UNIQUE="false" FIELDS="cpurc_id"/>
+        <INDEX NAME="urc_office_idx" UNIQUE="false" FIELDS="urc_office"/>
+        <INDEX NAME="date_start_idx" UNIQUE="false" FIELDS="date_start"/>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="sector_detected_idx" UNIQUE="false" FIELDS="sector_detected"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Tabella 2: Report finali -->
+    <TABLE NAME="local_ftm_cpurc_reports" COMMENT="Final reports data">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK to cpurc_students"/>
+        <FIELD NAME="coachid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Coach who created the report"/>
+
+        <!-- SEZIONE 4: Situazione iniziale -->
+        <FIELD NAME="initial_situation" TYPE="text" NOTNULL="false"/>
+
+        <!-- SEZIONE 5: Verifica competenze settore -->
+        <FIELD NAME="sector_competency_rating" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Rating 1-5"/>
+        <FIELD NAME="sector_competency_text" TYPE="text" NOTNULL="false"/>
+
+        <!-- SEZIONE 6: Competenze trasversali (JSON) -->
+        <FIELD NAME="personal_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of ratings"/>
+        <FIELD NAME="social_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of ratings"/>
+        <FIELD NAME="methodological_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of ratings"/>
+        <FIELD NAME="tic_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of ratings"/>
+
+        <!-- SEZIONE 7: Ricerca impiego -->
+        <FIELD NAME="dossier_complete" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="0/1"/>
+        <FIELD NAME="search_channels" TYPE="text" NOTNULL="false" COMMENT="JSON array"/>
+        <FIELD NAME="search_evaluation" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Rating 1-5"/>
+
+        <!-- SEZIONE 8: Colloqui svolti -->
+        <FIELD NAME="interviews_json" TYPE="text" NOTNULL="false" COMMENT="JSON array of interviews"/>
+
+        <!-- SEZIONE 9: Esito -->
+        <FIELD NAME="hired" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="0/1"/>
+        <FIELD NAME="hired_company" TYPE="char" LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="hired_date" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="hired_percentage" TYPE="int" LENGTH="3" NOTNULL="false"/>
+
+        <!-- Metadati -->
+        <FIELD NAME="file_path" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Path to generated file"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="draft" COMMENT="draft/final/sent"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="studentid_fk" TYPE="foreign" FIELDS="studentid" REFTABLE="local_ftm_cpurc_students" REFFIELDS="id"/>
+        <KEY NAME="coachid_fk" TYPE="foreign" FIELDS="coachid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="studentid_status_idx" UNIQUE="false" FIELDS="studentid, status"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- Tabella 3: Log import CSV -->
+    <TABLE NAME="local_ftm_cpurc_imports" COMMENT="CSV import log">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="batch_id" TYPE="char" LENGTH="50" NOTNULL="true" COMMENT="Unique batch identifier"/>
+        <FIELD NAME="filename" TYPE="char" LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="total_rows" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="imported_count" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="updated_count" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="error_count" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="errors_json" TYPE="text" NOTNULL="false" COMMENT="JSON array of error details"/>
+        <FIELD NAME="importedby" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="importedby_fk" TYPE="foreign" FIELDS="importedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="batch_id_idx" UNIQUE="true" FIELDS="batch_id"/>
+        <INDEX NAME="timecreated_idx" UNIQUE="false" FIELDS="timecreated"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

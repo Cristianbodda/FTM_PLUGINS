@@ -1,0 +1,87 @@
+Quiz;Corso;Categoria Match;Domande;Score;Stato
+01 - Meccanica - Test base;Meccanica 4;LOGISTICA_TEST_BASE_20260113_162141;40;61.11%;ERRATO - dovrebbe essere MECC_TestBase
+01 Meccanica Test Base;Meccanica 4;LOGISTICA_TEST_BASE_20260113_162141;40;61.11%;ERRATO - dovrebbe essere MECC_TestBase
+02 - Meccanica Approfondimento A - Produzione Meccanica operativa;Meccanica 4;MECC_APPR_A_Produzione_meccanica_operativa_DEFINITIVO_20260113_184015;25;72.55%;OK
+02 - Meccanica Approfondimento A - Produzione Meccanica operativa;Meccanica 4;MECC_APPR_A_Produzione_meccanica_operativa_DEFINITIVO_20260113_184015;25;72.55%;DUPLICATO
+03 - Meccanica Approfondimento B - Misurazione e controllo qualità;Meccanica 4;MECC_APPR_B_Misurazione_e_controllo_qualita_DEFINITIVO_20260113_184110;25;71.29%;OK
+04 - Meccanica Approfondimento C - Disegno tecnico e documentazione;Meccanica 4;MECC_APPR_C_Disegno_tecnico_e_documentazione_DEFINITIVO_20260113_184148;25;73.08%;OK
+05 - Meccanica Approfondimento D - CNC e tecnologie digitali PERSISTENTE;Meccanica 4;MECC_APPR_D_CNC_e_tecnologie_digitali_DEFINITIVO_20260113_184324;25;67.33%;OK
+06 - Meccanica Approfondimento E - Materiali trattamenti e processi speciali PERSISTENTE;Meccanica 4;MECC_APPR_E_Materiali_trattamenti_e_processi_speciali_DEFINITIVO_20260113_184515;25;74.81%;OK
+07 - Meccanica Approfondimento F - Assemblaggio manutenzione e sicurezza PERSISTENTE;Meccanica 4;MECC_APPR_F_Assemlaggio_manutenzione_e_sicurezza_DEFINITIVO_20260113_185637;25;72.58%;OK
+08 - Meccanica Approfondimento G - Lavorazioni convenzionali e processi speciali PERSISTENTE;Meccanica 4;MECC_APPR_G_Lavorazioni_convenzionali_e_processi_speciali_DEFINITIVO_20260113_185824;25;76.26%;OK
+09 - Meccanica Approfondimento H - Progettazione avanzata e industrializzazione PERSISTENTE VALIDATO;Meccanica 4;MECC_APPR_H_Progettazione_avanzata_e_industrializzazione_DEFINITIVO_20260113_185959;20;74.83%;OK
+Approfondimento - Alta Tensione HV;autoveicolo;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+Approfondimento - Climatizzazione HVAC;autoveicolo;AUTOVEICOLO_APPR05_Climatizzazione__Comfort_HVAC_20260113_143437;25;59.74%;OK
+Approfondimento - Elettronica Veicolo;autoveicolo;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+Approfondimento - Meccanica e Riparazioni;autoveicolo;MECC_APPR_A_Produzione_meccanica_operativa_DEFINITIVO_20260113_184015;25;57.83%;ERRATO - dovrebbe essere AUTOVEICOLO_APPR02
+Approfondimento - Motore e Powertrain;autoveicolo;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+Approfondimento - Sistemi ADAS;autoveicolo;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+AUT_APPR_ADAS_Sistemi_Assistenza_Guida;Meccanica;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+AUT_APPR_ELET_Elettronica_Veicolo;Meccanica;AUTOVEICOLO_APPR03_Elettronica_e_diagnostica_20260113_143243;25;60.87%;OK
+AUT_APPR_HV_Alta_Tensione;Meccanica;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+AUT_APPR_HVAC_Climatizzazione;Meccanica;AUTOVEICOLO_APPR05_Climatizzazione__Comfort_HVAC_20260113_143437;25;63.77%;OK
+AUT_APPR_MOT_Motore_Powertrain;Meccanica;AUTOVEICOLO_APPR01_Motore_20260113_142828;25;53.06%;OK
+AUT_APPR_MR_Meccanica_Riparazioni;Meccanica;MECC_APPR_A_Produzione_meccanica_operativa_DEFINITIVO_20260113_184015;25;52.63%;ERRATO - dovrebbe essere AUTOVEICOLO_APPR02
+AUT-TEST_BASE;Meccanica;AUTOVEICOLO_Test_Base_20260113_131754;1;73.33%;ATTENZIONE - solo 1 domanda
+AUTOMAZIONE_72_REALI;Chimica 23;ELETTRONICA_AUTOMAZIONE_TestBase_20260113_152814;40;54.17%;VERIFICARE
+Autoveicolo - Test Base;autoveicolo;AUTOVEICOLO_Test_Base_20260113_131754;1;120%;ATTENZIONE - solo 1 domanda
+CHIM APPR03 Tecnologo CORRETTO;Chimica 23;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+CHIMFARM - CHIM_APPR03_Tecnologo_CHIMFARM_01;FTM_Colloquio di lavoro;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+CHIMFARM - CHIM_APPR03_Tecnologo_CORRETTO_02;FTM_Colloquio di lavoro;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+CHIMFARM - CHIMICA_TestBase_LOGSTYLE_V2_GOLD_CHIMFARM_20260112_001728_06;FTM_Colloquio di lavoro;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+CHIMFARM - CHIMICA_TestBase_LOGSTYLE_V2_GOLD_CHIMFARM_20260112_001829_03;FTM_Colloquio di lavoro;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+CHIMFARM - CHIMICA_TestBase_LOGSTYLE_V2_GOLD_CHIMFARM_20260112_002628_04;FTM_Colloquio di lavoro;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+CHIMFARM - CHIMICA_TestBase_LOGSTYLE_V2_GOLD_CHIMFARM_20260112_003107_05;FTM_Colloquio di lavoro;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+CHIMFARM - TEMPLATE_DOMANDE_CHIMFARM;FTM_Colloquio di lavoro;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+CHIMFARM - TEMPLATE_DOMANDE_CHIMFARM_07;FTM_Colloquio di lavoro;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+CHIMFARM 8 MANCANTI v4;Chimica 23;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+Chimica - Approfondimento 1 Laboratorista chimica - def;Chimica 23;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+Chimica - Approfondimento 2 Laboratorista Biologia;Chimica 23;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+Chimica - Approfondinemto 3 Tecnologo chimico-farmaceutico;Chimica 23;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+Chimica Test Base CON TAGS;Chimica 23;LOGISTICA_TEST_BASE_20260113_162141;40;61.54%;ERRATO
+Chimica_Test_Base;Chimica 23;LOGISTICA_TEST_BASE_20260113_162141;40;75%;ERRATO
+Elettricita Appr01 CORRETTO;Elettricità 23;Elettronica_e_automazione_Appr04_PLC_20260113_154127;25;52.63%;ERRATO
+Elettricita Appr02 CORRETTO;Elettricità 23;Elettronica_e_automazione_Appr04_PLC_20260113_154127;25;52.63%;ERRATO
+Elettricita Appr03 CORRETTO;Elettricità 23;Elettronica_e_automazione_Appr04_PLC_20260113_154127;25;52.63%;ERRATO
+Elettricita Appr04 CORRETTO;Elettricità 23;Elettronica_e_automazione_Appr04_PLC_20260113_154127;25;56.14%;ERRATO
+Elettricita Appr05 CORRETTO;Elettricità 23;Elettronica_e_automazione_Appr04_PLC_20260113_154127;25;52.63%;ERRATO
+Elettricita Appr06 CORRETTO;Elettricità 23;LogisticaAPPR06_Obbligatorio_20260113_175426;25;53.85%;ERRATO
+Elettricita Test Base CORRETTO;Elettricità 23;ELETTRONICA_AUTOMAZIONE_TestBase_20260113_152814;40;59.65%;VERIFICARE
+GENERICI TEST 80 Moodle v4 LOGstyle (1);Generico 23;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+MECC APPR A Produzione meccanica operativa;Meccanica 4;MECC_APPR_A_Produzione_meccanica_operativa_DEFINITIVO_20260113_184015;25;108.1%;OK
+MECC APPR C Disegno tecnico e documentazione;Meccanica 4;MECC_APPR_C_Disegno_tecnico_e_documentazione_DEFINITIVO_20260113_184148;25;108.37%;OK
+MECC APPR D CNC e tecnologie digitali;Meccanica 4;MECC_APPR_D_CNC_e_tecnologie_digitali_DEFINITIVO_20260113_184324;25;106.11%;OK
+MECC APPR E Materiali trattamenti e processi speciali;Meccanica 4;MECC_APPR_E_Materiali_trattamenti_e_processi_speciali_DEFINITIVO_20260113_184515;25;110.2%;OK
+MECC APPR F Assemlaggio manutenzione e sicurezza;Meccanica 4;MECC_APPR_F_Assemlaggio_manutenzione_e_sicurezza_DEFINITIVO_20260113_185637;25;109.36%;OK
+MECC APPR G Lavorazioni convenzionali e processi speciali;Meccanica 4;MECC_APPR_G_Lavorazioni_convenzionali_e_processi_speciali_DEFINITIVO_20260113_185824;25;110.91%;OK
+MECC TestBase;Meccanica 4;MECC_TestBase_DEFINITIVO_20260113_183919;38;90.59%;OK
+MECC_APPR_1_DT;meccanica 2;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+MECC_APPR_2_Metrologia;meccanica 2;MECC_APPR_D_CNC_e_tecnologie_digitali_DEFINITIVO_20260113_184324;25;53.33%;ERRATO
+MECC_APPR_3_Controllo_Qualita;meccanica 2;MECC_APPR_B_Misurazione_e_controllo_qualita_DEFINITIVO_20260113_184110;25;66.67%;VERIFICARE
+MECC_APPR_4_Lavorazioni_CNC;meccanica 2;MECC_APPR_G_Lavorazioni_convenzionali_e_processi_speciali_DEFINITIVO_20260113_185824;25;53.01%;ERRATO
+MECC_APPR_5_Materiali;meccanica 2;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+Meccanica 0 Test Base;meccanica 3;LOGISTICA_TEST_BASE_20260113_162141;40;62.86%;ERRATO
+Meccanica Approfondimento A Produzione Meccanica Operativa;meccanica 3;MECC_APPR_A_Produzione_meccanica_operativa_DEFINITIVO_20260113_184015;25;74%;OK
+Meccanica Approfondimento A Produzione Meccanica Operativa;meccanica 3;MECC_APPR_A_Produzione_meccanica_operativa_DEFINITIVO_20260113_184015;25;74%;DUPLICATO
+Meccanica Approfondimento A Produzione Meccanica Operativa;meccanica 3;MECC_APPR_A_Produzione_meccanica_operativa_DEFINITIVO_20260113_184015;25;74%;DUPLICATO
+Meccanica Approfondimento B Misurazione e controllo qualità;meccanica 3;MECC_APPR_B_Misurazione_e_controllo_qualita_DEFINITIVO_20260113_184110;25;72.73%;OK
+Meccanica Approfondimento C Disegno Tecnico e Documentazione;meccanica 3;MECC_APPR_C_Disegno_tecnico_e_documentazione_DEFINITIVO_20260113_184148;25;74.51%;OK
+Meccanica Approfondimento D CNC e tecnologie digitali;meccanica 3;MECC_APPR_D_CNC_e_tecnologie_digitali_DEFINITIVO_20260113_184324;25;70.45%;OK
+Meccanica Approfondimento E Materiali trattamenti e processi speciali;meccanica 3;MECC_APPR_E_Materiali_trattamenti_e_processi_speciali_DEFINITIVO_20260113_184515;25;77.97%;OK
+Meccanica Approfondimento F Assemblaggio Manutenzione e sicurezza;meccanica 3;MECC_APPR_F_Assemlaggio_manutenzione_e_sicurezza_DEFINITIVO_20260113_185637;25;75.68%;OK
+Meccanica Approfondimento G Lavorazioni convenzionali e processi speciali;meccanica 3;MECC_APPR_G_Lavorazioni_convenzionali_e_processi_speciali_DEFINITIVO_20260113_185824;25;79.37%;OK
+Meccanica Approfondimento H Progettazione avanzata e industrializzazione;meccanica 3;MECC_APPR_H_Progettazione_avanzata_e_industrializzazione_DEFINITIVO_20260113_185959;20;79.37%;OK
+Meccanica Base;meccanica 2;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+Metalcostruzione Appr01 CORRETTO;Metalcostruzione 23;Elettronica_e_automazione_Appr04_PLC_20260113_154127;25;51.61%;ERRATO
+Metalcostruzione Appr02 CORRETTO;Metalcostruzione 23;Elettronica_e_automazione_Appr04_PLC_20260113_154127;25;51.61%;ERRATO
+Metalcostruzione Appr03 CORRETTO;Metalcostruzione 23;Elettronica_e_automazione_Appr04_PLC_20260113_154127;25;51.61%;ERRATO
+Metalcostruzione Appr04 CORRETTO;Metalcostruzione 23;Elettronica_e_automazione_Appr04_PLC_20260113_154127;25;54.84%;ERRATO
+Metalcostruzione Appr05 CORRETTO;Metalcostruzione 23;Elettronica_e_automazione_Appr04_PLC_20260113_154127;25;51.61%;ERRATO
+Metalcostruzione test base CORRETTO;Metalcostruzione 23;ELETTRONICA_AUTOMAZIONE_TestBase_20260113_152814;40;58.06%;ERRATO
+quiz avanzato e lavorazioni CNC;Meccanica;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+quiz avanzato metrologia;Meccanica;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+Quiz avanzato Sicurezza, ambiente e qualità;Meccanica;LogisticaAPPR02_Sicurezza_e_ambiente_20260113_174334;25;57.97%;ERRATO
+Quiz avanzato trattamenti termici;Meccanica;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+Quiz base meccanica;Meccanica;Nessuna corrispondenza;-;-;MANCA CATEGORIA
+Quiz misurazioni e controllo qualità;Meccanica;MECC_APPR_B_Misurazione_e_controllo_qualita_DEFINITIVO_20260113_184110;25;66.67%;VERIFICARE
+test quiz attribuzione competenze domanda;Corso test attribuzione competenze;Nessuna corrispondenza;-;-;MANCA CATEGORIA

@@ -121,3 +121,97 @@ $string['coachmanager:view'] = 'Visualizzare il Bilancio Competenze';
 $string['coachmanager:edit'] = 'Modificare note nel Bilancio Competenze';
 $string['coachmanager:compare'] = 'Confrontare studenti';
 $string['coachmanager:export'] = 'Esportare report PDF';
+
+// ============================================
+// Dashboard Coach Integrata - Nuove stringhe
+// ============================================
+$string['coach_dashboard'] = 'Dashboard Coach';
+$string['my_students'] = 'I Miei Studenti';
+$string['my_groups'] = 'I Miei Gruppi';
+
+// Filtri
+$string['advanced_filters'] = 'Filtri Avanzati';
+$string['course'] = 'Corso';
+$string['all_courses'] = 'Tutti i corsi';
+$string['group_color'] = 'Colore Gruppo';
+$string['week'] = 'Settimana';
+$string['all_weeks'] = 'Tutte le settimane';
+$string['status'] = 'Stato';
+$string['all_statuses'] = 'Tutti gli stati';
+$string['end'] = 'Fine';
+
+// Statistiche
+$string['assigned_students'] = 'Studenti assegnati';
+$string['avg_competencies'] = 'Media Competenze';
+$string['autoval_complete'] = 'Autoval. Complete';
+$string['lab_evaluated'] = 'Lab Valutati';
+$string['end_6_weeks'] = 'Fine 6 Settimane';
+$string['below_threshold'] = 'Sotto Soglia 50%';
+$string['missing_autoval'] = 'Autoval. mancanti';
+$string['missing_lab'] = 'Lab da valutare';
+$string['missing_choices'] = 'Scelte mancanti';
+
+// Alert e deadline
+$string['students_end_path'] = 'Studenti in Fine Percorso (6 settimane)';
+$string['students_completing'] = 'studenti stanno completando il percorso formativo';
+$string['days'] = 'giorni';
+$string['remaining'] = 'rimanenti';
+
+// Calendario
+$string['view_month'] = 'Vedi mese';
+$string['view_week'] = 'Vedi settimana';
+
+// Pulsanti
+$string['expand_all'] = 'Espandi tutti';
+$string['collapse_all'] = 'Comprimi tutti';
+$string['quick_choices'] = 'Scelte Rapide';
+$string['class_report'] = 'Report Classe';
+$string['all'] = 'Tutti';
+
+// Card studente
+$string['competencies'] = 'Competenze';
+$string['autoval'] = 'Autovalutaz.';
+$string['laboratory'] = 'Laboratorio';
+
+// Status badge
+$string['quiz_done'] = 'Quiz fatto';
+$string['quiz_missing'] = 'Quiz mancante';
+$string['autoval_done'] = 'Autoval. completa';
+$string['autoval_missing'] = 'Autoval. mancante';
+$string['lab_done'] = 'Lab valutato';
+$string['lab_pending'] = 'Lab in attesa';
+$string['lab_missing'] = 'Lab mancante';
+$string['end_path'] = 'Fine percorso';
+
+// Scelte settimana
+$string['week_choices'] = 'Scelte Settimana';
+$string['theory_test'] = 'Test Teorico';
+$string['lab_practice'] = 'Lab Pratico';
+$string['select_test'] = 'Seleziona Test';
+$string['select_lab'] = 'Seleziona Lab';
+
+// Fine percorso
+$string['final_report_needed'] = 'Report Finale da preparare';
+$string['student_completed_6_weeks'] = 'Lo studente ha completato le 6 settimane. Prepara il report finale e il colloquio di chiusura.';
+
+// Azioni
+$string['report'] = 'Report';
+$string['final_report'] = 'Report Finale';
+$string['interview'] = 'Colloquio';
+$string['remind_autoval'] = 'Sollecita Autoval';
+$string['save_choices'] = 'Salva Scelte';
+
+// Messaggi
+$string['no_students_found'] = 'Nessuno studente trovato';
+$string['adjust_filters'] = 'Prova a modificare i filtri o la ricerca.';
+$string['quick_choices_coming'] = 'Scelte Rapide - Funzionalita in arrivo!';
+$string['confirm_send_reminder'] = 'Vuoi inviare un promemoria allo studente?';
+$string['reminder_sent'] = 'Promemoria inviato con successo!';
+$string['error'] = 'Errore';
+$string['select_at_least_one'] = 'Seleziona almeno un test o un laboratorio';
+$string['choices_saved'] = 'Scelte salvate con successo!';
+$string['choose_tests_description'] = 'Devi scegliere i test di approfondimento per i tuoi studenti';
+
+// Reminder
+$string['reminder_autoval_subject'] = 'Promemoria: Completa la tua Autovalutazione';
+$string['reminder_autoval_body'] = 'Ciao {$a}, ti ricordiamo di completare la tua autovalutazione delle competenze.';

@@ -32,8 +32,10 @@ require_capability('local/ftm_scheduler:view', $context);
 
 // Page parameters
 $tab = optional_param('tab', 'calendario', PARAM_ALPHA);
+$view = optional_param('view', 'week', PARAM_ALPHA); // 'week' or 'month'
 $week = optional_param('week', date('W'), PARAM_INT);
 $year = optional_param('year', date('Y'), PARAM_INT);
+$month = optional_param('month', date('n'), PARAM_INT);
 
 // Page setup
 $PAGE->set_context($context);
@@ -78,7 +80,7 @@ foreach ($activities as $activity) {
     $day_of_week = date('N', $activity->date_start);
     $hour = date('H', $activity->date_start);
     $slot = ($hour < 12) ? 'matt' : 'pom';
-    
+
     if (isset($calendar_data[$day_of_week])) {
         $calendar_data[$day_of_week][$slot][] = $activity;
     }
@@ -89,11 +91,23 @@ foreach ($external_bookings as $booking) {
     $day_of_week = date('N', $booking->date_start);
     $hour = date('H', $booking->date_start);
     $slot = ($hour < 12) ? 'matt' : 'pom';
-    
+
     if (isset($calendar_data[$day_of_week])) {
         $booking->is_external = true;
         $calendar_data[$day_of_week][$slot][] = $booking;
     }
+}
+
+// Month view data
+$month_weeks = [];
+$month_activities = [];
+$month_names = ['', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+$current_month_name = $month_names[$month];
+
+if ($view === 'month') {
+    $month_weeks = $manager::get_month_weeks($year, $month);
+    $month_activities = $manager::get_month_activities($year, $month);
 }
 
 // Output starts
@@ -769,22 +783,171 @@ echo $OUTPUT->header();
     text-align: center;
 }
 
+/* View Toggle Buttons */
+.view-toggle {
+    display: flex;
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.view-toggle-btn {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.view-toggle-btn:hover {
+    background: #e9ecef;
+    color: #333;
+    text-decoration: none;
+}
+
+.view-toggle-btn.active {
+    background: #0066cc;
+    color: white;
+}
+
+.view-toggle-btn.active:hover {
+    background: #0052a3;
+    color: white;
+}
+
+/* Month View Grid */
+.month-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(5, 1fr);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.month-week-label {
+    background: #f8f9fa;
+    padding: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    border-right: 1px solid #dee2e6;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100px;
+}
+
+.month-week-label .kw {
+    color: #0066cc;
+    font-size: 14px;
+}
+
+.month-week-label .dates {
+    color: #999;
+    font-size: 10px;
+    margin-top: 5px;
+}
+
+.month-cell {
+    min-height: 100px;
+    border-right: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    padding: 5px;
+    background: white;
+    position: relative;
+}
+
+.month-cell.other-month {
+    background: #f8f9fa;
+}
+
+.month-cell:hover {
+    background: #fafafa;
+}
+
+.month-cell .day-num {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+}
+
+.month-cell.other-month .day-num {
+    color: #ccc;
+}
+
+.month-activity-mini {
+    font-size: 10px;
+    padding: 3px 5px;
+    border-radius: 3px;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    border-left: 3px solid;
+}
+
+.month-activity-mini.giallo { background: #FEF9C3; border-left-color: #EAB308; }
+.month-activity-mini.grigio { background: #F3F4F6; border-left-color: #6B7280; }
+.month-activity-mini.rosso { background: #FEE2E2; border-left-color: #EF4444; }
+.month-activity-mini.marrone { background: #FED7AA; border-left-color: #92400E; }
+.month-activity-mini.viola { background: #F3E8FF; border-left-color: #7C3AED; }
+.month-activity-mini.external { background: #DBEAFE; border-left-color: #2563EB; }
+
+.month-more-link {
+    font-size: 10px;
+    color: #0066cc;
+    cursor: pointer;
+}
+
+.month-more-link:hover {
+    text-decoration: underline;
+}
+
+/* Month Header */
+.month-header-row {
+    display: contents;
+}
+
+.month-day-header {
+    background: #f8f9fa;
+    padding: 10px;
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 13px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .stats-row {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .calendar-grid {
         overflow-x: auto;
     }
-    
+
+    .month-grid {
+        overflow-x: auto;
+    }
+
     .page-title {
         flex-direction: column;
         gap: 15px;
         align-items: flex-start;
     }
-    
+
     .form-row {
         grid-template-columns: 1fr;
     }
@@ -796,6 +959,9 @@ echo $OUTPUT->header();
     <div class="page-title">
         <h2>📅 FTM Scheduler</h2>
         <div class="page-title-buttons">
+            <a href="<?php echo new moodle_url('/local/competencymanager/sector_admin.php'); ?>" class="ftm-btn ftm-btn-secondary">
+                👥 Gestione Settori
+            </a>
             <button class="ftm-btn ftm-btn-success" onclick="ftmOpenModal('newGruppo')">
                 ➕ Nuovo Gruppo
             </button>

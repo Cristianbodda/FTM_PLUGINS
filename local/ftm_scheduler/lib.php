@@ -189,6 +189,8 @@ function local_ftm_scheduler_format_date($timestamp, $format = 'full') {
             return "$day_num $month $year";
         case 'day_month':
             return "$day_num/$month";
+        case 'month':
+            return $month;
         default:
             return date('d/m/Y', $timestamp);
     }

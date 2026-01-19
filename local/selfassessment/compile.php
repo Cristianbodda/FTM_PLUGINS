@@ -10,12 +10,19 @@ require_once(__DIR__ . '/lib.php');
 // Richiede login
 require_login();
 
+// Forza lingua italiana per questo plugin
+force_current_language('it');
+
 $context = context_system::instance();
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/selfassessment/compile.php'));
 $PAGE->set_title(get_string('compile_title', 'local_selfassessment'));
 $PAGE->set_heading(get_string('compile_title', 'local_selfassessment'));
 $PAGE->set_pagelayout('standard');
+
+// Password per skippare l'autovalutazione
+define('SELFASSESSMENT_SKIP_TEMP', '6807');      // Skip temporaneo (solo sessione)
+define('SELFASSESSMENT_SKIP_PERMANENT', 'FTM');  // Skip definitivo (accetta incompleto)
 
 // Verifica permessi
 require_capability('local/selfassessment:complete', $context);
@@ -58,13 +65,16 @@ if (empty($assigned_competencies)) {
 // Organizza competenze assegnate per area
 $areas = [];
 $area_map = [
+    // AUTOMOBILE
     'AUTOMOBILE_MAu' => ['nome' => 'Manutenzione Auto', 'icona' => '🚗', 'colore' => '#3498db'],
     'AUTOMOBILE_MR' => ['nome' => 'Manutenzione e Riparazione', 'icona' => '🔧', 'colore' => '#e74c3c'],
+    // MECCANICA
     'MECCANICA_ASS' => ['nome' => 'Assemblaggio', 'icona' => '🔩', 'colore' => '#f39c12'],
     'MECCANICA_AUT' => ['nome' => 'Automazione', 'icona' => '🤖', 'colore' => '#e74c3c'],
     'MECCANICA_CNC' => ['nome' => 'Controllo Numerico CNC', 'icona' => '🖥️', 'colore' => '#00bcd4'],
     'MECCANICA_CSP' => ['nome' => 'Collaborazione', 'icona' => '🤝', 'colore' => '#8e44ad'],
     'MECCANICA_DIS' => ['nome' => 'Disegno Tecnico', 'icona' => '📐', 'colore' => '#3498db'],
+    'MECCANICA_DT' => ['nome' => 'Disegno Tecnico', 'icona' => '📐', 'colore' => '#3498db'],
     'MECCANICA_LAV' => ['nome' => 'Lavorazioni Generali', 'icona' => '🏭', 'colore' => '#9e9e9e'],
     'MECCANICA_LMC' => ['nome' => 'Lavorazioni Macchine', 'icona' => '⚙️', 'colore' => '#607d8b'],
     'MECCANICA_LMB' => ['nome' => 'Lavorazioni Manuali', 'icona' => '🔧', 'colore' => '#795548'],
@@ -73,6 +83,16 @@ $area_map = [
     'MECCANICA_PIA' => ['nome' => 'Pianificazione', 'icona' => '📋', 'colore' => '#9b59b6'],
     'MECCANICA_PRO' => ['nome' => 'Programmazione', 'icona' => '💻', 'colore' => '#2ecc71'],
     'MECCANICA_SIC' => ['nome' => 'Sicurezza e Qualità', 'icona' => '🛡️', 'colore' => '#c0392b'],
+    // LOGISTICA
+    'LOGISTICA_LO' => ['nome' => 'Logistica', 'icona' => '📦', 'colore' => '#ff9800'],
+    'LOGISTICA' => ['nome' => 'Logistica', 'icona' => '📦', 'colore' => '#ff9800'],
+    // AUTOMAZIONE (standalone)
+    'AUTOMAZIONE' => ['nome' => 'Automazione', 'icona' => '🤖', 'colore' => '#673ab7'],
+    'AUTO_EA' => ['nome' => 'Elettronica e Automazione', 'icona' => '⚡', 'colore' => '#673ab7'],
+    // ELETTRONICA
+    'ELETTRONICA' => ['nome' => 'Elettronica', 'icona' => '⚡', 'colore' => '#2196f3'],
+    // MECC (abbreviato)
+    'MECC_' => ['nome' => 'Meccanica', 'icona' => '⚙️', 'colore' => '#607d8b'],
 ];
 
 foreach ($assigned_competencies as $comp) {
@@ -110,6 +130,20 @@ $existing_by_comp = [];
 foreach ($existing as $e) {
     $existing_by_comp[$e->competencyid] = $e->level;
 }
+
+// Conta quante competenze assegnate sono state valutate
+$assigned_ids = array_column($assigned_competencies, 'competencyid');
+$completed_count = 0;
+foreach ($assigned_ids as $compid) {
+    if (isset($existing_by_comp[$compid]) && $existing_by_comp[$compid] > 0) {
+        $completed_count++;
+    }
+}
+$all_completed = ($completed_count >= $total_assigned);
+
+// Verifica se l'utente ha uno skip permanente
+$permanent_skip = $DB->get_field('local_selfassessment_status', 'skip_accepted', ['userid' => $USER->id]);
+$show_blocking_modal = !$all_completed && !$permanent_skip;
 
 // Livelli Bloom
 $bloom_levels = local_selfassessment_get_bloom_levels();
@@ -406,7 +440,177 @@ echo $OUTPUT->header();
         min-width: 100%;
     }
 }
+
+/* ============================================
+   BLOCKING MODAL OVERLAY
+   ============================================ */
+.sa-blocking-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+}
+
+.sa-blocking-modal {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: modalBounce 0.5s ease;
+}
+
+@keyframes modalBounce {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.sa-blocking-modal .modal-icon {
+    font-size: 4em;
+    margin-bottom: 20px;
+}
+
+.sa-blocking-modal h2 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.sa-blocking-modal p {
+    color: #7f8c8d;
+    margin-bottom: 25px;
+    line-height: 1.6;
+}
+
+.sa-blocking-modal .btn-continue {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 1.1em;
+    font-weight: 600;
+    border-radius: 30px;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sa-blocking-modal .btn-continue:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+.sa-blocking-modal .skip-section {
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+    margin-top: 10px;
+}
+
+.sa-blocking-modal .skip-section p {
+    font-size: 0.9em;
+    margin-bottom: 15px;
+    color: #95a5a6;
+}
+
+.sa-blocking-modal .skip-input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.sa-blocking-modal .skip-input {
+    flex: 1;
+    padding: 12px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 1em;
+    text-align: center;
+    letter-spacing: 3px;
+}
+
+.sa-blocking-modal .skip-input:focus {
+    border-color: #667eea;
+    outline: none;
+}
+
+.sa-blocking-modal .btn-skip {
+    background: #95a5a6;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease;
+}
+
+.sa-blocking-modal .btn-skip:hover {
+    background: #7f8c8d;
+}
+
+.sa-blocking-modal .skip-error {
+    color: #e74c3c;
+    font-size: 0.85em;
+    margin-top: 10px;
+    display: none;
+}
+
+.sa-blocking-modal .competency-count {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    display: inline-block;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
 </style>
+
+<?php if ($show_blocking_modal): ?>
+<!-- BLOCKING MODAL - Obbliga lo studente a completare l'autovalutazione -->
+<div class="sa-blocking-overlay" id="blockingModal">
+    <div class="sa-blocking-modal">
+        <div class="modal-icon">📋</div>
+        <h2>Autovalutazione Obbligatoria</h2>
+        <div class="competency-count">
+            <?php
+            $remaining = $total_assigned - $completed_count;
+            echo $remaining . ' competenze da valutare';
+            if ($completed_count > 0) {
+                echo ' <span style="font-size: 0.8em; opacity: 0.8;">(' . $completed_count . '/' . $total_assigned . ' completate)</span>';
+            }
+            ?>
+        </div>
+        <p>
+            Prima di continuare, devi completare l'autovalutazione delle tue competenze.<br>
+            Questo aiuterà il tuo coach a capire dove hai bisogno di supporto.
+        </p>
+        <button class="btn-continue" onclick="closeBlockingModal()">
+            ✅ Compila Autovalutazione
+        </button>
+
+        <div class="skip-section">
+            <p>Hai un codice di bypass?</p>
+            <div class="skip-input-group">
+                <input type="text" class="skip-input" id="skipPassword" placeholder="Codice" maxlength="4" style="text-transform: uppercase;">
+                <button class="btn-skip" onclick="trySkip()">Salta</button>
+            </div>
+            <div class="skip-error" id="skipError">❌ Codice non valido</div>
+            <div class="skip-info" id="skipInfo" style="display: none; color: #27ae60; font-size: 0.85em; margin-top: 10px;"></div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <div class="sa-container">
     <!-- Header -->
@@ -562,7 +766,116 @@ document.addEventListener('DOMContentLoaded', function() {
     const firstArea = document.querySelector('.area-card');
     if (firstArea) firstArea.classList.add('open');
     updateProgress();
+
+    <?php if ($show_blocking_modal): ?>
+    // Controlla se l'utente ha già skippato temporaneamente in questa sessione
+    if (sessionStorage.getItem('sa_skipped_temp') === 'true') {
+        document.getElementById('blockingModal').style.display = 'none';
+    }
+
+    // Gestione Enter nel campo password
+    document.getElementById('skipPassword').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            trySkip();
+        }
+    });
+    <?php endif; ?>
 });
+
+<?php if ($show_blocking_modal): ?>
+// Chiude il modal e permette di compilare
+function closeBlockingModal() {
+    document.getElementById('blockingModal').style.display = 'none';
+}
+
+// Password per skip
+const SKIP_TEMP = '<?php echo SELFASSESSMENT_SKIP_TEMP; ?>';       // 6807 - temporaneo
+const SKIP_PERMANENT = '<?php echo SELFASSESSMENT_SKIP_PERMANENT; ?>'; // FTM - definitivo
+
+function trySkip() {
+    const inputPassword = document.getElementById('skipPassword').value.toUpperCase();
+    const errorEl = document.getElementById('skipError');
+    const infoEl = document.getElementById('skipInfo');
+
+    // Reset
+    errorEl.style.display = 'none';
+    infoEl.style.display = 'none';
+
+    if (inputPassword === SKIP_TEMP) {
+        // Skip TEMPORANEO - solo per questa sessione
+        sessionStorage.setItem('sa_skipped_temp', 'true');
+        document.getElementById('blockingModal').style.display = 'none';
+        showNotification('⏭️ Skip temporaneo - il popup riapparirà al prossimo accesso', 'success');
+
+        // Redirect alla home dopo 1.5 secondi
+        setTimeout(() => {
+            window.location.href = '<?php echo $CFG->wwwroot; ?>';
+        }, 1500);
+
+    } else if (inputPassword === SKIP_PERMANENT) {
+        // Skip PERMANENTE - salva nel database
+        infoEl.textContent = '⏳ Salvataggio skip permanente...';
+        infoEl.style.display = 'block';
+
+        // Chiama AJAX per salvare lo skip permanente
+        fetch('ajax_skip_permanent.php?sesskey=' + M.cfg.sesskey, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action: 'skip_permanent'})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('blockingModal').style.display = 'none';
+                showNotification('✅ Autovalutazione incompleta accettata - non vedrai più questo popup', 'success');
+
+                // Redirect alla home dopo 2 secondi
+                setTimeout(() => {
+                    window.location.href = '<?php echo $CFG->wwwroot; ?>';
+                }, 2000);
+            } else {
+                errorEl.textContent = '❌ Errore: ' + (data.error || 'Impossibile salvare');
+                errorEl.style.display = 'block';
+                infoEl.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            errorEl.textContent = '❌ Errore di connessione';
+            errorEl.style.display = 'block';
+            infoEl.style.display = 'none';
+        });
+
+    } else {
+        // Password errata
+        errorEl.style.display = 'block';
+        document.getElementById('skipPassword').value = '';
+        document.getElementById('skipPassword').focus();
+
+        // Shake animation
+        const modal = document.querySelector('.sa-blocking-modal');
+        modal.style.animation = 'none';
+        setTimeout(() => {
+            modal.style.animation = 'shake 0.5s ease';
+        }, 10);
+
+        // Nascondi errore dopo 3 secondi
+        setTimeout(() => {
+            errorEl.style.display = 'none';
+        }, 3000);
+    }
+}
+
+// Shake animation
+const shakeStyle = document.createElement('style');
+shakeStyle.textContent = `
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-10px); }
+        40%, 80% { transform: translateX(10px); }
+    }
+`;
+document.head.appendChild(shakeStyle);
+<?php endif; ?>
 </script>
 
 <?php

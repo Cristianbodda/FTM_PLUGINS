@@ -60,5 +60,18 @@ $capabilities = [
             'manager' => CAP_ALLOW,  // Solo manager/segretaria
         ],
     ],
-    
+
+    // =========================================================================
+    // NUOVO PERMESSO: Gestione settori studenti (segreteria e coach)
+    // Permette di visualizzare e modificare i settori primari degli studenti
+    // =========================================================================
+    'local/competencymanager:managesectors' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,  // Coach
+            'manager' => CAP_ALLOW,          // Segreteria
+        ],
+    ],
+
 ];

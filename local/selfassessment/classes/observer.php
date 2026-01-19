@@ -111,9 +111,92 @@ class observer {
             }
         }
         
-        // Log per debug (opzionale)
+        // Invia notifica allo studente se ci sono nuove assegnazioni
         if ($assigned > 0) {
+            self::send_assignment_notification($userid, $quizid, $assigned);
             debugging("SelfAssessment: Assigned $assigned competencies to user $userid from quiz $quizid", DEBUG_DEVELOPER);
+        }
+
+        // Rileva e registra i settori dalle competenze del quiz (opzionale)
+        self::detect_sectors_safe($userid, $quizid, $mappings);
+    }
+
+    /**
+     * Rileva settori in modo sicuro (non blocca se sector_manager non esiste)
+     */
+    private static function detect_sectors_safe($userid, $quizid, $mappings) {
+        global $DB;
+
+        // Verifica se il file sector_manager esiste
+        $sector_manager_file = __DIR__ . '/../../competencymanager/classes/sector_manager.php';
+        if (!file_exists($sector_manager_file)) {
+            return; // Sector manager non installato, skip silenzioso
+        }
+
+        // Verifica se la tabella esiste
+        $dbman = $DB->get_manager();
+        if (!$dbman->table_exists('local_student_sectors')) {
+            return; // Tabella non creata, skip silenzioso
+        }
+
+        try {
+            require_once($sector_manager_file);
+            $competencyids = array_map(function($m) { return $m->competencyid; }, $mappings);
+            $detected_sectors = \local_competencymanager\sector_manager::detect_sectors_from_quiz($userid, $quizid, $competencyids);
+            if (!empty($detected_sectors)) {
+                debugging("SelfAssessment: Detected sectors for user $userid: " . implode(', ', $detected_sectors), DEBUG_DEVELOPER);
+            }
+        } catch (\Exception $e) {
+            // Errore silenzioso - non blocca il quiz
+            debugging("SelfAssessment: Error detecting sectors: " . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
+     * Invia notifica allo studente quando vengono assegnate nuove competenze
+     */
+    private static function send_assignment_notification($userid, $quizid, $count) {
+        global $DB, $CFG;
+
+        require_once($CFG->dirroot . '/lib/messagelib.php');
+
+        $student = $DB->get_record('user', ['id' => $userid]);
+        $quiz = $DB->get_record('quiz', ['id' => $quizid]);
+
+        if (!$student || !$quiz) {
+            return false;
+        }
+
+        // Prepara dati per il messaggio
+        $url = new \moodle_url('/local/selfassessment/compile.php');
+
+        $messagedata = new \stdClass();
+        $messagedata->fullname = fullname($student);
+        $messagedata->quizname = $quiz->name;
+        $messagedata->count = $count;
+        $messagedata->url = $url->out();
+
+        // Crea messaggio Moodle
+        $message = new \core\message\message();
+        $message->component = 'local_selfassessment';
+        $message->name = 'assignment';
+        $message->userfrom = \core_user::get_noreply_user();
+        $message->userto = $student;
+        $message->subject = get_string('notification_assignment_subject', 'local_selfassessment');
+        $message->fullmessage = get_string('notification_assignment_body', 'local_selfassessment', $messagedata);
+        $message->fullmessageformat = FORMAT_PLAIN;
+        $message->fullmessagehtml = '';
+        $message->smallmessage = get_string('notification_assignment_small', 'local_selfassessment', $messagedata);
+        $message->notification = 1;
+        $message->contexturl = $url;
+        $message->contexturlname = get_string('myassessment', 'local_selfassessment');
+
+        try {
+            message_send($message);
+            return true;
+        } catch (\Exception $e) {
+            debugging("SelfAssessment: Failed to send notification to user $userid: " . $e->getMessage(), DEBUG_DEVELOPER);
+            return false;
         }
     }
 }

@@ -294,6 +294,23 @@ block_ftm_tools -> ftm_hub
 
 ---
 
+# WORD PARSER - FORMATI SUPPORTATI (v4.0)
+
+Il parser Word (`local/competencyxmlimport/classes/word_parser.php`) supporta **19 formati** per 6 settori:
+
+## Formati per Settore
+
+| Settore | Formati | Pattern |
+|---------|---------|---------|
+| **AUTOVEICOLO** | 3 | AUT_BASE_Q01, Q01 (ID), Q01 - Competenza: |
+| **ELETTRONICA** | 2 | Q01 + Competenza:, Q01 - COMP_CODE |
+| **CHIMICA** | 3 | Competenza: XXX \|, Q01 (ID) + (F2):, (F2): dopo risposte |
+| **ELETTRICITA** | 5 | ELET_BASE_Q01, Bullet + checkmark, Q01 \|, Q01., Q##\nCodice: |
+| **LOGISTICA** | 4 | 1. LOG_XXX_Q01, LOG_APPR01_Q01, LOG_APPR04_Q01 -, Q1 - |
+| **MECCANICA** | 1 | [A-H]?##. + Codice competenza: MECCANICA_XX |
+
+---
+
 # CONTATTI E RISORSE
 
 Repository: https://github.com/Cristianbodda/FTM_PLUGINS

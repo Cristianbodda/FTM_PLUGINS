@@ -9,7 +9,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_selfassessment';
-$plugin->version = 2025122402;           // YYYYMMDDXX - versione 2
+$plugin->version = 2026011404;           // YYYYMMDDXX - skip temporaneo/permanente + db fields
 $plugin->requires = 2022041900;          // Moodle 4.0+
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '1.1.0';
+$plugin->release = '1.2.0';

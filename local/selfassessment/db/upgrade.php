@@ -37,9 +37,28 @@ function xmldb_local_selfassessment_upgrade($oldversion) {
         if (!$dbman->table_exists($table)) {
             $dbman->create_table($table);
         }
-        
+
         upgrade_plugin_savepoint(true, 2025122402, 'local', 'selfassessment');
     }
-    
+
+    // Versione 2026011404: Aggiunge campi skip_accepted e skip_time
+    if ($oldversion < 2026011404) {
+        $table = new xmldb_table('local_selfassessment_status');
+
+        // Campo skip_accepted
+        $field = new xmldb_field('skip_accepted', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'enabled');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Campo skip_time
+        $field = new xmldb_field('skip_time', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'skip_accepted');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026011404, 'local', 'selfassessment');
+    }
+
     return true;
 }

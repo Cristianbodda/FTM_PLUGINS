@@ -138,7 +138,8 @@ class manager {
     public static function get_group_members($groupid) {
         global $DB;
         
-        $sql = "SELECT gm.*, u.firstname, u.lastname, u.email
+        $sql = "SELECT gm.*, u.firstname, u.lastname, u.email,
+                       u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename
                 FROM {local_ftm_group_members} gm
                 JOIN {user} u ON u.id = gm.userid
                 WHERE gm.groupid = :groupid
@@ -586,5 +587,129 @@ class manager {
         $dto = new \DateTime();
         $dto->setISODate($year, $week, 1);
         return $dto->getTimestamp();
+    }
+
+    /**
+     * Get all weeks in a month.
+     *
+     * @param int $year
+     * @param int $month (1-12)
+     * @return array Array of week info with dates
+     */
+    public static function get_month_weeks($year, $month) {
+        $weeks = [];
+
+        // Get first day of month
+        $first_day = mktime(0, 0, 0, $month, 1, $year);
+        // Get last day of month
+        $last_day = mktime(23, 59, 59, $month + 1, 0, $year);
+
+        // Find Monday of first week that contains any day of this month
+        $first_monday = strtotime('monday this week', $first_day);
+        if ($first_monday > $first_day) {
+            // If Monday is after the 1st, go back a week
+            $first_monday = strtotime('-1 week', $first_monday);
+        }
+
+        // Find Friday of last week that contains any day of this month
+        $last_friday = strtotime('friday this week', $last_day);
+
+        // Generate weeks
+        $current_monday = $first_monday;
+        while ($current_monday <= $last_day) {
+            $week_num = (int) date('W', $current_monday);
+            $week_year = (int) date('o', $current_monday); // ISO year
+
+            $week_data = [
+                'week_num' => $week_num,
+                'year' => $week_year,
+                'monday_ts' => $current_monday,
+                'friday_ts' => strtotime('+4 days', $current_monday),
+                'days' => []
+            ];
+
+            // Add 5 days (Mon-Fri)
+            for ($i = 0; $i < 5; $i++) {
+                $day_ts = strtotime("+$i days", $current_monday);
+                $week_data['days'][] = [
+                    'timestamp' => $day_ts,
+                    'day_num' => (int) date('j', $day_ts),
+                    'day_name' => \local_ftm_scheduler_format_date($day_ts, 'short'),
+                    'day_of_week' => $i + 1,
+                    'is_current_month' => ((int) date('n', $day_ts) === $month)
+                ];
+            }
+
+            $weeks[] = $week_data;
+            $current_monday = strtotime('+1 week', $current_monday);
+        }
+
+        return $weeks;
+    }
+
+    /**
+     * Get activities for a month (all weeks).
+     *
+     * @param int $year
+     * @param int $month
+     * @return array Activities indexed by week-day-slot
+     */
+    public static function get_month_activities($year, $month) {
+        $weeks = self::get_month_weeks($year, $month);
+
+        if (empty($weeks)) {
+            return [];
+        }
+
+        // Get first Monday and last Friday
+        $first_monday = $weeks[0]['monday_ts'];
+        $last_friday = end($weeks)['friday_ts'] + 86400; // End of last Friday
+
+        // Get all activities for this period
+        $activities = self::get_activities([
+            'date_start' => $first_monday,
+            'date_end' => $last_friday
+        ]);
+
+        // Get external bookings
+        $external_bookings = self::get_external_bookings($first_monday, $last_friday);
+
+        // Organize by week-day-slot
+        $organized = [];
+
+        foreach ($activities as $activity) {
+            $week_num = (int) date('W', $activity->date_start);
+            $day_of_week = (int) date('N', $activity->date_start);
+            $hour = (int) date('H', $activity->date_start);
+            $slot = ($hour < 12) ? 'matt' : 'pom';
+
+            if (!isset($organized[$week_num])) {
+                $organized[$week_num] = [];
+            }
+            if (!isset($organized[$week_num][$day_of_week])) {
+                $organized[$week_num][$day_of_week] = ['matt' => [], 'pom' => []];
+            }
+
+            $organized[$week_num][$day_of_week][$slot][] = $activity;
+        }
+
+        foreach ($external_bookings as $booking) {
+            $week_num = (int) date('W', $booking->date_start);
+            $day_of_week = (int) date('N', $booking->date_start);
+            $hour = (int) date('H', $booking->date_start);
+            $slot = ($hour < 12) ? 'matt' : 'pom';
+
+            if (!isset($organized[$week_num])) {
+                $organized[$week_num] = [];
+            }
+            if (!isset($organized[$week_num][$day_of_week])) {
+                $organized[$week_num][$day_of_week] = ['matt' => [], 'pom' => []];
+            }
+
+            $booking->is_external = true;
+            $organized[$week_num][$day_of_week][$slot][] = $booking;
+        }
+
+        return $organized;
     }
 }

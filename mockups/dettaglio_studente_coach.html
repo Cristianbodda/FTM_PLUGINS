@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup - Dettaglio Studente (Vista Coach)</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #1d1d1f;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header .back-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header .actions {
+            display: flex;
+            gap: 10px;
+        }
+        .header .action-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* Student Header */
+        .student-header {
+            background: white;
+            padding: 25px 30px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .student-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .student-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1a73e8, #0d47a1);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .student-details h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .student-details .meta {
+            color: #666;
+            font-size: 14px;
+        }
+        .student-stats {
+            display: flex;
+            gap: 30px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-item .value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .stat-item .label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+        }
+        .stat-item.green .value { color: #34a853; }
+        .stat-item.blue .value { color: #1a73e8; }
+        .stat-item.orange .value { color: #ea8600; }
+
+        /* Tabs */
+        .tabs {
+            background: white;
+            padding: 0 30px;
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid #eee;
+        }
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab:hover { color: #1a73e8; }
+        .tab.active {
+            color: #1a73e8;
+            border-bottom-color: #1a73e8;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 25px;
+        }
+
+        /* Grid Layout */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .card-body {
+            padding: 20px;
+        }
+
+        /* Competency Radar Chart Placeholder */
+        .radar-chart {
+            background: #f8f9fa;
+            border-radius: 8px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            flex-direction: column;
+        }
+        .radar-chart .icon { font-size: 48px; margin-bottom: 10px; }
+
+        /* Competency List */
+        .competency-list {
+            margin-top: 20px;
+        }
+        .competency-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .competency-item:last-child { border-bottom: none; }
+        .competency-code {
+            width: 120px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #666;
+        }
+        .competency-name {
+            flex: 1;
+            font-size: 14px;
+        }
+        .competency-score {
+            width: 100px;
+            text-align: right;
+        }
+        .score-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .score-badge.high { background: #e8f5e9; color: #2e7d32; }
+        .score-badge.medium { background: #fff3e0; color: #e65100; }
+        .score-badge.low { background: #ffebee; color: #c62828; }
+
+        /* Autovalutazione Section */
+        .autoval-status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: #e8f5e9;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .autoval-status.pending {
+            background: #fff3e0;
+        }
+        .autoval-status .icon {
+            font-size: 32px;
+        }
+        .autoval-status .info .title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .autoval-status .info .desc {
+            font-size: 13px;
+            color: #666;
+        }
+        .autoval-comparison {
+            margin-top: 20px;
+        }
+        .comparison-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .comparison-row .label { width: 150px; font-size: 14px; }
+        .comparison-row .bars { flex: 1; display: flex; gap: 10px; align-items: center; }
+        .comparison-bar {
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            padding-left: 8px;
+            font-size: 11px;
+            color: white;
+            font-weight: 600;
+        }
+        .comparison-bar.self { background: #1a73e8; }
+        .comparison-bar.real { background: #34a853; }
+
+        /* Lab Evaluation */
+        .lab-card {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .lab-card .lab-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .lab-card .lab-title { font-weight: 600; }
+        .lab-card .lab-date { font-size: 12px; color: #888; }
+        .lab-scores {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .lab-score-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .lab-score-item .value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a73e8;
+        }
+        .lab-score-item .label {
+            font-size: 11px;
+            color: #666;
+        }
+
+        /* Notes Section */
+        .notes-area {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .notes-actions {
+            margin-top: 15px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn-primary { background: #1a73e8; color: white; }
+        .btn-secondary { background: #f0f0f0; color: #333; }
+
+        /* Timeline */
+        .timeline {
+            margin-top: 20px;
+        }
+        .timeline-item {
+            display: flex;
+            gap: 15px;
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .timeline-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #1a73e8;
+            margin-top: 4px;
+        }
+        .timeline-content .date {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 4px;
+        }
+        .timeline-content .text {
+            font-size: 14px;
+        }
+
+        /* Footer Note */
+        .note {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 25px;
+        }
+        .note strong { color: #856404; }
+        .note ul { margin-top: 10px; margin-left: 20px; }
+        .note li { margin-bottom: 5px; color: #856404; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <button class="back-btn">
+            &#8592; Torna alla Dashboard
+        </button>
+        <div class="actions">
+            <button class="action-btn">Stampa Report</button>
+            <button class="action-btn">Esporta PDF</button>
+        </div>
+    </div>
+
+    <!-- Student Header -->
+    <div class="student-header">
+        <div class="student-info">
+            <div class="student-avatar">MR</div>
+            <div class="student-details">
+                <h1>Mario Rossi</h1>
+                <div class="meta">mario.rossi@email.com | Corso: Meccanica Base 2024</div>
+            </div>
+        </div>
+        <div class="student-stats">
+            <div class="stat-item green">
+                <div class="value">85%</div>
+                <div class="label">Competenze</div>
+            </div>
+            <div class="stat-item blue">
+                <div class="value">4.2</div>
+                <div class="label">Media Autoval.</div>
+            </div>
+            <div class="stat-item orange">
+                <div class="value">3.8</div>
+                <div class="label">Media Lab</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <div class="tab active">Panoramica</div>
+        <div class="tab">Competenze</div>
+        <div class="tab">Autovalutazione</div>
+        <div class="tab">Laboratorio</div>
+        <div class="tab">Note Coach</div>
+    </div>
+
+    <div class="container">
+        <div class="content-grid">
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Competenze Card -->
+                <div class="card" style="margin-bottom: 25px;">
+                    <div class="card-header">
+                        <h2>Competenze Quiz</h2>
+                        <span style="color: #34a853; font-weight: 600;">17/20 raggiunte (85%)</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="radar-chart">
+                            <div class="icon">&#128200;</div>
+                            <div>Radar Chart Competenze</div>
+                            <div style="font-size: 12px;">(Grafico interattivo)</div>
+                        </div>
+                        <div class="competency-list">
+                            <div class="competency-item">
+                                <div class="competency-code">MECCANICA_DT_01</div>
+                                <div class="competency-name">Disegno tecnico base</div>
+                                <div class="competency-score">
+                                    <span class="score-badge high">100%</span>
+                                </div>
+                            </div>
+                            <div class="competency-item">
+                                <div class="competency-code">MECCANICA_DT_02</div>
+                                <div class="competency-name">Tolleranze dimensionali</div>
+                                <div class="competency-score">
+                                    <span class="score-badge high">90%</span>
+                                </div>
+                            </div>
+                            <div class="competency-item">
+                                <div class="competency-code">MECCANICA_LMC_01</div>
+                                <div class="competency-name">Lavorazioni macchine conv.</div>
+                                <div class="competency-score">
+                                    <span class="score-badge medium">65%</span>
+                                </div>
+                            </div>
+                            <div class="competency-item">
+                                <div class="competency-code">MECCANICA_CNC_02</div>
+                                <div class="competency-name">Programmazione CNC</div>
+                                <div class="competency-score">
+                                    <span class="score-badge low">40%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Autovalutazione vs Reale -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Autovalutazione vs Risultati Reali</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="autoval-status">
+                            <div class="icon">&#9989;</div>
+                            <div class="info">
+                                <div class="title">Autovalutazione completata</div>
+                                <div class="desc">Compilata il 15/01/2026 - 20 competenze valutate</div>
+                            </div>
+                        </div>
+                        <div class="autoval-comparison">
+                            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                                <span style="display: inline-block; width: 12px; height: 12px; background: #1a73e8; border-radius: 2px; margin-right: 5px;"></span> Autovalutazione studente
+                                <span style="display: inline-block; width: 12px; height: 12px; background: #34a853; border-radius: 2px; margin-left: 15px; margin-right: 5px;"></span> Risultato quiz
+                            </p>
+                            <div class="comparison-row">
+                                <div class="label">Disegno tecnico</div>
+                                <div class="bars">
+                                    <div class="comparison-bar self" style="width: 70%;">70%</div>
+                                    <div class="comparison-bar real" style="width: 95%;">95%</div>
+                                </div>
+                            </div>
+                            <div class="comparison-row">
+                                <div class="label">Lavorazioni conv.</div>
+                                <div class="bars">
+                                    <div class="comparison-bar self" style="width: 80%;">80%</div>
+                                    <div class="comparison-bar real" style="width: 65%;">65%</div>
+                                </div>
+                            </div>
+                            <div class="comparison-row">
+                                <div class="label">CNC</div>
+                                <div class="bars">
+                                    <div class="comparison-bar self" style="width: 50%;">50%</div>
+                                    <div class="comparison-bar real" style="width: 40%;">40%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Lab Evaluation -->
+                <div class="card" style="margin-bottom: 25px;">
+                    <div class="card-header">
+                        <h2>Valutazioni Laboratorio</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="lab-card">
+                            <div class="lab-header">
+                                <div class="lab-title">Prova Tornio Parallelo</div>
+                                <div class="lab-date">12/01/2026</div>
+                            </div>
+                            <div class="lab-scores">
+                                <div class="lab-score-item">
+                                    <div class="value">4</div>
+                                    <div class="label">Tecnica</div>
+                                </div>
+                                <div class="lab-score-item">
+                                    <div class="value">3</div>
+                                    <div class="label">Sicurezza</div>
+                                </div>
+                                <div class="lab-score-item">
+                                    <div class="value">4</div>
+                                    <div class="label">Autonomia</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="lab-card">
+                            <div class="lab-header">
+                                <div class="lab-title">Prova Fresatura CNC</div>
+                                <div class="lab-date">08/01/2026</div>
+                            </div>
+                            <div class="lab-scores">
+                                <div class="lab-score-item">
+                                    <div class="value">3</div>
+                                    <div class="label">Tecnica</div>
+                                </div>
+                                <div class="lab-score-item">
+                                    <div class="value">4</div>
+                                    <div class="label">Sicurezza</div>
+                                </div>
+                                <div class="lab-score-item">
+                                    <div class="value">3</div>
+                                    <div class="label">Autonomia</div>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;">
+                            + Nuova Valutazione
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Coach Notes -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Note del Coach</h2>
+                    </div>
+                    <div class="card-body">
+                        <textarea class="notes-area" placeholder="Aggiungi note per questo studente...">Studente motivato, buone capacita manuali.
+Da migliorare: programmazione CNC - consigliato approfondimento.
+Prossimo step: esercitazione pratica su G-code.</textarea>
+                        <div class="notes-actions">
+                            <button class="btn btn-primary">Salva Note</button>
+                        </div>
+
+                        <div class="timeline">
+                            <h4 style="margin-bottom: 10px; font-size: 14px; color: #666;">Storico</h4>
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <div class="date">10/01/2026</div>
+                                    <div class="text">Colloquio individuale: discusso piano di miglioramento CNC</div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <div class="date">03/01/2026</div>
+                                    <div class="text">Completato modulo disegno tecnico con ottimi risultati</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Note -->
+        <div class="note">
+            <strong>Note per revisione:</strong>
+            <ul>
+                <li><strong>Una pagina, tutto visibile:</strong> Competenze + Autovalutazione + Laboratorio + Note in un'unica vista</li>
+                <li><strong>Confronto immediato:</strong> Autovalutazione vs Risultati reali mostrati fianco a fianco</li>
+                <li><strong>Storico note:</strong> Timeline delle interazioni coach-studente</li>
+                <li><strong>Azioni dirette:</strong> Nuova valutazione lab, salva note, esporta PDF</li>
+                <li><strong>Tab per approfondimenti:</strong> Click sui tab per vedere dettagli specifici se necessario</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

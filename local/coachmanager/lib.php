@@ -10,24 +10,41 @@ defined('MOODLE_INTERNAL') || die();
  */
 function local_coachmanager_extend_navigation(global_navigation $navigation) {
     global $CFG, $USER;
-    
+
     // Verifica se l'utente ha le capabilities
     $context = context_system::instance();
     if (!has_capability('local/coachmanager:view', $context)) {
         return;
     }
-    
-    // Aggiungi nodo al menu
+
+    // Aggiungi nodo principale (Dashboard Coach)
     $node = $navigation->add(
-        get_string('coachmanager', 'local_coachmanager'),
-        new moodle_url('/local/coachmanager/index.php'),
+        get_string('coach_dashboard', 'local_coachmanager'),
+        new moodle_url('/local/coachmanager/coach_dashboard.php'),
         navigation_node::TYPE_CUSTOM,
         null,
         'coachmanager',
-        new pix_icon('i/report', '')
+        new pix_icon('i/dashboard', '')
     );
-    
+
     $node->showinflatnavigation = true;
+
+    // Aggiungi sotto-nodi
+    $node->add(
+        get_string('my_students', 'local_coachmanager'),
+        new moodle_url('/local/coachmanager/coach_dashboard.php'),
+        navigation_node::TYPE_CUSTOM,
+        null,
+        'coachmanager_students'
+    );
+
+    $node->add(
+        get_string('bilancio_competenze', 'local_coachmanager'),
+        new moodle_url('/local/coachmanager/index.php'),
+        navigation_node::TYPE_CUSTOM,
+        null,
+        'coachmanager_bilancio'
+    );
 }
 
 /**

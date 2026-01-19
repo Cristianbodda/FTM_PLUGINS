@@ -122,3 +122,97 @@ $string['coachmanager:edit'] = 'Edit notes in Competency Report';
 $string['coachmanager:compare'] = 'Compare students';
 $string['coachmanager:export'] = 'Export PDF reports';
 $string['coachmanager:managejobs'] = 'Manage job postings';
+
+// ============================================
+// Coach Dashboard - New strings
+// ============================================
+$string['coach_dashboard'] = 'Coach Dashboard';
+$string['my_students'] = 'My Students';
+$string['my_groups'] = 'My Groups';
+
+// Filters
+$string['advanced_filters'] = 'Advanced Filters';
+$string['course'] = 'Course';
+$string['all_courses'] = 'All courses';
+$string['group_color'] = 'Group Color';
+$string['week'] = 'Week';
+$string['all_weeks'] = 'All weeks';
+$string['status'] = 'Status';
+$string['all_statuses'] = 'All statuses';
+$string['end'] = 'End';
+
+// Statistics
+$string['assigned_students'] = 'Assigned students';
+$string['avg_competencies'] = 'Competencies Average';
+$string['autoval_complete'] = 'Self-Assess. Complete';
+$string['lab_evaluated'] = 'Lab Evaluated';
+$string['end_6_weeks'] = 'End 6 Weeks';
+$string['below_threshold'] = 'Below 50% Threshold';
+$string['missing_autoval'] = 'Missing Self-Assess.';
+$string['missing_lab'] = 'Labs to evaluate';
+$string['missing_choices'] = 'Missing choices';
+
+// Alert and deadline
+$string['students_end_path'] = 'Students Completing Path (6 weeks)';
+$string['students_completing'] = 'students are completing the training path';
+$string['days'] = 'days';
+$string['remaining'] = 'remaining';
+
+// Calendar
+$string['view_month'] = 'View month';
+$string['view_week'] = 'View week';
+
+// Buttons
+$string['expand_all'] = 'Expand all';
+$string['collapse_all'] = 'Collapse all';
+$string['quick_choices'] = 'Quick Choices';
+$string['class_report'] = 'Class Report';
+$string['all'] = 'All';
+
+// Student card
+$string['competencies'] = 'Competencies';
+$string['autoval'] = 'Self-Assess.';
+$string['laboratory'] = 'Laboratory';
+
+// Status badge
+$string['quiz_done'] = 'Quiz done';
+$string['quiz_missing'] = 'Quiz missing';
+$string['autoval_done'] = 'Self-Assess. complete';
+$string['autoval_missing'] = 'Self-Assess. missing';
+$string['lab_done'] = 'Lab evaluated';
+$string['lab_pending'] = 'Lab pending';
+$string['lab_missing'] = 'Lab missing';
+$string['end_path'] = 'End of path';
+
+// Week choices
+$string['week_choices'] = 'Week Choices';
+$string['theory_test'] = 'Theory Test';
+$string['lab_practice'] = 'Lab Practice';
+$string['select_test'] = 'Select Test';
+$string['select_lab'] = 'Select Lab';
+
+// End of path
+$string['final_report_needed'] = 'Final Report needed';
+$string['student_completed_6_weeks'] = 'The student has completed the 6 weeks. Prepare the final report and the closing interview.';
+
+// Actions
+$string['report'] = 'Report';
+$string['final_report'] = 'Final Report';
+$string['interview'] = 'Interview';
+$string['remind_autoval'] = 'Remind Self-Assess.';
+$string['save_choices'] = 'Save Choices';
+
+// Messages
+$string['no_students_found'] = 'No students found';
+$string['adjust_filters'] = 'Try adjusting the filters or search.';
+$string['quick_choices_coming'] = 'Quick Choices - Coming soon!';
+$string['confirm_send_reminder'] = 'Do you want to send a reminder to the student?';
+$string['reminder_sent'] = 'Reminder sent successfully!';
+$string['error'] = 'Error';
+$string['select_at_least_one'] = 'Select at least one test or lab';
+$string['choices_saved'] = 'Choices saved successfully!';
+$string['choose_tests_description'] = 'You need to choose the in-depth tests for your students';
+
+// Reminder
+$string['reminder_autoval_subject'] = 'Reminder: Complete your Self-Assessment';
+$string['reminder_autoval_body'] = 'Hello {$a}, we remind you to complete your competency self-assessment.';
