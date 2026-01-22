@@ -434,4 +434,279 @@ class sector_manager {
             ORDER BY student_count DESC
         ", $params);
     }
+
+    // ============================================
+    // FUNZIONI NAVIGAZIONE STUDENTE (Cascata)
+    // ============================================
+
+    /**
+     * Verifica se le tabelle FTM Scheduler esistono
+     *
+     * @return bool True se le tabelle esistono
+     */
+    public static function ftm_scheduler_tables_exist() {
+        global $DB;
+        $dbman = $DB->get_manager();
+        return $dbman->table_exists('local_ftm_groups') &&
+               $dbman->table_exists('local_ftm_group_members');
+    }
+
+    /**
+     * Ottiene le coorti che hanno studenti con dati FTM
+     * (studenti che sono in un gruppo FTM o hanno fatto quiz)
+     *
+     * @return array Array di coorti con conteggio studenti
+     */
+    public static function get_cohorts_with_students() {
+        global $DB;
+
+        // Coorti con studenti che hanno quiz completati o sono in gruppi FTM
+        $sql = "SELECT DISTINCT ch.id, ch.name, ch.idnumber,
+                       COUNT(DISTINCT cm.userid) as student_count
+                FROM {cohort} ch
+                JOIN {cohort_members} cm ON cm.cohortid = ch.id
+                JOIN {user} u ON u.id = cm.userid AND u.deleted = 0 AND u.suspended = 0
+                LEFT JOIN {quiz_attempts} qa ON qa.userid = u.id AND qa.state = 'finished'
+                WHERE ch.visible = 1
+                  AND (qa.id IS NOT NULL OR EXISTS (
+                      SELECT 1 FROM {local_ftm_group_members} gm WHERE gm.userid = u.id
+                  ))
+                GROUP BY ch.id, ch.name, ch.idnumber
+                HAVING student_count > 0
+                ORDER BY ch.name";
+
+        $cohorts = $DB->get_records_sql($sql);
+
+        // Se non ci sono risultati con quiz/gruppi, ritorna tutte le coorti visibili
+        if (empty($cohorts)) {
+            return $DB->get_records_sql("
+                SELECT ch.id, ch.name, ch.idnumber,
+                       COUNT(DISTINCT cm.userid) as student_count
+                FROM {cohort} ch
+                JOIN {cohort_members} cm ON cm.cohortid = ch.id
+                JOIN {user} u ON u.id = cm.userid AND u.deleted = 0 AND u.suspended = 0
+                WHERE ch.visible = 1
+                GROUP BY ch.id, ch.name, ch.idnumber
+                HAVING student_count > 0
+                ORDER BY ch.name
+            ");
+        }
+
+        return $cohorts;
+    }
+
+    /**
+     * Ottiene i colori (gruppi) disponibili per una coorte
+     *
+     * @param int $cohortid ID coorte (0 = tutte)
+     * @return array Array di colori con conteggio studenti
+     */
+    public static function get_colors_for_cohort($cohortid = 0) {
+        global $DB;
+
+        if (!self::ftm_scheduler_tables_exist()) {
+            return [];
+        }
+
+        $params = [];
+        $cohort_join = '';
+        $cohort_where = '';
+
+        if ($cohortid > 0) {
+            $cohort_join = "JOIN {cohort_members} cm ON cm.userid = gm.userid";
+            $cohort_where = "AND cm.cohortid = :cohortid";
+            $params['cohortid'] = $cohortid;
+        }
+
+        $sql = "SELECT g.color, g.color_hex,
+                       COUNT(DISTINCT gm.userid) as student_count
+                FROM {local_ftm_groups} g
+                JOIN {local_ftm_group_members} gm ON gm.groupid = g.id
+                JOIN {user} u ON u.id = gm.userid AND u.deleted = 0 AND u.suspended = 0
+                $cohort_join
+                WHERE gm.status = 'active'
+                $cohort_where
+                GROUP BY g.color, g.color_hex
+                ORDER BY FIELD(g.color, 'giallo', 'grigio', 'rosso', 'marrone', 'viola')";
+
+        return $DB->get_records_sql($sql, $params);
+    }
+
+    /**
+     * Ottiene le settimane KW disponibili per una coorte e colore
+     *
+     * @param int $cohortid ID coorte (0 = tutte)
+     * @param string $color Colore gruppo (vuoto = tutti)
+     * @return array Array di settimane con conteggio studenti
+     */
+    public static function get_weeks_for_color($cohortid = 0, $color = '') {
+        global $DB;
+
+        if (!self::ftm_scheduler_tables_exist()) {
+            return [];
+        }
+
+        $params = [];
+        $joins = [];
+        $wheres = ["gm.status = 'active'"];
+
+        if ($cohortid > 0) {
+            $joins[] = "JOIN {cohort_members} cm ON cm.userid = gm.userid";
+            $wheres[] = "cm.cohortid = :cohortid";
+            $params['cohortid'] = $cohortid;
+        }
+
+        if (!empty($color)) {
+            $wheres[] = "g.color = :color";
+            $params['color'] = $color;
+        }
+
+        $join_sql = implode(' ', $joins);
+        $where_sql = implode(' AND ', $wheres);
+
+        $sql = "SELECT g.calendar_week, g.entry_date,
+                       COUNT(DISTINCT gm.userid) as student_count,
+                       g.color, g.name as group_name
+                FROM {local_ftm_groups} g
+                JOIN {local_ftm_group_members} gm ON gm.groupid = g.id
+                JOIN {user} u ON u.id = gm.userid AND u.deleted = 0 AND u.suspended = 0
+                $join_sql
+                WHERE $where_sql
+                GROUP BY g.calendar_week, g.entry_date, g.color, g.name
+                ORDER BY g.entry_date DESC, g.calendar_week DESC";
+
+        return $DB->get_records_sql($sql, $params);
+    }
+
+    /**
+     * Ottiene gli studenti filtrati per navigazione cascata
+     *
+     * @param int $cohortid ID coorte (0 = tutte)
+     * @param string $color Colore gruppo (vuoto = tutti)
+     * @param int $calendar_week Settimana KW (0 = tutte)
+     * @return array Array di studenti
+     */
+    public static function get_students_for_navigation($cohortid = 0, $color = '', $calendar_week = 0) {
+        global $DB;
+
+        $params = [];
+        $joins = [];
+        $wheres = ["u.deleted = 0", "u.suspended = 0", "u.id > 2"];
+
+        // Join base
+        $joins[] = "LEFT JOIN {local_ftm_group_members} gm ON gm.userid = u.id AND gm.status = 'active'";
+        $joins[] = "LEFT JOIN {local_ftm_groups} g ON g.id = gm.groupid";
+
+        // Filtro coorte
+        if ($cohortid > 0) {
+            $joins[] = "JOIN {cohort_members} cm ON cm.userid = u.id";
+            $wheres[] = "cm.cohortid = :cohortid";
+            $params['cohortid'] = $cohortid;
+        }
+
+        // Filtro colore
+        if (!empty($color)) {
+            $wheres[] = "g.color = :color";
+            $params['color'] = $color;
+        }
+
+        // Filtro settimana KW
+        if ($calendar_week > 0) {
+            $wheres[] = "g.calendar_week = :calendar_week";
+            $params['calendar_week'] = $calendar_week;
+        }
+
+        $join_sql = implode(' ', $joins);
+        $where_sql = implode(' AND ', $wheres);
+
+        $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, u.email,
+                       u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename,
+                       g.color as group_color, g.color_hex, g.calendar_week,
+                       g.name as group_name, g.entry_date,
+                       gm.current_week, gm.status as member_status
+                FROM {user} u
+                $join_sql
+                WHERE $where_sql
+                ORDER BY u.lastname, u.firstname";
+
+        return $DB->get_records_sql($sql, $params);
+    }
+
+    /**
+     * Ottiene i settori di uno studente con conteggio quiz (per filtro intelligente)
+     *
+     * @param int $userid ID studente
+     * @return array Array di settori con quiz_count
+     */
+    public static function get_student_sectors_with_quiz_data($userid) {
+        global $DB;
+
+        // Ottieni settori dalla tabella dedicata
+        $sectors = self::get_student_sectors($userid);
+
+        if (!empty($sectors)) {
+            return $sectors;
+        }
+
+        // Fallback: rileva settori dai quiz completati
+        $sql = "SELECT DISTINCT c.idnumber
+                FROM {quiz_attempts} qa
+                JOIN {quiz} q ON q.id = qa.quiz
+                JOIN {question_references} qr ON qr.component = 'mod_quiz'
+                     AND qr.questionarea = 'slot'
+                JOIN {question_bank_entries} qbe ON qbe.id = qr.questionbankentryid
+                JOIN {qbank_competenciesbyquestion} cq ON cq.questionid = qbe.id
+                JOIN {competency} c ON c.id = cq.competencyid
+                WHERE qa.userid = :userid
+                  AND qa.state = 'finished'
+                  AND c.idnumber IS NOT NULL
+                  AND c.idnumber != ''";
+
+        $competencies = $DB->get_records_sql($sql, ['userid' => $userid]);
+
+        $sector_counts = [];
+        foreach ($competencies as $comp) {
+            $sector = extract_sector_from_idnumber($comp->idnumber);
+            if ($sector && $sector !== 'UNKNOWN') {
+                if (!isset($sector_counts[$sector])) {
+                    $sector_counts[$sector] = 0;
+                }
+                $sector_counts[$sector]++;
+            }
+        }
+
+        // Converti in formato oggetto
+        $result = [];
+        foreach ($sector_counts as $sector => $count) {
+            $obj = new \stdClass();
+            $obj->sector = $sector;
+            $obj->quiz_count = $count;
+            $obj->is_primary = 0;
+            $result[$sector] = $obj;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Nomi display per i colori FTM
+     */
+    const COLOR_NAMES = [
+        'giallo' => 'Giallo',
+        'grigio' => 'Grigio',
+        'rosso' => 'Rosso',
+        'marrone' => 'Marrone',
+        'viola' => 'Viola',
+    ];
+
+    /**
+     * Colori HEX per i gruppi FTM
+     */
+    const COLOR_HEX = [
+        'giallo' => '#FFFF00',
+        'grigio' => '#808080',
+        'rosso' => '#FF0000',
+        'marrone' => '#996633',
+        'viola' => '#7030A0',
+    ];
 }
