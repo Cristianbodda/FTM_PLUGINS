@@ -149,11 +149,23 @@ echo $OUTPUT->header();
             <a href="<?php echo new moodle_url('/local/competencymanager/student_report.php', ['courseid' => $courseid]); ?>" class="btn btn-green">Apri Report →</a>
         </div>
         <?php endif; ?>
+        <div class="ftm-card highlight-green">
+            <div class="ftm-card-icon">📊</div>
+            <h4>Dashboard Coach V2</h4>
+            <p class="description"><strong>Nuova dashboard</strong> con 4 viste (Classica, Compatta, Standard, Dettagliata), filtri orizzontali, zoom accessibilità e supporto 50+ studenti.</p>
+            <a href="<?php echo new moodle_url('/local/coachmanager/coach_dashboard_v2.php'); ?>" class="btn btn-green">Apri Dashboard →</a>
+        </div>
         <div class="ftm-card highlight-teal">
             <div class="ftm-card-icon">👥</div>
             <h4>Lista Studenti</h4>
             <p class="description">Gestisci gli <strong>studenti assegnati</strong> a te come coach. Visualizza lo stato di avanzamento, le autovalutazioni completate e i quiz svolti.</p>
             <a href="<?php echo new moodle_url('/local/coachmanager/index.php'); ?>" class="btn btn-teal">Gestisci →</a>
+        </div>
+        <div class="ftm-card highlight-blue">
+            <div class="ftm-card-icon">📅</div>
+            <h4>FTM Scheduler</h4>
+            <p class="description"><strong>Calendario settimanale e mensile</strong>. Pianifica attività, gestisci gruppi colore (Giallo, Grigio, Rosso, Marrone, Viola), aule e atelier.</p>
+            <a href="<?php echo new moodle_url('/local/ftm_scheduler/index.php'); ?>" class="btn btn-blue">Apri Calendario →</a>
         </div>
         <?php if ($courseid > 0): ?>
         <div class="ftm-card highlight-orange">
@@ -175,6 +187,14 @@ echo $OUTPUT->header();
             <p class="description">Gestisci le <strong>valutazioni pratiche di laboratorio</strong>. Registra osservazioni, assegna punteggi per competenze operative e integra con valutazioni teoriche.</p>
             <a href="<?php echo new moodle_url('/local/labeval/index.php', $courseid > 0 ? ['courseid' => $courseid] : []); ?>" class="btn btn-teal">Apri LabEval →</a>
         </div>
+        <?php if ($is_admin): ?>
+        <div class="ftm-card highlight-red">
+            <div class="ftm-card-icon">🏭</div>
+            <h4>Sector Admin</h4>
+            <p class="description"><strong>Gestione settori studenti</strong>. Assegna settori (Meccanica, Automobile, Automazione, etc.), visualizza distribuzione e gestisci multi-settore.</p>
+            <a href="<?php echo new moodle_url('/local/competencymanager/sector_admin.php'); ?>" class="btn btn-red">Gestisci Settori →</a>
+        </div>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 
@@ -216,6 +236,18 @@ echo $OUTPUT->header();
             <h4>Esporta Dati</h4>
             <p class="description"><strong>Scarica i dati</strong> in formato CSV o Excel. Esporta performance studenti, risultati quiz e autovalutazioni per analisi esterne.</p>
             <a href="<?php echo new moodle_url('/local/competencymanager/export.php', ['courseid' => $courseid]); ?>" class="btn btn-green">Esporta →</a>
+        </div>
+        <div class="ftm-card highlight-purple">
+            <div class="ftm-card-icon">🚀</div>
+            <h4>Setup Universale</h4>
+            <p class="description"><strong>Wizard completo</strong> per importare quiz da XML/Word, selezionare framework e settore, assegnare competenze automaticamente alle domande.</p>
+            <a href="<?php echo new moodle_url('/local/competencyxmlimport/setup_universale.php', ['courseid' => $courseid]); ?>" class="btn btn-purple">Avvia Setup →</a>
+        </div>
+        <div class="ftm-card highlight-orange">
+            <div class="ftm-card-icon">📄</div>
+            <h4>Import XML/Word</h4>
+            <p class="description"><strong>Importa domande</strong> da file Moodle XML o documenti Word. Estrae automaticamente testo, risposte e codici competenza.</p>
+            <a href="<?php echo new moodle_url('/local/competencyxmlimport/index.php', ['courseid' => $courseid]); ?>" class="btn btn-orange">Importa →</a>
         </div>
     </div>
     <?php endif; ?>
