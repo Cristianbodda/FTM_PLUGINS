@@ -695,4 +695,315 @@ class dashboard_helper {
             (object)['id' => 3, 'name' => 'Lab ' . $sector . ' Avanzato'],
         ];
     }
+
+    // ============================================
+    // NEW METHODS FOR ATELIER AND ATTENDANCE
+    // ============================================
+
+    /**
+     * Get student's atelier status (attended, enrolled, available)
+     * @param int $userid Student user ID
+     * @param int $current_week Student's current week
+     * @return array
+     */
+    public function get_student_ateliers($userid, $current_week = 1) {
+        $result = [
+            'attended' => [],    // Atelier già frequentati
+            'enrolled' => [],    // Atelier iscritti ma non ancora fatti
+            'available' => [],   // Atelier disponibili per iscrizione
+            'mandatory_missing' => false  // Se manca atelier obbligatorio
+        ];
+
+        // Check if scheduler tables exist
+        if (!$this->db->get_manager()->table_exists('local_ftm_atelier_catalog')) {
+            return $result;
+        }
+
+        // Get all ateliers from catalog
+        $ateliers = $this->db->get_records('local_ftm_atelier_catalog', ['active' => 1], 'sortorder');
+
+        // Get student's enrollments
+        $enrollments = [];
+        if ($this->db->get_manager()->table_exists('local_ftm_enrollments')) {
+            $sql = "SELECT e.*, a.atelierid, a.date_start, a.name as activity_name, a.status as activity_status
+                    FROM {local_ftm_enrollments} e
+                    JOIN {local_ftm_activities} a ON e.activityid = a.id
+                    WHERE e.userid = ?
+                    AND a.activity_type = 'atelier'";
+            $enrollments = $this->db->get_records_sql($sql, [$userid]);
+        }
+
+        // Map enrollments by atelier ID
+        $enrolled_ateliers = [];
+        foreach ($enrollments as $enr) {
+            $enrolled_ateliers[$enr->atelierid] = $enr;
+        }
+
+        // Categorize ateliers
+        foreach ($ateliers as $atelier) {
+            $atelier_data = (object)[
+                'id' => $atelier->id,
+                'name' => $atelier->name,
+                'shortname' => $atelier->shortname,
+                'is_mandatory' => $atelier->is_mandatory,
+                'mandatory_week' => $atelier->mandatory_week,
+                'typical_week_start' => $atelier->typical_week_start,
+                'typical_week_end' => $atelier->typical_week_end,
+                'max_participants' => $atelier->max_participants
+            ];
+
+            if (isset($enrolled_ateliers[$atelier->id])) {
+                $enrollment = $enrolled_ateliers[$atelier->id];
+                $atelier_data->enrollment_status = $enrollment->status;
+                $atelier_data->activity_date = $enrollment->date_start;
+
+                if ($enrollment->status === 'attended') {
+                    $result['attended'][] = $atelier_data;
+                } else if ($enrollment->status === 'enrolled') {
+                    $result['enrolled'][] = $atelier_data;
+                }
+            } else {
+                // Check if atelier is available for this week
+                if ($current_week >= $atelier->typical_week_start &&
+                    $current_week <= $atelier->typical_week_end) {
+                    // Get available dates for this atelier
+                    $atelier_data->next_dates = $this->get_atelier_next_dates($atelier->id);
+                    $result['available'][] = $atelier_data;
+                }
+
+                // Check mandatory atelier
+                if ($atelier->is_mandatory && $current_week >= $atelier->mandatory_week) {
+                    $result['mandatory_missing'] = true;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get next available dates for an atelier
+     * @param int $atelierid
+     * @param int $limit
+     * @return array
+     */
+    public function get_atelier_next_dates($atelierid, $limit = 3) {
+        $dates = [];
+
+        if (!$this->db->get_manager()->table_exists('local_ftm_activities')) {
+            return $dates;
+        }
+
+        $sql = "SELECT a.id, a.name, a.date_start, a.date_end, a.max_participants, a.roomid,
+                       r.name as room_name,
+                       (SELECT COUNT(*) FROM {local_ftm_enrollments} e
+                        WHERE e.activityid = a.id AND e.status IN ('enrolled', 'attended')) as enrolled_count
+                FROM {local_ftm_activities} a
+                LEFT JOIN {local_ftm_rooms} r ON a.roomid = r.id
+                WHERE a.atelierid = ?
+                AND a.date_start > ?
+                AND a.status = 'scheduled'
+                ORDER BY a.date_start
+                LIMIT " . intval($limit);
+
+        $activities = $this->db->get_records_sql($sql, [$atelierid, time()]);
+
+        foreach ($activities as $activity) {
+            $dates[] = (object)[
+                'activity_id' => $activity->id,
+                'date' => $activity->date_start,
+                'date_formatted' => userdate($activity->date_start, '%d %b %Y'),
+                'time_formatted' => userdate($activity->date_start, '%H:%M'),
+                'room' => $activity->room_name,
+                'enrolled' => $activity->enrolled_count,
+                'max' => $activity->max_participants,
+                'available' => $activity->max_participants - $activity->enrolled_count,
+                'is_full' => $activity->enrolled_count >= $activity->max_participants
+            ];
+        }
+
+        return $dates;
+    }
+
+    /**
+     * Get student's activities for current week
+     * @param int $userid
+     * @return array
+     */
+    public function get_student_this_week_activities($userid) {
+        $activities = [];
+
+        if (!$this->db->get_manager()->table_exists('local_ftm_enrollments')) {
+            return $activities;
+        }
+
+        // Get start and end of current week (Monday to Friday)
+        $start_of_week = strtotime('monday this week');
+        $end_of_week = strtotime('friday this week 23:59:59');
+
+        $sql = "SELECT a.id, a.name, a.activity_type, a.date_start, a.date_end,
+                       r.name as room_name, r.shortname as room_shortname,
+                       e.status as enrollment_status
+                FROM {local_ftm_enrollments} e
+                JOIN {local_ftm_activities} a ON e.activityid = a.id
+                LEFT JOIN {local_ftm_rooms} r ON a.roomid = r.id
+                WHERE e.userid = ?
+                AND a.date_start BETWEEN ? AND ?
+                AND e.status IN ('enrolled', 'attended')
+                ORDER BY a.date_start";
+
+        $records = $this->db->get_records_sql($sql, [$userid, $start_of_week, $end_of_week]);
+
+        foreach ($records as $record) {
+            $activities[] = (object)[
+                'id' => $record->id,
+                'name' => $record->name,
+                'type' => $record->activity_type,
+                'date' => $record->date_start,
+                'day_name' => userdate($record->date_start, '%A'),
+                'day_short' => userdate($record->date_start, '%a'),
+                'time' => userdate($record->date_start, '%H:%M'),
+                'room' => $record->room_name,
+                'room_short' => $record->room_shortname,
+                'status' => $record->enrollment_status
+            ];
+        }
+
+        return $activities;
+    }
+
+    /**
+     * Get student's absence statistics
+     * @param int $userid
+     * @return array
+     */
+    public function get_student_absences($userid) {
+        $result = [
+            'total_activities' => 0,
+            'attended' => 0,
+            'absent' => 0,
+            'absence_rate' => 0,
+            'recent_absences' => []
+        ];
+
+        if (!$this->db->get_manager()->table_exists('local_ftm_enrollments')) {
+            return $result;
+        }
+
+        // Get overall stats
+        $sql = "SELECT
+                    COUNT(*) as total,
+                    SUM(CASE WHEN e.status = 'attended' THEN 1 ELSE 0 END) as attended,
+                    SUM(CASE WHEN e.status = 'absent' THEN 1 ELSE 0 END) as absent
+                FROM {local_ftm_enrollments} e
+                JOIN {local_ftm_activities} a ON e.activityid = a.id
+                WHERE e.userid = ?
+                AND a.date_start < ?";
+
+        $stats = $this->db->get_record_sql($sql, [$userid, time()]);
+
+        if ($stats && $stats->total > 0) {
+            $result['total_activities'] = (int)$stats->total;
+            $result['attended'] = (int)$stats->attended;
+            $result['absent'] = (int)$stats->absent;
+            $result['absence_rate'] = round(($stats->absent / $stats->total) * 100, 1);
+        }
+
+        // Get recent absences (last 5)
+        $sql = "SELECT a.name, a.date_start, a.activity_type
+                FROM {local_ftm_enrollments} e
+                JOIN {local_ftm_activities} a ON e.activityid = a.id
+                WHERE e.userid = ?
+                AND e.status = 'absent'
+                ORDER BY a.date_start DESC
+                LIMIT 5";
+
+        $absences = $this->db->get_records_sql($sql, [$userid]);
+        foreach ($absences as $absence) {
+            $result['recent_absences'][] = (object)[
+                'name' => $absence->name,
+                'date' => userdate($absence->date_start, '%d/%m/%Y'),
+                'type' => $absence->activity_type
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Enroll student in an atelier activity
+     * @param int $userid Student ID
+     * @param int $activityid Activity ID
+     * @param int $enrolledby Who is enrolling (coach ID)
+     * @return array Result with success status and message
+     */
+    public function enroll_student_atelier($userid, $activityid, $enrolledby) {
+        global $DB;
+
+        // Check if activity exists and is an atelier
+        $activity = $DB->get_record('local_ftm_activities', ['id' => $activityid]);
+        if (!$activity) {
+            return ['success' => false, 'message' => 'Attività non trovata'];
+        }
+
+        if ($activity->activity_type !== 'atelier') {
+            return ['success' => false, 'message' => 'L\'attività non è un atelier'];
+        }
+
+        // Check if already enrolled
+        $existing = $DB->get_record('local_ftm_enrollments', [
+            'activityid' => $activityid,
+            'userid' => $userid
+        ]);
+
+        if ($existing) {
+            return ['success' => false, 'message' => 'Studente già iscritto a questo atelier'];
+        }
+
+        // Check capacity
+        $enrolled_count = $DB->count_records_select('local_ftm_enrollments',
+            "activityid = ? AND status IN ('enrolled', 'attended')",
+            [$activityid]);
+
+        $max_participants = $activity->max_participants ?? 16;
+        if ($enrolled_count >= $max_participants) {
+            return ['success' => false, 'message' => 'Atelier pieno (max ' . $max_participants . ' partecipanti)'];
+        }
+
+        // Get student's group
+        $group = $this->get_student_group($userid);
+
+        // Create enrollment
+        $enrollment = new \stdClass();
+        $enrollment->activityid = $activityid;
+        $enrollment->userid = $userid;
+        $enrollment->groupid = null; // Could be set from group lookup
+        $enrollment->enrolledby = $enrolledby;
+        $enrollment->enrollment_type = 'coach';
+        $enrollment->status = 'enrolled';
+        $enrollment->attended = null;
+        $enrollment->notification_sent = 0;
+        $enrollment->reminder_sent = 0;
+        $enrollment->timecreated = time();
+        $enrollment->timemodified = time();
+
+        try {
+            $enrollment->id = $DB->insert_record('local_ftm_enrollments', $enrollment);
+
+            // Get atelier name for response
+            $atelier = $DB->get_record('local_ftm_atelier_catalog', ['id' => $activity->atelierid]);
+            $atelier_name = $atelier ? $atelier->name : $activity->name;
+
+            return [
+                'success' => true,
+                'message' => 'Iscrizione confermata',
+                'enrollment_id' => $enrollment->id,
+                'atelier_name' => $atelier_name,
+                'date' => userdate($activity->date_start, '%d %b %Y %H:%M')
+            ];
+
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => 'Errore durante l\'iscrizione: ' . $e->getMessage()];
+        }
+    }
 }

@@ -1383,6 +1383,300 @@ echo $OUTPUT->header();
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* =============================================
+   NEW: PERCORSO ATELIER BOX
+   ============================================= */
+.atelier-section {
+    margin-top: 18px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 10px;
+    border: 1px solid #7dd3fc;
+}
+
+.atelier-section .section-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #0369a1;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.atelier-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.atelier-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    font-size: 13px;
+}
+
+.atelier-item.attended {
+    background: #dcfce7;
+    border-color: #86efac;
+}
+
+.atelier-item.enrolled {
+    background: #fef3c7;
+    border-color: #fcd34d;
+}
+
+.atelier-item.mandatory {
+    border-color: #f87171;
+    background: #fef2f2;
+}
+
+.atelier-item .atelier-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.atelier-item .atelier-status {
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.atelier-item.attended .atelier-status {
+    background: #22c55e;
+    color: white;
+}
+
+.atelier-item.enrolled .atelier-status {
+    background: #f59e0b;
+    color: white;
+}
+
+.atelier-item .btn-enroll {
+    padding: 5px 12px;
+    font-size: 12px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.atelier-item .btn-enroll:hover {
+    background: #2563eb;
+}
+
+.atelier-item .btn-enroll:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+.atelier-item .full-badge {
+    font-size: 11px;
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.mandatory-alert {
+    margin-top: 10px;
+    padding: 10px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #dc2626;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* =============================================
+   NEW: QUESTA SETTIMANA BOX
+   ============================================= */
+.week-activities-section {
+    margin-top: 18px;
+    padding: 15px;
+    background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+    border-radius: 10px;
+    border: 1px solid #facc15;
+}
+
+.week-activities-section .section-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #a16207;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.week-activities-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.week-activity-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 6px;
+    font-size: 13px;
+    border-left: 3px solid #facc15;
+}
+
+.week-activity-item .day-label {
+    font-weight: 700;
+    color: #a16207;
+    min-width: 40px;
+}
+
+.week-activity-item .activity-name {
+    flex: 1;
+}
+
+.week-activity-item .activity-room {
+    font-size: 12px;
+    color: #666;
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.week-activity-item .activity-time {
+    font-weight: 600;
+    color: #0369a1;
+}
+
+/* =============================================
+   NEW: STORICO ASSENZE
+   ============================================= */
+.absence-stats {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    margin-left: 8px;
+}
+
+.absence-stats.good {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.absence-stats.warning {
+    background: #fef3c7;
+    color: #a16207;
+}
+
+.absence-stats.danger {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+/* Enroll Modal */
+.enroll-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.enroll-modal.active {
+    display: flex;
+}
+
+.enroll-modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.enroll-modal-content h3 {
+    margin: 0 0 20px;
+    color: #333;
+}
+
+.enroll-date-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.enroll-date-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.enroll-date-item:hover:not(.full) {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.enroll-date-item.full {
+    background: #f3f4f6;
+    cursor: not-allowed;
+}
+
+.enroll-date-item .date-info {
+    font-weight: 600;
+}
+
+.enroll-date-item .date-info .room {
+    font-weight: 400;
+    color: #666;
+    font-size: 12px;
+}
+
+.enroll-date-item .spots {
+    font-size: 13px;
+}
+
+.enroll-date-item .spots.available {
+    color: #22c55e;
+}
+
+.enroll-date-item .spots.full {
+    color: #dc2626;
+}
+
+.enroll-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
 </style>
 
 <div class="coach-dashboard-v2 zoom-<?php echo $zoom; ?>">
@@ -1722,6 +2016,125 @@ function saveChoices(studentId) {
         }
     });
 }
+
+// ============================================
+// ATELIER ENROLLMENT FUNCTIONS
+// ============================================
+
+let currentEnrollStudentId = null;
+let currentEnrollAtelierId = null;
+
+// Open enrollment modal
+function openEnrollModal(studentId, atelierId, atelierName) {
+    currentEnrollStudentId = studentId;
+    currentEnrollAtelierId = atelierId;
+
+    // Create modal if not exists
+    let modal = document.getElementById('enrollModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'enrollModal';
+        modal.className = 'enroll-modal';
+        modal.innerHTML = `
+            <div class="enroll-modal-content">
+                <h3 id="enrollModalTitle">Iscrizione Atelier</h3>
+                <p>Seleziona una data disponibile:</p>
+                <div id="enrollDateList" class="enroll-date-list">
+                    <div style="text-align: center; padding: 20px;">Caricamento date...</div>
+                </div>
+                <div class="enroll-modal-footer">
+                    <button class="btn btn-secondary" onclick="closeEnrollModal()">Annulla</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Close on outside click
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeEnrollModal();
+        });
+    }
+
+    // Update title
+    document.getElementById('enrollModalTitle').textContent = 'Iscrizione: ' + atelierName;
+
+    // Show modal
+    modal.classList.add('active');
+
+    // Load dates
+    loadAtelierDates(atelierId);
+}
+
+// Close enrollment modal
+function closeEnrollModal() {
+    const modal = document.getElementById('enrollModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    currentEnrollStudentId = null;
+    currentEnrollAtelierId = null;
+}
+
+// Load available dates for atelier
+function loadAtelierDates(atelierId) {
+    const dateList = document.getElementById('enrollDateList');
+
+    fetch('ajax_enroll_atelier.php?action=getdates&atelierid=' + atelierId + '&studentid=' + currentEnrollStudentId + '&sesskey=<?php echo sesskey(); ?>')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.dates.length > 0) {
+            let html = '';
+            data.dates.forEach(date => {
+                const isFull = date.is_full;
+                const spotsClass = isFull ? 'full' : 'available';
+                const spotsText = isFull ? 'PIENO' : date.available + ' posti';
+
+                html += `
+                    <div class="enroll-date-item ${isFull ? 'full' : ''}"
+                         ${!isFull ? 'onclick="confirmEnroll(' + date.activity_id + ')"' : ''}>
+                        <div class="date-info">
+                            <strong>${date.date_formatted}</strong> - ${date.time_formatted}
+                            <div class="room">${date.room || 'Aula da definire'}</div>
+                        </div>
+                        <div class="spots ${spotsClass}">${spotsText}</div>
+                    </div>
+                `;
+            });
+            dateList.innerHTML = html;
+        } else {
+            dateList.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">Nessuna data disponibile per questo atelier.</div>';
+        }
+    })
+    .catch(err => {
+        dateList.innerHTML = '<div style="text-align: center; padding: 20px; color: #dc2626;">Errore nel caricamento delle date.</div>';
+    });
+}
+
+// Confirm enrollment
+function confirmEnroll(activityId) {
+    if (!confirm('Confermi l\'iscrizione a questo atelier?')) {
+        return;
+    }
+
+    fetch('ajax_enroll_atelier.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=enroll&studentid=' + currentEnrollStudentId + '&activityid=' + activityId + '&sesskey=<?php echo sesskey(); ?>'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Iscrizione confermata!\n\n' + data.atelier_name + '\nData: ' + data.date);
+            closeEnrollModal();
+            location.reload();
+        } else {
+            alert('Errore: ' + data.message);
+        }
+    })
+    .catch(err => {
+        alert('Errore di connessione. Riprova.');
+    });
+}
 </script>
 
 <?php
@@ -1898,6 +2311,11 @@ function render_view_standard($students, $dashboard) {
                 $header_class = $student->group_color ?? 'giallo';
                 $current_week = $student->current_week ?? 1;
                 $notes = get_student_notes($student->id, $USER->id);
+
+                // Load atelier, activities, and absence data
+                $student_ateliers = $dashboard->get_student_ateliers($student->id, $current_week);
+                $week_activities = $dashboard->get_student_this_week_activities($student->id);
+                $absence_stats = $dashboard->get_student_absences($student->id);
             ?>
             <div class="student-card <?php echo $card_class; ?>" id="student-<?php echo $student->id; ?>">
 
@@ -2014,6 +2432,122 @@ function render_view_standard($students, $dashboard) {
                                 <?php endfor; ?>
                             </div>
                         </div>
+
+                        <!-- NEW: Questa Settimana -->
+                        <?php if (!empty($week_activities)): ?>
+                        <div class="week-activities-section">
+                            <div class="section-title">
+                                &#128197; Questa Settimana
+                                <?php
+                                $absence_class = 'good';
+                                if ($absence_stats['absence_rate'] > 20) $absence_class = 'danger';
+                                elseif ($absence_stats['absence_rate'] > 10) $absence_class = 'warning';
+                                ?>
+                                <span class="absence-stats <?php echo $absence_class; ?>">
+                                    Assenze: <?php echo $absence_stats['absent']; ?>/<?php echo $absence_stats['total_activities']; ?>
+                                </span>
+                            </div>
+                            <div class="week-activities-list">
+                                <?php foreach ($week_activities as $activity): ?>
+                                <div class="week-activity-item">
+                                    <span class="day-label"><?php echo $activity->day_short; ?></span>
+                                    <span class="activity-name"><?php echo $activity->name; ?></span>
+                                    <span class="activity-room"><?php echo $activity->room_short ?? $activity->room; ?></span>
+                                    <span class="activity-time"><?php echo $activity->time; ?></span>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php elseif ($absence_stats['total_activities'] > 0): ?>
+                        <div class="week-activities-section">
+                            <div class="section-title">
+                                &#128197; Storico Attività
+                                <?php
+                                $absence_class = 'good';
+                                if ($absence_stats['absence_rate'] > 20) $absence_class = 'danger';
+                                elseif ($absence_stats['absence_rate'] > 10) $absence_class = 'warning';
+                                ?>
+                                <span class="absence-stats <?php echo $absence_class; ?>">
+                                    Assenze: <?php echo $absence_stats['absent']; ?>/<?php echo $absence_stats['total_activities']; ?>
+                                    (<?php echo $absence_stats['absence_rate']; ?>%)
+                                </span>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+
+                        <!-- NEW: Percorso Atelier -->
+                        <?php if ($current_week >= 3): ?>
+                        <div class="atelier-section">
+                            <div class="section-title">
+                                &#127919; Percorso Atelier
+                            </div>
+                            <div class="atelier-list">
+                                <?php
+                                // Attended ateliers
+                                foreach ($student_ateliers['attended'] as $atelier): ?>
+                                <div class="atelier-item attended">
+                                    <span class="atelier-name">
+                                        &#10004; <?php echo $atelier->name; ?>
+                                    </span>
+                                    <span class="atelier-status">Completato</span>
+                                </div>
+                                <?php endforeach;
+
+                                // Enrolled ateliers
+                                foreach ($student_ateliers['enrolled'] as $atelier): ?>
+                                <div class="atelier-item enrolled">
+                                    <span class="atelier-name">
+                                        &#128197; <?php echo $atelier->name; ?>
+                                        <small>(<?php echo userdate($atelier->activity_date, '%d/%m'); ?>)</small>
+                                    </span>
+                                    <span class="atelier-status">Iscritto</span>
+                                </div>
+                                <?php endforeach;
+
+                                // Available ateliers
+                                foreach ($student_ateliers['available'] as $atelier):
+                                    $has_dates = !empty($atelier->next_dates);
+                                    $is_mandatory = $atelier->is_mandatory;
+                                ?>
+                                <div class="atelier-item <?php echo $is_mandatory ? 'mandatory' : ''; ?>">
+                                    <span class="atelier-name">
+                                        <?php echo $is_mandatory ? '&#9888;' : '&#9711;'; ?>
+                                        <?php echo $atelier->name; ?>
+                                        <?php if ($is_mandatory): ?>
+                                        <small style="color: #dc2626;">(Obbligatorio)</small>
+                                        <?php endif; ?>
+                                    </span>
+                                    <?php if ($has_dates): ?>
+                                        <?php
+                                        $first_date = $atelier->next_dates[0];
+                                        if ($first_date->is_full): ?>
+                                        <span class="full-badge">Pieno - Prossimo: <?php
+                                            $next_available = null;
+                                            foreach ($atelier->next_dates as $d) {
+                                                if (!$d->is_full) { $next_available = $d; break; }
+                                            }
+                                            echo $next_available ? $next_available->date_formatted : 'N/D';
+                                        ?></span>
+                                        <?php else: ?>
+                                        <button class="btn-enroll"
+                                                onclick="openEnrollModal(<?php echo $student->id; ?>, <?php echo $atelier->id; ?>, '<?php echo addslashes($atelier->name); ?>')">
+                                            Iscrivimi
+                                        </button>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                    <span style="color: #666; font-size: 12px;">Nessuna data disponibile</span>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <?php if ($student_ateliers['mandatory_missing']): ?>
+                            <div class="mandatory-alert">
+                                &#9888; ATTENZIONE: Atelier obbligatorio (Bilancio) non ancora iscritto!
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php endif; ?>
 
                         <!-- Week Choices (if needed) -->
                         <?php if (!$is_end6 && ($student->needs_choices ?? false)): ?>

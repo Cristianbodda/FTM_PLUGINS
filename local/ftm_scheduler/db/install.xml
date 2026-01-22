@@ -108,7 +108,7 @@
         <FIELD NAME="typical_week_end" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="6"/>
         <FIELD NAME="typical_day" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Giorno tipico 1-5"/>
         <FIELD NAME="typical_slot" TYPE="char" LENGTH="10" NOTNULL="false" COMMENT="matt, pom"/>
-        <FIELD NAME="max_participants" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="10"/>
+        <FIELD NAME="max_participants" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="16"/>
         <FIELD NAME="is_mandatory" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="1=obbligatorio (es. Bilancio)"/>
         <FIELD NAME="mandatory_week" TYPE="int" LENGTH="2" NOTNULL="false" COMMENT="Settimana obbligatoria se is_mandatory"/>
         <FIELD NAME="description" TYPE="text" NOTNULL="false"/>
@@ -174,6 +174,9 @@
         <FIELD NAME="attended" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="1=presente, 0=assente"/>
         <FIELD NAME="notification_sent" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="reminder_sent" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="marked_by" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="User who marked attendance"/>
+        <FIELD NAME="marked_at" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Timestamp when marked"/>
+        <FIELD NAME="absence_notified" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="1=notification sent"/>
         <FIELD NAME="calendar_eventid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="ID evento calendario Moodle"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
@@ -184,6 +187,7 @@
         <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
         <KEY NAME="groupid" TYPE="foreign" FIELDS="groupid" REFTABLE="local_ftm_groups" REFFIELDS="id"/>
         <KEY NAME="enrolledby" TYPE="foreign" FIELDS="enrolledby" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="marked_by" TYPE="foreign" FIELDS="marked_by" REFTABLE="user" REFFIELDS="id"/>
       </KEYS>
       <INDEXES>
         <INDEX NAME="activityid_userid" UNIQUE="true" FIELDS="activityid, userid"/>
