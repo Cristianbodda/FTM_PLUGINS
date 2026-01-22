@@ -2279,6 +2279,17 @@ if ($step == 5 && $action === 'execute'):
                         $DB->set_field('qbank_competenciesbyquestion', 'difficultylevel', $level, ['id' => $existing_comp->id]);
                         $total_levels_updated++;
                     }
+
+                    // Aggiorna idnumber su question_bank_entry se mancante (fix per domande pre-esistenti)
+                    $qbe_existing = $DB->get_record_sql("
+                        SELECT qbe.id, qbe.idnumber
+                        FROM {question_bank_entries} qbe
+                        JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
+                        WHERE qv.questionid = ?
+                    ", [$existing->id]);
+                    if ($qbe_existing && empty($qbe_existing->idnumber)) {
+                        $DB->set_field('question_bank_entries', 'idnumber', $comp_code, ['id' => $qbe_existing->id]);
+                    }
                 }
                 continue;
             }
@@ -2287,6 +2298,8 @@ if ($step == 5 && $action === 'execute'):
             $qbe = new stdClass();
             $qbe->questioncategoryid = $sub_cat->id;
             $qbe->ownerid = $USER->id;
+            // IMPORTANTE: Salva il codice competenza nel campo idnumber per la test suite
+            $qbe->idnumber = $comp_code ?: '';
             $qbe->id = $DB->insert_record('question_bank_entries', $qbe);
             
             // Crea question

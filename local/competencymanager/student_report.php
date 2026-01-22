@@ -266,12 +266,15 @@ function aggregate_by_area($competencies, $areaDescriptions, $sector = '') {
     foreach ($competencies as $comp) {
         $code = $comp['idnumber'] ?: $comp['name'];
         $areaInfo = get_area_info($code);
+        // IMPORTANTE: Usa areaKey (es. AUTOMOBILE_A) invece di solo codice (A) per evitare conflitti tra settori
+        $areaKey = $areaInfo['key'];
         $areaCode = $areaInfo['code'];
         $areaName = $areaInfo['name'];
-        if (!isset($areas[$areaCode])) {
+        if (!isset($areas[$areaKey])) {
             $colorIndex = count($areas) % count($colors);
-            $areas[$areaCode] = [
-                'code' => $areaCode,
+            $areas[$areaKey] = [
+                'key' => $areaKey,          // Es. AUTOMOBILE_A
+                'code' => $areaCode,         // Es. A
                 'name' => $areaName,
                 'icon' => '📁',
                 'color' => $colors[$colorIndex],
@@ -281,12 +284,12 @@ function aggregate_by_area($competencies, $areaDescriptions, $sector = '') {
                 'count' => 0
             ];
         }
-        $areas[$areaCode]['total_questions'] += $comp['total_questions'];
-        $areas[$areaCode]['correct_questions'] += $comp['correct_questions'];
-        $areas[$areaCode]['competencies'][] = $comp;
-        $areas[$areaCode]['count']++;
+        $areas[$areaKey]['total_questions'] += $comp['total_questions'];
+        $areas[$areaKey]['correct_questions'] += $comp['correct_questions'];
+        $areas[$areaKey]['competencies'][] = $comp;
+        $areas[$areaKey]['count']++;
     }
-    foreach ($areas as $code => &$area) {
+    foreach ($areas as $key => &$area) {
         $area['percentage'] = $area['total_questions'] > 0 ? round($area['correct_questions'] / $area['total_questions'] * 100, 1) : 0;
     }
     ksort($areas);
@@ -352,9 +355,19 @@ function get_student_self_assessment($userid, $courseid, $sector = '') {
             if (!empty($details['competencies'])) {
                 $autovalutazione = [];
                 foreach ($details['competencies'] as $comp) {
+                    // Usa description se disponibile, altrimenti name, altrimenti idnumber formattato
+                    $displayName = '';
+                    if (!empty($comp['description'])) {
+                        $cleanDesc = strip_tags($comp['description']);
+                        $displayName = mb_strlen($cleanDesc) > 80 ? mb_substr($cleanDesc, 0, 80) . '...' : $cleanDesc;
+                    } elseif (!empty($comp['name']) && $comp['name'] !== $comp['idnumber']) {
+                        $displayName = $comp['name'];
+                    } else {
+                        $displayName = str_replace('_', ' ', $comp['idnumber']);
+                    }
                     $autovalutazione[$comp['idnumber']] = [
                         'idnumber' => $comp['idnumber'],
-                        'name' => $comp['name'] ?? $comp['idnumber'],
+                        'name' => $displayName,
                         'bloom_level' => $comp['bloom_level'] ?? 0,
                         'percentage' => isset($comp['bloom_level']) ? round(($comp['bloom_level'] / 6) * 100, 1) : 0
                     ];
@@ -378,9 +391,19 @@ function get_student_self_assessment($userid, $courseid, $sector = '') {
             $autovalutazione = [];
             $latestTimestamp = 0;
             foreach ($records as $rec) {
+                // Usa description se disponibile, altrimenti shortname, altrimenti idnumber formattato
+                $displayName = '';
+                if (!empty($rec->description)) {
+                    $cleanDesc = strip_tags($rec->description);
+                    $displayName = mb_strlen($cleanDesc) > 80 ? mb_substr($cleanDesc, 0, 80) . '...' : $cleanDesc;
+                } elseif (!empty($rec->shortname) && $rec->shortname !== $rec->idnumber) {
+                    $displayName = $rec->shortname;
+                } else {
+                    $displayName = str_replace('_', ' ', $rec->idnumber);
+                }
                 $autovalutazione[$rec->idnumber] = [
                     'idnumber' => $rec->idnumber,
-                    'name' => $rec->shortname ?: $rec->idnumber,
+                    'name' => $displayName,
                     'bloom_level' => (int)$rec->level,
                     'percentage' => round(($rec->level / 6) * 100, 1)
                 ];
@@ -500,12 +523,15 @@ function aggregate_autovalutazione_by_area($autovalutazione, $areaDescriptions, 
     $colors = ['#667eea','#764ba2','#f093fb','#f5576c','#4facfe','#00f2fe','#43e97b','#38f9d7','#fa709a','#fee140'];
     foreach ($autovalutazione as $code => $comp) {
         $areaInfo = get_area_info($code);
+        // IMPORTANTE: Usa areaKey (es. AUTOMOBILE_A) invece di solo codice (A) per evitare conflitti tra settori
+        $areaKey = $areaInfo['key'];
         $areaCode = $areaInfo['code'];
         $areaName = $areaInfo['name'];
-        if (!isset($areas[$areaCode])) {
+        if (!isset($areas[$areaKey])) {
             $colorIndex = count($areas) % count($colors);
-            $areas[$areaCode] = [
-                'code' => $areaCode,
+            $areas[$areaKey] = [
+                'key' => $areaKey,           // Es. AUTOMOBILE_A
+                'code' => $areaCode,         // Es. A
                 'name' => $areaName,
                 'icon' => '📁',
                 'color' => $colors[$colorIndex],
@@ -513,10 +539,10 @@ function aggregate_autovalutazione_by_area($autovalutazione, $areaDescriptions, 
                 'count' => 0
             ];
         }
-        $areas[$areaCode]['total_percentage'] += $comp['percentage'];
-        $areas[$areaCode]['count']++;
+        $areas[$areaKey]['total_percentage'] += $comp['percentage'];
+        $areas[$areaKey]['count']++;
     }
-    foreach ($areas as $code => &$area) {
+    foreach ($areas as $key => &$area) {
         $area['percentage'] = $area['count'] > 0 ? round($area['total_percentage'] / $area['count'], 1) : 0;
     }
     ksort($areas);
@@ -670,29 +696,24 @@ if (empty($sector) && !empty($courseSector)) {
 $areaDescriptions = \local_competencymanager\report_generator::get_area_descriptions_from_framework($sector, $courseid);
 $competencyDescriptions = \local_competencymanager\report_generator::get_competency_descriptions_from_framework($sector);
 
-$areasData = aggregate_by_area($competencies, $areaDescriptions, $sector);
-
-// Filtro areasData per settore se specificato
-// DEBUG filtro settore
+// FILTRA COMPETENZE PER SETTORE PRIMA DI AGGREGARE (se filtro attivo)
+$competencies_for_areas = $competencies;
 if ($cm_sector_filter !== 'all') {
-    error_log("DEBUG cm_sector_filter: " . $cm_sector_filter);
-    error_log("DEBUG areasData count before: " . count($areasData));
-    // DEBUG visibile
-    echo "<!-- DEBUG cm_sector: $cm_sector_filter, areas_before: " . count($areasData) . " -->";
-    $filtered_areasData = [];
-    foreach ($areasData as $areaCode => $areaInfo) {
-        if (!empty($areaInfo['competencies'])) {
-            $firstComp = $areaInfo['competencies'][0];
-            // DEBUG: mostra settore estratto
-            echo "<!-- DEBUG area: $areaCode, idnumber: " . ($firstComp['idnumber'] ?? 'N/A') . " -->";
-            $areaSector = extract_sector_from_idnumber($firstComp['idnumber'] ?? '');
-            if (stripos($firstComp["idnumber"] ?? "", $cm_sector_filter) !== false) {
-                $filtered_areasData[$areaCode] = $areaInfo;
-            }
-        }
-    }
-    $areasData = $filtered_areasData;
+    $normalizedSectorFilter = normalize_sector_name($cm_sector_filter);
+    $competencies_for_areas = array_filter($competencies, function($comp) use ($normalizedSectorFilter) {
+        $idnumber = $comp['idnumber'] ?? '';
+        $compSector = extract_sector_from_idnumber($idnumber);
+        // Confronto case-insensitive
+        return strcasecmp($compSector, $normalizedSectorFilter) === 0;
+    });
+    // Re-indicizza array
+    $competencies_for_areas = array_values($competencies_for_areas);
 }
+
+$areasData = aggregate_by_area($competencies_for_areas, $areaDescriptions, $sector);
+
+// Il filtro per settore è già stato applicato PRIMA di aggregate_by_area()
+// Le aree in $areasData sono già filtrate per il settore selezionato
 $evaluation = get_evaluation_band($summary['overall_percentage']);
 $actionPlan = generate_action_plan($competencies, $competencyDescriptions);
 $certProgress = generate_certification_progress($competencies);
@@ -729,7 +750,23 @@ if ($showDualRadar || $showGapAnalysis || $showSpuntiColloquio ||
         
         // Aggrega autovalutazione per area
         if ($showDualRadar || $printDualRadar) {
-            $autovalutazioneAreas = aggregate_autovalutazione_by_area($autovalutazioneData, $areaDescriptions, $sector);
+            // FILTRA AUTOVALUTAZIONE PER SETTORE (se filtro attivo)
+            $autovalutazione_for_areas = $autovalutazioneData;
+            if ($cm_sector_filter !== 'all') {
+                $normalizedSectorFilter = normalize_sector_name($cm_sector_filter);
+                $autovalutazione_for_areas = array_filter($autovalutazioneData, function($comp, $idnumber) use ($normalizedSectorFilter) {
+                    $compSector = extract_sector_from_idnumber($idnumber);
+                    return strcasecmp($compSector, $normalizedSectorFilter) === 0;
+                }, ARRAY_FILTER_USE_BOTH);
+
+                // DEBUG: mostra quante competenze autovalutazione matchano il settore
+                echo "<!-- DEBUG AUTOVALUTAZIONE: filtro='$normalizedSectorFilter', totale=" . count($autovalutazioneData) . ", filtrate=" . count($autovalutazione_for_areas) . " -->\n";
+                if (count($autovalutazione_for_areas) > 0) {
+                    $firstKeys = array_slice(array_keys($autovalutazione_for_areas), 0, 3);
+                    echo "<!-- DEBUG AUTOVAL KEYS: " . implode(', ', $firstKeys) . " -->\n";
+                }
+            }
+            $autovalutazioneAreas = aggregate_autovalutazione_by_area($autovalutazione_for_areas, $areaDescriptions, $sector);
         }
     }
 }
@@ -770,7 +807,616 @@ echo $OUTPUT->header();
 .gap-row-sopra { background: #fadbd8 !important; }
 .gap-row-sotto { background: #fef9e7 !important; }
 .gap-row-allineato { background: #d5f5e3 !important; }
+
+/* ============================================
+   MAPPA COMPETENZE - Stile da reports_v2.php
+   ============================================ */
+.mappa-competenze-section {
+    margin-top: 30px;
+}
+
+.mappa-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px 12px 0 0;
+}
+
+.mappa-header h3 {
+    margin: 0;
+    font-size: 1.3em;
+}
+
+.mappa-body {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 0 0 12px 12px;
+    border: 1px solid #e9ecef;
+    border-top: none;
+}
+
+.mappa-legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+}
+
+.mappa-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85em;
+}
+
+.mappa-legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.areas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
+}
+
+.area-card {
+    background: white;
+    border-radius: 14px;
+    padding: 18px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border-left: 5px solid;
+    position: relative;
+    overflow: hidden;
+}
+
+.area-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.area-card .area-icon { font-size: 2.2em; margin-bottom: 8px; }
+.area-card .area-name { font-weight: 600; font-size: 1em; color: #2c3e50; margin-bottom: 4px; line-height: 1.3; }
+.area-card .area-count { font-size: 0.8em; color: #7f8c8d; margin-bottom: 12px; }
+
+.area-card .area-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.area-card .area-percentage { font-size: 1.4em; font-weight: 700; }
+.area-card .area-status {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.7em;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-excellent { background: #d4edda; color: #155724; }
+.status-good { background: #cce5ff; color: #004085; }
+.status-warning { background: #fff3cd; color: #856404; }
+.status-critical { background: #f8d7da; color: #721c24; }
+.status-nodata { background: #e9ecef; color: #6c757d; }
+
+/* Mini comparison bars */
+.area-mini-comparison { display: flex; gap: 5px; margin-top: 8px; }
+.mini-bar-container { flex: 1; }
+.mini-bar-label { font-size: 0.65em; color: #7f8c8d; margin-bottom: 2px; }
+.mini-bar { height: 4px; background: #e9ecef; border-radius: 2px; overflow: hidden; }
+.mini-bar-fill { height: 100%; border-radius: 2px; }
+.mini-bar-fill.quiz { background: #3498db; }
+.mini-bar-fill.autoval { background: #9b59b6; }
+
+/* Colori bordo per area */
+.area-card[data-area*="ASS"] { border-left-color: #f39c12; }
+.area-card[data-area*="AUT"] { border-left-color: #e74c3c; }
+.area-card[data-area*="CSP"] { border-left-color: #8e44ad; }
+.area-card[data-area*="CNC"] { border-left-color: #00bcd4; }
+.area-card[data-area*="DIS"], .area-card[data-area*="DT"] { border-left-color: #3498db; }
+.area-card[data-area*="LAV"] { border-left-color: #9e9e9e; }
+.area-card[data-area*="LMC"] { border-left-color: #607d8b; }
+.area-card[data-area*="LMB"] { border-left-color: #795548; }
+.area-card[data-area*="MAN"], .area-card[data-area*="MAu"] { border-left-color: #e67e22; }
+.area-card[data-area*="MIS"] { border-left-color: #1abc9c; }
+.area-card[data-area*="PIA"] { border-left-color: #9b59b6; }
+.area-card[data-area*="PRO"] { border-left-color: #2ecc71; }
+.area-card[data-area*="SIC"], .area-card[data-area*="SAQ"] { border-left-color: #c0392b; }
+
+/* Filter bar per Mappa Competenze */
+.filter-bar-mappa {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.filter-bar-mappa .filter-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.filter-bar-mappa select {
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: white;
+    color: #495057;
+    font-size: 0.9em;
+    min-width: 150px;
+    cursor: pointer;
+}
+
+.filter-bar-mappa select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.filter-bar-mappa .btn-reset {
+    padding: 8px 16px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background 0.2s;
+}
+
+.filter-bar-mappa .btn-reset:hover {
+    background: #5a6268;
+}
+
+/* Animazione fadeIn */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   MODAL DETTAGLIO COMPETENZE
+   ============================================ */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 850px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    padding: 20px 25px;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.modal-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.3em;
+    margin: 0;
+}
+
+.modal-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover { background: rgba(255,255,255,0.3); }
+
+.modal-body { padding: 20px 25px; }
+
+/* Competency item */
+.competency-item {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.competency-header {
+    padding: 15px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    transition: background 0.2s;
+}
+
+.competency-header:hover { background: #e9ecef; }
+
+.competency-info { flex: 1; }
+.competency-name { font-weight: 600; font-size: 0.95em; color: #2c3e50; margin-bottom: 3px; }
+.competency-code { font-size: 0.8em; color: #7f8c8d; }
+
+.competency-values { display: flex; gap: 12px; align-items: center; }
+
+.value-box {
+    text-align: center;
+    min-width: 65px;
+    padding: 6px 10px;
+    background: white;
+    border-radius: 8px;
+}
+
+.value-box .label { font-size: 0.65em; color: #7f8c8d; text-transform: uppercase; }
+.value-box .value { font-size: 1em; font-weight: 600; }
+
+.competency-toggle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 12px;
+    transition: all 0.3s ease;
+    font-size: 0.85em;
+}
+
+.competency-item.open .competency-toggle {
+    background: #3498db;
+    color: white;
+    transform: rotate(180deg);
+}
+
+.competency-details {
+    display: none;
+    padding: 20px;
+    background: white;
+    border-top: 1px solid #e9ecef;
+}
+
+.competency-item.open .competency-details { display: block; }
+
+.detail-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed #e9ecef;
+}
+
+.detail-section:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+
+.detail-section-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Quiz item in modal */
+.quiz-item {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-left: 4px solid #3498db;
+}
+
+.quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.quiz-name { font-weight: 600; color: #2c3e50; }
+
+.quiz-score {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.quiz-score.good { background: #d4edda; color: #155724; }
+.quiz-score.warning { background: #fff3cd; color: #856404; }
+.quiz-score.bad { background: #f8d7da; color: #721c24; }
+
+.quiz-details {
+    display: flex;
+    gap: 15px;
+    font-size: 0.85em;
+    color: #6c757d;
+    flex-wrap: wrap;
+}
+
+.quiz-link {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.quiz-link:hover { text-decoration: underline; }
+
+.no-data-message {
+    color: #6c757d;
+    font-style: italic;
+    background: #f8f9fa;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.critical-value-box {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 12px 18px;
+    text-align: center;
+    min-width: 100px;
+}
+
+.critical-value-box .label {
+    font-size: 0.75em;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.critical-value-box .value {
+    font-size: 1.3em;
+    font-weight: 700;
+}
+
+/* ============================================
+   BARRA NAVIGAZIONE STUDENTE (Cascata)
+   ============================================ */
+.student-nav-bar {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    color: white;
+}
+
+.student-nav-bar .nav-title {
+    font-size: 1.1em;
+    font-weight: 600;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.student-nav-bar .nav-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.student-nav-bar .nav-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.student-nav-bar .nav-item label {
+    font-size: 0.8em;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.student-nav-bar .nav-item select {
+    padding: 10px 15px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    font-size: 0.95em;
+    min-width: 180px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.student-nav-bar .nav-item select:hover {
+    border-color: rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15);
+}
+
+.student-nav-bar .nav-item select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+}
+
+.student-nav-bar .nav-item select option {
+    background: #2c3e50;
+    color: white;
+}
+
+.student-nav-bar .nav-arrow {
+    font-size: 1.5em;
+    opacity: 0.5;
+    margin-top: 20px;
+}
+
+.student-nav-bar .nav-count {
+    background: rgba(255,255,255,0.15);
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    margin-top: 20px;
+}
+
+.student-nav-bar .nav-count strong {
+    color: #3498db;
+}
+
+.student-nav-bar .btn-nav {
+    padding: 10px 20px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.2s;
+}
+
+.student-nav-bar .btn-nav:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+.student-nav-bar .btn-nav:disabled {
+    background: rgba(255,255,255,0.2);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Color indicators in select */
+.color-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
 </style>
+
+<?php
+// ============================================
+// BARRA NAVIGAZIONE STUDENTE (Cascata)
+// ============================================
+// Carica dati iniziali per i selettori
+$nav_cohorts = \local_competencymanager\sector_manager::get_cohorts_with_students();
+$nav_colors = \local_competencymanager\sector_manager::get_colors_for_cohort(0);
+$ftm_tables_exist = \local_competencymanager\sector_manager::ftm_scheduler_tables_exist();
+
+// Ottieni settori disponibili per lo studente corrente (filtro intelligente)
+$student_sectors = \local_competencymanager\sector_manager::get_student_sectors_with_quiz_data($userid);
+?>
+
+<div class="student-nav-bar">
+    <div class="nav-title">
+        👥 Navigazione Studente
+        <span style="font-size: 0.7em; opacity: 0.7; font-weight: normal;">(selettori a cascata)</span>
+    </div>
+
+    <div class="nav-row">
+        <!-- Coorte -->
+        <div class="nav-item">
+            <label>📚 Coorte</label>
+            <select id="nav_cohort" onchange="loadColors()">
+                <option value="0">Tutte le coorti</option>
+                <?php foreach ($nav_cohorts as $coh): ?>
+                <option value="<?php echo $coh->id; ?>">
+                    <?php echo s($coh->name); ?> (<?php echo $coh->student_count; ?>)
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <span class="nav-arrow">→</span>
+
+        <!-- Colore -->
+        <div class="nav-item">
+            <label>🎨 Colore Gruppo</label>
+            <select id="nav_color" onchange="loadWeeks()" <?php echo !$ftm_tables_exist ? 'disabled' : ''; ?>>
+                <option value="">Tutti i colori</option>
+                <?php if ($ftm_tables_exist): ?>
+                <?php foreach ($nav_colors as $col): ?>
+                <option value="<?php echo $col->color; ?>" data-hex="<?php echo $col->color_hex; ?>">
+                    <?php echo \local_competencymanager\sector_manager::COLOR_NAMES[$col->color] ?? ucfirst($col->color); ?> (<?php echo $col->student_count; ?>)
+                </option>
+                <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
+        </div>
+
+        <span class="nav-arrow">→</span>
+
+        <!-- Settimana KW -->
+        <div class="nav-item">
+            <label>📅 Settimana Inizio</label>
+            <select id="nav_week" onchange="loadStudents()" <?php echo !$ftm_tables_exist ? 'disabled' : ''; ?>>
+                <option value="0">Tutte le settimane</option>
+            </select>
+        </div>
+
+        <span class="nav-arrow">→</span>
+
+        <!-- Studente -->
+        <div class="nav-item">
+            <label>👤 Studente</label>
+            <select id="nav_student" onchange="updateGoButton()">
+                <option value="<?php echo $userid; ?>"><?php echo fullname($student); ?></option>
+            </select>
+        </div>
+
+        <!-- Conteggio e Pulsante -->
+        <div class="nav-count" id="nav_count">
+            <strong id="student_count">1</strong> studente/i trovato/i
+        </div>
+
+        <button type="button" class="btn-nav" id="btn_go" onclick="goToStudent()" disabled>
+            📊 Vai al Report
+        </button>
+    </div>
+</div>
+
+<?php if (!$ftm_tables_exist): ?>
+<div class="alert alert-info mb-3">
+    <small>ℹ️ Le tabelle FTM Scheduler non sono installate. I filtri Colore e Settimana non sono disponibili.</small>
+</div>
+<?php endif; ?>
 
 <?php
 // Header studente
@@ -827,18 +1473,68 @@ if (!empty($availableQuizzes)) {
             <div class="row">
                 <div class="col-md-7">
                     <h6>🏭 Filtro Settore:</h6>
+                    <?php
+                    // Icone e nomi per i settori
+                    $sector_display = [
+                        'GENERICO' => ['icon' => '📋', 'name' => 'Generico', 'code' => 'gen'],
+                        'GEN' => ['icon' => '📋', 'name' => 'Generico', 'code' => 'gen'],
+                        'AUTOMOBILE' => ['icon' => '🚗', 'name' => 'Automobile', 'code' => 'automobile'],
+                        'AUTOMAZIONE' => ['icon' => '🤖', 'name' => 'Automazione', 'code' => 'automazione'],
+                        'CHIMFARM' => ['icon' => '🧪', 'name' => 'Chimico-Farmaceutico', 'code' => 'chimfarm'],
+                        'ELETTRICITA' => ['icon' => '⚡', 'name' => 'Elettricità', 'code' => 'elettricita'],
+                        'LOGISTICA' => ['icon' => '📦', 'name' => 'Logistica', 'code' => 'logistica'],
+                        'MECCANICA' => ['icon' => '⚙️', 'name' => 'Meccanica', 'code' => 'meccanica'],
+                        'METALCOSTRUZIONE' => ['icon' => '🔩', 'name' => 'Metalcostruzione', 'code' => 'metalcostruzione'],
+                    ];
+
+                    // Conta quiz totali per settore dello studente
+                    $total_quiz_count = 0;
+                    foreach ($student_sectors as $sec) {
+                        $total_quiz_count += (int)$sec->quiz_count;
+                    }
+                    ?>
+
+                    <?php if (empty($student_sectors)): ?>
+                    <!-- Nessun settore rilevato - mostra messaggio -->
+                    <div class="alert alert-warning mb-3">
+                        <small>⚠️ Nessun settore rilevato per questo studente. Non ha ancora completato quiz con competenze.</small>
+                    </div>
                     <div class="form-group mb-3">
-                        <select name="cm_sector" id="cm_sector" class="form-control" onchange="this.form.submit()">
-                            <option value="all" <?php echo $cm_sector_filter === "all" ? "selected" : ""; ?>>Tutti i settori</option>
-                            <option value="automobile" <?php echo $cm_sector_filter === "automobile" ? "selected" : ""; ?>>🚗 Automobile</option>
-                            <option value="meccanica" <?php echo $cm_sector_filter === "meccanica" ? "selected" : ""; ?>>⚙️ Meccanica</option>
-                            <option value="logistica" <?php echo $cm_sector_filter === "logistica" ? "selected" : ""; ?>>📦 Logistica</option>
-                            <option value="chimfarm" <?php echo $cm_sector_filter === "chimfarm" ? "selected" : ""; ?>>🧪 Chimico-Farmaceutico</option>
-                            <option value="elettricita" <?php echo $cm_sector_filter === "elettricita" ? "selected" : ""; ?>>⚡ Elettricità</option>
-                            <option value="automazione" <?php echo $cm_sector_filter === "automazione" ? "selected" : ""; ?>>🤖 Automazione</option>
-                            <option value="metalcostruzione" <?php echo $cm_sector_filter === "metalcostruzione" ? "selected" : ""; ?>>🔩 Metalcostruzione</option>
+                        <select name="cm_sector" id="cm_sector" class="form-control" disabled>
+                            <option value="all">Nessun settore disponibile</option>
                         </select>
                     </div>
+                    <?php else: ?>
+                    <!-- Settori disponibili per lo studente -->
+                    <div class="alert alert-success py-2 mb-2">
+                        <small>
+                            ✅ <strong><?php echo count($student_sectors); ?></strong> settore/i rilevato/i
+                            (<strong><?php echo $total_quiz_count; ?></strong> quiz completati)
+                        </small>
+                    </div>
+                    <div class="form-group mb-3">
+                        <select name="cm_sector" id="cm_sector" class="form-control" onchange="this.form.submit()" style="font-weight: 500;">
+                            <option value="all" <?php echo $cm_sector_filter === "all" ? "selected" : ""; ?>>
+                                🌐 Tutti i settori (<?php echo $total_quiz_count; ?> quiz)
+                            </option>
+                            <?php foreach ($student_sectors as $sec):
+                                $display = $sector_display[strtoupper($sec->sector)] ?? [
+                                    'icon' => '📁',
+                                    'name' => ucfirst(strtolower($sec->sector)),
+                                    'code' => strtolower($sec->sector)
+                                ];
+                                $is_selected = (strtolower($cm_sector_filter) === $display['code']);
+                                $is_primary = !empty($sec->is_primary);
+                            ?>
+                            <option value="<?php echo $display['code']; ?>" <?php echo $is_selected ? "selected" : ""; ?>>
+                                <?php echo $display['icon']; ?> <?php echo $display['name']; ?>
+                                (<?php echo $sec->quiz_count; ?> quiz)
+                                <?php echo $is_primary ? ' ⭐' : ''; ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <?php endif; ?>
                     <h6>📊 Sezioni Aggiuntive (CoachManager):</h6>
                     
                     <div class="custom-control custom-switch mb-2">
@@ -1057,10 +1753,32 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
 </div>
 
 <?php
-// Tabs
-$tabs = ['overview' => '📊 Panoramica', 'action' => '📚 Piano', 'quiz' => '📝 Quiz', 'progress' => '📈 Progressi', 'details' => '📋 Dettagli'];
+// Tabs interni + link esterni (stesso stile)
+$tabs = [
+    'overview' => '📊 Panoramica',
+    'action' => '📚 Piano',
+    'quiz' => '📝 Quiz',
+    'selfassessment' => '📝 Autovalutazione ↗',
+    'labeval' => '🔬 Laboratorio ↗',
+    'progress' => '📈 Progressi',
+    'details' => '📋 Dettagli'
+];
+
+// URL esterni
+$externalUrls = [
+    'selfassessment' => new moodle_url('/local/selfassessment/student_report.php', ['userid' => $userid, 'courseid' => $courseid]),
+    'labeval' => new moodle_url('/local/labeval/reports.php', ['studentid' => $userid])
+];
+
 echo '<ul class="nav nav-tabs mb-4">';
 foreach ($tabs as $tabKey => $tabLabel) {
+    // Link esterni
+    if (isset($externalUrls[$tabKey])) {
+        echo '<li class="nav-item"><a class="nav-link" href="' . $externalUrls[$tabKey] . '" target="_blank">' . $tabLabel . '</a></li>';
+        continue;
+    }
+
+    // Tab interni
     $activeClass = ($tab === $tabKey) ? 'active' : '';
     $tabUrl = new moodle_url('/local/competencymanager/student_report.php', ['userid' => $userid, 'courseid' => $courseid, 'tab' => $tabKey]);
     if (!empty($selectedQuizzes)) {
@@ -1086,18 +1804,25 @@ if ($tab === 'overview') {
     ?>
     <div class="row">
         <div class="col-lg-7">
-            <div class="card">
+            <div class="card" id="radarCard">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">📊 Radar Aree di Competenza</h5>
-                    <small>Clicca sulle aree per nasconderle/mostrarle</small>
+                    <div>
+                        <h5 class="mb-0" id="radarTitle">📊 Radar Aree di Competenza</h5>
+                        <small id="radarSubtitle">👆 Clicca su un'area nel radar o nel dropdown per vedere le competenze</small>
+                    </div>
+                    <button type="button" class="btn btn-light btn-sm" id="btnBackToAreas" style="display: none;" onclick="backToAreasView()">
+                        ↩ Torna alle Aree
+                    </button>
                 </div>
                 <div class="card-body">
-                    <!-- Controlli interattivi -->
-                    <div class="radar-controls">
+                    <!-- Controlli interattivi - Vista Aree -->
+                    <div class="radar-controls" id="areaToggleControls">
                         <strong>Aree visualizzate:</strong>
                         <div class="mt-2" id="areaToggles">
                             <?php foreach ($areasData as $code => $areaData): ?>
-                            <span class="area-toggle" data-area="<?php echo $code; ?>" style="background: <?php echo $areaData['color']; ?>20; border: 2px solid <?php echo $areaData['color']; ?>; color: <?php echo $areaData['color']; ?>;">
+                            <span class="area-toggle" data-area="<?php echo $code; ?>"
+                                  style="background: <?php echo $areaData['color']; ?>20; border: 2px solid <?php echo $areaData['color']; ?>; color: <?php echo $areaData['color']; ?>; cursor: pointer;"
+                                  onclick="drillDownToArea('<?php echo $code; ?>')" title="Clicca per vedere le competenze">
                                 <?php echo $areaData['icon'] . ' ' . $areaData['name']; ?>
                             </span>
                             <?php endforeach; ?>
@@ -1107,9 +1832,30 @@ if ($tab === 'overview') {
                             <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleAllAreas(false)">Nascondi tutte</button>
                         </div>
                     </div>
-                    
+
+                    <!-- Info Drill-Down - Vista Competenze -->
+                    <div class="drill-down-info" id="drillDownInfo" style="display: none;">
+                        <div class="alert alert-info py-2 mb-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <strong id="drillAreaName">Area: </strong>
+                                    <span class="badge badge-primary ml-2" id="drillCompCount">0 competenze</span>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="backToAreasView()">
+                                    ↩ Torna alle Aree
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Canvas per Chart.js -->
                     <canvas id="radarAreas" style="max-height: 400px;"></canvas>
+
+                    <!-- Legenda competenze (drill-down) -->
+                    <div id="competencyLegend" style="display: none; margin-top: 15px;">
+                        <h6>📋 Competenze dell'area:</h6>
+                        <div id="competencyList" style="max-height: 200px; overflow-y: auto;"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1561,13 +2307,334 @@ else if ($tab === 'details') {
         const sort = document.getElementById('sortSelect').value;
         const filter = document.getElementById('filterSelect').value;
         const filterArea = document.getElementById('filterAreaSelect').value;
-        
+
         let url = '<?php echo $baseUrl->out(false); ?>';
         url += '&sort=' + sort;
         url += '&filter=' + filter;
         if (filterArea) url += '&filter_area=' + filterArea;
-        
+
         window.location.href = url;
+    }
+    </script>
+
+    <!-- ============================================
+         MAPPA COMPETENZE PER AREA
+         ============================================ -->
+    <?php
+    // Se $areasData è vuoto, carica aree dal framework competenze (come reports_v2.php)
+    $mappaAreasData = $areasData;
+
+    // Mappa icone per codice area (identica a reports_v2.php)
+    // Usa solo il codice area (A, B, C oppure LMB, CNC, 1C, etc.)
+    $area_icons = [
+        'A' => '📋', 'B' => '🔧', 'C' => '🛢️', 'D' => '💨', 'E' => '⚙️',
+        'F' => '🛞', 'G' => '💻', 'H' => '📡', 'I' => '❄️', 'J' => '🔋',
+        'K' => '🚗', 'L' => '🛡️', 'M' => '👤', 'N' => '✅',
+        // MECCANICA
+        'LMB' => '🔧', 'LMC' => '⚙️', 'CNC' => '🖥️', 'ASS' => '🔩',
+        'MIS' => '📏', 'GEN' => '🏭', 'MAN' => '🔨', 'DT' => '📐',
+        'AUT' => '🤖', 'PIAN' => '📋', 'SAQ' => '🛡️', 'CSP' => '🤝', 'PRG' => '💡',
+        'LAV' => '🏭', 'MAT' => '🧱', 'CQ' => '✅', 'AREA' => '📦',
+        // CHIMFARM
+        '1C' => '📜', '1G' => '📦', '1O' => '⚗️', '2M' => '📏',
+        '3C' => '🔬', '4S' => '🛡️', '5S' => '🧫', '6P' => '🏭',
+        '7S' => '🔧', '8T' => '💻', '9A' => '📊',
+        // AUTOMOBILE specifici
+        'MAu' => '🚗', 'MR' => '🔧',
+    ];
+
+    $area_colors = [
+        'A' => '#3498db', 'B' => '#e74c3c', 'C' => '#f39c12', 'D' => '#9b59b6',
+        'E' => '#1abc9c', 'F' => '#e67e22', 'G' => '#2ecc71', 'H' => '#00bcd4',
+        'I' => '#3f51b5', 'J' => '#ff5722', 'K' => '#795548', 'L' => '#607d8b',
+        'M' => '#8bc34a', 'N' => '#009688',
+        // MECCANICA
+        'LMB' => '#795548', 'LMC' => '#607d8b', 'CNC' => '#00bcd4', 'ASS' => '#f39c12',
+        'MIS' => '#1abc9c', 'GEN' => '#9e9e9e', 'MAN' => '#e67e22', 'DT' => '#3498db',
+        'AUT' => '#e74c3c', 'PIAN' => '#9b59b6', 'SAQ' => '#c0392b', 'CSP' => '#8e44ad', 'PRG' => '#2ecc71',
+        'LAV' => '#9e9e9e', 'MAT' => '#795548', 'CQ' => '#27ae60', 'AREA' => '#7f8c8d',
+        // CHIMFARM
+        '1C' => '#3498db', '1G' => '#e67e22', '1O' => '#9b59b6', '2M' => '#1abc9c',
+        '3C' => '#2ecc71', '4S' => '#e74c3c', '5S' => '#00bcd4', '6P' => '#f39c12',
+        '7S' => '#607d8b', '8T' => '#3f51b5', '9A' => '#8bc34a',
+        // AUTOMOBILE
+        'MAu' => '#3498db', 'MR' => '#e74c3c',
+    ];
+
+    // Funzione helper per trovare icona/colore (come reports_v2.php)
+    function get_area_icon_info($areaKey, $area_icons, $area_colors) {
+        // Estrai il codice area dalla key (es. MECCANICA_ASS -> ASS)
+        $parts = explode('_', $areaKey);
+        $area_code = $parts[1] ?? $areaKey;
+
+        $icon = $area_icons[$area_code] ?? '📁';
+        $color = $area_colors[$area_code] ?? '#95a5a6';
+
+        return [
+            'icona' => $icon,
+            'colore' => $color
+        ];
+    }
+
+    if (empty($mappaAreasData)) {
+        // Carica competenze dal framework FTM
+        $framework_competencies = $DB->get_records_sql("
+            SELECT c.id, c.shortname, c.description, c.idnumber
+            FROM {competency} c
+            JOIN {competency_framework} cf ON c.competencyframeworkid = cf.id
+            WHERE cf.shortname LIKE '%FTM%' OR cf.shortname LIKE '%Meccanica%'
+            ORDER BY c.idnumber
+        ");
+
+        // Organizza per area usando la key completa (SETTORE_AREA)
+        foreach ($framework_competencies as $comp) {
+            $areaInfo = get_area_info($comp->idnumber);
+            $areaKey = $areaInfo['key']; // Es. "MECCANICA_ASS", "AUTOMOBILE_MAu"
+            $iconInfo = get_area_icon_info($areaKey, $area_icons, $area_colors);
+
+            // Estrai settore e codice area dalla key
+            $keyParts = explode('_', $areaKey);
+            $areaSector = strtolower($keyParts[0] ?? 'altro');
+            $areaCode = $keyParts[1] ?? $areaKey;
+
+            // Usa il nome dall'area_info se disponibile, altrimenti il codice
+            $areaName = $areaInfo['name'] ?? $areaCode;
+
+            if (!isset($mappaAreasData[$areaKey])) {
+                $mappaAreasData[$areaKey] = [
+                    'code' => $areaKey,
+                    'area_code' => $areaCode,
+                    'name' => $areaName,
+                    'icon' => $iconInfo['icona'],
+                    'color' => $iconInfo['colore'],
+                    'sector' => $areaSector,
+                    'percentage' => 0,
+                    'count' => 0,
+                    'quiz_count' => 0,
+                    'autoval_count' => 0
+                ];
+            }
+            $mappaAreasData[$areaKey]['count']++;
+        }
+
+        // Carica risultati quiz per questo studente
+        $quiz_results = $DB->get_records_sql("
+            SELECT
+                qa.questionid,
+                qas.fraction,
+                q.name as questionname
+            FROM {quiz_attempts} quiza
+            JOIN {question_attempts} qa ON qa.questionusageid = quiza.uniqueid
+            JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
+            JOIN {question} q ON q.id = qa.questionid
+            WHERE quiza.userid = ?
+            AND quiza.state = 'finished'
+            AND qas.sequencenumber = (
+                SELECT MAX(qas2.sequencenumber)
+                FROM {question_attempt_steps} qas2
+                WHERE qas2.questionattemptid = qa.id
+            )
+        ", [$userid]);
+
+        // Mappa domande-competenze
+        $question_competencies = [];
+        if ($DB->get_manager()->table_exists('qbank_competenciesbyquestion')) {
+            $mappings = $DB->get_records('qbank_competenciesbyquestion');
+            foreach ($mappings as $map) {
+                $question_competencies[$map->questionid][] = $map->competencyid;
+            }
+        }
+
+        // Calcola punteggi per area
+        $area_scores = [];
+        foreach ($quiz_results as $result) {
+            if (!isset($question_competencies[$result->questionid])) continue;
+
+            foreach ($question_competencies[$result->questionid] as $compid) {
+                if (!isset($framework_competencies[$compid])) continue;
+                $comp = $framework_competencies[$compid];
+
+                $areaInfo = get_area_info($comp->idnumber);
+                $areaKey = $areaInfo['key']; // Usa la key completa
+
+                if (!isset($area_scores[$areaKey])) {
+                    $area_scores[$areaKey] = ['sum' => 0, 'count' => 0];
+                }
+
+                $score = ($result->fraction !== null) ? floatval($result->fraction) * 100 : 0;
+                $area_scores[$areaKey]['sum'] += $score;
+                $area_scores[$areaKey]['count']++;
+            }
+        }
+
+        // Applica punteggi alle aree
+        foreach ($area_scores as $areaKey => $scores) {
+            if (isset($mappaAreasData[$areaKey]) && $scores['count'] > 0) {
+                $mappaAreasData[$areaKey]['percentage'] = round($scores['sum'] / $scores['count'], 1);
+                $mappaAreasData[$areaKey]['quiz_count'] = $scores['count'];
+            }
+        }
+
+        ksort($mappaAreasData);
+    }
+    ?>
+    <div class="mappa-competenze-section">
+        <div class="mappa-header">
+            <h3>🎯 Mappa Competenze per Area</h3>
+        </div>
+        <div class="mappa-body">
+            <!-- Filter Bar -->
+            <div class="filter-bar-mappa">
+                <span class="filter-label">Filtra per:</span>
+                <select id="filterMapSector" onchange="applyMapFilters()">
+                    <option value="all">Tutti i settori</option>
+                    <option value="meccanica">Meccanica</option>
+                    <option value="automobile">Automobile</option>
+                    <option value="automazione">Automazione</option>
+                    <option value="logistica">Logistica</option>
+                    <option value="elettricita">Elettricità</option>
+                    <option value="metalcostruzione">Metalcostruzione</option>
+                    <option value="chimfarm">Chimico-Farmaceutico</option>
+                </select>
+                <select id="filterMapStatus" onchange="applyMapFilters()">
+                    <option value="all">Tutti gli stati</option>
+                    <option value="critical">Solo critici</option>
+                    <option value="warning">Solo attenzione</option>
+                    <option value="good">Solo buoni</option>
+                    <option value="excellent">Solo eccellenti</option>
+                </select>
+                <button class="btn-reset" onclick="resetMapFilters()">🔄 Reset</button>
+            </div>
+
+            <!-- Legenda -->
+            <div class="mappa-legend">
+                <div class="mappa-legend-item">
+                    <div class="mappa-legend-dot" style="background: #28a745;"></div>
+                    <span>Eccellente (≥80%)</span>
+                </div>
+                <div class="mappa-legend-item">
+                    <div class="mappa-legend-dot" style="background: #17a2b8;"></div>
+                    <span>Buono (60-79%)</span>
+                </div>
+                <div class="mappa-legend-item">
+                    <div class="mappa-legend-dot" style="background: #ffc107;"></div>
+                    <span>Sufficiente (50-59%)</span>
+                </div>
+                <div class="mappa-legend-item">
+                    <div class="mappa-legend-dot" style="background: #dc3545;"></div>
+                    <span>Critico (<50%)</span>
+                </div>
+                <div class="mappa-legend-item">
+                    <div class="mappa-legend-dot" style="background: #e9ecef;"></div>
+                    <span>Non valutato</span>
+                </div>
+            </div>
+
+            <!-- Grid Aree -->
+            <div class="areas-grid">
+                <?php foreach ($mappaAreasData as $areaCode => $areaData):
+                    $pct = $areaData['percentage'] ?? 0;
+                    $quiz_count = $areaData['quiz_count'] ?? 0;
+
+                    // Usa il settore salvato, oppure estrai dal codice area
+                    $card_sector = $areaData['sector'] ?? strtolower(explode('_', $areaCode)[0] ?? 'altro');
+
+                    if ($quiz_count == 0) {
+                        $status_class = 'nodata';
+                        $status_label = 'Non valutato';
+                        $status_color = '#adb5bd';
+                    } elseif ($pct >= 80) {
+                        $status_class = 'excellent';
+                        $status_label = 'Eccellente';
+                        $status_color = '#28a745';
+                    } elseif ($pct >= 60) {
+                        $status_class = 'good';
+                        $status_label = 'Buono';
+                        $status_color = '#17a2b8';
+                    } elseif ($pct >= 50) {
+                        $status_class = 'warning';
+                        $status_label = 'Sufficiente';
+                        $status_color = '#ffc107';
+                    } else {
+                        $status_class = 'critical';
+                        $status_label = 'Critico';
+                        $status_color = '#dc3545';
+                    }
+                ?>
+                <div class="area-card"
+                     data-area="<?php echo $areaCode; ?>"
+                     data-sector="<?php echo $card_sector; ?>"
+                     data-status="<?php echo $status_class; ?>"
+                     onclick="openAreaModal('<?php echo htmlspecialchars($areaCode, ENT_QUOTES); ?>')"
+                     style="border-left-color: <?php echo $areaData['color'] ?? '#95a5a6'; ?>; <?php echo $quiz_count == 0 ? 'opacity: 0.6;' : ''; ?>">
+                    <div class="area-icon"><?php echo $areaData['icon'] ?? '📁'; ?></div>
+                    <div class="area-name"><?php echo $areaData['name'] ?? $areaCode; ?></div>
+                    <div class="area-count"><?php echo $areaData['count'] ?? 0; ?> competenze</div>
+                    <div class="area-mini-comparison">
+                        <div class="mini-bar-container">
+                            <div class="mini-bar-label">Quiz <?php echo $quiz_count > 0 ? "($quiz_count)" : ''; ?></div>
+                            <div class="mini-bar"><div class="mini-bar-fill quiz" style="width: <?php echo $pct; ?>%;"></div></div>
+                        </div>
+                    </div>
+                    <div class="area-stats">
+                        <span class="area-percentage" style="color: <?php echo $status_color; ?>;">
+                            <?php echo $quiz_count > 0 ? round($pct) . '%' : '-'; ?>
+                        </span>
+                        <span class="area-status status-<?php echo $status_class; ?>"><?php echo $status_label; ?></span>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+
+            <p style="margin-top: 15px; color: #6c757d; font-size: 0.85em;">
+                💡 Clicca su un'area per vedere il dettaglio delle competenze
+            </p>
+        </div>
+    </div>
+
+    <script>
+    function filterByArea(areaCode) {
+        document.getElementById('filterAreaSelect').value = areaCode;
+        applyFilters();
+    }
+
+    // Filtri per la Mappa Competenze
+    function applyMapFilters() {
+        const statusFilter = document.getElementById('filterMapStatus').value;
+        const sectorFilter = document.getElementById('filterMapSector').value;
+
+        const cards = document.querySelectorAll('.mappa-competenze-section .area-card');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const cardStatus = card.dataset.status;
+            const cardSector = card.dataset.sector;
+
+            const matchStatus = (statusFilter === 'all' || cardStatus === statusFilter);
+            const matchSector = (sectorFilter === 'all' || cardSector === sectorFilter);
+
+            if (matchStatus && matchSector) {
+                card.style.display = 'block';
+                card.style.animation = 'fadeIn 0.3s ease';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Aggiorna contatore
+        console.log('🎯 ' + visibleCount + ' aree visualizzate');
+    }
+
+    function resetMapFilters() {
+        document.getElementById('filterMapStatus').value = 'all';
+        document.getElementById('filterMapSector').value = 'all';
+
+        document.querySelectorAll('.mappa-competenze-section .area-card').forEach(card => {
+            card.style.display = 'block';
+        });
+
+        console.log('🔄 Filtri resettati');
     }
     </script>
     <?php
@@ -1581,27 +2648,210 @@ echo '</div>'; // Fine tab-content
 ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+// ============================================
+// NAVIGAZIONE STUDENTE A CASCATA
+// ============================================
+const navAjaxUrl = '<?php echo new moodle_url('/local/competencymanager/ajax_navigation.php'); ?>';
+const navSessionKey = '<?php echo sesskey(); ?>';
+const currentUserId = <?php echo $userid; ?>;
+const currentCourseid = <?php echo $courseid; ?>;
+
+// Carica colori per coorte selezionata
+async function loadColors() {
+    const cohortId = document.getElementById('nav_cohort').value;
+    const colorSelect = document.getElementById('nav_color');
+
+    colorSelect.innerHTML = '<option value="">Caricamento...</option>';
+
+    try {
+        const response = await fetch(navAjaxUrl + '?action=get_colors&cohortid=' + cohortId + '&sesskey=' + navSessionKey);
+        const data = await response.json();
+
+        if (data.success) {
+            colorSelect.innerHTML = '<option value="">Tutti i colori</option>';
+            data.data.forEach(color => {
+                const opt = document.createElement('option');
+                opt.value = color.color;
+                opt.textContent = color.name + ' (' + color.student_count + ')';
+                opt.dataset.hex = color.color_hex;
+                colorSelect.appendChild(opt);
+            });
+        } else {
+            colorSelect.innerHTML = '<option value="">Nessun colore</option>';
+        }
+    } catch (e) {
+        console.error('Errore caricamento colori:', e);
+        colorSelect.innerHTML = '<option value="">Errore</option>';
+    }
+
+    // Resetta settimane e studenti
+    document.getElementById('nav_week').innerHTML = '<option value="0">Tutte le settimane</option>';
+    loadStudents();
+}
+
+// Carica settimane per coorte e colore
+async function loadWeeks() {
+    const cohortId = document.getElementById('nav_cohort').value;
+    const color = document.getElementById('nav_color').value;
+    const weekSelect = document.getElementById('nav_week');
+
+    weekSelect.innerHTML = '<option value="0">Caricamento...</option>';
+
+    try {
+        const response = await fetch(navAjaxUrl + '?action=get_weeks&cohortid=' + cohortId + '&color=' + color + '&sesskey=' + navSessionKey);
+        const data = await response.json();
+
+        if (data.success && data.data.length > 0) {
+            weekSelect.innerHTML = '<option value="0">Tutte le settimane</option>';
+            data.data.forEach(week => {
+                const opt = document.createElement('option');
+                opt.value = week.calendar_week;
+                opt.textContent = week.label + ' (' + week.student_count + ')';
+                weekSelect.appendChild(opt);
+            });
+        } else {
+            weekSelect.innerHTML = '<option value="0">Nessuna settimana</option>';
+        }
+    } catch (e) {
+        console.error('Errore caricamento settimane:', e);
+        weekSelect.innerHTML = '<option value="0">Errore</option>';
+    }
+
+    loadStudents();
+}
+
+// Carica studenti filtrati
+async function loadStudents() {
+    const cohortId = document.getElementById('nav_cohort').value;
+    const color = document.getElementById('nav_color').value;
+    const week = document.getElementById('nav_week').value;
+    const studentSelect = document.getElementById('nav_student');
+    const countEl = document.getElementById('student_count');
+
+    studentSelect.innerHTML = '<option value="">Caricamento...</option>';
+
+    try {
+        const url = navAjaxUrl + '?action=get_students&cohortid=' + cohortId +
+                    '&color=' + encodeURIComponent(color) +
+                    '&calendar_week=' + week +
+                    '&sesskey=' + navSessionKey;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success && data.data.length > 0) {
+            studentSelect.innerHTML = '';
+            data.data.forEach(student => {
+                const opt = document.createElement('option');
+                opt.value = student.id;
+                let label = student.fullname;
+                if (student.group_color) {
+                    label += ' [' + student.group_color.charAt(0).toUpperCase() + student.group_color.slice(1) + ']';
+                }
+                if (student.current_week > 0) {
+                    label += ' - Sett.' + student.current_week;
+                }
+                opt.textContent = label;
+                // Seleziona lo studente corrente se presente
+                if (student.id == currentUserId) {
+                    opt.selected = true;
+                }
+                studentSelect.appendChild(opt);
+            });
+
+            countEl.textContent = data.count;
+        } else {
+            studentSelect.innerHTML = '<option value="">Nessuno studente trovato</option>';
+            countEl.textContent = '0';
+        }
+    } catch (e) {
+        console.error('Errore caricamento studenti:', e);
+        studentSelect.innerHTML = '<option value="">Errore</option>';
+        countEl.textContent = '0';
+    }
+
+    updateGoButton();
+}
+
+// Aggiorna stato pulsante "Vai"
+function updateGoButton() {
+    const studentId = document.getElementById('nav_student').value;
+    const btn = document.getElementById('btn_go');
+
+    btn.disabled = !studentId || studentId == currentUserId;
+
+    if (studentId && studentId != currentUserId) {
+        btn.textContent = '📊 Vai al Report';
+    } else if (studentId == currentUserId) {
+        btn.textContent = '✓ Studente corrente';
+    } else {
+        btn.textContent = '📊 Seleziona studente';
+    }
+}
+
+// Naviga al report dello studente selezionato
+function goToStudent() {
+    const studentId = document.getElementById('nav_student').value;
+    if (!studentId) return;
+
+    // Mantieni i parametri attuali
+    const url = new URL(window.location.href);
+    url.searchParams.set('userid', studentId);
+    url.searchParams.set('courseid', currentCourseid);
+
+    window.location.href = url.toString();
+}
+
+// Inizializza al caricamento
+document.addEventListener('DOMContentLoaded', function() {
+    updateGoButton();
+});
+
+// ============================================
+// FINE NAVIGAZIONE STUDENTE
+// ============================================
+
 // Dati per i grafici
 const areasData = <?php echo json_encode(array_values($areasData)); ?>;
 const competenciesData = <?php echo json_encode(array_values($competencies)); ?>;
 const competencyDescriptions = <?php echo json_encode($competencyDescriptions); ?>;
 const areaDescriptions = <?php echo json_encode($areaDescriptions); ?>;
 
-// Stato delle aree visibili
+// Mappa area key -> competenze (usa i dati già raggruppati dal PHP)
+// IMPORTANTE: Usa area.key (es. AUTOMOBILE_A) come identificatore univoco, non area.code (es. A)
+// Questo evita conflitti tra aree con stessa lettera di settori diversi
+const areaToCompetencies = {};
+areasData.forEach(area => {
+    // Le competenze sono già raggruppate correttamente dalla funzione aggregate_by_area() in PHP
+    // Ogni area ha un array 'competencies' con tutte le sue competenze
+    areaToCompetencies[area.key] = area.competencies || [];
+});
+
+// Debug: mostra struttura aree per verifica
+console.log('📊 Aree caricate:', areasData.length);
+areasData.forEach(a => {
+    const compCount = (a.competencies || []).length;
+    console.log(`   ${a.icon} ${a.name} (key=${a.key}, code=${a.code}): ${compCount} competenze, ${a.percentage}%`);
+});
+
+// Stato delle aree visibili (usa key come identificatore)
 let visibleAreas = {};
-areasData.forEach(a => visibleAreas[a.code] = true);
+areasData.forEach(a => visibleAreas[a.key] = true);
+
+// Stato drill-down
+let isDrillDown = false;
+let currentDrillArea = null;
 
 // Chart radar principale
 let radarChart = null;
 
 <?php if ($tab === 'overview' && !empty($areasData)): ?>
-// Inizializza radar
+// Inizializza radar (vista aree)
 function initRadarChart() {
     const ctx = document.getElementById('radarAreas');
     if (!ctx) return;
-    
-    const visibleData = areasData.filter(a => visibleAreas[a.code]);
-    
+
+    const visibleData = areasData.filter(a => visibleAreas[a.key]);
+
     radarChart = new Chart(ctx, {
         type: 'radar',
         data: {
@@ -1621,6 +2871,7 @@ function initRadarChart() {
         },
         options: {
             responsive: true,
+            onClick: handleRadarClick,
             scales: {
                 r: {
                     beginAtZero: true,
@@ -1635,8 +2886,24 @@ function initRadarChart() {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            const area = visibleData[context.dataIndex];
-                            return area.name + ': ' + area.percentage + '% (' + area.correct_questions + '/' + area.total_questions + ')';
+                            if (isDrillDown) {
+                                // Mostra nome competenza in drill-down
+                                const comps = areaToCompetencies[currentDrillArea] || [];
+                                const comp = comps[context.dataIndex];
+                                if (comp) {
+                                    const desc = competencyDescriptions[comp.idnumber];
+                                    const name = desc ? (desc.name || comp.idnumber) : comp.idnumber;
+                                    return name + ': ' + comp.percentage + '%';
+                                }
+                            } else {
+                                // Mostra nome area
+                                const visibleData = areasData.filter(a => visibleAreas[a.key]);
+                                const area = visibleData[context.dataIndex];
+                                if (area) {
+                                    return area.name + ': ' + area.percentage + '% (' + area.correct_questions + '/' + area.total_questions + ')';
+                                }
+                            }
+                            return '';
                         }
                     }
                 }
@@ -1645,23 +2912,183 @@ function initRadarChart() {
     });
 }
 
-// Toggle area
-function toggleArea(areaCode) {
-    visibleAreas[areaCode] = !visibleAreas[areaCode];
-    
-    const toggle = document.querySelector(`.area-toggle[data-area="${areaCode}"]`);
-    if (toggle) {
-        toggle.classList.toggle('disabled', !visibleAreas[areaCode]);
+// Gestisce click sul radar
+function handleRadarClick(event, elements) {
+    if (isDrillDown) return; // Già in drill-down, non fare nulla
+
+    if (elements && elements.length > 0) {
+        const index = elements[0].index;
+        const visibleData = areasData.filter(a => visibleAreas[a.key]);
+        const clickedArea = visibleData[index];
+        if (clickedArea) {
+            drillDownToArea(clickedArea.key);
+        }
     }
-    
+}
+
+// Drill-down: mostra competenze di un'area specifica
+// NOTA: areaKey è ora SETTORE_LETTERA (es. AUTOMOBILE_A) invece di sola lettera
+function drillDownToArea(areaKey) {
+    const area = areasData.find(a => a.key === areaKey);
+    if (!area) {
+        console.error('Area non trovata:', areaKey);
+        return;
+    }
+
+    // Usa le competenze già raggruppate dal PHP (area.competencies)
+    const comps = area.competencies || areaToCompetencies[areaKey] || [];
+
+    console.log(`🔍 Drill-down area ${areaKey}:`, {
+        areaName: area.name,
+        competencies: comps.length,
+        firstComp: comps[0] || 'nessuna'
+    });
+
+    if (comps.length === 0) {
+        alert('Nessuna competenza trovata per l\'area: ' + area.name + '\n\nVerifica che ci siano quiz completati per questa area.');
+        return;
+    }
+
+    // Aggiorna stato
+    isDrillDown = true;
+    currentDrillArea = areaKey;
+
+    // Aggiorna UI
+    document.getElementById('radarTitle').innerHTML = area.icon + ' Competenze Area: ' + area.name;
+    document.getElementById('radarSubtitle').style.display = 'none';
+    document.getElementById('btnBackToAreas').style.display = 'inline-block';
+    document.getElementById('areaToggleControls').style.display = 'none';
+    document.getElementById('drillDownInfo').style.display = 'block';
+    document.getElementById('drillAreaName').innerHTML = area.icon + ' ' + area.name + ' <span class="badge badge-secondary">' + area.percentage + '%</span>';
+    document.getElementById('drillCompCount').textContent = comps.length + ' competenze';
+    document.getElementById('competencyLegend').style.display = 'block';
+
+    // Sincronizza dropdown
+    const dropdown = document.getElementById('areaDetailSelect');
+    if (dropdown) dropdown.value = areaKey;
+
+    // Genera lista competenze
+    let listHtml = '<div class="list-group list-group-flush">';
+    comps.forEach((c, idx) => {
+        const desc = competencyDescriptions[c.idnumber];
+        const name = desc ? (desc.name || c.idnumber) : c.idnumber;
+        const color = c.percentage >= 80 ? '#28a745' : (c.percentage >= 60 ? '#20c997' : (c.percentage >= 40 ? '#ffc107' : '#dc3545'));
+        listHtml += `<div class="list-group-item py-2 d-flex justify-content-between align-items-center">
+            <small><strong>${idx + 1}.</strong> ${name}</small>
+            <span class="badge" style="background: ${color}; color: white;">${c.percentage}%</span>
+        </div>`;
+    });
+    listHtml += '</div>';
+    document.getElementById('competencyList').innerHTML = listHtml;
+
+    // Aggiorna radar con competenze
+    updateRadarForCompetencies(comps, area);
+
+    // Aggiorna dettaglio area (panel destro)
+    updateAreaDetailContent(areaKey, comps);
+}
+
+// Aggiorna radar per mostrare competenze
+function updateRadarForCompetencies(comps, area) {
+    if (!radarChart) return;
+
+    // Prepara labels e dati
+    const labels = comps.map((c, idx) => {
+        const desc = competencyDescriptions[c.idnumber];
+        const shortName = desc ? (desc.shortname || desc.name || c.idnumber) : c.idnumber;
+        // Abbrevia se troppo lungo
+        return shortName.length > 15 ? shortName.substring(0, 12) + '...' : shortName;
+    });
+
+    const data = comps.map(c => c.percentage);
+    const colors = comps.map(c => {
+        if (c.percentage >= 80) return '#28a745';
+        if (c.percentage >= 60) return '#20c997';
+        if (c.percentage >= 40) return '#ffc107';
+        return '#dc3545';
+    });
+
+    // Aggiorna chart
+    radarChart.data.labels = labels;
+    radarChart.data.datasets[0].data = data;
+    radarChart.data.datasets[0].pointBackgroundColor = colors;
+    radarChart.data.datasets[0].backgroundColor = area.color + '33'; // 20% opacity
+    radarChart.data.datasets[0].borderColor = area.color;
+    radarChart.data.datasets[0].label = area.name;
+
+    // Rimuovi onClick in drill-down
+    radarChart.options.onClick = null;
+
+    radarChart.update();
+}
+
+// Torna alla vista aree
+function backToAreasView() {
+    if (!isDrillDown) return;
+
+    // Reset stato
+    isDrillDown = false;
+    currentDrillArea = null;
+
+    // Reset UI
+    document.getElementById('radarTitle').innerHTML = '📊 Radar Aree di Competenza';
+    document.getElementById('radarSubtitle').style.display = 'inline';
+    document.getElementById('btnBackToAreas').style.display = 'none';
+    document.getElementById('areaToggleControls').style.display = 'block';
+    document.getElementById('drillDownInfo').style.display = 'none';
+    document.getElementById('competencyLegend').style.display = 'none';
+
+    // Reset dropdown
+    const dropdown = document.getElementById('areaDetailSelect');
+    if (dropdown) dropdown.value = '';
+
+    // Reset dettaglio area
+    document.getElementById('areaDetailContent').innerHTML = '<p class="text-muted text-center">Seleziona un\'area per vedere il dettaglio delle competenze</p>';
+
+    // Ricostruisci radar aree
+    rebuildAreasRadar();
+}
+
+// Ricostruisce radar con vista aree
+function rebuildAreasRadar() {
+    if (!radarChart) return;
+
+    const visibleData = areasData.filter(a => visibleAreas[a.key]);
+
+    radarChart.data.labels = visibleData.map(a => a.icon + ' ' + a.name);
+    radarChart.data.datasets[0].data = visibleData.map(a => a.percentage);
+    radarChart.data.datasets[0].pointBackgroundColor = visibleData.map(a => a.color);
+    radarChart.data.datasets[0].backgroundColor = 'rgba(102, 126, 234, 0.2)';
+    radarChart.data.datasets[0].borderColor = 'rgba(102, 126, 234, 1)';
+    radarChart.data.datasets[0].label = 'Percentuale';
+
+    // Ripristina onClick
+    radarChart.options.onClick = handleRadarClick;
+
+    radarChart.update();
+}
+
+// Toggle area (solo in vista aree) - usa areaKey come identificatore
+function toggleArea(areaKey) {
+    if (isDrillDown) return;
+
+    visibleAreas[areaKey] = !visibleAreas[areaKey];
+
+    const toggle = document.querySelector(`.area-toggle[data-area="${areaKey}"]`);
+    if (toggle) {
+        toggle.classList.toggle('disabled', !visibleAreas[areaKey]);
+    }
+
     updateRadarChart();
 }
 
 // Toggle tutte le aree
 function toggleAllAreas(show) {
-    Object.keys(visibleAreas).forEach(code => {
-        visibleAreas[code] = show;
-        const toggle = document.querySelector(`.area-toggle[data-area="${code}"]`);
+    if (isDrillDown) return;
+
+    Object.keys(visibleAreas).forEach(key => {
+        visibleAreas[key] = show;
+        const toggle = document.querySelector(`.area-toggle[data-area="${key}"]`);
         if (toggle) {
             toggle.classList.toggle('disabled', !show);
         }
@@ -1669,60 +3096,61 @@ function toggleAllAreas(show) {
     updateRadarChart();
 }
 
-// Aggiorna radar
+// Aggiorna radar (solo vista aree)
 function updateRadarChart() {
-    if (!radarChart) return;
-    
-    const visibleData = areasData.filter(a => visibleAreas[a.code]);
-    
+    if (!radarChart || isDrillDown) return;
+
+    const visibleData = areasData.filter(a => visibleAreas[a.key]);
+
     radarChart.data.labels = visibleData.map(a => a.icon + ' ' + a.name);
     radarChart.data.datasets[0].data = visibleData.map(a => a.percentage);
     radarChart.data.datasets[0].pointBackgroundColor = visibleData.map(a => a.color);
     radarChart.update();
 }
 
-// Event listeners per toggle
-document.querySelectorAll('.area-toggle').forEach(el => {
-    el.addEventListener('click', function() {
-        toggleArea(this.dataset.area);
-    });
-});
-
-// Dettaglio area
-document.getElementById('areaDetailSelect')?.addEventListener('change', function() {
-    const areaCode = this.value;
+// Aggiorna contenuto dettaglio area (panel destro)
+function updateAreaDetailContent(areaCode, comps) {
     const container = document.getElementById('areaDetailContent');
-    
-    if (!areaCode) {
-        container.innerHTML = '<p class="text-muted text-center">Seleziona un\'area per vedere il dettaglio</p>';
-        return;
-    }
-    
-    const areaInfo = areaDescriptions[areaCode] || { name: areaCode, icon: '📁' };
-    const areaComps = competenciesData.filter(c => {
-        const code = c.idnumber || c.name;
-        const parts = code.split('_');
-        return parts[1] === areaCode || (parts.length >= 3 && parts[2].charAt(0).toUpperCase() === areaCode);
-    });
-    
-    if (areaComps.length === 0) {
+    if (!container) return;
+
+    if (!comps || comps.length === 0) {
         container.innerHTML = '<p class="text-muted text-center">Nessuna competenza per questa area</p>';
         return;
     }
-    
-    let html = '<table class="table table-sm">';
-    html += '<thead><tr><th>Competenza</th><th>%</th></tr></thead><tbody>';
-    
-    areaComps.forEach(c => {
-        const code = c.idnumber || c.name;
-        const desc = competencyDescriptions[code];
-        const name = desc ? (desc.name || code) : code;
+
+    let html = '<table class="table table-sm table-hover">';
+    html += '<thead class="thead-light"><tr><th>#</th><th>Competenza</th><th class="text-right">%</th></tr></thead><tbody>';
+
+    comps.forEach((c, idx) => {
+        const desc = competencyDescriptions[c.idnumber];
+        const name = desc ? (desc.name || c.idnumber) : c.idnumber;
         const color = c.percentage >= 80 ? '#28a745' : (c.percentage >= 60 ? '#20c997' : (c.percentage >= 40 ? '#ffc107' : '#dc3545'));
-        html += `<tr><td><small>${name}</small></td><td><span style="color:${color};font-weight:bold;">${c.percentage}%</span></td></tr>`;
+        html += `<tr>
+            <td><small class="text-muted">${idx + 1}</small></td>
+            <td><small title="${c.idnumber}">${name}</small></td>
+            <td class="text-right"><span class="badge" style="background: ${color}; color: white;">${c.percentage}%</span></td>
+        </tr>`;
     });
-    
+
     html += '</tbody></table>';
     container.innerHTML = html;
+}
+
+// Event listener per dropdown Dettaglio Area -> trigger drill-down
+document.getElementById('areaDetailSelect')?.addEventListener('change', function() {
+    const areaCode = this.value;
+
+    if (!areaCode) {
+        if (isDrillDown) {
+            backToAreasView();
+        } else {
+            document.getElementById('areaDetailContent').innerHTML = '<p class="text-muted text-center">Seleziona un\'area per vedere il dettaglio</p>';
+        }
+        return;
+    }
+
+    // Trigger drill-down
+    drillDownToArea(areaCode);
 });
 
 // Inizializza
@@ -1827,6 +3255,432 @@ if (ctxProgress) {
     });
 }
 <?php endif; ?>
+</script>
+
+<?php
+// ========================================
+// PREPARAZIONE DATI PER MODAL
+// ========================================
+
+// Mappa icone e colori per il modal (duplicata per garantire disponibilità)
+$modal_area_icons = [
+    'A' => '📋', 'B' => '🔧', 'C' => '🛢️', 'D' => '💨', 'E' => '⚙️',
+    'F' => '🛞', 'G' => '💻', 'H' => '📡', 'I' => '❄️', 'J' => '🔋',
+    'K' => '🚗', 'L' => '🛡️', 'M' => '👤', 'N' => '✅',
+    'LMB' => '🔧', 'LMC' => '⚙️', 'CNC' => '🖥️', 'ASS' => '🔩',
+    'MIS' => '📏', 'GEN' => '🏭', 'MAN' => '🔨', 'DT' => '📐',
+    'AUT' => '🤖', 'PIAN' => '📋', 'SAQ' => '🛡️', 'CSP' => '🤝', 'PRG' => '💡',
+    'LAV' => '🏭', 'MAT' => '🧱', 'CQ' => '✅', 'AREA' => '📦',
+    '1C' => '📜', '1G' => '📦', '1O' => '⚗️', '2M' => '📏',
+    '3C' => '🔬', '4S' => '🛡️', '5S' => '🧫', '6P' => '🏭',
+    '7S' => '🔧', '8T' => '💻', '9A' => '📊',
+    'MAu' => '🚗', 'MR' => '🔧',
+];
+
+$modal_area_colors = [
+    'A' => '#3498db', 'B' => '#e74c3c', 'C' => '#f39c12', 'D' => '#9b59b6',
+    'E' => '#1abc9c', 'F' => '#e67e22', 'G' => '#2ecc71', 'H' => '#00bcd4',
+    'I' => '#3f51b5', 'J' => '#ff5722', 'K' => '#795548', 'L' => '#607d8b',
+    'M' => '#8bc34a', 'N' => '#009688',
+    'LMB' => '#795548', 'LMC' => '#607d8b', 'CNC' => '#00bcd4', 'ASS' => '#f39c12',
+    'MIS' => '#1abc9c', 'GEN' => '#9e9e9e', 'MAN' => '#e67e22', 'DT' => '#3498db',
+    'AUT' => '#e74c3c', 'PIAN' => '#9b59b6', 'SAQ' => '#c0392b', 'CSP' => '#8e44ad', 'PRG' => '#2ecc71',
+    'LAV' => '#9e9e9e', 'MAT' => '#795548', 'CQ' => '#27ae60', 'AREA' => '#7f8c8d',
+    '1C' => '#3498db', '1G' => '#e67e22', '1O' => '#9b59b6', '2M' => '#1abc9c',
+    '3C' => '#2ecc71', '4S' => '#e74c3c', '5S' => '#00bcd4', '6P' => '#f39c12',
+    '7S' => '#607d8b', '8T' => '#3f51b5', '9A' => '#8bc34a',
+    'MAu' => '#3498db', 'MR' => '#e74c3c',
+];
+
+// Helper per icone modal
+function get_modal_icon_info($areaKey, $icons, $colors) {
+    $parts = explode('_', $areaKey);
+    $area_code = $parts[1] ?? $areaKey;
+    return [
+        'icona' => $icons[$area_code] ?? '📁',
+        'colore' => $colors[$area_code] ?? '#95a5a6'
+    ];
+}
+
+// Livelli Bloom per autovalutazione
+function get_bloom_levels_modal() {
+    return [
+        1 => ['nome' => 'RICORDO', 'descrizione' => 'Riesco a ricordare le informazioni base', 'colore' => '#e74c3c'],
+        2 => ['nome' => 'COMPRENDO', 'descrizione' => 'Comprendo i concetti fondamentali', 'colore' => '#e67e22'],
+        3 => ['nome' => 'APPLICO', 'descrizione' => 'So applicare le conoscenze in situazioni note', 'colore' => '#f1c40f'],
+        4 => ['nome' => 'ANALIZZO', 'descrizione' => 'Riesco ad analizzare problemi complessi', 'colore' => '#27ae60'],
+        5 => ['nome' => 'VALUTO', 'descrizione' => 'Posso valutare situazioni complesse e proporre soluzioni', 'colore' => '#3498db'],
+        6 => ['nome' => 'CREO', 'descrizione' => 'Sono in grado di creare soluzioni innovative', 'colore' => '#9b59b6']
+    ];
+}
+
+// Carica competenze organizzate per area per il modal
+$modal_areas_data = [];
+
+if (true) { // Carica sempre i dati per il modal
+    // Carica competenze dal framework
+    $all_comps = $DB->get_records_sql("
+        SELECT c.id, c.shortname, c.description, c.idnumber
+        FROM {competency} c
+        JOIN {competency_framework} cf ON c.competencyframeworkid = cf.id
+        WHERE cf.shortname LIKE '%FTM%' OR cf.shortname LIKE '%Meccanica%'
+        ORDER BY c.idnumber
+    ");
+
+    // Carica quiz results per questo studente con dettagli
+    $quiz_details = $DB->get_records_sql("
+        SELECT
+            qa.questionid,
+            qas.fraction,
+            q.name as question_name,
+            quiz.name as quiz_name,
+            quiza.id as attempt_id,
+            quiza.timefinish
+        FROM {quiz_attempts} quiza
+        JOIN {quiz} quiz ON quiz.id = quiza.quiz
+        JOIN {question_attempts} qa ON qa.questionusageid = quiza.uniqueid
+        JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
+        JOIN {question} q ON q.id = qa.questionid
+        WHERE quiza.userid = ?
+        AND quiza.state = 'finished'
+        AND qas.sequencenumber = (
+            SELECT MAX(qas2.sequencenumber)
+            FROM {question_attempt_steps} qas2
+            WHERE qas2.questionattemptid = qa.id
+        )
+    ", [$userid]);
+
+    // Mappa domande -> competenze
+    $q_to_comp = [];
+    if ($DB->get_manager()->table_exists('qbank_competenciesbyquestion')) {
+        $qmaps = $DB->get_records('qbank_competenciesbyquestion');
+        foreach ($qmaps as $qm) {
+            $q_to_comp[$qm->questionid][] = $qm->competencyid;
+        }
+    }
+
+    // Carica autovalutazioni (stesso ordine di reports_v2.php)
+    $autoval_table = null;
+    if ($DB->get_manager()->table_exists('local_autovalutazione')) {
+        $autoval_table = 'local_autovalutazione';
+    } elseif ($DB->get_manager()->table_exists('local_selfassessment')) {
+        $autoval_table = 'local_selfassessment';
+    }
+
+    $autoval_by_comp = [];
+    $bloom_levels = get_bloom_levels_modal();
+
+    // Debug info per autovalutazione
+    $autoval_debug = ['table' => 'nessuna', 'count' => 0, 'userid' => $userid, 'comp_ids' => [], 'all_comp_ids' => []];
+
+    // Raccogli tutti gli ID delle competenze caricate
+    foreach ($all_comps as $c) {
+        $autoval_debug['all_comp_ids'][] = $c->id;
+    }
+
+    if ($autoval_table) {
+        $autovalutazioni = $DB->get_records($autoval_table, ['userid' => $userid]);
+        $autoval_debug['table'] = $autoval_table;
+        $autoval_debug['count'] = count($autovalutazioni);
+
+        foreach ($autovalutazioni as $av) {
+            if (isset($av->competencyid)) {
+                $autoval_by_comp[$av->competencyid] = $av;
+                $autoval_debug['comp_ids'][] = $av->competencyid;
+            }
+        }
+
+        // Trova quante corrispondenze ci sono
+        $autoval_debug['matches'] = count(array_intersect($autoval_debug['comp_ids'], $autoval_debug['all_comp_ids']));
+    }
+
+    // Organizza competenze per area
+    foreach ($all_comps as $comp) {
+        $aInfo = get_area_info($comp->idnumber);
+        $aKey = $aInfo['key'];
+
+        if (!isset($modal_areas_data[$aKey])) {
+            $iconI = get_modal_icon_info($aKey, $modal_area_icons, $modal_area_colors);
+            $kParts = explode('_', $aKey);
+            $modal_areas_data[$aKey] = [
+                'key' => $aKey,
+                'name' => $aInfo['name'] ?? ($kParts[1] ?? $aKey),
+                'icon' => $iconI['icona'],
+                'color' => $iconI['colore'],
+                'sector' => strtolower($kParts[0] ?? 'altro'),
+                'competencies' => []
+            ];
+        }
+
+        // Trova quiz per questa competenza
+        $comp_quizzes = [];
+        foreach ($quiz_details as $qd) {
+            if (isset($q_to_comp[$qd->questionid])) {
+                foreach ($q_to_comp[$qd->questionid] as $cid) {
+                    if ($cid == $comp->id) {
+                        $comp_quizzes[] = [
+                            'quiz_name' => $qd->quiz_name,
+                            'score' => round(($qd->fraction ?? 0) * 100),
+                            'attempt_id' => $qd->attempt_id,
+                            'date' => $qd->timefinish ? date('d/m/Y', $qd->timefinish) : '-'
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Calcola media quiz per competenza
+        $quiz_sum = 0;
+        $quiz_cnt = count($comp_quizzes);
+        foreach ($comp_quizzes as $cq) {
+            $quiz_sum += $cq['score'];
+        }
+        $quiz_media = $quiz_cnt > 0 ? round($quiz_sum / $quiz_cnt) : 0;
+
+        // Dati autovalutazione per competenza
+        $autoval_data = null;
+        if (isset($autoval_by_comp[$comp->id])) {
+            $av = $autoval_by_comp[$comp->id];
+            $level = isset($av->level) ? intval($av->level) : 0;
+            $percentage = round(($level / 6) * 100);
+            $bloom = $bloom_levels[$level] ?? ['nome' => 'N/D', 'descrizione' => '', 'colore' => '#ccc'];
+
+            $autoval_data = [
+                'level' => $level,
+                'percentage' => $percentage,
+                'bloom_nome' => $bloom['nome'],
+                'bloom_desc' => $bloom['descrizione'],
+                'bloom_colore' => $bloom['colore']
+            ];
+        }
+
+        // Calcola gap se entrambi i dati sono presenti
+        $gap = null;
+        if ($autoval_data && $quiz_cnt > 0) {
+            $gap = $autoval_data['percentage'] - $quiz_media;
+        }
+
+        $modal_areas_data[$aKey]['competencies'][] = [
+            'id' => $comp->id,
+            'shortname' => $comp->shortname,
+            'description' => $comp->description,
+            'idnumber' => $comp->idnumber,
+            'quiz_media' => $quiz_media,
+            'quiz_count' => $quiz_cnt,
+            'quizzes' => $comp_quizzes,
+            'autoval' => $autoval_data,
+            'gap' => $gap
+        ];
+    }
+
+    // Calcola statistiche per area
+    $autoval_debug['areas_with_autoval'] = [];
+    foreach ($modal_areas_data as $aKey => &$aData) {
+        $total_quiz = 0;
+        $sum_quiz = 0;
+        $total_autoval = 0;
+        $sum_autoval = 0;
+        foreach ($aData['competencies'] as $c) {
+            if ($c['quiz_count'] > 0) {
+                $total_quiz++;
+                $sum_quiz += $c['quiz_media'];
+            }
+            if ($c['autoval'] !== null) {
+                $total_autoval++;
+                $sum_autoval += $c['autoval']['percentage'];
+            }
+        }
+        $aData['quiz_media'] = $total_quiz > 0 ? round($sum_quiz / $total_quiz) : 0;
+        $aData['autoval_media'] = $total_autoval > 0 ? round($sum_autoval / $total_autoval) : null;
+        $aData['total'] = count($aData['competencies']);
+        $aData['autoval_count'] = $total_autoval;
+
+        // Debug: traccia aree con autovalutazione
+        if ($total_autoval > 0) {
+            $autoval_debug['areas_with_autoval'][] = $aKey . ' (' . $total_autoval . ')';
+        }
+    }
+    unset($aData);
+}
+?>
+
+<!-- ============================================
+     MODAL DETTAGLIO AREA
+     ============================================ -->
+<div class="modal-overlay" id="areaModal" onclick="closeAreaModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header" id="modalHeader">
+            <h2 id="modalTitle">Dettaglio Area</h2>
+            <button class="modal-close" onclick="closeAreaModal()">×</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <!-- Contenuto dinamico -->
+        </div>
+    </div>
+</div>
+
+<script>
+// Dati aree per il modal
+const modalAreasData = <?php echo json_encode($modal_areas_data); ?>;
+// Debug autovalutazione
+const autovalDebug = <?php echo json_encode($autoval_debug); ?>;
+console.log('DEBUG Autovalutazione:', autovalDebug);
+
+function openAreaModal(areaKey) {
+    const area = modalAreasData[areaKey];
+    if (!area) {
+        console.error('Area non trovata:', areaKey);
+        return;
+    }
+
+    document.getElementById('modalTitle').innerHTML = area.icon + ' ' + area.name;
+    document.getElementById('modalHeader').style.background = 'linear-gradient(135deg, ' + area.color + ', ' + area.color + 'cc)';
+
+    let bodyHtml = '';
+
+    // DEBUG: mostra info autovalutazione (rimuovere in produzione)
+    bodyHtml += '<div style="background: #fff3cd; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85rem;">';
+    bodyHtml += '⚙️ DEBUG: Tabella=' + autovalDebug.table + ', Autoval=' + autovalDebug.count + ', UserID=' + autovalDebug.userid + '<br>';
+    bodyHtml += '📊 Competenze framework=' + (autovalDebug.all_comp_ids ? autovalDebug.all_comp_ids.length : 0);
+    bodyHtml += ', MATCHES=' + (autovalDebug.matches || 0) + '<br>';
+    bodyHtml += '✅ <b>AREE CON AUTOVAL:</b> ' + (autovalDebug.areas_with_autoval ? autovalDebug.areas_with_autoval.join(', ') : 'nessuna');
+    bodyHtml += '<br>📍 <b>QUESTA AREA:</b> ' + areaKey + ' (autoval: ' + (area.autoval_count || 0) + ')';
+    bodyHtml += '</div>';
+
+    // Header con statistiche area
+    bodyHtml += '<p style="margin-bottom: 15px; color: #6c757d;">' + area.total + ' competenze - Settore: ' + area.sector.toUpperCase() + '</p>';
+
+    // Stats area
+    bodyHtml += '<div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">';
+    bodyHtml += '<div class="critical-value-box"><div class="label">Quiz Media</div><div class="value" style="color: ' + getScoreColor(area.quiz_media) + ';">' + area.quiz_media + '%</div></div>';
+    if (area.autoval_media !== null) {
+        bodyHtml += '<div class="critical-value-box"><div class="label">Autovalutazione</div><div class="value" style="color: ' + getScoreColor(area.autoval_media) + ';">' + area.autoval_media + '%</div></div>';
+    }
+    bodyHtml += '</div>';
+
+    // Lista competenze
+    bodyHtml += '<h4 style="margin-bottom: 15px;">📋 Competenze in quest\'area:</h4>';
+
+    if (area.competencies && area.competencies.length > 0) {
+        area.competencies.forEach((comp, idx) => {
+            const compId = 'comp_' + areaKey.replace(/[^a-zA-Z0-9]/g, '_') + '_' + idx;
+            const hasQuiz = comp.quizzes && comp.quizzes.length > 0;
+            const quizMedia = comp.quiz_media || 0;
+
+            bodyHtml += '<div class="competency-item" id="' + compId + '">';
+
+            // HEADER COMPETENZA
+            bodyHtml += '<div class="competency-header" onclick="toggleCompetency(\'' + compId + '\')">';
+            bodyHtml += '<div class="competency-info">';
+            // Nome completo (description) sopra, codice (idnumber) sotto
+            const fullName = comp.description || comp.shortname || comp.idnumber;
+            bodyHtml += '<div class="competency-name">' + fullName + '</div>';
+            bodyHtml += '<div class="competency-code" style="font-size: 0.8rem; color: #6c757d; margin-top: 2px;">' + comp.idnumber + '</div>';
+            bodyHtml += '</div>';
+
+            // Values boxes
+            bodyHtml += '<div class="competency-values">';
+            if (hasQuiz) {
+                bodyHtml += '<div class="value-box"><div class="label">Quiz</div><div class="value" style="color: ' + getScoreColor(quizMedia) + ';">' + quizMedia + '%</div></div>';
+            } else {
+                bodyHtml += '<div class="value-box"><div class="label">Quiz</div><div class="value" style="color: #6c757d;">-</div></div>';
+            }
+            // Autovalutazione box
+            if (comp.autoval) {
+                bodyHtml += '<div class="value-box"><div class="label">Autoval.</div><div class="value" style="color: ' + getScoreColor(comp.autoval.percentage) + ';">' + comp.autoval.percentage + '%</div></div>';
+            }
+            bodyHtml += '</div>';
+
+            bodyHtml += '<div class="competency-toggle">▼</div>';
+            bodyHtml += '</div>';
+
+            // DETTAGLI COMPETENZA (espandibile)
+            bodyHtml += '<div class="competency-details">';
+
+            // Sezione Autovalutazione (se presente)
+            if (comp.autoval) {
+                bodyHtml += '<div class="detail-section autoval-section" style="background: linear-gradient(135deg, ' + comp.autoval.bloom_colore + '15, transparent); border-left: 4px solid ' + comp.autoval.bloom_colore + ';">';
+                bodyHtml += '<div class="detail-section-title">🧑 Autovalutazione</div>';
+                bodyHtml += '<div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">';
+                bodyHtml += '<span class="bloom-badge" style="background: ' + comp.autoval.bloom_colore + '; color: white; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 0.9rem;">Livello ' + comp.autoval.level + ' - ' + comp.autoval.bloom_nome + '</span>';
+                bodyHtml += '<span style="color: #495057; font-style: italic;">"' + comp.autoval.bloom_desc + '"</span>';
+                bodyHtml += '</div>';
+                // Gap analysis
+                if (comp.gap !== null) {
+                    let gapColor = comp.gap > 15 ? '#e74c3c' : (comp.gap < -15 ? '#27ae60' : '#6c757d');
+                    let gapIcon = comp.gap > 15 ? '⚠️' : (comp.gap < -15 ? '✅' : '➖');
+                    let gapText = comp.gap > 0 ? '+' + comp.gap : comp.gap;
+                    bodyHtml += '<div style="margin-top: 12px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 6px;">';
+                    bodyHtml += '<span style="font-weight: 600;">Gap Autoval/Quiz:</span> ';
+                    bodyHtml += '<span style="color: ' + gapColor + '; font-weight: 600;">' + gapIcon + ' ' + gapText + '%</span>';
+                    if (comp.gap > 15) {
+                        bodyHtml += '<span style="margin-left: 10px; font-size: 0.85rem; color: #e74c3c;">Autopercezione superiore ai risultati</span>';
+                    } else if (comp.gap < -15) {
+                        bodyHtml += '<span style="margin-left: 10px; font-size: 0.85rem; color: #27ae60;">Risultati migliori dell\'autopercezione</span>';
+                    }
+                    bodyHtml += '</div>';
+                }
+                bodyHtml += '</div>';
+            }
+
+            // Sezione Quiz
+            bodyHtml += '<div class="detail-section">';
+            bodyHtml += '<div class="detail-section-title">📝 Quiz Tecnici</div>';
+
+            if (hasQuiz) {
+                comp.quizzes.forEach(quiz => {
+                    let scoreClass = 'good';
+                    if (quiz.score < 50) scoreClass = 'bad';
+                    else if (quiz.score < 70) scoreClass = 'warning';
+
+                    bodyHtml += '<div class="quiz-item">';
+                    bodyHtml += '<div class="quiz-header">';
+                    bodyHtml += '<span class="quiz-name">' + quiz.quiz_name + '</span>';
+                    bodyHtml += '<span class="quiz-score ' + scoreClass + '">' + quiz.score + '%</span>';
+                    bodyHtml += '</div>';
+                    bodyHtml += '<div class="quiz-details">';
+                    bodyHtml += '<span>📅 ' + quiz.date + '</span>';
+                    bodyHtml += '<a href="/mod/quiz/review.php?attempt=' + quiz.attempt_id + '" class="quiz-link" target="_blank">🔍 Vedi tentativo</a>';
+                    bodyHtml += '</div>';
+                    bodyHtml += '</div>';
+                });
+            } else {
+                bodyHtml += '<div class="no-data-message" style="padding: 15px;">📭 Nessun quiz svolto per questa competenza</div>';
+            }
+            bodyHtml += '</div>';
+
+            bodyHtml += '</div>'; // competency-details
+            bodyHtml += '</div>'; // competency-item
+        });
+    } else {
+        bodyHtml += '<div class="no-data-message" style="padding: 20px;">Nessuna competenza in quest\'area</div>';
+    }
+
+    document.getElementById('modalBody').innerHTML = bodyHtml;
+    document.getElementById('areaModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAreaModal(event) {
+    if (!event || event.target.classList.contains('modal-overlay')) {
+        document.getElementById('areaModal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+function toggleCompetency(compId) {
+    const item = document.getElementById(compId);
+    if (item) {
+        item.classList.toggle('open');
+    }
+}
+
+function getScoreColor(score) {
+    if (score >= 80) return '#28a745';
+    if (score >= 60) return '#17a2b8';
+    if (score >= 50) return '#ffc107';
+    return '#dc3545';
+}
 </script>
 
 <?php

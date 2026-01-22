@@ -11,9 +11,11 @@ require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/classes/test_manager.php');
 require_once(__DIR__ . '/classes/data_generator.php');
 require_once(__DIR__ . '/classes/test_runner.php');
+require_once($CFG->dirroot . '/local/ftm_common/classes/design_helper.php');
 
 use local_ftm_testsuite\test_manager;
 use local_ftm_testsuite\data_generator;
+use local_ftm_common\design_helper;
 
 require_login();
 require_capability('local/ftm_testsuite:manage', context_system::instance());
@@ -23,6 +25,9 @@ $PAGE->set_url(new moodle_url('/local/ftm_testsuite/index.php'));
 $PAGE->set_title(get_string('pluginname', 'local_ftm_testsuite'));
 $PAGE->set_heading(get_string('pluginname', 'local_ftm_testsuite'));
 $PAGE->set_pagelayout('admin');
+
+// Carica FTM Design System
+$is_new_design = design_helper::load_design($PAGE);
 
 $action = optional_param('fts_action', '', PARAM_ALPHA);
 
@@ -65,8 +70,177 @@ $courses_with_quiz = $DB->get_records_sql("
 $selected_courseid = optional_param('courseid', 0, PARAM_INT);
 
 echo $OUTPUT->header();
+
+// Toggle button per design
+echo design_helper::render_toggle_button($PAGE->url);
+
+$container_class = $is_new_design ? 'ftm-page-bg' : '';
+$header_class = $is_new_design ? 'ftm-header' : 'ftm-header-classic';
 ?>
 
+<?php if ($is_new_design): ?>
+<style>
+/* Override per FTM Design System */
+.ftm-testsuite-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+.ftm-header {
+    background: linear-gradient(135deg, #F5A623 0%, #f7b84e 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 16px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 20px rgba(245, 166, 35, 0.3);
+}
+.ftm-header h1 { margin: 0 0 10px 0; font-size: 28px; font-weight: 700; }
+.ftm-header p { margin: 0; opacity: 0.95; }
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    text-align: center;
+    border-left: 4px solid #F5A623;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+.stat-card .number {
+    font-size: 40px;
+    font-weight: 700;
+    color: #1A5A5A;
+    line-height: 1;
+}
+.stat-card .label {
+    color: #64748B;
+    font-size: 14px;
+    margin-top: 8px;
+    font-weight: 500;
+}
+.stat-card.success { border-left-color: #28a745; }
+.stat-card.success .number { color: #28a745; }
+.stat-card.warning { border-left-color: #EAB308; }
+.stat-card.warning .number { color: #EAB308; }
+.stat-card.danger { border-left-color: #dc3545; }
+.stat-card.danger .number { color: #dc3545; }
+.card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    overflow: hidden;
+}
+.card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #E2E8F0;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+.card-header h3 { margin: 0; font-size: 18px; font-weight: 600; color: #1A5A5A; }
+.card-body { padding: 24px; }
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+.btn-primary { background: #F5A623; color: white; }
+.btn-primary:hover { background: #e09000; color: white; box-shadow: 0 4px 12px rgba(245, 166, 35, 0.4); }
+.btn-success { background: #28a745; color: white; }
+.btn-success:hover { background: #218838; color: white; }
+.btn-warning { background: #EAB308; color: #333; }
+.btn-danger { background: #dc3545; color: white; }
+.btn-info { background: #1A5A5A; color: white; }
+.btn-info:hover { background: #134545; color: white; }
+.btn-lg { padding: 15px 30px; font-size: 16px; }
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+.action-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 16px;
+    padding: 25px;
+    text-align: center;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: inherit;
+}
+.action-card:hover {
+    border-color: #F5A623;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(245, 166, 35, 0.2);
+}
+.action-card .icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+.action-card h4 { margin: 0 0 10px 0; color: #1A5A5A; font-weight: 600; }
+.action-card p { margin: 0 0 15px 0; color: #64748B; font-size: 14px; }
+.test-users-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+.test-user-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+.test-user-card.low { border-left: 5px solid #dc3545; }
+.test-user-card.medium { border-left: 5px solid #EAB308; }
+.test-user-card.high { border-left: 5px solid #28a745; }
+.test-user-card .percentage {
+    font-size: 32px;
+    font-weight: 700;
+}
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.history-table th, .history-table td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid #E2E8F0;
+}
+.history-table th { background: #f8fafc; font-weight: 600; color: #1A5A5A; }
+.history-table tr:hover { background: #f8fafc; }
+.badge {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.badge-success { background: #d4edda; color: #155724; }
+.badge-danger { background: #f8d7da; color: #721c24; }
+.badge-warning { background: #fff3cd; color: #856404; }
+.alert {
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border-left: 4px solid;
+}
+.alert-success { background: #d4edda; color: #155724; border-left-color: #28a745; }
+.alert-warning { background: #fff3cd; color: #856404; border-left-color: #EAB308; }
+.alert-info { background: #e8f4f8; color: #0c5460; border-left-color: #1A5A5A; }
+</style>
+<?php else: ?>
 <style>
 .ftm-testsuite-container {
     max-width: 1400px;
@@ -209,7 +383,9 @@ echo $OUTPUT->header();
 .alert-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
 .alert-info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
 </style>
+<?php endif; ?>
 
+<div class="<?php echo $is_new_design ? 'ftm-page-bg' : ''; ?>" style="<?php echo $is_new_design ? 'padding: 20px;' : ''; ?>">
 <div class="ftm-testsuite-container">
     
     <!-- Header -->
@@ -321,7 +497,45 @@ echo $OUTPUT->header();
             </div>
         </div>
     </div>
-    
+
+    <!-- Strumenti Diagnostica e Generazione -->
+    <div class="card">
+        <div class="card-header">
+            <h3>🔧 Strumenti Diagnostica e Generazione</h3>
+        </div>
+        <div class="card-body">
+            <div class="action-grid">
+                <a href="find_orphan_questions.php" class="action-card">
+                    <div class="icon">🔍</div>
+                    <h4>Domande Orfane</h4>
+                    <p>Trova domande senza competenze assegnate</p>
+                    <span class="btn btn-danger">Trova</span>
+                </a>
+
+                <a href="generate_selfassessments.php" class="action-card">
+                    <div class="icon">🧠</div>
+                    <h4>Genera Autovalutazioni</h4>
+                    <p>Crea autovalutazioni automatiche per utenti</p>
+                    <span class="btn" style="background: #6f42c1; color: white;">Genera SA</span>
+                </a>
+
+                <a href="generate_labeval.php" class="action-card">
+                    <div class="icon">🔬</div>
+                    <h4>Genera LabEval</h4>
+                    <p>Crea sessioni valutazione laboratorio</p>
+                    <span class="btn" style="background: #dc3545; color: white;">Genera Lab</span>
+                </a>
+
+                <a href="analyze_sector_coverage.php" class="action-card">
+                    <div class="icon">📊</div>
+                    <h4>Copertura Settori</h4>
+                    <p>Analizza competenze mancanti per settore</p>
+                    <span class="btn" style="background: #fd7e14; color: white;">Analizza</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Storico Test -->
     <?php if (!empty($history)): ?>
     <div class="card">
@@ -415,17 +629,20 @@ echo $OUTPUT->header();
                 <a href="../coachmanager/index.php?courseid=<?php echo $selected_courseid; ?>" class="btn btn-warning">👨‍🏫 Coach Manager</a>
                 <a href="../competencymanager/simulate_student.php?courseid=<?php echo $selected_courseid; ?>" class="btn btn-primary" style="background: #6f42c1;">🤖 Simulatore Studente</a>
                 <a href="../competencymanager/reports.php?courseid=<?php echo $selected_courseid; ?>" class="btn btn-info">📈 Report Classe</a>
+                <a href="diagnose_course.php?courseid=<?php echo $selected_courseid; ?>" class="btn btn-danger">🔍 Diagnosi Corso</a>
                 <?php else: ?>
                 <span class="btn" style="background: #ccc; color: #666; cursor: not-allowed;">📥 Setup Universale Quiz</span>
                 <span class="btn" style="background: #ccc; color: #666; cursor: not-allowed;">📊 Competency Manager</span>
                 <span class="btn" style="background: #ccc; color: #666; cursor: not-allowed;">👨‍🏫 Coach Manager</span>
                 <span class="btn" style="background: #ccc; color: #666; cursor: not-allowed;">🤖 Simulatore Studente</span>
                 <span class="btn" style="background: #ccc; color: #666; cursor: not-allowed;">📈 Report Classe</span>
+                <span class="btn" style="background: #ccc; color: #666; cursor: not-allowed;">🔍 Diagnosi Corso</span>
                 <?php endif; ?>
             </div>
         </div>
     </div>
     
+</div>
 </div>
 
 <?php

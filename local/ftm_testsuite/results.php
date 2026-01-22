@@ -9,8 +9,10 @@
 
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/classes/test_manager.php');
+require_once($CFG->dirroot . '/local/ftm_common/classes/design_helper.php');
 
 use local_ftm_testsuite\test_manager;
+use local_ftm_common\design_helper;
 
 require_login();
 require_capability('local/ftm_testsuite:viewresults', context_system::instance());
@@ -20,6 +22,9 @@ $PAGE->set_url(new moodle_url('/local/ftm_testsuite/results.php'));
 $PAGE->set_title('Risultati Test - FTM Test Suite');
 $PAGE->set_heading('Risultati Test');
 $PAGE->set_pagelayout('admin');
+
+// Carica FTM Design System
+$is_new_design = design_helper::load_design($PAGE);
 
 $runid = optional_param('fts_runid', 0, PARAM_INT);
 
@@ -48,9 +53,19 @@ $modules = [
     'assignments' => ['name' => 'Assegnazioni', 'icon' => '📋', 'results' => []]
 ];
 
+// DEBUG: Mostra moduli unici nel database per questo run
+$debug_modules = [];
 foreach ($run->results as $r) {
-    if (isset($modules[$r->module])) {
+    $debug_modules[$r->module] = ($debug_modules[$r->module] ?? 0) + 1;
+}
+
+// Evita duplicati (stesso modulo + testcode)
+$seen_tests = [];
+foreach ($run->results as $r) {
+    $key = $r->module . '_' . $r->testcode;
+    if (isset($modules[$r->module]) && !isset($seen_tests[$key])) {
         $modules[$r->module]['results'][] = $r;
+        $seen_tests[$key] = true;
     }
 }
 
@@ -62,6 +77,7 @@ foreach ($modules as $key => &$mod) {
     $mod['skipped'] = count(array_filter($mod['results'], fn($r) => $r->status === 'skipped'));
     $mod['total'] = count($mod['results']);
 }
+unset($mod); // IMPORTANTE: Interrompe il riferimento per evitare bug nel foreach successivo
 
 // Carica utente che ha eseguito
 global $DB;
@@ -76,8 +92,202 @@ $fixable_tests = [
 ];
 
 echo $OUTPUT->header();
+
+// Toggle button per design
+echo design_helper::render_toggle_button($PAGE->url);
 ?>
 
+<?php if ($is_new_design): ?>
+<style>
+/* FTM Design System per Results */
+.results-container { max-width: 1400px; margin: 0 auto; }
+.results-header {
+    background: linear-gradient(135deg, <?php echo $run->status === 'completed' ? '#28a745, #20c997' : '#dc3545, #fd7e14'; ?>);
+    color: white;
+    padding: 30px;
+    border-radius: 16px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 20px rgba(<?php echo $run->status === 'completed' ? '40, 167, 69' : '220, 53, 69'; ?>, 0.3);
+}
+.results-header h1 { margin: 0 0 8px 0; font-size: 28px; font-weight: 700; }
+.results-header .meta { opacity: 0.95; font-size: 14px; }
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    margin-bottom: 25px;
+}
+.summary-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border-left: 4px solid #F5A623;
+    transition: transform 0.2s;
+}
+.summary-card:hover { transform: translateY(-2px); }
+.summary-card .number { font-size: 40px; font-weight: 700; color: #1A5A5A; line-height: 1; }
+.summary-card .label { color: #64748B; font-size: 13px; margin-top: 8px; font-weight: 500; }
+.summary-card.passed { border-left-color: #28a745; }
+.summary-card.passed .number { color: #28a745; }
+.summary-card.failed { border-left-color: #dc3545; }
+.summary-card.failed .number { color: #dc3545; }
+.summary-card.warning { border-left-color: #EAB308; }
+.summary-card.warning .number { color: #EAB308; }
+.progress-bar-large {
+    height: 45px;
+    background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+    border-radius: 25px;
+    overflow: hidden;
+    margin-bottom: 25px;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
+}
+.progress-fill-large {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 18px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    overflow: hidden;
+}
+.card-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+.card-header h3 { margin: 0; font-size: 18px; font-weight: 600; color: #1A5A5A; }
+.card-header .stats { display: flex; gap: 15px; font-size: 14px; }
+.card-body { padding: 0; }
+.results-table { width: 100%; border-collapse: collapse; }
+.results-table th, .results-table td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid #E2E8F0;
+}
+.results-table th { background: #f8fafc; font-weight: 600; font-size: 13px; color: #1A5A5A; }
+.results-table tr:hover { background: #f8fafc; }
+.status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 700;
+}
+.status-passed { background: #d4edda; color: #28a745; }
+.status-failed { background: #f8d7da; color: #dc3545; }
+.status-warning { background: #fff3cd; color: #856404; }
+.status-skipped { background: #e9ecef; color: #6c757d; }
+.trace-btn {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+.trace-btn:hover { background: #e2e8f0; border-color: #cbd5e1; }
+.trace-panel {
+    display: none;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 20px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 12px;
+    border-top: 3px solid #F5A623;
+}
+.trace-panel.show { display: block; }
+.sql-panel {
+    display: none;
+    background: #1A5A5A;
+    color: #e8f4f8;
+    padding: 20px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    border-top: 3px solid #F5A623;
+}
+.sql-panel.show { display: block; }
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+.btn-primary { background: #F5A623; color: white; }
+.btn-primary:hover { background: #e09000; color: white; box-shadow: 0 4px 12px rgba(245, 166, 35, 0.4); }
+.btn-success { background: #28a745; color: white; }
+.btn-secondary { background: #64748B; color: white; }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.integrity-box {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-left: 4px solid #28a745;
+}
+.integrity-box .hash {
+    font-family: 'Consolas', 'Monaco', monospace;
+    background: #1A5A5A;
+    color: #e8f4f8;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-size: 12px;
+    word-break: break-all;
+}
+.module-stats { display: flex; gap: 10px; }
+.module-stat {
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.module-stat.passed { background: #d4edda; color: #28a745; }
+.module-stat.failed { background: #f8d7da; color: #dc3545; }
+.module-stat.warning { background: #fff3cd; color: #856404; }
+/* Debug box migliorato per nuovo design */
+.debug-box-ftm {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    border-left: 4px solid #1A5A5A;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+}
+.debug-box-ftm .title {
+    font-weight: 700;
+    color: #1A5A5A;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+</style>
+<?php else: ?>
 <style>
 .results-container { max-width: 1400px; margin: 0 auto; }
 .results-header {
@@ -261,9 +471,36 @@ echo $OUTPUT->header();
 .module-stat.failed { background: #f8d7da; color: #dc3545; }
 .module-stat.warning { background: #fff3cd; color: #856404; }
 </style>
+<?php endif; ?>
 
+<div class="<?php echo $is_new_design ? 'ftm-page-bg' : ''; ?>" style="<?php echo $is_new_design ? 'padding: 20px;' : ''; ?>">
 <div class="results-container">
-    
+
+    <!-- DEBUG: Moduli nel database -->
+    <div style="background: linear-gradient(135deg, #fff5f5 0%, #ffe4e4 100%); padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 4px solid #dc3545; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #495057;">
+        <div style="font-weight: 700; color: #dc3545; margin-bottom: 10px; font-size: 14px;">🔍 DEBUG - Dati Database</div>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 5px 10px 5px 0; color: #6c757d; width: 140px;">Moduli nel DB:</td>
+                <td style="padding: 5px 0;"><code style="background: #f8f9fa; padding: 3px 8px; border-radius: 4px; color: #212529;"><?php echo json_encode($debug_modules, JSON_PRETTY_PRINT); ?></code></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px 10px 5px 0; color: #6c757d;">Moduli mappati:</td>
+                <td style="padding: 5px 0;"><code style="background: #f8f9fa; padding: 3px 8px; border-radius: 4px; color: #212529;"><?php
+                    $mapped = [];
+                    foreach ($modules as $k => $m) {
+                        $mapped[$k] = count($m['results']);
+                    }
+                    echo json_encode($mapped);
+                ?></code></td>
+            </tr>
+            <tr>
+                <td style="padding: 5px 10px 5px 0; color: #6c757d;">Totale risultati:</td>
+                <td style="padding: 5px 0;"><strong style="color: #212529; font-size: 15px;"><?php echo count($run->results); ?></strong></td>
+            </tr>
+        </table>
+    </div>
+
     <!-- Header -->
     <div class="results-header">
         <h1><?php echo $run->status === 'completed' ? '✅' : '❌'; ?> <?php echo $run->name; ?></h1>
@@ -306,10 +543,33 @@ echo $OUTPUT->header();
     </div>
     
     <!-- Risultati per Modulo -->
-    <?php foreach ($modules as $key => $mod): if (empty($mod['results'])) continue; ?>
-    <div class="card">
+    <!-- DEBUG: Ordine rendering moduli -->
+    <div style="background: linear-gradient(135deg, #f0fff4 0%, #e4ffe4 100%); padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 4px solid #28a745; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #495057;">
+        <div style="font-weight: 700; color: #28a745; margin-bottom: 10px; font-size: 14px;">📋 DEBUG - Ordine Rendering Moduli</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px;">
+        <?php
+        foreach ($modules as $k => $m) {
+            if (!empty($m['results'])) {
+                $count = count($m['results']);
+                echo "<div style='background: #f8f9fa; padding: 8px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;'>";
+                echo "<span style='color: #212529;'><strong style='color: #0066cc;'>[{$k}]</strong> {$m['name']} {$m['icon']}</span>";
+                echo "<span style='background: #28a745; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;'>{$count}</span>";
+                echo "</div>";
+            }
+        }
+        ?>
+        </div>
+    </div>
+    <?php
+    $rendered_modules = [];
+    foreach ($modules as $key => $mod):
+        if (empty($mod['results'])) continue;
+        if (isset($rendered_modules[$key])) continue;
+        $rendered_modules[$key] = true;
+    ?>
+    <div class="card" id="module-<?php echo $key; ?>">
         <div class="card-header">
-            <h3><?php echo $mod['icon']; ?> Modulo: <?php echo $mod['name']; ?></h3>
+            <h3><?php echo $mod['icon']; ?> Modulo: <?php echo $mod['name']; ?> <small style="color:#999;font-size:11px;">[<?php echo $key; ?>]</small></h3>
             <div class="module-stats">
                 <?php if ($mod['passed'] > 0): ?>
                 <span class="module-stat passed">✅ <?php echo $mod['passed']; ?></span>
@@ -450,6 +710,7 @@ echo $OUTPUT->header();
         </a>
     </div>
     
+</div>
 </div>
 
 <script>

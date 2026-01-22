@@ -15,10 +15,10 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Parser per file Word (.docx) contenenti domande quiz - VERSIONE 4.0 MULTI-FORMATO
+ * Parser per file Word (.docx) contenenti domande quiz - VERSIONE 5.1 MULTI-FORMATO
  *
  * Estrae domande, risposte e competenze da file Word nel formato FTM.
- * Supporta 19 formati diversi per AUTOVEICOLO, ELETTRONICA, CHIMICA, ELETTRICITÀ, LOGISTICA, MECCANICA.
+ * Supporta 21 formati diversi per AUTOVEICOLO, ELETTRONICA, CHIMICA, ELETTRICITÀ, LOGISTICA, MECCANICA, METALCOSTRUZIONE, GENERICI.
  *
  * FORMATI SUPPORTATI:
  *
@@ -52,13 +52,17 @@
  * MECCANICA (1 formato):
  * 19. FORMATO_19_MECCANICA    - [A-H]?##. Testo + Codice competenza: MECCANICA_XX
  *
- * GENERICO:
+ * METALCOSTRUZIONE (1 formato):
+ * 21. FORMATO_21_METAL_Q_DASH - Q1 – METALCOSTRUZIONE_XX (Q semplice + comp su stessa riga)
+ *
+ * GENERICO (2 formati):
  *  9. FORMATO_9_NO_COMP       - File senza competenze (richiede Excel)
+ * 20. FORMATO_20_GEN_LOGSTYLE - Domanda X + Competenza: GEN_X_## + ID domanda: GEN_Q##
  *
  * @package    local_competencyxmlimport
  * @copyright  2025 FTM - Fondazione Terzo Millennio
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @version    4.0 - Aggiunto supporto MECCANICA
+ * @version    5.1 - Aggiunto supporto METALCOSTRUZIONE (Q-Dash format)
  */
 
 namespace local_competencyxmlimport;
@@ -128,8 +132,12 @@ class word_parser {
     // MECCANICA (1 formato)
     const FORMAT_19_MECCANICA = 'FORMATO_19_MECCANICA';
 
-    // GENERICI
+    // METALCOSTRUZIONE (1 formato)
+    const FORMAT_21_METAL_Q_DASH = 'FORMATO_21_METAL_Q_DASH';
+
+    // GENERICI (2 formati)
     const FORMAT_9_NO_COMP = 'FORMATO_9_NO_COMP';
+    const FORMAT_20_GEN_LOGSTYLE = 'FORMATO_20_GEN_LOGSTYLE';
     const FORMAT_UNKNOWN = 'FORMATO_SCONOSCIUTO';
     
     /**
@@ -250,7 +258,15 @@ class word_parser {
 
         // Pattern MECCANICA - Formato: [A-H]?##. testo + Codice competenza: MECCANICA_XX_YY
         $has_codice_meccanica = (bool) preg_match('/Codice\s*competenza:\s*MECCANICA_/ui', $text);
+
+        // Pattern METALCOSTRUZIONE - Formato: Q1 – METALCOSTRUZIONE_XX_YY
+        $has_q_dash_metalcostruzione = (bool) preg_match('/(?:^|\n)Q\d+\s*[–—-]\s*METALCOSTRUZIONE_/um', $text);
         $has_numbered_question = (bool) preg_match('/(?:^|\n)[A-H]?\d+\.\s+[A-Z]/um', $text);
+
+        // Pattern GENERICI LOG-STYLE - Formato: Domanda X + Competenza: GEN_XX + ID domanda: GEN_Q##
+        $has_domanda_marker = (bool) preg_match('/(?:^|\n)Domanda\s+\d+\s*$/um', $text);
+        $has_gen_competenza = (bool) preg_match('/Competenza:\s*GEN_[A-Z]_\d+/um', $text);
+        $has_id_domanda = (bool) preg_match('/ID\s*domanda:\s*GEN_Q\d+/um', $text);
 
         // Nessuna competenza
         $has_no_competency = !$has_competenza_collegata && !$has_competenza_co &&
@@ -314,11 +330,25 @@ class word_parser {
             return self::FORMAT_16_LOG_APPR;
         }
 
+        // --- METALCOSTRUZIONE ---
+
+        // FORMATO 21: METALCOSTRUZIONE - Q1 – METALCOSTRUZIONE_XX (Q semplice + dash + comp)
+        if ($has_q_dash_metalcostruzione) {
+            return self::FORMAT_21_METAL_Q_DASH;
+        }
+
         // --- MECCANICA ---
 
         // FORMATO 19: MECCANICA - [A-H]?##. Testo + Codice competenza: MECCANICA_XX_YY
         if ($has_codice_meccanica && $has_numbered_question) {
             return self::FORMAT_19_MECCANICA;
+        }
+
+        // --- GENERICI ---
+
+        // FORMATO 20: GENERICI LOG-STYLE - Domanda X + Competenza:\nGEN_XX + ID domanda:\nGEN_Q##
+        if ($has_domanda_marker && $has_gen_competenza && $has_id_domanda) {
+            return self::FORMAT_20_GEN_LOGSTYLE;
         }
 
         // --- AUTOVEICOLO ---
@@ -458,7 +488,7 @@ class word_parser {
         $parts = $this->split_questions_by_format($text, $format);
         
         // Gestione speciale per formati che catturano gruppi multipli (ID, COMP, content)
-        if (in_array($format, [self::FORMAT_4_ELETT_APPR06, self::FORMAT_10_ELET_BASE, self::FORMAT_12_ELET_PIPE, self::FORMAT_17_LOG_APPR_DASH, self::FORMAT_18_LOG_Q_DASH])) {
+        if (in_array($format, [self::FORMAT_4_ELETT_APPR06, self::FORMAT_10_ELET_BASE, self::FORMAT_12_ELET_PIPE, self::FORMAT_17_LOG_APPR_DASH, self::FORMAT_18_LOG_Q_DASH, self::FORMAT_21_METAL_Q_DASH])) {
             // parts[0] = header, poi (Q##, COMP, content), (Q##, COMP, content), ...
             for ($i = 1; $i < count($parts) - 2; $i += 3) {
                 $question_id = $parts[$i];
@@ -551,11 +581,21 @@ class word_parser {
                 // Split su "Q1 – LOGISTICA_XX" (cattura Q## e COMP separatamente)
                 return preg_split('/(?:^|\n)(Q\d+)\s*[–—-]\s*([A-Z_]+_[A-Z0-9_]+)\s*\n/um', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
 
+            // --- METALCOSTRUZIONE ---
+            case self::FORMAT_21_METAL_Q_DASH:
+                // Split su "Q1 – METALCOSTRUZIONE_XX" (cattura Q## e COMP separatamente)
+                return preg_split('/(?:^|\n)(Q\d+)\s*[–—-]\s*([A-Z_]+_[A-Z0-9_]+)\s*\n/um', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
             // --- MECCANICA ---
             case self::FORMAT_19_MECCANICA:
                 // Split su "[A-H]?##." (es. "1.", "A1.", "B2.")
                 // Cattura il numero domanda con eventuale prefisso lettera
                 return preg_split('/(?:^|\n)([A-H]?\d+)\.\s+/um', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+            // --- GENERICI ---
+            case self::FORMAT_20_GEN_LOGSTYLE:
+                // Split su "Domanda X" dove X è il numero
+                return preg_split('/(?:^|\n)Domanda\s+(\d+)\s*\n/um', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
 
             default:
                 // Split su Q## semplice (tutti gli altri formati)
@@ -754,6 +794,21 @@ class word_parser {
                     return $result;
                 }
                 break;
+
+            // --- GENERICI ---
+            case self::FORMAT_20_GEN_LOGSTYLE:
+                // Competenza: GEN_A_01 (competenza sulla stessa riga)
+                if (preg_match('/Competenza:\s*(GEN_[A-Z]_\d+)/ui', $content, $m)) {
+                    $result['code'] = $this->clean_competency_code($m[1]);
+                    return $result;
+                }
+                // Fallback: cerca GEN_X_## ovunque
+                if (preg_match('/(GEN_[A-Z]_\d+)/ui', $content, $m)) {
+                    $result['code'] = $this->clean_competency_code($m[1]);
+                    $result['guessed'] = true;
+                    return $result;
+                }
+                break;
         }
 
         // Fallback generico: cerca pattern SETTORE_XX_YY ovunque
@@ -879,17 +934,26 @@ class word_parser {
             $text = preg_replace('/^Competenza:\s*[A-Z_]+_[A-Z0-9_]+\s*\n/im', '', trim($text));
         }
 
+        // Per FORMATO_20 GENERICI LOG-STYLE, rimuovi metadata all'inizio
+        if ($format === self::FORMAT_20_GEN_LOGSTYLE) {
+            // Rimuovi "Competenza: GEN_XX" (su stessa riga)
+            $text = preg_replace('/^Competenza:\s*GEN_[A-Z]_\d+\s*$/im', '', trim($text));
+            // Rimuovi "ID domanda: GEN_Q##" (su stessa riga)
+            $text = preg_replace('/^ID\s*domanda:\s*GEN_Q\d+\s*$/im', '', trim($text));
+        }
+
         // Taglia prima di markers finali (ma NON per formati che hanno Competenza: all'inizio)
         $skip_competenza_marker = in_array($format, [
             self::FORMAT_3_ELETT_BASE,
             self::FORMAT_14_ELET_NEWLINE,
             self::FORMAT_15_LOGISTICA,
-            self::FORMAT_16_LOG_APPR
+            self::FORMAT_16_LOG_APPR,
+            self::FORMAT_20_GEN_LOGSTYLE
         ]);
 
         foreach (['Risposta corretta', 'Competenza collegata', 'Competenza (CO)',
                   'Competenza (F2)', 'Codice competenza:', 'Codice:',
-                  'Rif. Master', 'Confidenza:'] as $marker) {
+                  'Rif. Master', 'Confidenza:', 'ID domanda:'] as $marker) {
             $pos = stripos($text, $marker);
             if ($pos !== false) {
                 $text = substr($text, 0, $pos);
@@ -959,11 +1023,19 @@ class word_parser {
             $clean_content = preg_replace('/^Competenza:\s*[A-Z_]+_[A-Z0-9_]+\s*\n/im', '', trim($clean_content));
         }
 
+        // Per GENERICI LOG-STYLE, rimuovi righe metadata all'inizio
+        if ($format === self::FORMAT_20_GEN_LOGSTYLE) {
+            $clean_content = preg_replace('/^Competenza:\s*GEN_[A-Z]_\d+\s*$/im', '', trim($clean_content));
+            $clean_content = preg_replace('/^ID\s*domanda:\s*GEN_Q\d+\s*$/im', '', trim($clean_content));
+        }
+
         // Per alcuni formati, NON tagliare prima di "Competenza" perché è all'inizio/nel mezzo
-        // FORMATO_13_ELET_DOT ha Codice competenza PRIMA delle risposte, quindi non tagliare
+        // FORMATO_5/6/8_CHIM hanno Competenza: DOPO le risposte ma sulla stessa riga di metadata
         if (!in_array($format, [self::FORMAT_7_AUTOV_APPR36, self::FORMAT_3_ELETT_BASE,
                                 self::FORMAT_14_ELET_NEWLINE, self::FORMAT_13_ELET_DOT,
-                                self::FORMAT_15_LOGISTICA, self::FORMAT_16_LOG_APPR])) {
+                                self::FORMAT_15_LOGISTICA, self::FORMAT_16_LOG_APPR,
+                                self::FORMAT_20_GEN_LOGSTYLE, self::FORMAT_5_CHIM_BASE,
+                                self::FORMAT_6_CHIM_APPR00, self::FORMAT_8_CHIM_APPR23])) {
             // Taglia prima di markers di competenza
             foreach (['Competenza collegata', 'Competenza (CO)', 'Competenza (F2)',
                       'Competenza:', 'Codice competenza:', 'Codice:'] as $marker) {
@@ -990,8 +1062,8 @@ class word_parser {
         foreach ($lines as $line) {
             $line = trim($line);
             
-            // Salta linee di competenza
-            if (preg_match('/^(Competenza|Codice)/i', $line)) {
+            // Salta linee di competenza e ID domanda
+            if (preg_match('/^(Competenza|Codice|ID\s*domanda)/i', $line)) {
                 continue;
             }
             
@@ -1003,7 +1075,7 @@ class word_parser {
                     // Rimuovi checkmark
                     $text = preg_replace('/\s*[✔✓✅]\s*$/u', '', $text);
                     $text = rtrim($text, '.');
-                    if (strlen($text) > 2) {
+                    if (strlen($text) >= 1) {
                         $answers[$current_letter] = $text;
                     }
                 }
@@ -1022,7 +1094,7 @@ class word_parser {
             $text = trim(implode(' ', $current_text));
             $text = preg_replace('/\s*[✔✓✅]\s*$/u', '', $text);
             $text = rtrim($text, '.');
-            if (strlen($text) > 2) {
+            if (strlen($text) >= 1) {
                 $answers[$current_letter] = $text;
             }
         }
@@ -1305,8 +1377,12 @@ class word_parser {
             // MECCANICA
             self::FORMAT_19_MECCANICA => 'MECCANICA ([A-H]?##. + Codice competenza: MECCANICA_XX)',
 
+            // METALCOSTRUZIONE
+            self::FORMAT_21_METAL_Q_DASH => 'METALCOSTRUZIONE (Q1 – METALCOSTRUZIONE_XX)',
+
             // GENERICI
             self::FORMAT_9_NO_COMP => 'File senza competenze (richiede Excel)',
+            self::FORMAT_20_GEN_LOGSTYLE => 'GENERICI LOG-STYLE (Domanda X + Competenza: GEN_XX)',
             self::FORMAT_UNKNOWN => 'Formato non riconosciuto'
         ];
 
@@ -1350,8 +1426,12 @@ class word_parser {
             // MECCANICA
             self::FORMAT_19_MECCANICA => 'MECCANICA (Codice competenza)',
 
+            // METALCOSTRUZIONE
+            self::FORMAT_21_METAL_Q_DASH => 'METALCOSTRUZIONE (Q-Dash)',
+
             // GENERICI
             self::FORMAT_9_NO_COMP => 'File senza competenze',
+            self::FORMAT_20_GEN_LOGSTYLE => 'GENERICI LOG-STYLE V2',
         ];
     }
 }

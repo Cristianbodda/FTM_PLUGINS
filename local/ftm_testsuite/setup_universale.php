@@ -541,20 +541,30 @@ function get_framework_sectors($frameworkid) {
  */
 function get_sector_competencies($frameworkid, $sector) {
     global $DB;
+
+    // Normalizza settore: ELETTRICITA -> ELETTRICITÀ (con accento)
+    $sector_normalized = preg_replace('/ELETTRICITA(?!À)/u', 'ELETTRICITÀ', $sector);
+
     return $DB->get_records_sql("
-        SELECT id, idnumber, shortname, description 
-        FROM {competency} 
+        SELECT id, idnumber, shortname, description
+        FROM {competency}
         WHERE competencyframeworkid = ? AND idnumber LIKE ?
         ORDER BY idnumber
-    ", [$frameworkid, $sector . '_%']);
+    ", [$frameworkid, $sector_normalized . '_%']);
 }
 
 /**
  * Estrae il codice competenza da un testo
  */
 function extract_competency_code($text, $sector) {
-    $pattern = '/(' . preg_quote($sector, '/') . '_[A-Za-z]+_[A-Z0-9]+)/i';
-    if (preg_match($pattern, $text, $m)) {
+    // Normalizza settore: ELETTRICITA -> ELETTRICITÀ (con accento)
+    $sector_normalized = preg_replace('/ELETTRICITA(?!À)/u', 'ELETTRICITÀ', $sector);
+
+    // Normalizza anche il testo per gestire varianti
+    $text_normalized = preg_replace('/ELETTRICITA(?!À)/u', 'ELETTRICITÀ', $text);
+
+    $pattern = '/(' . preg_quote($sector_normalized, '/') . '_[A-Za-z]+_[A-Z0-9]+)/iu';
+    if (preg_match($pattern, $text_normalized, $m)) {
         return strtoupper($m[1]);
     }
     return null;
@@ -568,14 +578,20 @@ function get_sector_icon($sector) {
         'AUTOMOBILE' => '🚗',
         'MECCANICA' => '⚙️',
         'ELETTRONICA' => '🔌',
+        'ELETTRICITA' => '⚡',
+        'ELETTRICITÀ' => '⚡',
         'INFORMATICA' => '💻',
         'LOGISTICA' => '📦',
+        'CHIMFARM' => '🧪',
+        'AUTOMAZIONE' => '🤖',
+        'METALCOSTRUZIONE' => '🔩',
         'CUCINA' => '👨‍🍳',
         'SERVIZIO' => '🍽️',
         'VENDITA' => '🛒',
+        'GENERICO' => '📝',
         'DEFAULT' => '📋'
     ];
-    return $icons[$sector] ?? $icons['DEFAULT'];
+    return $icons[strtoupper($sector)] ?? $icons['DEFAULT'];
 }
 
 // ============================================================================

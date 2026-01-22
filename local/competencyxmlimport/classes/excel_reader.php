@@ -33,19 +33,22 @@ defined('MOODLE_INTERNAL') || die();
  * Classe per leggere file Excel .xlsx
  */
 class excel_reader {
-    
+
+    /** @var string Namespace principale Excel */
+    private $ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+
     /** @var string Percorso al file */
     private $filepath = '';
-    
+
     /** @var array Nomi dei fogli */
     private $sheet_names = [];
-    
+
     /** @var array Shared strings (testi condivisi) */
     private $shared_strings = [];
-    
+
     /** @var ZipArchive Archivio ZIP */
     private $zip = null;
-    
+
     /** @var array Cache dei dati dei fogli */
     private $sheets_data = [];
     
@@ -130,15 +133,30 @@ class excel_reader {
         if ($content === false) {
             return;
         }
-        
+
         $xml = @simplexml_load_string($content);
         if ($xml === false) {
             return;
         }
-        
-        $xml->registerXPathNamespace('s', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
-        
+
+        $xml->registerXPathNamespace('s', $this->ns);
+
+        // Prova prima con xpath
         $sheets = $xml->xpath('//s:sheet');
+
+        // Se xpath non funziona, prova accesso diretto con namespace
+        if (empty($sheets)) {
+            $children = $xml->children($this->ns);
+            if (isset($children->sheets)) {
+                $sheetsNode = $children->sheets->children($this->ns);
+                foreach ($sheetsNode as $sheet) {
+                    $attrs = $sheet->attributes();
+                    $this->sheet_names[] = (string)$attrs['name'];
+                }
+                return;
+            }
+        }
+
         foreach ($sheets as $sheet) {
             $attrs = $sheet->attributes();
             $this->sheet_names[] = (string)$attrs['name'];
@@ -175,7 +193,7 @@ class excel_reader {
     
     /**
      * Legge i dati di un foglio
-     * 
+     *
      * @param int|string $sheet Indice (0-based) o nome del foglio
      * @return array Array 2D con i dati
      */
@@ -189,83 +207,129 @@ class excel_reader {
         } else {
             $index = (int)$sheet;
         }
-        
+
         // Cache
         if (isset($this->sheets_data[$index])) {
             return $this->sheets_data[$index];
         }
-        
+
         // Leggi foglio
         $sheet_file = 'xl/worksheets/sheet' . ($index + 1) . '.xml';
         $content = $this->zip->getFromName($sheet_file);
         if ($content === false) {
             return [];
         }
-        
+
         $xml = @simplexml_load_string($content);
         if ($xml === false) {
             return [];
         }
-        
-        $xml->registerXPathNamespace('s', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
-        
+
+        $xml->registerXPathNamespace('s', $this->ns);
+
         $data = [];
-        $rows = $xml->sheetData->row;
-        
+
+        // Gestisci namespace - prova prima con namespace, poi senza
+        $sheetData = $xml->sheetData;
+        if (!$sheetData || count($sheetData->row) == 0) {
+            // Prova con namespace esplicito
+            $children = $xml->children($this->ns);
+            if (isset($children->sheetData)) {
+                $sheetData = $children->sheetData;
+            }
+        }
+
+        if (!$sheetData) {
+            return [];
+        }
+
+        $rows = $sheetData->row;
+        if (count($rows) == 0) {
+            $rows = $sheetData->children($this->ns)->row ?? [];
+        }
+
         foreach ($rows as $row) {
             $row_data = [];
             $row_attrs = $row->attributes();
             $row_num = (int)$row_attrs['r'];
-            
-            foreach ($row->c as $cell) {
+
+            // Ottieni celle - prova con e senza namespace
+            $cells = $row->c;
+            if (count($cells) == 0) {
+                $cells = $row->children($this->ns)->c ?? [];
+            }
+
+            foreach ($cells as $cell) {
                 $cell_attrs = $cell->attributes();
                 $cell_ref = (string)$cell_attrs['r'];
                 $col_index = $this->column_to_index($cell_ref);
-                
+
                 // Riempi colonne vuote
                 while (count($row_data) < $col_index) {
                     $row_data[] = '';
                 }
-                
+
                 // Leggi valore
                 $value = $this->get_cell_value($cell);
                 $row_data[] = $value;
             }
-            
+
             $data[] = $row_data;
         }
-        
+
         $this->sheets_data[$index] = $data;
         return $data;
     }
     
     /**
      * Ottiene il valore di una cella
-     * 
+     *
      * @param SimpleXMLElement $cell
      * @return mixed
      */
     private function get_cell_value($cell) {
         $attrs = $cell->attributes();
         $type = isset($attrs['t']) ? (string)$attrs['t'] : '';
-        $value = isset($cell->v) ? (string)$cell->v : '';
-        
+
+        // Ottieni il valore <v> - prova con e senza namespace
+        $value = '';
+        if (isset($cell->v)) {
+            $value = (string)$cell->v;
+        } else {
+            $children = $cell->children($this->ns);
+            if (isset($children->v)) {
+                $value = (string)$children->v;
+            }
+        }
+
         // Tipo stringa condivisa
         if ($type === 's') {
             $index = (int)$value;
             return isset($this->shared_strings[$index]) ? $this->shared_strings[$index] : '';
         }
-        
-        // Tipo stringa inline
+
+        // Tipo stringa inline - gestisci namespace
         if ($type === 'inlineStr') {
-            return isset($cell->is->t) ? (string)$cell->is->t : '';
+            // Prova prima senza namespace
+            if (isset($cell->is->t)) {
+                return (string)$cell->is->t;
+            }
+            // Prova con namespace esplicito
+            $children = $cell->children($this->ns);
+            if (isset($children->is)) {
+                $isChildren = $children->is->children($this->ns);
+                if (isset($isChildren->t)) {
+                    return (string)$isChildren->t;
+                }
+            }
+            return '';
         }
-        
+
         // Tipo booleano
         if ($type === 'b') {
             return $value === '1';
         }
-        
+
         // Numero o altro
         return $value;
     }
@@ -330,41 +394,51 @@ class excel_reader {
     
     /**
      * Cerca automaticamente le colonne per la verifica
-     * 
+     *
      * @param int|string $sheet Indice o nome del foglio
+     * @param string $word_prefix Prefisso competenze dal Word (es. "CHIMFARM", "MECCANICA")
      * @return array ['question_col' => X, 'competency_col' => Y, 'answer_col' => Z]
      */
-    public function auto_detect_columns($sheet) {
+    public function auto_detect_columns($sheet, $word_prefix = '') {
         $headers = $this->get_headers($sheet);
-        
+
         $result = [
             'question_col' => null,
             'competency_col' => null,
             'answer_col' => null,
-            'headers' => $headers
+            'headers' => $headers,
+            'all_competency_cols' => [] // Lista tutte le colonne competenza trovate
         ];
-        
+
+        // Prima passa: trova tutte le colonne competenza candidate
+        $competency_candidates = [];
+
         foreach ($headers as $index => $header) {
             if (empty($header)) continue;
             $header_lower = strtolower($header);
-            
+            $header_upper = strtoupper($header);
+
             // Colonna domanda
             if ($result['question_col'] === null) {
-                if ($header === 'Q' || $header_lower === 'domanda' || 
+                if ($header === 'Q' || $header_lower === 'domanda' ||
                     preg_match('/^q\d*$/i', $header) || $header_lower === 'question') {
                     $result['question_col'] = $index;
                 }
             }
-            
-            // Colonna competenza
-            if ($result['competency_col'] === null) {
-                if (strpos($header_lower, 'competenz') !== false ||
-                    strpos($header_lower, 'codice') !== false ||
-                    strpos($header, '_') !== false && preg_match('/[A-Z]{3,}/', $header)) {
-                    $result['competency_col'] = $index;
-                }
+
+            // Colonne competenza - raccogli tutte le candidate
+            if (strpos($header_lower, 'competenz') !== false ||
+                strpos($header_lower, 'codice') !== false ||
+                (strpos($header, '_') !== false && preg_match('/[A-Z]{3,}/', $header))) {
+
+                $competency_candidates[] = [
+                    'index' => $index,
+                    'header' => $header,
+                    'header_upper' => $header_upper
+                ];
+                $result['all_competency_cols'][] = ['index' => $index, 'name' => $header];
             }
-            
+
             // Colonna risposta
             if ($result['answer_col'] === null) {
                 if (strpos($header_lower, 'risposta') !== false ||
@@ -374,7 +448,31 @@ class excel_reader {
                 }
             }
         }
-        
+
+        // Scegli la colonna competenza migliore
+        if (!empty($competency_candidates)) {
+            $best_candidate = null;
+
+            // Se abbiamo un prefisso dal Word, cerca colonna che corrisponde
+            if (!empty($word_prefix)) {
+                $prefix_upper = strtoupper($word_prefix);
+                foreach ($competency_candidates as $candidate) {
+                    // Match esatto del prefisso nel nome colonna
+                    if (strpos($candidate['header_upper'], $prefix_upper) !== false) {
+                        $best_candidate = $candidate['index'];
+                        break;
+                    }
+                }
+            }
+
+            // Fallback: prendi la prima colonna competenza trovata
+            if ($best_candidate === null) {
+                $best_candidate = $competency_candidates[0]['index'];
+            }
+
+            $result['competency_col'] = $best_candidate;
+        }
+
         return $result;
     }
     

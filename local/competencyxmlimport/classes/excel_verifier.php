@@ -615,22 +615,47 @@ function get_excel_verification_js($courseid) {
             if (data.success) {
                 excelVerifyData.headers = data.headers;
                 excelVerifyData.autoDetect = data.auto_detect;
-                showColumnMapping(data.headers, data.auto_detect);
+                excelVerifyData.allCompetencyCols = data.all_competency_cols || [];
+                excelVerifyData.wordPrefix = data.word_prefix_detected || "";
+                showColumnMapping(data.headers, data.auto_detect, data.all_competency_cols, data.word_prefix_detected);
             } else {
                 alert("Errore: " + data.error);
             }
         });
     }
-    
-    function showColumnMapping(headers, autoDetect) {
+
+    function showColumnMapping(headers, autoDetect, allCompetencyCols, wordPrefix) {
         var panel = document.getElementById("excelColumnMapping");
         var selects = ["colQuestion", "colCompetency", "colAnswer"];
         var autoValues = [autoDetect.question_col, autoDetect.competency_col, autoDetect.answer_col];
-        
+
+        // Mostra info sul prefisso Word rilevato
+        var infoDiv = document.getElementById("competencyColInfo");
+        if (!infoDiv) {
+            infoDiv = document.createElement("div");
+            infoDiv.id = "competencyColInfo";
+            infoDiv.style.cssText = "margin-bottom: 15px; padding: 10px; border-radius: 6px; font-size: 13px;";
+            panel.insertBefore(infoDiv, panel.firstChild.nextSibling);
+        }
+
+        if (wordPrefix && allCompetencyCols && allCompetencyCols.length > 1) {
+            infoDiv.style.background = "#fef3c7";
+            infoDiv.style.border = "1px solid #fcd34d";
+            infoDiv.innerHTML = \'<strong>⚠️ Rilevate \' + allCompetencyCols.length + \' colonne competenza.</strong><br>\' +
+                \'Il Word usa prefisso <code>\' + wordPrefix + \'</code> - selezionata automaticamente la colonna corrispondente.<br>\' +
+                \'Colonne disponibili: \' + allCompetencyCols.map(function(c) { return \'<code>\' + c.name + \'</code>\'; }).join(\', \');
+        } else if (wordPrefix) {
+            infoDiv.style.background = "#d1fae5";
+            infoDiv.style.border = "1px solid #6ee7b7";
+            infoDiv.innerHTML = \'✅ Word usa prefisso <code>\' + wordPrefix + \'</code> - colonna competenza rilevata automaticamente.\';
+        } else {
+            infoDiv.innerHTML = "";
+        }
+
         selects.forEach(function(selectId, i) {
             var select = document.getElementById(selectId);
             select.innerHTML = \'<option value="">-- Seleziona --</option>\';
-            
+
             headers.forEach(function(header, index) {
                 if (header) {
                     var selected = (autoValues[i] === index) ? " selected" : "";
@@ -638,7 +663,7 @@ function get_excel_verification_js($courseid) {
                 }
             });
         });
-        
+
         panel.style.display = "block";
     }
     

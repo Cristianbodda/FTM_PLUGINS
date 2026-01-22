@@ -335,33 +335,123 @@ class manager {
     
     /**
      * Determina l'area da un idnumber di competenza
+     * Supporta tutti i settori: AUTOMOBILE, MECCANICA, AUTOMAZIONE, GEN, LOGISTICA, etc.
      */
     private function get_area_from_idnumber($idnumber) {
+        // Mapping diretto per prefissi specifici
         $area_prefixes = [
+            // AUTOMOBILE
             'AUTOMOBILE_MAu' => 'manutenzione-auto',
             'AUTOMOBILE_MR' => 'manutenzione-rip',
+            // MECCANICA
             'MECCANICA_ASS' => 'assemblaggio',
-            'MECCANICA_AUT' => 'automazione',
+            'MECCANICA_AUT' => 'automazione-mecc',
             'MECCANICA_CNC' => 'cnc',
             'MECCANICA_DIS' => 'disegno',
+            'MECCANICA_DT' => 'disegno',
             'MECCANICA_LAV' => 'lav-generali',
             'MECCANICA_LMC' => 'lav-macchine',
             'MECCANICA_LMB' => 'lav-base',
             'MECCANICA_MAN' => 'manutenzione',
             'MECCANICA_MIS' => 'misurazione',
             'MECCANICA_PIA' => 'pianificazione',
+            'MECCANICA_PIAN' => 'pianificazione',
             'MECCANICA_PRO' => 'programmazione',
+            'MECCANICA_PRG' => 'programmazione',
             'MECCANICA_SIC' => 'sicurezza',
+            'MECCANICA_SAQ' => 'sicurezza',
             'MECCANICA_CSP' => 'collaborazione',
+            'MECCANICA_GEN' => 'trattamenti',
         ];
-        
+
+        // Check prefissi diretti
         foreach ($area_prefixes as $prefix => $area) {
             if (strpos($idnumber, $prefix) === 0) {
                 return $area;
             }
         }
-        
+
+        // AUTOMAZIONE: pattern AUTOMAZIONE_XX_A1 -> estrae lettera dalla terza parte
+        if (strpos($idnumber, 'AUTOMAZIONE_') === 0) {
+            $parts = explode('_', $idnumber);
+            if (count($parts) >= 3) {
+                $letter = strtoupper(substr($parts[2], 0, 1));
+                return 'automazione-' . $letter;
+            }
+            return 'automazione';
+        }
+
+        // GEN (Generico): pattern GEN_A_01 -> estrae lettera dalla seconda parte
+        if (strpos($idnumber, 'GEN_') === 0) {
+            $parts = explode('_', $idnumber);
+            if (count($parts) >= 2 && preg_match('/^[A-Z]$/i', $parts[1])) {
+                $letter = strtoupper($parts[1]);
+                return 'gen-' . $letter;
+            }
+            return 'generico';
+        }
+
+        // LOGISTICA: pattern LOGISTICA_LO_A1 -> estrae lettera dalla terza parte
+        if (strpos($idnumber, 'LOGISTICA_') === 0) {
+            $parts = explode('_', $idnumber);
+            if (count($parts) >= 3) {
+                $letter = strtoupper(substr($parts[2], 0, 1));
+                return 'logistica-' . $letter;
+            }
+            return 'logistica';
+        }
+
+        // ELETTRICITA: pattern ELETTRICITA_XX_A1
+        if (strpos($idnumber, 'ELETTRICITA_') === 0 || strpos($idnumber, 'ELETTRICITÀ_') === 0) {
+            $parts = explode('_', $idnumber);
+            if (count($parts) >= 3) {
+                $letter = strtoupper(substr($parts[2], 0, 1));
+                return 'elettricita-' . $letter;
+            }
+            return 'elettricita';
+        }
+
+        // METALCOSTRUZIONE: pattern METALCOSTRUZIONE_XX_A1
+        if (strpos($idnumber, 'METALCOSTRUZIONE_') === 0) {
+            $parts = explode('_', $idnumber);
+            if (count($parts) >= 3) {
+                $letter = strtoupper(substr($parts[2], 0, 1));
+                return 'metalcostruzione-' . $letter;
+            }
+            return 'metalcostruzione';
+        }
+
+        // CHIMFARM: pattern CHIMFARM_1C_01
+        if (strpos($idnumber, 'CHIMFARM_') === 0) {
+            $parts = explode('_', $idnumber);
+            if (count($parts) >= 2) {
+                return 'chimfarm-' . strtoupper($parts[1]);
+            }
+            return 'chimfarm';
+        }
+
         return 'altro';
+    }
+
+    /**
+     * Estrae il settore principale da un idnumber
+     */
+    public function get_sector_from_idnumber($idnumber) {
+        $parts = explode('_', $idnumber);
+        if (count($parts) >= 1) {
+            $sector = strtoupper($parts[0]);
+            // Normalizza varianti
+            if ($sector === 'ELETTRICITÀ') $sector = 'ELETTRICITA';
+            return $sector;
+        }
+        return 'UNKNOWN';
+    }
+
+    /**
+     * Versione pubblica di get_area_from_idnumber
+     */
+    public function get_area_from_idnumber_public($idnumber) {
+        return $this->get_area_from_idnumber($idnumber);
     }
     
     // ============================================

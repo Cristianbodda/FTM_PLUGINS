@@ -73,23 +73,38 @@ try {
         case 'selectsheet':
             // Seleziona foglio e restituisce colonne
             $sheet_index = required_param('sheet_index', PARAM_INT);
-            
+
             if (!isset($SESSION->excel_verify_path) || !file_exists($SESSION->excel_verify_path)) {
                 throw new Exception('Nessun file Excel caricato');
             }
-            
+
             $reader = new \local_competencyxmlimport\excel_reader($SESSION->excel_verify_path);
             $sheet_names = $reader->get_sheet_names();
-            
+
             if (!isset($sheet_names[$sheet_index])) {
                 throw new Exception('Foglio non trovato');
             }
-            
+
             // Salva foglio selezionato
             $SESSION->excel_verify_sheet = $sheet_index;
-            
-            // Auto-detect colonne
-            $auto_detect = $reader->auto_detect_columns($sheet_index);
+
+            // Rileva prefisso competenze dal Word per match colonna Excel
+            $word_prefix = '';
+            if (!empty($SESSION->word_import_questions)) {
+                // Prendi il prefisso dalla prima domanda con competenza
+                foreach ($SESSION->word_import_questions as $q) {
+                    if (!empty($q['competency'])) {
+                        // Estrai prefisso (es. CHIMFARM da CHIMFARM_9A_01)
+                        if (preg_match('/^([A-Z]+)_/', strtoupper($q['competency']), $m)) {
+                            $word_prefix = $m[1];
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Auto-detect colonne con prefisso Word per match migliore
+            $auto_detect = $reader->auto_detect_columns($sheet_index, $word_prefix);
             $headers = $reader->get_headers($sheet_index);
             
             // Preview prime righe
@@ -105,6 +120,8 @@ try {
                     'competency_col' => $auto_detect['competency_col'],
                     'answer_col' => $auto_detect['answer_col']
                 ],
+                'all_competency_cols' => $auto_detect['all_competency_cols'] ?? [],
+                'word_prefix_detected' => $word_prefix,
                 'preview' => $preview
             ]);
             break;

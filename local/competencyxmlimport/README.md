@@ -2,7 +2,7 @@
 
 Plugin Moodle per import quiz da XML, Word e Excel con assegnazione automatica competenze.
 
-**Versione:** 5.1 | **Word Parser:** v4.0 (19 formati) | **Ultimo aggiornamento:** 19/01/2026
+**Versione:** 5.2 | **Word Parser:** v5.0 (20 formati) | **Ultimo aggiornamento:** 19/01/2026
 
 ---
 
@@ -39,7 +39,7 @@ Strumento completo per import quiz e assegnazione competenze automatica.
 
 ---
 
-## Formati Word Supportati (19)
+## Formati Word Supportati (20)
 
 | # | Formato | Settore | Pattern |
 |---|---------|---------|---------|
@@ -62,6 +62,7 @@ Strumento completo per import quiz e assegnazione competenze automatica.
 | 17 | FORMAT_17_LOG_APPR_DASH | LOGISTICA | LOG_APPR04_Q01 - |
 | 18 | FORMAT_18_LOG_Q_DASH | LOGISTICA | Q1 - LOGISTICA_XX |
 | 19 | FORMAT_19_MECCANICA | MECCANICA | [A-H]?##. + Codice: |
+| 20 | FORMAT_20_GEN_LOGSTYLE | GENERICO | Domanda X + GEN_XX |
 
 ---
 

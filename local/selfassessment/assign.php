@@ -78,7 +78,7 @@ $stats = $manager->get_assignment_stats();
 
 // Carica tutte le competenze per selezione singola
 $competencies = $DB->get_records_sql("
-    SELECT c.id, c.idnumber, c.shortname
+    SELECT c.id, c.idnumber, c.shortname, c.description
     FROM {competency} c
     JOIN {competency_framework} cf ON c.competencyframeworkid = cf.id
     WHERE cf.shortname LIKE '%FTM%' OR cf.shortname LIKE '%Meccanica%'
@@ -374,8 +374,18 @@ echo $OUTPUT->header();
                 <label>1. Seleziona Competenza</label>
                 <select name="competencyid" required>
                     <option value="">-- Seleziona competenza --</option>
-                    <?php foreach ($competencies as $c): ?>
-                    <option value="<?php echo $c->id; ?>"><?php echo $c->idnumber; ?> - <?php echo $c->shortname ?: '(senza nome)'; ?></option>
+                    <?php foreach ($competencies as $c):
+                        // Mostra descrizione se disponibile
+                        if (!empty($c->description)) {
+                            $clean_desc = strip_tags($c->description);
+                            $display = mb_strlen($clean_desc) > 60 ? mb_substr($clean_desc, 0, 60) . '...' : $clean_desc;
+                        } elseif (!empty($c->shortname) && $c->shortname !== $c->idnumber) {
+                            $display = $c->shortname;
+                        } else {
+                            $display = str_replace('_', ' ', $c->idnumber);
+                        }
+                    ?>
+                    <option value="<?php echo $c->id; ?>"><?php echo $c->idnumber; ?> - <?php echo htmlspecialchars($display); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>

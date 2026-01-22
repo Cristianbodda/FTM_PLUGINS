@@ -658,8 +658,22 @@ echo $OUTPUT->header();
                     $current_level = $existing_by_comp[$comp->competencyid] ?? 0;
                 ?>
                 <div class="comp-row">
-                    <div class="comp-name"><?php echo $comp->shortname ?: $comp->idnumber; ?></div>
-                    <div class="comp-code"><?php echo $comp->idnumber; ?></div>
+                    <div class="comp-name"><?php
+                        // Mostra la descrizione se disponibile, altrimenti shortname, altrimenti idnumber
+                        $display_name = '';
+                        if (!empty($comp->description)) {
+                            // Rimuovi tag HTML e prendi solo le prime parole
+                            $clean_desc = strip_tags($comp->description);
+                            $display_name = mb_strlen($clean_desc) > 100 ? mb_substr($clean_desc, 0, 100) . '...' : $clean_desc;
+                        } elseif (!empty($comp->shortname) && $comp->shortname !== $comp->idnumber) {
+                            $display_name = $comp->shortname;
+                        } else {
+                            // Fallback: rendi l'idnumber più leggibile
+                            $display_name = str_replace('_', ' ', $comp->idnumber);
+                        }
+                        echo htmlspecialchars($display_name);
+                    ?></div>
+                    <div class="comp-code" style="font-size: 0.75em; color: #aaa;"><?php echo $comp->idnumber; ?></div>
                     
                     <div class="bloom-selector">
                         <?php foreach ($bloom_levels as $level => $info): ?>

@@ -28,6 +28,7 @@ $action = optional_param('fts_action', '', PARAM_ALPHA);
 $frameworkid = optional_param('fts_frameworkid', 0, PARAM_INT);
 $courseid = optional_param('fts_courseid', 0, PARAM_INT);
 $userid = optional_param('fts_userid', 0, PARAM_INT);
+$exclude_courseid = optional_param('fts_exclude', 0, PARAM_INT); // Corso da escludere
 
 // Verifica utenti test
 $manager = new test_manager();
@@ -106,7 +107,7 @@ if ($action === 'run' && confirm_sesskey()) {
     }
     
     // Passa la configurazione al runner
-    $runner = new test_runner($courseid, $frameworkid, $userid);
+    $runner = new test_runner($courseid, $frameworkid, $userid, $exclude_courseid);
     $run_result = $runner->run_all($runname);
 }
 
@@ -419,6 +420,19 @@ echo $OUTPUT->header();
                 <small style="color: #666; display: block; margin-top: 8px;">
                     💡 Selezionando un corso, il framework viene rilevato automaticamente
                 </small>
+
+                <!-- Opzione esclusione corso Generico -->
+                <div style="margin-top: 15px; padding: 12px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" name="fts_exclude" value="18"
+                               <?php echo $exclude_courseid == 18 ? 'checked' : ''; ?>
+                               style="width: 18px; height: 18px;">
+                        <span>
+                            <strong>⚠️ Escludi corso "Generico" (ID 18)</strong><br>
+                            <small style="color: #856404;">Le domande GEN_* appartengono al framework FTM_GEN separato</small>
+                        </span>
+                    </label>
+                </div>
             </div>
         </div>
         

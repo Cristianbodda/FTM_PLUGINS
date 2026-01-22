@@ -70,14 +70,17 @@ function get_framework_sectors($frameworkid) {
  */
 function get_sector_competencies($frameworkid, $sector) {
     global $DB;
-    
+
+    // Normalizza settore: ELETTRICITA -> ELETTRICITÀ (con accento)
+    $sector_normalized = preg_replace('/ELETTRICITA(?!À)/u', 'ELETTRICITÀ', $sector);
+
     $sql = "SELECT id, idnumber, shortname, description
             FROM {competency}
             WHERE competencyframeworkid = ?
             AND idnumber LIKE ?
             ORDER BY idnumber";
-    
-    return $DB->get_records_sql($sql, [$frameworkid, $sector . '_%']);
+
+    return $DB->get_records_sql($sql, [$frameworkid, $sector_normalized . '_%']);
 }
 
 /**
@@ -85,9 +88,12 @@ function get_sector_competencies($frameworkid, $sector) {
  */
 function get_sector_profiles($frameworkid, $sector) {
     global $DB;
-    
+
+    // Normalizza settore: ELETTRICITA -> ELETTRICITÀ (con accento)
+    $sector_normalized = preg_replace('/ELETTRICITA(?!À)/u', 'ELETTRICITÀ', $sector);
+
     // Estrae la seconda parte del codice (es. OA, MA, 1C, etc.)
-    $sql = "SELECT 
+    $sql = "SELECT
                 SUBSTRING_INDEX(SUBSTRING_INDEX(idnumber, '_', 2), '_', -1) as profile,
                 COUNT(*) as count
             FROM {competency}
@@ -95,8 +101,8 @@ function get_sector_profiles($frameworkid, $sector) {
             AND idnumber LIKE ?
             GROUP BY profile
             ORDER BY profile";
-    
-    return $DB->get_records_sql($sql, [$frameworkid, $sector . '_%']);
+
+    return $DB->get_records_sql($sql, [$frameworkid, $sector_normalized . '_%']);
 }
 
 /**

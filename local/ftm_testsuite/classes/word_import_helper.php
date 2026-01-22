@@ -142,21 +142,24 @@ function process_word_upload($file_data, $sector, $frameworkid) {
  */
 function get_framework_competencies($frameworkid, $sector) {
     global $DB;
-    
+
     $competencies = [];
-    
+
+    // Normalizza settore: ELETTRICITA -> ELETTRICITÀ (con accento)
+    $sector_normalized = preg_replace('/ELETTRICITA(?!À)/u', 'ELETTRICITÀ', $sector);
+
     // Ottieni tutte le competenze del framework
     $records = $DB->get_records('competency', ['competencyframeworkid' => $frameworkid]);
-    
+
     foreach ($records as $comp) {
         if (!empty($comp->idnumber)) {
-            // Filtra per settore se specificato
-            if (empty($sector) || strpos($comp->idnumber, $sector . '_') === 0) {
+            // Filtra per settore se specificato (usa settore normalizzato)
+            if (empty($sector_normalized) || strpos($comp->idnumber, $sector_normalized . '_') === 0) {
                 $competencies[] = $comp->idnumber;
             }
         }
     }
-    
+
     return $competencies;
 }
 

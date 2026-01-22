@@ -113,6 +113,18 @@ $AREA_NAMES = [
     'CHIMFARM_7S' => '7S. Strumentazione',
     'CHIMFARM_8T' => '8T. Tecnologie',
     'CHIMFARM_9A' => '9A. Analisi',
+
+    // ========================================
+    // GENERICO (pattern: GEN_A_01 -> A)
+    // Test trasversali per orientamento settoriale
+    // ========================================
+    'GEN_A' => 'A. Meccanica',
+    'GEN_B' => 'B. Metalcostruzione',
+    'GEN_C' => 'C. Elettricità',
+    'GEN_D' => 'D. Elettronica & Automazione',
+    'GEN_E' => 'E. Logistica',
+    'GEN_F' => 'F. Chimico-farmaceutico',
+    'GEN_G' => 'G. Automobile / Manutenzione',
 ];
 
 // ========================================
@@ -121,6 +133,7 @@ $AREA_NAMES = [
 
 // Settori che usano il pattern lettera (terza parte dell'idnumber)
 // Es. LOGISTICA_LO_A1 -> estrae "A" dalla terza parte
+// Nota: GEN usa pattern speciale GEN_A_01 (seconda parte = lettera)
 $LETTER_BASED_SECTORS = ['AUTOMOBILE', 'LOGISTICA', 'ELETTRICITA', 'AUTOMAZIONE', 'METALCOSTRUZIONE'];
 
 // Settori che usano il pattern codice (seconda parte dell'idnumber)
@@ -139,6 +152,8 @@ $SECTOR_DISPLAY_NAMES = [
     'METALCOSTRUZIONE' => 'Metalcostruzione',
     'MECCANICA' => 'Meccanica',
     'CHIMFARM' => 'Chimico-Farmaceutico',
+    'GEN' => 'Generico',
+    'GENERICO' => 'Generico',
 ];
 
 // ========================================
@@ -189,14 +204,24 @@ function get_area_info($idnumber) {
         $idnumber = substr($idnumber, 4);
     }
     global $AREA_NAMES, $LETTER_BASED_SECTORS, $CODE_BASED_SECTORS;
-    
+
     $parts = explode('_', $idnumber);
     if (count($parts) < 2) {
         return ['code' => 'OTHER', 'name' => 'Altro', 'key' => 'OTHER'];
     }
-    
+
     $sector = normalize_sector_name($parts[0]);
-    
+
+    // Pattern speciale per GEN (GENERICO): GEN_A_01 -> seconda parte è la lettera
+    if ($sector === 'GEN' && count($parts) >= 2) {
+        $letter = strtoupper($parts[1]);
+        if (preg_match('/^[A-Z]$/', $letter)) {
+            $key = 'GEN_' . $letter;
+            $name = $AREA_NAMES[$key] ?? $letter;
+            return ['code' => $letter, 'name' => $name, 'key' => $key];
+        }
+    }
+
     // Settori con pattern lettera (LOGISTICA_LO_A1 -> A)
     if (in_array($sector, $LETTER_BASED_SECTORS) && count($parts) >= 3) {
         preg_match('/^([A-Z])/i', $parts[2], $matches);
@@ -207,7 +232,7 @@ function get_area_info($idnumber) {
             return ['code' => $letter, 'name' => $name, 'key' => $key];
         }
     }
-    
+
     // Settori con pattern codice (MECCANICA_CNC_01 -> CNC, CHIMFARM_1C_01 -> 1C)
     if (in_array($sector, $CODE_BASED_SECTORS) && count($parts) >= 2) {
         $code = $parts[1];
@@ -215,7 +240,7 @@ function get_area_info($idnumber) {
         $name = $AREA_NAMES[$key] ?? $code;
         return ['code' => $code, 'name' => $name, 'key' => $key];
     }
-    
+
     // Fallback: usa la seconda parte
     $code = $parts[1] ?? 'OTHER';
     return ['code' => $code, 'name' => $code, 'key' => $sector . '_' . $code];
