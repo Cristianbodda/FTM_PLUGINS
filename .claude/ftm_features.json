@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "created": "2026-01-22",
+    "updated": "2026-01-22",
+    "total_features": 0,
+    "completed": 0,
+    "in_progress": 0,
+    "pending": 0
+  },
+  "plugins": {
+    "coachmanager": {
+      "name": "Coach Manager",
+      "description": "Dashboard e gestione coach/studenti",
+      "priority": 1,
+      "status": "active",
+      "features": []
+    },
+    "competencymanager": {
+      "name": "Competency Manager",
+      "description": "Core gestione competenze + Sector Manager",
+      "priority": 1,
+      "status": "active",
+      "features": []
+    },
+    "competencyreport": {
+      "name": "Competency Report",
+      "description": "Report competenze studenti",
+      "priority": 2,
+      "status": "active",
+      "features": []
+    },
+    "competencyxmlimport": {
+      "name": "Competency XML Import",
+      "description": "Import XML/Word/Excel + Setup Universale",
+      "priority": 1,
+      "status": "active",
+      "features": []
+    },
+    "ftm_common": {
+      "name": "FTM Common",
+      "description": "Libreria condivisa, utilities, design system",
+      "priority": 2,
+      "status": "active",
+      "features": []
+    },
+    "ftm_cpurc": {
+      "name": "FTM CPURC",
+      "description": "Import CSV CPURC e report Word",
+      "priority": 3,
+      "status": "active",
+      "features": []
+    },
+    "ftm_hub": {
+      "name": "FTM Hub",
+      "description": "Hub centrale navigazione",
+      "priority": 2,
+      "status": "active",
+      "features": []
+    },
+    "ftm_scheduler": {
+      "name": "FTM Scheduler",
+      "description": "Pianificazione calendario settimanale/mensile",
+      "priority": 1,
+      "status": "active",
+      "features": []
+    },
+    "ftm_testsuite": {
+      "name": "FTM Test Suite",
+      "description": "Testing automatizzato 5 agenti",
+      "priority": 2,
+      "status": "active",
+      "features": []
+    },
+    "labeval": {
+      "name": "LabEval",
+      "description": "Valutazione laboratori",
+      "priority": 3,
+      "status": "active",
+      "features": []
+    },
+    "selfassessment": {
+      "name": "Self Assessment",
+      "description": "Autovalutazione + rilevazione settori",
+      "priority": 1,
+      "status": "active",
+      "features": []
+    }
+  },
+  "features": []
+}

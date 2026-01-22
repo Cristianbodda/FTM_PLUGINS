@@ -1,0 +1,116 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "last_session": "2026-01-22",
+    "total_sessions": 1
+  },
+  "plugins_progress": {
+    "coachmanager": {
+      "completion": 85,
+      "features_total": 10,
+      "features_done": 8,
+      "features_in_progress": 1,
+      "last_update": "2026-01-22",
+      "notes": "Dashboard V2 completata, navigazione aggiornata"
+    },
+    "competencymanager": {
+      "completion": 90,
+      "features_total": 12,
+      "features_done": 11,
+      "features_in_progress": 0,
+      "last_update": "2026-01-22",
+      "notes": "Sector Manager funzionante, Student Report completo"
+    },
+    "competencyreport": {
+      "completion": 80,
+      "features_total": 5,
+      "features_done": 4,
+      "features_in_progress": 0,
+      "last_update": "2026-01-22",
+      "notes": "Report base funzionante"
+    },
+    "competencyxmlimport": {
+      "completion": 95,
+      "features_total": 8,
+      "features_done": 7,
+      "features_in_progress": 1,
+      "last_update": "2026-01-22",
+      "notes": "Setup Universale completo, import Word/Excel funzionante"
+    },
+    "ftm_common": {
+      "completion": 60,
+      "features_total": 10,
+      "features_done": 6,
+      "features_in_progress": 0,
+      "last_update": "2026-01-22",
+      "notes": "Design system creato, da espandere utilities condivise"
+    },
+    "ftm_cpurc": {
+      "completion": 40,
+      "features_total": 6,
+      "features_done": 2,
+      "features_in_progress": 1,
+      "last_update": "2026-01-22",
+      "notes": "Import CSV base, report Word da completare"
+    },
+    "ftm_hub": {
+      "completion": 75,
+      "features_total": 4,
+      "features_done": 3,
+      "features_in_progress": 0,
+      "last_update": "2026-01-22",
+      "notes": "Hub navigazione funzionante"
+    },
+    "ftm_scheduler": {
+      "completion": 95,
+      "features_total": 10,
+      "features_done": 9,
+      "features_in_progress": 1,
+      "last_update": "2026-01-22",
+      "notes": "Calendario completo, gruppi colore funzionanti"
+    },
+    "ftm_testsuite": {
+      "completion": 85,
+      "features_total": 8,
+      "features_done": 7,
+      "features_in_progress": 0,
+      "last_update": "2026-01-22",
+      "notes": "5 agenti test funzionanti, 58 test totali"
+    },
+    "labeval": {
+      "completion": 50,
+      "features_total": 6,
+      "features_done": 3,
+      "features_in_progress": 0,
+      "last_update": "2026-01-22",
+      "notes": "Valutazione base funzionante"
+    },
+    "selfassessment": {
+      "completion": 90,
+      "features_total": 7,
+      "features_done": 6,
+      "features_in_progress": 1,
+      "last_update": "2026-01-22",
+      "notes": "Popup bloccante, doppia password, observer settori"
+    }
+  },
+  "overall": {
+    "completion": 77,
+    "health_status": "good",
+    "last_health_check": "2026-01-22T03:00:28",
+    "health_results": {
+      "ok": 15,
+      "warn": 2,
+      "error": 0
+    }
+  },
+  "sessions": [
+    {
+      "date": "2026-01-22",
+      "duration_minutes": 180,
+      "features_completed": 5,
+      "commits": 4,
+      "notes": "Aggiunto sistema agenti FTM, comandi, colloqui collapsible, fix security"
+    }
+  ]
+}

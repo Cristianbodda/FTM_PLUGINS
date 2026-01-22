@@ -15,6 +15,14 @@
 | `/ftm-health` | **HEALTH CHECK** - Verifica rapida con Playwright |
 | `/ftm-release` | **RELEASE** - Prepara e pubblica nuova versione |
 
+### Comandi Feature Tracking (AutoCoder-style)
+| Comando | Descrizione |
+|---------|-------------|
+| `/ftm-features` | **LISTA FEATURES** - Mostra features per plugin e stato |
+| `/ftm-progress` | **AVANZAMENTO** - Report visuale progress per plugin |
+| `/ftm-next` | **PROSSIMA FEATURE** - Suggerisce prossima feature da implementare |
+| `/ftm-complete` | **COMPLETA FEATURE** - Marca feature come completata |
+
 ### Comandi Legacy
 | Comando | Descrizione |
 |---------|-------------|

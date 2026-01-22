@@ -1,0 +1,92 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "Grafo dipendenze tra plugin FTM"
+  },
+  "plugins": {
+    "ftm_hub": {
+      "depends_on": [],
+      "required_by": ["coachmanager", "competencymanager", "ftm_scheduler", "labeval", "selfassessment"],
+      "level": 0,
+      "description": "Hub centrale - nessuna dipendenza"
+    },
+    "ftm_common": {
+      "depends_on": [],
+      "required_by": ["coachmanager", "competencymanager", "competencyreport", "competencyxmlimport", "ftm_testsuite"],
+      "level": 0,
+      "description": "Libreria condivisa - nessuna dipendenza"
+    },
+    "competencymanager": {
+      "depends_on": ["ftm_common"],
+      "required_by": ["coachmanager", "competencyreport", "competencyxmlimport", "selfassessment"],
+      "level": 1,
+      "description": "Core competenze - dipende da ftm_common"
+    },
+    "coachmanager": {
+      "depends_on": ["competencymanager", "ftm_common"],
+      "required_by": [],
+      "level": 2,
+      "description": "Dashboard coach - dipende da competencymanager"
+    },
+    "competencyreport": {
+      "depends_on": ["competencymanager"],
+      "required_by": [],
+      "level": 2,
+      "description": "Report - dipende da competencymanager"
+    },
+    "competencyxmlimport": {
+      "depends_on": ["competencymanager"],
+      "required_by": [],
+      "level": 2,
+      "description": "Import - dipende da competencymanager"
+    },
+    "selfassessment": {
+      "depends_on": ["competencymanager"],
+      "required_by": [],
+      "level": 2,
+      "description": "Autovalutazione - dipende da competencymanager"
+    },
+    "ftm_scheduler": {
+      "depends_on": [],
+      "required_by": [],
+      "level": 1,
+      "description": "Scheduler - indipendente"
+    },
+    "ftm_testsuite": {
+      "depends_on": ["ftm_common"],
+      "required_by": [],
+      "level": 1,
+      "description": "Test suite - dipende da ftm_common"
+    },
+    "labeval": {
+      "depends_on": [],
+      "required_by": [],
+      "level": 1,
+      "description": "Lab evaluation - indipendente"
+    },
+    "ftm_cpurc": {
+      "depends_on": [],
+      "required_by": [],
+      "level": 1,
+      "description": "CPURC import - indipendente"
+    }
+  },
+  "dependency_graph": {
+    "level_0": ["ftm_hub", "ftm_common"],
+    "level_1": ["competencymanager", "ftm_scheduler", "ftm_testsuite", "labeval", "ftm_cpurc"],
+    "level_2": ["coachmanager", "competencyreport", "competencyxmlimport", "selfassessment"]
+  },
+  "build_order": [
+    "ftm_hub",
+    "ftm_common",
+    "competencymanager",
+    "ftm_scheduler",
+    "ftm_testsuite",
+    "labeval",
+    "ftm_cpurc",
+    "coachmanager",
+    "competencyreport",
+    "competencyxmlimport",
+    "selfassessment"
+  ]
+}
