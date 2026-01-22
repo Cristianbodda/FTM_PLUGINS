@@ -198,3 +198,42 @@ $string['ftm_scheduler:managegroups'] = 'Manage groups';
 $string['ftm_scheduler:manageactivities'] = 'Manage activities';
 $string['ftm_scheduler:managerooms'] = 'Manage rooms';
 $string['ftm_scheduler:enrollstudents'] = 'Enroll students';
+$string['ftm_scheduler:markattendance'] = 'Mark student attendance';
+
+// Attendance
+$string['attendance'] = 'Attendance';
+$string['attendance_title'] = 'Attendance Register';
+$string['attendance_date'] = 'Date';
+$string['attendance_student'] = 'Student';
+$string['attendance_status'] = 'Status';
+$string['attendance_actions'] = 'Actions';
+$string['attendance_present'] = 'Present';
+$string['attendance_absent'] = 'Absent';
+$string['attendance_pending'] = 'Pending';
+$string['attendance_marked_by'] = 'Marked by';
+$string['attendance_marked_at'] = 'Marked at';
+$string['mark_present'] = 'Mark Present';
+$string['mark_absent'] = 'Mark Absent';
+$string['mark_all_present'] = 'Mark All Present';
+$string['student'] = 'Student';
+$string['activity'] = 'Activity';
+$string['date'] = 'Date';
+$string['time'] = 'Time';
+$string['room'] = 'Room';
+$string['no_activities_today'] = 'No activities scheduled for this date';
+$string['select_activity'] = 'Select an activity to mark attendance';
+$string['export_attendance'] = 'Export Attendance';
+$string['attendance_updated'] = 'Attendance updated successfully';
+$string['prev_day'] = 'Previous Day';
+$string['next_day'] = 'Next Day';
+$string['today'] = 'Today';
+
+// Absence notifications
+$string['absence_notification_title'] = 'Student Absence Notification';
+$string['absence_notification_subject'] = 'Absence: {$a}';
+$string['absence_notification_intro'] = 'A student has been marked absent from an activity.';
+$string['absence_notification_small'] = '{$a->student_name} absent from {$a->activity_title} on {$a->activity_date}';
+$string['absence_notification_footer'] = 'This is an automatic notification from FTM Scheduler.';
+
+// Message provider
+$string['messageprovider:absence_notification'] = 'Absence notifications';

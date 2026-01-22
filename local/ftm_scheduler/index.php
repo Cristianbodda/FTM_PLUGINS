@@ -1044,6 +1044,14 @@ echo $OUTPUT->header();
            class="ftm-tab <?php echo $tab === 'aule' ? 'active' : ''; ?>">🏫 Aule</a>
         <a href="<?php echo new moodle_url('/local/ftm_scheduler/index.php', ['tab' => 'atelier']); ?>"
            class="ftm-tab <?php echo $tab === 'atelier' ? 'active' : ''; ?>">🎭 Atelier</a>
+        <?php if (has_capability('local/ftm_scheduler:markattendance', $context)): ?>
+        <a href="<?php echo new moodle_url('/local/ftm_scheduler/attendance.php'); ?>"
+           class="ftm-tab">📋 Presenze</a>
+        <?php endif; ?>
+        <?php if (has_capability('local/ftm_scheduler:manage', $context)): ?>
+        <a href="<?php echo new moodle_url('/local/ftm_scheduler/room_occupancy.php'); ?>"
+           class="ftm-tab">🏢 Segreteria</a>
+        <?php endif; ?>
     </div>
     
     <!-- Tab Content -->
