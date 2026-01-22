@@ -126,6 +126,62 @@ get_sector_stats($courseid = 0)
 
 ---
 
+## Modifiche 22/01/2026 - Student Report Print
+
+### Nuova Funzionalità: Stampa Report Studente Professionale
+
+Implementato sistema di stampa avanzato per il report competenze studente con:
+
+#### Layout e Branding
+- **Logo FTM** in header con sfondo bianco
+- **Font Didact Gothic** (Google Fonts) per coerenza corporate
+- **Colori FTM**: rosso #dd0000 per accenti
+- **Header running** su ogni pagina stampata
+
+#### Grafici Radar Migliorati
+- **Dimensione aumentata**: 490px (+40% rispetto originale 340px)
+- **Etichette complete**: maxLabelLen=250 caratteri (nessun troncamento)
+- **Padding laterale SVG**: 180px per etichette lunghe sulla sinistra
+- **Font etichette**: 9pt per leggibilità
+
+#### Sezioni Configurabili
+Il coach può impostare l'ordine delle sezioni in stampa (1-9):
+1. Valutazione Globale
+2. Progressi Recenti
+3. Autovalutazione Radar
+4. Performance Radar
+5. Analisi per Area
+6. Raccomandazioni
+7. Piano d'Azione
+8. Note Aggiuntive
+9. Confronto Auto/Reale
+
+#### Tabelle Legenda
+- **Font aumentato**: 8.5pt (+20% da 7pt)
+- **Titolo**: 11pt bold
+- **Padding celle**: 5px 8px
+- **Colonne**: Area, Auto, Reale, Gap con badge colorati
+
+#### File Modificati
+```
+local/competencymanager/
+├── student_report.php           # generate_svg_radar() con padding laterale
+├── student_report_print.php     # Layout completo stampa professionale
+└── pix/ftm_logo.png             # Logo FTM scaricato localmente
+```
+
+#### CSS Print Ottimizzato
+```css
+@page { size: A4; margin: 15mm; }
+@media print {
+    body { padding-top: 75px; }
+    .page-break-before { page-break-before: always; }
+    th, td { padding: 3px 5px !important; }
+}
+```
+
+---
+
 ## Modifiche 16/01/2026
 
 - Aggiunta capability `managesectors` per gestione settori segreteria/coach

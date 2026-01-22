@@ -34,11 +34,16 @@ $filterLevel = optional_param('filter', 'all', PARAM_ALPHANUMEXT);
 $filterArea = optional_param('filter_area', '', PARAM_TEXT);
 
 // Parametri stampa personalizzata
-$printPanoramica = optional_param('print_panoramica', 1, PARAM_INT);
-$printPiano = optional_param('print_piano', 1, PARAM_INT);
-$printProgressi = optional_param('print_progressi', 1, PARAM_INT);
-$printDettagli = optional_param('print_dettagli', 1, PARAM_INT);
-$printRadarAree = optional_param('print_radar_aree', 1, PARAM_INT);
+// Se print_form=1, il modale è stato usato quindi i checkbox deselezionati = 0
+// Se print_form non è presente, usa default 1 per compatibilità con link diretti
+$printFormUsed = optional_param('print_form', 0, PARAM_INT);
+$defaultPrint = $printFormUsed ? 0 : 1;
+
+$printPanoramica = optional_param('print_panoramica', $defaultPrint, PARAM_INT);
+$printPiano = optional_param('print_piano', $defaultPrint, PARAM_INT);
+$printProgressi = optional_param('print_progressi', $defaultPrint, PARAM_INT);
+$printDettagli = optional_param('print_dettagli', $defaultPrint, PARAM_INT);
+$printRadarAree = optional_param('print_radar_aree', $defaultPrint, PARAM_INT);
 $printRadarAreas = optional_param_array('print_radar_areas', [], PARAM_TEXT);
 
 // ============================================
@@ -55,6 +60,26 @@ $printGapAnalysis = optional_param('print_gap', 0, PARAM_INT);
 // Filtro settore (sincronizzato con CoachManager)
 $cm_sector_filter = optional_param('cm_sector', 'all', PARAM_ALPHANUMEXT);
 $printSpuntiColloquio = optional_param('print_spunti', 0, PARAM_INT);
+
+// Filtro settore per STAMPA (nuovo)
+$printSectorFilter = optional_param('print_sector', 'all', PARAM_ALPHANUMEXT);
+
+// ============================================
+// ORDINAMENTO SEZIONI STAMPA (impostabile dal coach)
+// ============================================
+$sectionOrder = [
+    'valutazione'    => optional_param('order_valutazione', 1, PARAM_INT),
+    'progressi'      => optional_param('order_progressi', 2, PARAM_INT),
+    'radar_aree'     => optional_param('order_radar_aree', 3, PARAM_INT),
+    'radar_dettagli' => optional_param('order_radar_dettagli', 4, PARAM_INT),
+    'piano'          => optional_param('order_piano', 5, PARAM_INT),
+    'dettagli'       => optional_param('order_dettagli', 6, PARAM_INT),
+    'dual_radar'     => optional_param('order_dual_radar', 7, PARAM_INT),
+    'gap_analysis'   => optional_param('order_gap', 8, PARAM_INT),
+    'spunti'         => optional_param('order_spunti', 9, PARAM_INT),
+];
+// Ordina per valore (ordine di stampa)
+asort($sectionOrder);
 
 // ============================================
 // SOGLIE CONFIGURABILI (impostabili dal coach)
@@ -556,27 +581,33 @@ function aggregate_autovalutazione_by_area($autovalutazione, $areaDescriptions, 
 /**
  * Genera un grafico radar SVG
  */
-function generate_svg_radar($data, $title = '', $size = 300, $fillColor = 'rgba(102,126,234,0.3)', $strokeColor = '#667eea') {
+function generate_svg_radar($data, $title = '', $size = 300, $fillColor = 'rgba(102,126,234,0.3)', $strokeColor = '#667eea', $labelFontSize = 9, $maxLabelLen = 250) {
     if (empty($data)) return '<p class="text-muted">Nessun dato disponibile</p>';
-    
-    $cx = $size / 2;
+
+    // Padding laterale per etichette lunghe (testo che esce a sinistra/destra)
+    $horizontalPadding = 180;
+    $svgWidth = $size + (2 * $horizontalPadding);
+
+    $cx = $horizontalPadding + ($size / 2);
     $cy = $size / 2;
-    $radius = ($size / 2) - 60;
+    // Margine più ampio per etichette lunghe
+    $margin = max(70, $labelFontSize * 8);
+    $radius = ($size / 2) - $margin;
     $n = count($data);
-    
+
     if ($n < 3) {
         return generate_svg_bar_chart($data, $title, $size);
     }
-    
+
     $angleStep = (2 * M_PI) / $n;
-    
-    $svg = '<svg width="' . $size . '" height="' . ($size + 50) . '" xmlns="http://www.w3.org/2000/svg" style="font-family: Arial, sans-serif;">';
-    
+
+    $svg = '<svg width="' . $svgWidth . '" height="' . ($size + 50) . '" xmlns="http://www.w3.org/2000/svg" style="font-family: Arial, sans-serif;">';
+
     if ($title) {
         $svg .= '<text x="' . $cx . '" y="20" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">' . htmlspecialchars($title) . '</text>';
     }
     $offsetY = $title ? 35 : 10;
-    
+
     for ($p = 20; $p <= 100; $p += 20) {
         $r = $radius * ($p / 100);
         $svg .= '<circle cx="' . $cx . '" cy="' . ($cy + $offsetY) . '" r="' . $r . '" fill="none" stroke="#e0e0e0" stroke-width="1"/>';
@@ -584,42 +615,43 @@ function generate_svg_radar($data, $title = '', $size = 300, $fillColor = 'rgba(
             $svg .= '<text x="' . ($cx + 5) . '" y="' . ($cy + $offsetY - $r - 3) . '" font-size="8" fill="#999">' . $p . '%</text>';
         }
     }
-    
+
     $svg .= '<circle cx="' . $cx . '" cy="' . ($cy + $offsetY) . '" r="' . ($radius * 0.6) . '" fill="none" stroke="#f39c12" stroke-width="2" stroke-dasharray="5,3"/>';
     $svg .= '<circle cx="' . $cx . '" cy="' . ($cy + $offsetY) . '" r="' . ($radius * 0.8) . '" fill="none" stroke="#27ae60" stroke-width="2" stroke-dasharray="5,3"/>';
-    
+
     $points = [];
     $i = 0;
     foreach ($data as $item) {
         $angle = ($i * $angleStep) - (M_PI / 2);
-        
+
         $axisX = $cx + $radius * cos($angle);
         $axisY = ($cy + $offsetY) + $radius * sin($angle);
         $svg .= '<line x1="' . $cx . '" y1="' . ($cy + $offsetY) . '" x2="' . $axisX . '" y2="' . $axisY . '" stroke="#ddd" stroke-width="1"/>';
-        
+
         $value = min(100, max(0, $item['value']));
         $pointRadius = $radius * ($value / 100);
         $pointX = $cx + $pointRadius * cos($angle);
         $pointY = ($cy + $offsetY) + $pointRadius * sin($angle);
         $points[] = $pointX . ',' . $pointY;
-        
-        $labelRadius = $radius + 25;
+
+        $labelRadius = $radius + 20;
         $labelX = $cx + $labelRadius * cos($angle);
         $labelY = ($cy + $offsetY) + $labelRadius * sin($angle);
-        
+
         $anchor = 'middle';
         if ($labelX < $cx - 20) $anchor = 'end';
         else if ($labelX > $cx + 20) $anchor = 'start';
-        
+
         $labelColor = $value >= 80 ? '#27ae60' : ($value >= 60 ? '#3498db' : ($value >= 40 ? '#f39c12' : '#c0392b'));
-        $displayLabel = strlen($item['label']) > 20 ? substr($item['label'], 0, 18) . '...' : $item['label'];
-        
-        $svg .= '<text x="' . $labelX . '" y="' . $labelY . '" text-anchor="' . $anchor . '" font-size="9" fill="#333">' . htmlspecialchars($displayLabel) . '</text>';
-        $svg .= '<text x="' . $labelX . '" y="' . ($labelY + 11) . '" text-anchor="' . $anchor . '" font-size="10" font-weight="bold" fill="' . $labelColor . '">' . $value . '%</text>';
-        
+        // Tronca etichetta se necessario (parametro configurabile)
+        $displayLabel = mb_strlen($item['label']) > $maxLabelLen ? mb_substr($item['label'], 0, $maxLabelLen - 2) . '...' : $item['label'];
+
+        $svg .= '<text x="' . $labelX . '" y="' . $labelY . '" text-anchor="' . $anchor . '" font-size="' . $labelFontSize . '" fill="#333">' . htmlspecialchars($displayLabel) . '</text>';
+        $svg .= '<text x="' . $labelX . '" y="' . ($labelY + $labelFontSize + 2) . '" text-anchor="' . $anchor . '" font-size="' . ($labelFontSize + 1) . '" font-weight="bold" fill="' . $labelColor . '">' . $value . '%</text>';
+
         $i++;
     }
-    
+
     if (!empty($points)) {
         $svg .= '<polygon points="' . implode(' ', $points) . '" fill="' . $fillColor . '" stroke="' . $strokeColor . '" stroke-width="2"/>';
         foreach ($points as $point) {
@@ -627,13 +659,13 @@ function generate_svg_radar($data, $title = '', $size = 300, $fillColor = 'rgba(
             $svg .= '<circle cx="' . $px . '" cy="' . $py . '" r="5" fill="' . $strokeColor . '" stroke="white" stroke-width="2"/>';
         }
     }
-    
+
     $legendY = $size + $offsetY + 10;
     $svg .= '<line x1="' . ($cx - 100) . '" y1="' . $legendY . '" x2="' . ($cx - 80) . '" y2="' . $legendY . '" stroke="#f39c12" stroke-width="2" stroke-dasharray="5,3"/>';
     $svg .= '<text x="' . ($cx - 75) . '" y="' . ($legendY + 4) . '" font-size="9" fill="#666">60% Sufficiente</text>';
     $svg .= '<line x1="' . ($cx + 20) . '" y1="' . $legendY . '" x2="' . ($cx + 40) . '" y2="' . $legendY . '" stroke="#27ae60" stroke-width="2" stroke-dasharray="5,3"/>';
     $svg .= '<text x="' . ($cx + 45) . '" y="' . ($legendY + 4) . '" font-size="9" fill="#666">80% Eccellente</text>';
-    
+
     $svg .= '</svg>';
     return $svg;
 }
@@ -686,15 +718,43 @@ $quizComparison = \local_competencymanager\report_generator::get_quiz_comparison
 $progressData = \local_competencymanager\report_generator::get_progress_over_time($userid, $courseid);
 
 // CARICAMENTO DESCRIZIONI DINAMICHE DAL DATABASE
-$sector = \local_competencymanager\report_generator::detect_sector_from_competencies($competencies);
+// Rileva TUTTI i settori presenti nelle competenze (non solo il maggioritario)
+$validSectors = ['AUTOMOBILE', 'AUTOVEICOLO', 'AUTOMAZIONE', 'AUTOM', 'AUTOMAZ',
+                 'CHIMFARM', 'CHIM', 'CHIMICA', 'FARMACEUTICA',
+                 'ELETTRICITÀ', 'ELETTRICITA', 'ELETTR', 'ELETT',
+                 'LOGISTICA', 'LOG', 'MECCANICA', 'MECC', 'METALCOSTRUZIONE', 'METAL', 'GENERICO', 'GEN'];
+$sectorsFound = [];
+foreach ($competencies as $comp) {
+    $idnumber = $comp['idnumber'] ?? '';
+    if (empty($idnumber)) continue;
+    $parts = explode('_', $idnumber);
+    $potentialSector = strtoupper($parts[0] ?? '');
+    // Deve avere almeno 2 parti (SETTORE_xxx) e essere un settore valido
+    if (count($parts) >= 2 && in_array($potentialSector, $validSectors)) {
+        $sectorsFound[$potentialSector] = true;
+    }
+}
+// Settore principale (per compatibilità) = primo trovato
+$sector = !empty($sectorsFound) ? array_key_first($sectorsFound) : null;
+
 // Settore dal nome corso (usato per filtrare autovalutazione)
 $courseSector = $course ? get_sector_from_course_name($course->fullname) : '';
 // Se non c'è settore dai quiz, usa quello del corso
 if (empty($sector) && !empty($courseSector)) {
     $sector = $courseSector;
+    $sectorsFound[$courseSector] = true;
 }
-$areaDescriptions = \local_competencymanager\report_generator::get_area_descriptions_from_framework($sector, $courseid);
-$competencyDescriptions = \local_competencymanager\report_generator::get_competency_descriptions_from_framework($sector);
+
+// Carica descrizioni per TUTTI i settori trovati
+$areaDescriptions = [];
+$competencyDescriptions = [];
+foreach (array_keys($sectorsFound) as $sec) {
+    $areaDesc = \local_competencymanager\report_generator::get_area_descriptions_from_framework($sec, $courseid);
+    $compDesc = \local_competencymanager\report_generator::get_competency_descriptions_from_framework($sec);
+    // Merge con priorità ai nuovi (non sovrascrive esistenti)
+    $areaDescriptions = array_merge($areaDesc, $areaDescriptions);
+    $competencyDescriptions = array_merge($compDesc, $competencyDescriptions);
+}
 
 // FILTRA COMPETENZE PER SETTORE PRIMA DI AGGREGARE (se filtro attivo)
 $competencies_for_areas = $competencies;
@@ -1662,14 +1722,44 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
                     <input type="hidden" name="userid" value="<?php echo $userid; ?>">
                     <input type="hidden" name="courseid" value="<?php echo $courseid; ?>">
                     <input type="hidden" name="print" value="1">
+                    <input type="hidden" name="print_form" value="1">
                     <?php foreach ($selectedQuizzes as $qid): ?>
                     <input type="hidden" name="quizids[]" value="<?php echo $qid; ?>">
                     <?php endforeach; ?>
-                    
+
                     <!-- SOGLIE CONFIGURABILI - passate alla stampa -->
                     <input type="hidden" name="soglia_allineamento" value="<?php echo $sogliaAllineamento; ?>">
                     <input type="hidden" name="soglia_critico" value="<?php echo $sogliaCritico; ?>">
-                    
+
+                    <!-- FILTRO SETTORE PER STAMPA -->
+                    <div class="mb-3 p-3" style="background: #f8f9fa; border-radius: 8px;">
+                        <h6>🏭 Filtra per Settore:</h6>
+                        <select name="print_sector" class="form-control">
+                            <option value="all">Tutti i settori</option>
+                            <?php
+                            // Estrai settori unici dalle competenze
+                            $printSectors = [];
+                            foreach ($competencies as $comp) {
+                                $idnumber = $comp['idnumber'] ?? '';
+                                if (!empty($idnumber)) {
+                                    $parts = explode('_', $idnumber);
+                                    if (count($parts) >= 2) {
+                                        $sec = strtoupper($parts[0]);
+                                        if (!isset($printSectors[$sec])) {
+                                            $printSectors[$sec] = 0;
+                                        }
+                                        $printSectors[$sec]++;
+                                    }
+                                }
+                            }
+                            arsort($printSectors);
+                            foreach ($printSectors as $sec => $count): ?>
+                            <option value="<?php echo $sec; ?>"><?php echo $sec; ?> (<?php echo $count; ?> competenze)</option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="text-muted">Seleziona un settore per stampare solo le competenze di quel settore</small>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <h6>📋 Sezioni da includere:</h6>
@@ -1740,6 +1830,159 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
                         <div>
                             <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.querySelectorAll('.section-check').forEach(c=>c.checked=true)">✅ Tutte le sezioni</button>
                             <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.querySelectorAll('.section-check').forEach(c=>c.checked=false)">☐ Nessuna sezione</button>
+                        </div>
+                    </div>
+
+                    <!-- ============================================ -->
+                    <!-- ORDINAMENTO SEZIONI STAMPA                   -->
+                    <!-- ============================================ -->
+                    <hr>
+                    <div class="mb-3">
+                        <h6 class="d-flex justify-content-between align-items-center" style="cursor: pointer;" onclick="document.getElementById('orderSection').classList.toggle('d-none');">
+                            🔢 Ordine Sezioni di Stampa
+                            <small class="text-muted">(clicca per espandere)</small>
+                        </h6>
+                        <div id="orderSection" class="d-none mt-2 p-3" style="background: #f0f4f8; border-radius: 8px; border: 1px solid #dee2e6;">
+                            <p class="small text-muted mb-2">Imposta l'ordine di stampa delle sezioni (1 = primo, numeri più alti = dopo):</p>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2 d-flex align-items-center">
+                                        <select name="order_valutazione" class="form-control form-control-sm mr-2" style="width: 60px;">
+                                            <option value="1" selected>1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                        </select>
+                                        <label class="mb-0">📋 Scheda Valutazione</label>
+                                    </div>
+                                    <div class="form-group mb-2 d-flex align-items-center">
+                                        <select name="order_progressi" class="form-control form-control-sm mr-2" style="width: 60px;">
+                                            <option value="1">1</option>
+                                            <option value="2" selected>2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                        </select>
+                                        <label class="mb-0">📈 Progresso Certificazione</label>
+                                    </div>
+                                    <div class="form-group mb-2 d-flex align-items-center">
+                                        <select name="order_radar_aree" class="form-control form-control-sm mr-2" style="width: 60px;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3" selected>3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                        </select>
+                                        <label class="mb-0">🎯 Radar Panoramica Aree</label>
+                                    </div>
+                                    <div class="form-group mb-2 d-flex align-items-center">
+                                        <select name="order_radar_dettagli" class="form-control form-control-sm mr-2" style="width: 60px;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4" selected>4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                        </select>
+                                        <label class="mb-0">🔍 Radar Dettaglio Aree</label>
+                                    </div>
+                                    <div class="form-group mb-2 d-flex align-items-center">
+                                        <select name="order_piano" class="form-control form-control-sm mr-2" style="width: 60px;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5" selected>5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                        </select>
+                                        <label class="mb-0">📚 Piano d'Azione</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-2 d-flex align-items-center">
+                                        <select name="order_dettagli" class="form-control form-control-sm mr-2" style="width: 60px;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6" selected>6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                        </select>
+                                        <label class="mb-0">📋 Tabella Dettagli</label>
+                                    </div>
+                                    <?php if ($hasAutovalutazione): ?>
+                                    <div class="form-group mb-2 d-flex align-items-center">
+                                        <select name="order_dual_radar" class="form-control form-control-sm mr-2" style="width: 60px;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7" selected>7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                        </select>
+                                        <label class="mb-0">🎯 Doppio Radar</label>
+                                    </div>
+                                    <div class="form-group mb-2 d-flex align-items-center">
+                                        <select name="order_gap" class="form-control form-control-sm mr-2" style="width: 60px;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8" selected>8</option>
+                                            <option value="9">9</option>
+                                        </select>
+                                        <label class="mb-0">📈 Gap Analysis</label>
+                                    </div>
+                                    <div class="form-group mb-2 d-flex align-items-center">
+                                        <select name="order_spunti" class="form-control form-control-sm mr-2" style="width: 60px;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9" selected>9</option>
+                                        </select>
+                                        <label class="mb-0">💬 Spunti Colloquio</label>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <div class="mt-2 p-2" style="background: #fff3cd; border-radius: 4px;">
+                                <small class="text-warning"><strong>💡 Suggerimento:</strong> Per stampare prima i grafici di confronto e poi il doppio radar, imposta Doppio Radar = 2 e Gap Analysis = 3</small>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -1854,7 +2097,7 @@ if ($tab === 'overview') {
                     <!-- Legenda competenze (drill-down) -->
                     <div id="competencyLegend" style="display: none; margin-top: 15px;">
                         <h6>📋 Competenze dell'area:</h6>
-                        <div id="competencyList" style="max-height: 200px; overflow-y: auto;"></div>
+                        <div id="competencyList" style="max-height: 350px; overflow-y: auto;"></div>
                     </div>
                 </div>
             </div>
@@ -1923,26 +2166,44 @@ if ($tab === 'overview') {
     <div class="card mt-4">
         <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
             <h5 class="mb-0">🎯 Confronto Radar: Autovalutazione vs Performance</h5>
+            <small class="d-block mt-1 opacity-75">Le competenze sono nella stessa posizione in entrambi i grafici per facilitare il confronto</small>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="text-center mb-3">
-                        <h6 style="color: #667eea;">🧑 Come lo studente si percepisce</h6>
-                    </div>
-                    <canvas id="radarAutovalutazione" style="max-height: 350px;"></canvas>
+            <!-- Legenda in alto -->
+            <div class="text-center mb-4">
+                <span class="badge mr-3" style="background: #667eea; color: white; padding: 10px 20px; font-size: 14px;">🧑 Autovalutazione</span>
+                <span class="badge" style="background: #28a745; color: white; padding: 10px 20px; font-size: 14px;">📊 Performance Reale</span>
+            </div>
+
+            <!-- Radar Autovalutazione - SOPRA -->
+            <div class="radar-comparison-item mb-4">
+                <div class="text-center mb-2">
+                    <h6 style="color: #667eea; font-weight: 600; font-size: 16px;">
+                        <span style="display: inline-block; width: 12px; height: 12px; background: #667eea; border-radius: 50%; margin-right: 8px;"></span>
+                        🧑 Come lo studente si percepisce
+                    </h6>
                 </div>
-                <div class="col-md-6">
-                    <div class="text-center mb-3">
-                        <h6 style="color: #28a745;">📊 Risultati reali dai quiz</h6>
-                    </div>
-                    <canvas id="radarPerformanceDual" style="max-height: 350px;"></canvas>
+                <div class="radar-canvas-container" style="max-width: 850px; margin: 0 auto;">
+                    <canvas id="radarAutovalutazione" style="height: 550px; max-height: 600px;"></canvas>
                 </div>
             </div>
-            <div class="row mt-3">
-                <div class="col-12 text-center">
-                    <span class="badge mr-3" style="background: #667eea; color: white; padding: 8px 15px;">🧑 Autovalutazione</span>
-                    <span class="badge" style="background: #28a745; color: white; padding: 8px 15px;">📊 Performance Reale</span>
+
+            <!-- Separatore visivo -->
+            <div class="text-center my-4">
+                <hr style="border-top: 2px dashed #dee2e6; max-width: 400px; margin: 0 auto;">
+                <span style="background: white; padding: 0 15px; position: relative; top: -12px; color: #6c757d; font-size: 12px;">VS</span>
+            </div>
+
+            <!-- Radar Performance - SOTTO -->
+            <div class="radar-comparison-item">
+                <div class="text-center mb-2">
+                    <h6 style="color: #28a745; font-weight: 600; font-size: 16px;">
+                        <span style="display: inline-block; width: 12px; height: 12px; background: #28a745; border-radius: 50%; margin-right: 8px;"></span>
+                        📊 Risultati reali dai quiz
+                    </h6>
+                </div>
+                <div class="radar-canvas-container" style="max-width: 850px; margin: 0 auto;">
+                    <canvas id="radarPerformanceDual" style="height: 550px; max-height: 600px;"></canvas>
                 </div>
             </div>
         </div>
@@ -2967,16 +3228,33 @@ function drillDownToArea(areaKey) {
     const dropdown = document.getElementById('areaDetailSelect');
     if (dropdown) dropdown.value = areaKey;
 
-    // Genera lista competenze
+    // Genera lista competenze con descrizioni complete
+    // Descrizione SOPRA, codice SOTTO
     let listHtml = '<div class="list-group list-group-flush">';
     comps.forEach((c, idx) => {
         const desc = competencyDescriptions[c.idnumber];
-        const name = desc ? (desc.name || c.idnumber) : c.idnumber;
+        // Usa full_name per la descrizione completa
+        const fullName = desc ? (desc.full_name || desc.description || c.idnumber) : c.idnumber;
+        // Se fullName è diverso da idnumber, mostra entrambi; altrimenti solo idnumber
+        const hasDescription = fullName && fullName !== c.idnumber;
         const color = c.percentage >= 80 ? '#28a745' : (c.percentage >= 60 ? '#20c997' : (c.percentage >= 40 ? '#ffc107' : '#dc3545'));
-        listHtml += `<div class="list-group-item py-2 d-flex justify-content-between align-items-center">
-            <small><strong>${idx + 1}.</strong> ${name}</small>
-            <span class="badge" style="background: ${color}; color: white;">${c.percentage}%</span>
-        </div>`;
+
+        if (hasDescription) {
+            listHtml += `<div class="list-group-item py-2 d-flex justify-content-between align-items-center">
+                <div style="flex: 1; min-width: 0;">
+                    <span style="font-size: 0.9em;"><strong>${idx + 1}.</strong> ${fullName}</span><br>
+                    <small class="text-muted">Rif: ${c.idnumber}</small>
+                </div>
+                <span class="badge ml-2" style="background: ${color}; color: white; white-space: nowrap;">${c.percentage}%</span>
+            </div>`;
+        } else {
+            listHtml += `<div class="list-group-item py-2 d-flex justify-content-between align-items-center">
+                <div style="flex: 1; min-width: 0;">
+                    <span style="font-size: 0.9em;"><strong>${idx + 1}.</strong> ${c.idnumber}</span>
+                </div>
+                <span class="badge ml-2" style="background: ${color}; color: white; white-space: nowrap;">${c.percentage}%</span>
+            </div>`;
+        }
     });
     listHtml += '</div>';
     document.getElementById('competencyList').innerHTML = listHtml;
@@ -3108,7 +3386,8 @@ function updateRadarChart() {
     radarChart.update();
 }
 
-// Aggiorna contenuto dettaglio area (panel destro)
+// Aggiorna contenuto dettaglio area (panel destro) con descrizioni complete
+// Descrizione SOPRA, codice SOTTO
 function updateAreaDetailContent(areaCode, comps) {
     const container = document.getElementById('areaDetailContent');
     if (!container) return;
@@ -3119,17 +3398,32 @@ function updateAreaDetailContent(areaCode, comps) {
     }
 
     let html = '<table class="table table-sm table-hover">';
-    html += '<thead class="thead-light"><tr><th>#</th><th>Competenza</th><th class="text-right">%</th></tr></thead><tbody>';
+    html += '<thead class="thead-light"><tr><th style="width: 30px;">#</th><th>COMPETENZA</th><th style="width: 60px;" class="text-right">%</th></tr></thead><tbody>';
 
     comps.forEach((c, idx) => {
         const desc = competencyDescriptions[c.idnumber];
-        const name = desc ? (desc.name || c.idnumber) : c.idnumber;
+        // Usa full_name per la descrizione completa
+        const fullName = desc ? (desc.full_name || desc.description || c.idnumber) : c.idnumber;
+        // Se fullName è diverso da idnumber, mostra entrambi
+        const hasDescription = fullName && fullName !== c.idnumber;
         const color = c.percentage >= 80 ? '#28a745' : (c.percentage >= 60 ? '#20c997' : (c.percentage >= 40 ? '#ffc107' : '#dc3545'));
-        html += `<tr>
-            <td><small class="text-muted">${idx + 1}</small></td>
-            <td><small title="${c.idnumber}">${name}</small></td>
-            <td class="text-right"><span class="badge" style="background: ${color}; color: white;">${c.percentage}%</span></td>
-        </tr>`;
+
+        if (hasDescription) {
+            html += `<tr>
+                <td><small class="text-muted">${idx + 1}</small></td>
+                <td>
+                    <span style="font-size: 0.9em;">${fullName}</span><br>
+                    <small class="text-muted">Rif: ${c.idnumber}</small>
+                </td>
+                <td class="text-right"><span class="badge" style="background: ${color}; color: white;">${c.percentage}%</span></td>
+            </tr>`;
+        } else {
+            html += `<tr>
+                <td><small class="text-muted">${idx + 1}</small></td>
+                <td><span style="font-size: 0.9em;">${c.idnumber}</span></td>
+                <td class="text-right"><span class="badge" style="background: ${color}; color: white;">${c.percentage}%</span></td>
+            </tr>`;
+        }
     });
 
     html += '</tbody></table>';
@@ -3162,55 +3456,147 @@ initRadarChart();
 <?php if ($showDualRadar && !empty($autovalutazioneAreas)): ?>
 const autovalutazioneAreas = <?php echo json_encode(array_values($autovalutazioneAreas)); ?>;
 
-// Radar Autovalutazione
+// ============================================
+// SINCRONIZZAZIONE LABELS PER CONFRONTO RADAR
+// Entrambi i radar usano lo STESSO ordine di labels
+// ============================================
+
+// Crea un ordine unificato basato su autovalutazioneAreas
+const unifiedLabels = autovalutazioneAreas.map(a => ({
+    key: a.key || a.name,
+    label: a.icon + ' ' + a.name,
+    icon: a.icon,
+    name: a.name
+}));
+
+// Funzione per trovare il valore di una competenza per chiave
+function findValueByKey(dataArray, key, fallback = 0) {
+    const found = dataArray.find(item => (item.key || item.name) === key);
+    return found ? found.percentage : fallback;
+}
+
+// Funzione per abbreviare i labels (OPZIONE C + D)
+function abbreviateLabel(label, maxLength = 28) {
+    // Estrai la lettera/codice iniziale (es. "A.", "B.", "📁 A.")
+    const match = label.match(/^([📁🔧⚙️🛠️💡🔌📊🎯]*\s*[A-Z]\.?\s*)/i);
+    const prefix = match ? match[1] : '';
+    const rest = label.substring(prefix.length);
+
+    // Calcola spazio disponibile per il nome
+    const availableLength = maxLength - prefix.length;
+
+    if (rest.length <= availableLength) {
+        return label;
+    }
+
+    // Abbrevia il nome
+    return prefix + rest.substring(0, availableLength - 3) + '...';
+}
+
+// Prepara dati sincronizzati
+const syncedAutoData = unifiedLabels.map(l => findValueByKey(autovalutazioneAreas, l.key));
+const syncedPerfData = unifiedLabels.map(l => findValueByKey(areasData, l.key));
+// Labels abbreviate per evitare troncamento
+const syncedLabels = unifiedLabels.map(l => abbreviateLabel(l.label, 28));
+
+// Opzioni comuni per entrambi i radar (OPZIONE C + D: font piccolo, più padding)
+const radarOptions = {
+    responsive: true,
+    maintainAspectRatio: false,  // Permette controllo altezza
+    scales: {
+        r: {
+            beginAtZero: true,
+            max: 100,
+            ticks: {
+                stepSize: 20,
+                font: { size: 10 },
+                callback: function(value) { return value + '%'; },
+                backdropColor: 'rgba(255, 255, 255, 0.8)'
+            },
+            pointLabels: {
+                font: { size: 10, weight: '500' },  // Font più piccolo
+                padding: 20,  // Più spazio tra label e grafico
+                centerPointLabels: false
+            },
+            grid: {
+                color: 'rgba(0, 0, 0, 0.08)'
+            },
+            angleLines: {
+                color: 'rgba(0, 0, 0, 0.08)'
+            }
+        }
+    },
+    plugins: {
+        legend: { display: false },
+        tooltip: {
+            callbacks: {
+                label: function(context) {
+                    // Mostra nome completo nel tooltip
+                    const fullName = unifiedLabels[context.dataIndex]?.name || '';
+                    return fullName + ': ' + context.raw.toFixed(1) + '%';
+                }
+            }
+        }
+    },
+    layout: {
+        padding: {
+            top: 20,
+            bottom: 20,
+            left: 30,
+            right: 30
+        }
+    }
+};
+
+// Radar Autovalutazione (SOPRA)
 const ctxAuto = document.getElementById('radarAutovalutazione');
-if (ctxAuto && autovalutazioneAreas.length > 0) {
+if (ctxAuto && syncedLabels.length > 0) {
     new Chart(ctxAuto, {
         type: 'radar',
         data: {
-            labels: autovalutazioneAreas.map(a => a.icon + ' ' + a.name),
+            labels: syncedLabels,
             datasets: [{
                 label: 'Autovalutazione',
-                data: autovalutazioneAreas.map(a => a.percentage),
-                backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                data: syncedAutoData,
+                backgroundColor: 'rgba(102, 126, 234, 0.25)',
                 borderColor: 'rgba(102, 126, 234, 1)',
-                borderWidth: 2,
+                borderWidth: 3,
                 pointBackgroundColor: '#667eea',
-                pointRadius: 5
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
             }]
         },
-        options: {
-            responsive: true,
-            scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } } },
-            plugins: { legend: { display: false } }
-        }
+        options: radarOptions
     });
 }
 
-// Radar Performance (duplicato per confronto)
+// Radar Performance (SOTTO) - USA GLI STESSI LABELS!
 const ctxPerfDual = document.getElementById('radarPerformanceDual');
-if (ctxPerfDual) {
+if (ctxPerfDual && syncedLabels.length > 0) {
     new Chart(ctxPerfDual, {
         type: 'radar',
         data: {
-            labels: areasData.map(a => a.icon + ' ' + a.name),
+            labels: syncedLabels,  // STESSO ordine di labels!
             datasets: [{
                 label: 'Performance',
-                data: areasData.map(a => a.percentage),
-                backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                data: syncedPerfData,
+                backgroundColor: 'rgba(40, 167, 69, 0.25)',
                 borderColor: 'rgba(40, 167, 69, 1)',
-                borderWidth: 2,
+                borderWidth: 3,
                 pointBackgroundColor: '#28a745',
-                pointRadius: 5
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
             }]
         },
-        options: {
-            responsive: true,
-            scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } } },
-            plugins: { legend: { display: false } }
-        }
+        options: radarOptions
     });
 }
+
+console.log('Radar sincronizzati - Labels:', syncedLabels.length, 'Auto:', syncedAutoData, 'Perf:', syncedPerfData);
 <?php endif; ?>
 // ============================================
 
@@ -3328,8 +3714,10 @@ if (true) { // Carica sempre i dati per il modal
     ");
 
     // Carica quiz results per questo studente con dettagli
+    // Usa qa.id come prima colonna per evitare duplicati (questionid può ripetersi in quiz diversi)
     $quiz_details = $DB->get_records_sql("
         SELECT
+            qa.id as qa_id,
             qa.questionid,
             qas.fraction,
             q.name as question_name,

@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida Completa per Claude
 
-**Ultimo aggiornamento:** 22 Gennaio 2026 (ore 10:00)
+**Ultimo aggiornamento:** 22 Gennaio 2026 (ore 16:30)
 
 ## Panoramica Progetto
 
@@ -22,11 +22,12 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 - Gestione Aule e Atelier
 - Generazione automatica attivita
 
-#### 2. Sector Manager (local_competencymanager)
+#### 2. Sector Manager + Student Report (local_competencymanager)
 - Sistema Multi-Settore per studenti
 - Interfaccia segreteria: `sector_admin.php`
 - Rilevamento automatico settori da quiz
 - Capability `managesectors` per coach/segreteria
+- **Student Report Print** con radar 490px, logo FTM, sezioni configurabili
 
 #### 3. Test Suite (local_ftm_testsuite)
 - 5 Agenti di test: Security, Database, AJAX, Structure, Language
@@ -356,6 +357,8 @@ block_ftm_tools -> ftm_hub
 - Server Test: https://test-urc.hizuvala.myhostpoint.ch
 - **Coach Dashboard V2:** /local/coachmanager/coach_dashboard_v2.php
 - Coach Dashboard (originale): /local/coachmanager/coach_dashboard.php
+- **Student Report:** /local/competencymanager/student_report.php?userid=X&courseid=Y
+- **Student Report Print:** /local/competencymanager/student_report_print.php?userid=X&courseid=Y
 - Setup Universale: /local/competencyxmlimport/setup_universale.php?courseid=X
 - Scheduler: /local/ftm_scheduler/index.php
 - Sector Admin: /local/competencymanager/sector_admin.php
@@ -397,3 +400,74 @@ block_ftm_tools -> ftm_hub
 - File: `export_word.php`
 - Libreria: PHPWord (se disponibile) oppure HTML Word-compatible (fallback)
 - Contenuto: Info studente, progressi, timeline, note coach
+
+---
+
+## STUDENT REPORT PRINT - DETTAGLI TECNICI (22/01/2026)
+
+### Sistema Stampa Professionale
+
+Implementato in `local/competencymanager/` per generare report PDF/stampa di alta qualità.
+
+### File Coinvolti
+```
+local/competencymanager/
+├── student_report.php           # Pagina principale + generate_svg_radar()
+├── student_report_print.php     # Template stampa completo
+└── pix/ftm_logo.png             # Logo FTM (scaricato localmente)
+```
+
+### Funzione generate_svg_radar()
+
+```php
+function generate_svg_radar(
+    $data,                    // Array di ['label' => ..., 'value' => ...]
+    $title = '',              // Titolo opzionale
+    $size = 300,              // Dimensione grafico (ora 490px)
+    $fillColor = 'rgba(...)', // Colore riempimento
+    $strokeColor = '#667eea', // Colore bordo
+    $labelFontSize = 9,       // Font etichette (ora 9)
+    $maxLabelLen = 250        // Max caratteri etichetta
+)
+```
+
+### Parametri Radar Attuali
+| Parametro | Valore | Note |
+|-----------|--------|------|
+| Size | 490px | +40% rispetto originale 340px |
+| horizontalPadding | 180px | Spazio laterale per etichette lunghe |
+| SVG Width | size + 360px | 490 + 360 = 850px totale |
+| labelFontSize | 9 | Font etichette |
+| maxLabelLen | 250 | Nessun troncamento pratico |
+
+### Sezioni Configurabili (Ordine 1-9)
+1. `valutazione` - Valutazione Globale
+2. `progressi` - Progressi Recenti
+3. `autovalutazione` - Radar Autovalutazione
+4. `performance` - Radar Performance
+5. `dettaglio_aree` - Analisi per Area
+6. `raccomandazioni` - Raccomandazioni
+7. `piano_azione` - Piano d'Azione
+8. `note` - Note Aggiuntive
+9. `confronto` - Confronto Auto/Reale
+
+### Tabelle Legenda (Dimensioni +20%)
+| Elemento | Valore |
+|----------|--------|
+| Font tabella | 8.5pt |
+| Titolo h6 | 11pt bold |
+| Padding celle | 5px 8px |
+| Larghezza colonne | 70px/65px |
+
+### CSS Print
+```css
+@page { size: A4; margin: 15mm; }
+body { padding-top: 75px; } /* Spazio header */
+.page-break-before { page-break-before: always; }
+```
+
+### Branding FTM
+- **Logo:** `/local/competencymanager/pix/ftm_logo.png`
+- **Font:** Didact Gothic (Google Fonts)
+- **Colore accento:** #dd0000 (rosso FTM)
+- **Header running:** Logo + nome organizzazione su ogni pagina
