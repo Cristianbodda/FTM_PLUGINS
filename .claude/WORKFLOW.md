@@ -4,9 +4,20 @@
 
 ## Quick Reference
 
+### Comandi Principali
 | Comando | Descrizione |
 |---------|-------------|
-| `/ftm-start` | **AVVIA SESSIONE SVILUPPO** - Health check, git status, stato progetto |
+| `/ftm-start` | **AVVIA SESSIONE** - Health check, git status, attiva agenti |
+| `/ftm-review` | **CODE REVIEW** - 4 agenti paralleli analizzano il codice |
+| `/ftm-validate` | **VALIDAZIONE** - Sintassi PHP, struttura, security scan |
+| `/ftm-thorough` | **3-PASS VERIFICATION** - Verifica completa prima del commit |
+| `/ftm-deepreview` | **DEEP REVIEW** - Analisi approfondita con tutti gli agenti |
+| `/ftm-health` | **HEALTH CHECK** - Verifica rapida con Playwright |
+| `/ftm-release` | **RELEASE** - Prepara e pubblica nuova versione |
+
+### Comandi Legacy
+| Comando | Descrizione |
+|---------|-------------|
 | `/security-check` | Valida sicurezza file PHP modificati |
 | `/test-ftm` | Analizza risultati Test Suite |
 | `/moodle-review` | Review codice standard Moodle |
