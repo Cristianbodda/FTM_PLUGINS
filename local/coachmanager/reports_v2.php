@@ -1037,6 +1037,28 @@ $custom_css = '
     padding: 25px;
 }
 
+/* Collapsible sections */
+.collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s;
+}
+
+.collapsible-header:hover {
+    filter: brightness(1.05);
+}
+
+.collapse-arrow {
+    font-size: 14px;
+    transition: transform 0.3s ease;
+    display: inline-block;
+    width: 20px;
+}
+
+.collapsible-content {
+    transition: all 0.3s ease;
+}
+
 /* Stats grid */
 .stats-grid {
     display: grid;
@@ -2384,11 +2406,123 @@ $current_sector_filter = json_encode($sector_filter);
          TAB: COLLOQUIO
          ============================================ -->
     <div class="tab-panel <?php echo $tab == 'colloquio' ? 'active' : ''; ?>" id="tab-colloquio">
-        <div class="section-card">
-            <div class="section-header">
-                <h2>💬 Preparazione Colloquio Tecnico</h2>
+
+        <!-- SEZIONE PRIORITÀ PER IL COLLOQUIO (da competencymanager/reports.php) -->
+        <?php
+        // Prepara dati per priorità colloquio
+        $priorita_critici = array_filter($areas_data, fn($a) => ($a['quiz_media'] ?? 100) < 50 && $a['quiz_count'] > 0);
+        $priorita_attenzione = array_filter($areas_data, fn($a) => ($a['quiz_media'] ?? 100) >= 50 && ($a['quiz_media'] ?? 100) < 70 && $a['quiz_count'] > 0);
+
+        // Ordina per quiz_media crescente (peggiori prima)
+        uasort($priorita_critici, fn($a, $b) => ($a['quiz_media'] ?? 0) <=> ($b['quiz_media'] ?? 0));
+        uasort($priorita_attenzione, fn($a, $b) => ($a['quiz_media'] ?? 0) <=> ($b['quiz_media'] ?? 0));
+        ?>
+
+        <?php if (!empty($priorita_critici) || !empty($priorita_attenzione)): ?>
+        <div class="section-card" style="margin-bottom: 20px;">
+            <div class="section-header collapsible-header" onclick="toggleSection('priorita-colloquio')" style="background: linear-gradient(135deg, #dc3545, #fd7e14); color: white; cursor: pointer;">
+                <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                    <span class="collapse-arrow" id="arrow-priorita-colloquio">▼</span>
+                    🎯 Priorità per il Colloquio
+                </h2>
             </div>
-            <div class="section-body">
+            <div class="section-body collapsible-content" id="content-priorita-colloquio">
+
+                <?php if (!empty($priorita_critici)): ?>
+                <div class="hints-group mb-4">
+                    <h4 style="color: #dc3545; margin-bottom: 15px;">🔴 Gap Critici - Priorità Alta</h4>
+                    <?php foreach ($priorita_critici as $area_key => $area): ?>
+                    <div class="hint-card critical" style="background: #fff5f5; border-left: 4px solid #dc3545; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+                        <div class="hint-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div>
+                                <span style="background: <?php echo $area['info']['colore'] ?? '#6c757d'; ?>; color: white; padding: 4px 12px; border-radius: 15px; font-size: 13px;">
+                                    <?php echo ($area['info']['icona'] ?? '📊') . ' ' . ($area['info']['nome'] ?? $area_key); ?>
+                                </span>
+                                <strong style="margin-left: 10px;"><?php echo $area['totale']; ?> competenze</strong>
+                            </div>
+                            <div style="display: flex; gap: 15px;">
+                                <?php if ($has_autovalutazione && isset($area['autoval_media'])): ?>
+                                <span style="color: #9b59b6;">🧑 Auto: <?php echo round($area['autoval_media']); ?>%</span>
+                                <?php endif; ?>
+                                <span style="color: #dc3545; font-weight: bold;">📊 Quiz: <?php echo round($area['quiz_media'] ?? 0); ?>%</span>
+                                <?php if (isset($area['gap']) && $area['gap'] !== null): ?>
+                                <span style="background: #dc3545; color: white; padding: 2px 8px; border-radius: 10px;">
+                                    Gap: <?php echo ($area['gap'] > 0 ? '+' : '') . round($area['gap']); ?>%
+                                </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="hint-body">
+                            <p style="color: #666; margin-bottom: 10px;">
+                                <?php if (($area['quiz_media'] ?? 0) < 30): ?>
+                                    ⚠️ Area molto critica. Lo studente ha difficoltà significative che richiedono attenzione immediata.
+                                <?php else: ?>
+                                    ⚠️ Area da approfondire. Performance sotto la soglia minima del 50%.
+                                <?php endif; ?>
+                            </p>
+                            <div style="background: #f8f9fa; padding: 10px; border-radius: 6px;">
+                                <h5 style="margin: 0 0 8px 0; font-size: 14px;">💬 Domande suggerite per il colloquio:</h5>
+                                <ul style="margin: 0; padding-left: 20px;">
+                                    <li><em>"Quali difficoltà hai incontrato in quest'area?"</em></li>
+                                    <li><em>"Hai avuto modo di praticare queste competenze sul lavoro?"</em></li>
+                                    <li><em>"Come pensi di poter migliorare in questo ambito?"</em></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($priorita_attenzione)): ?>
+                <div class="hints-group mb-4">
+                    <h4 style="color: #ffc107; margin-bottom: 15px;">⚠️ Gap Moderati - Attenzione</h4>
+                    <?php foreach ($priorita_attenzione as $area_key => $area): ?>
+                    <div class="hint-card warning" style="background: #fffbf0; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+                        <div class="hint-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div>
+                                <span style="background: <?php echo $area['info']['colore'] ?? '#6c757d'; ?>; color: white; padding: 4px 12px; border-radius: 15px; font-size: 13px;">
+                                    <?php echo ($area['info']['icona'] ?? '📊') . ' ' . ($area['info']['nome'] ?? $area_key); ?>
+                                </span>
+                                <strong style="margin-left: 10px;"><?php echo $area['totale']; ?> competenze</strong>
+                            </div>
+                            <div style="display: flex; gap: 15px;">
+                                <?php if ($has_autovalutazione && isset($area['autoval_media'])): ?>
+                                <span style="color: #9b59b6;">🧑 Auto: <?php echo round($area['autoval_media']); ?>%</span>
+                                <?php endif; ?>
+                                <span style="color: #ffc107; font-weight: bold;">📊 Quiz: <?php echo round($area['quiz_media'] ?? 0); ?>%</span>
+                            </div>
+                        </div>
+                        <div class="hint-body">
+                            <p style="color: #666; margin-bottom: 10px;">
+                                📋 Area con margini di miglioramento. Performance tra 50% e 70%.
+                            </p>
+                            <div style="background: #f8f9fa; padding: 10px; border-radius: 6px;">
+                                <h5 style="margin: 0 0 8px 0; font-size: 14px;">💬 Domande suggerite:</h5>
+                                <ul style="margin: 0; padding-left: 20px;">
+                                    <li><em>"Come valuti le tue competenze in quest'area?"</em></li>
+                                    <li><em>"Quali aspetti vorresti approfondire?"</em></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- SEZIONE PREPARAZIONE COLLOQUIO TECNICO (originale) -->
+        <div class="section-card">
+            <div class="section-header collapsible-header" onclick="toggleSection('preparazione-colloquio')" style="cursor: pointer;">
+                <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                    <span class="collapse-arrow" id="arrow-preparazione-colloquio">▼</span>
+                    💬 Preparazione Colloquio Tecnico
+                </h2>
+            </div>
+            <div class="section-body collapsible-content" id="content-preparazione-colloquio">
                 
                 <?php 
                 // Ottieni le domande suggerite
@@ -2578,6 +2712,24 @@ $current_sector_filter = json_encode($sector_filter);
 </div>
 
 <script>
+// ============================================
+// FUNZIONE TOGGLE SEZIONI COLLASSABILI
+// ============================================
+function toggleSection(sectionId) {
+    const content = document.getElementById('content-' + sectionId);
+    const arrow = document.getElementById('arrow-' + sectionId);
+
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        arrow.textContent = '▼';
+        arrow.style.transform = 'rotate(0deg)';
+    } else {
+        content.style.display = 'none';
+        arrow.textContent = '▶';
+        arrow.style.transform = 'rotate(0deg)';
+    }
+}
+
 // Dati dal PHP
 const areasData = <?php echo $areas_json; ?>;
 const radarLabels = <?php echo $radar_labels; ?>;
