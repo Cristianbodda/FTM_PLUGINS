@@ -1,128 +1,123 @@
 # CoachManager - Project Status
 
-**Ultimo aggiornamento:** 16 Gennaio 2026
-**Versione plugin:** 2.1.0 (2025122304)
-**Stato:** IN TEST
+**Ultimo aggiornamento:** 22 Gennaio 2026
+**Versione plugin:** 2.2.0 (2026012201)
+**Stato:** FUNZIONANTE
 
 ---
 
-## Riepilogo Sviluppo Coach Dashboard
+## Riepilogo Sviluppo
 
-### Obiettivo
-Creare una dashboard unificata per i coach che integri:
-- Visualizzazione studenti assegnati
-- Competenze, autovalutazioni, laboratori
-- Calendario settimanale/mensile
-- Filtri avanzati
-- Alert fine percorso 6 settimane
+### Coach Dashboard V2 (NUOVO - 22/01/2026)
 
-### Mockup Approvati
-La dashboard si basa sui mockup iterati (v1-v5) con:
-- Stile armonizzato con `student_report.php` (viola gradient #667eea -> #764ba2)
-- Card studenti collassabili con freccia
-- Colori gruppo mantenuti (giallo, blu, verde, ecc.)
+Dashboard completamente ridisegnata per utenti 50+ anni con:
+
+#### 4 Viste Configurabili
+| Vista | Descrizione |
+|-------|-------------|
+| Classica | Vista originale, tutti i dettagli |
+| Compatta | Card ridotte, info essenziali |
+| Standard | Bilanciata info/spazio |
+| Dettagliata | Massimo dettaglio con timeline espansa |
+
+#### Accessibilita
+- **Zoom A- (90%)**: Schermi piccoli
+- **Zoom A (100%)**: Default
+- **Zoom A+ (120%)**: Leggibilita migliorata
+- **Zoom A++ (140%)**: Utenti con difficolta visive
+- Preferenze salvate automaticamente per utente
+
+#### Funzionalita
+- Filtri orizzontali: Corso, Colore Gruppo, Settimana, Stato
+- Statistiche rapide con card colorate
+- Timeline 6 settimane per ogni studente
+- Note Coach visibili a coach + segreteria
+- Export Word diretto dalla card studente
 
 ---
 
-## File Creati/Modificati
+## File Dashboard V2
 
 ### Nuovi File
 | File | Descrizione |
 |------|-------------|
-| `coach_dashboard.php` | Pagina principale dashboard |
-| `classes/dashboard_helper.php` | Classe helper per dati dashboard |
-| `styles/dashboard.css.php` | CSS con tema viola |
-| `ajax_save_choices.php` | AJAX per salvare scelte settimanali |
-| `ajax_send_reminder.php` | AJAX per invio promemoria |
+| `coach_dashboard_v2.php` | Dashboard principale V2 |
+| `export_word.php` | Generazione report Word studente |
 
-### File Modificati
-| File | Modifiche |
-|------|-----------|
-| `version.php` | Versione 2025122304, release 2.1.0 |
-| `lib.php` | Aggiunto navigation node Coach Dashboard |
-| `lang/it/local_coachmanager.php` | +90 stringhe Dashboard Coach |
-| `lang/en/local_coachmanager.php` | +90 stringhe Dashboard Coach (EN) |
+### Struttura CSS
+- Inline CSS con variabili per coerenza
+- HTML table per layout filtri (override Moodle CSS)
+- Responsive con media queries
+- Colori FTM standard (#667eea viola, #764ba2 gradient)
 
 ---
 
-## Problemi Risolti
+## URL Accesso
 
-### 1. Versione troppo bassa
-- **Errore:** "Una versione piu recente e gia stata installata!"
-- **Causa:** Versione impostata a 2025011401 < 2025122303
-- **Fix:** Cambiata a 2025122304
-
-### 2. Stringhe inglesi mancanti
-- **Errore:** "Invalid get_string() identifier: 'coach_dashboard'"
-- **Causa:** File `lang/en/` non aveva le nuove stringhe
-- **Fix:** Aggiunte 90+ stringhe in `lang/en/local_coachmanager.php`
+| Pagina | URL |
+|--------|-----|
+| Dashboard V2 | /local/coachmanager/coach_dashboard_v2.php |
+| Dashboard Originale | /local/coachmanager/coach_dashboard.php |
+| Bilancio Competenze | /local/coachmanager/ |
 
 ---
 
-## Prossimi Passi per Riprendere
+## Preferenze Utente
 
-### Immediato (per testare)
-1. [ ] Caricare via FTP: `lang/en/local_coachmanager.php`
-2. [ ] Svuotare cache Moodle
-3. [ ] Testare: https://test-urc.hizuvala.myhostpoint.ch/local/coachmanager/coach_dashboard.php
-
-### Da Verificare
-- [ ] Dashboard carica correttamente
-- [ ] Card studenti collassabili funzionano
-- [ ] Calendario settimana/mese espandibile
-- [ ] Filtri avanzati funzionano
-- [ ] Alert fine percorso visibile
-
-### Eventuali Miglioramenti Futuri
-- [ ] Integrazione reale con ftm_scheduler per calendario
-- [ ] Scelte rapide per assegnazione test/lab
-- [ ] Report classe esportabile
+| Chiave | Valori | Default |
+|--------|--------|---------|
+| `ftm_coach_view` | classica, compatta, standard, dettagliata | classica |
+| `ftm_coach_zoom` | 90, 100, 120, 140 | 100 |
 
 ---
 
-## Riferimenti
+## Database
 
-### URL Test
-- Dashboard: https://test-urc.hizuvala.myhostpoint.ch/local/coachmanager/coach_dashboard.php
-- Bilancio Competenze: https://test-urc.hizuvala.myhostpoint.ch/local/coachmanager/
-- Student Report (riferimento colori): https://test-urc.hizuvala.myhostpoint.ch/local/competencymanager/student_report.php
-
-### Mockup Riferimento
-- Stile da: `05_scheduler_gruppi_v3.html`
-- Colori da: `student_report.php` (viola gradient)
-
----
-
-## Struttura Dashboard
-
-```
-+------------------------------------------+
-|  HEADER: Dashboard Coach                 |
-+------------------------------------------+
-|  FILTRI AVANZATI                         |
-|  [Corso] [Colore] [Settimana] [Stato]   |
-+------------------------------------------+
-|  STATISTICHE                             |
-|  [Studenti] [Competenze] [Autoval] [Lab]|
-+------------------------------------------+
-|  ALERT: Studenti in fine percorso       |
-|  X studenti stanno completando...       |
-+------------------------------------------+
-|  CALENDARIO [Settimana v] [Mese v]      |
-+------------------------------------------+
-|  LISTA STUDENTI                          |
-|  +------------------------------------+  |
-|  | [v] Mario Rossi - Gruppo Giallo   |  |
-|  |     Competenze: 75%               |  |
-|  |     Autovalutazione: Completa     |  |
-|  |     Laboratorio: In attesa        |  |
-|  |     [Report] [Colloquio] [Remind] |  |
-|  +------------------------------------+  |
-|  | [>] Anna Bianchi - Gruppo Blu     |  |
-|  +------------------------------------+  |
-+------------------------------------------+
+### Tabella Note Coach
+```sql
+local_coachmanager_notes
+- id (BIGINT, PK)
+- studentid (BIGINT, FK user)
+- coachid (BIGINT, FK user)
+- notes (TEXT)
+- timecreated (INT)
+- timemodified (INT)
 ```
 
 ---
 
-*Generato: 14 Gennaio 2026*
+## Testing
+
+### Playwright Test Scripts
+- `check_v2.mjs` - Test visuale con browser aperto
+- `test_fix_v2.mjs` - Verifica CSS applicato
+- `test_dashboard_v2.mjs` - Test completo viste e zoom
+
+### Verifiche Effettuate
+- [x] Login e navigazione
+- [x] Cambio viste (4 viste)
+- [x] Zoom livelli (4 livelli)
+- [x] Filtri orizzontali funzionanti
+- [x] Bottoni leggibili (testo visibile)
+- [x] Screenshot automatici
+
+---
+
+## Storico Modifiche
+
+### 22/01/2026 - V2 Release
+- Creata `coach_dashboard_v2.php` con 4 viste
+- Aggiunto sistema zoom accessibilita
+- Filtri orizzontali con HTML table
+- Fix bottoni: `color: #333 !important`
+- Note coach condivise con segreteria
+- Export Word con PHPWord/HTML fallback
+
+### 16/01/2026 - V1 Completata
+- Dashboard V1 funzionante
+- Card studenti collassabili
+- Calendario integrato
+
+---
+
+*Generato: 22 Gennaio 2026*

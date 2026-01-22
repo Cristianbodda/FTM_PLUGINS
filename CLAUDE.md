@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida Completa per Claude
 
-**Ultimo aggiornamento:** 19 Gennaio 2026 (ore 15:00)
+**Ultimo aggiornamento:** 22 Gennaio 2026 (ore 10:00)
 
 ## Panoramica Progetto
 
@@ -12,7 +12,7 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (19/01/2026)
+## STATO ATTUALE SVILUPPO (22/01/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -47,9 +47,20 @@ Sistema completo per import quiz e assegnazione competenze:
 - **Debug integrato** per troubleshooting
 - **Riepilogo finale** con tabella quiz/domande/livello
 
+#### 6. Coach Dashboard V2 (local_coachmanager) - NUOVO 22/01/2026
+Dashboard avanzata per coach con interfaccia ottimizzata per utenti 50+:
+- **4 Viste Configurabili:** Classica, Compatta, Standard, Dettagliata
+- **Zoom Accessibilità:** A- (90%), A (100%), A+ (120%), A++ (140%)
+- **Filtri Orizzontali:** Corso, Colore Gruppo, Settimana, Stato
+- **Timeline 6 Settimane:** Dettaglio attività per settimana
+- **Note Coach:** Visibili a coach E segreteria
+- **Export Word:** Genera report studente in formato .docx
+- **Preferenze Utente:** Vista e zoom salvati automaticamente
+- **File:** `coach_dashboard_v2.php`, `export_word.php`
+
 ### IN SVILUPPO
 
-#### 6. Sistema Import CPURC (local_ftm_cpurc)
+#### 7. Sistema Import CPURC (local_ftm_cpurc)
 Sistema per importare utenti da CSV CPURC e generare report Word finali.
 
 ---
@@ -343,8 +354,46 @@ block_ftm_tools -> ftm_hub
 ## RISORSE
 
 - Server Test: https://test-urc.hizuvala.myhostpoint.ch
+- **Coach Dashboard V2:** /local/coachmanager/coach_dashboard_v2.php
+- Coach Dashboard (originale): /local/coachmanager/coach_dashboard.php
 - Setup Universale: /local/competencyxmlimport/setup_universale.php?courseid=X
 - Scheduler: /local/ftm_scheduler/index.php
 - Sector Admin: /local/competencymanager/sector_admin.php
 - Test Suite: /local/ftm_testsuite/agent_tests.php
 - Moodle Docs: https://docs.moodle.org/dev/
+
+---
+
+## COACH DASHBOARD V2 - DETTAGLI TECNICI (22/01/2026)
+
+### Viste Disponibili
+
+| Vista | Descrizione | Uso Consigliato |
+|-------|-------------|-----------------|
+| **Classica** | Vista originale completa | Default, tutti i dettagli |
+| **Compatta** | Card più piccole, info essenziali | Molti studenti, panoramica rapida |
+| **Standard** | Bilanciata tra info e spazio | Uso quotidiano |
+| **Dettagliata** | Massimo dettaglio, timeline espansa | Analisi approfondita |
+
+### Livelli Zoom
+
+| Livello | Scala | Target |
+|---------|-------|--------|
+| A- | 90% | Schermi piccoli |
+| A | 100% | Default |
+| A+ | 120% | Leggibilità migliorata |
+| A++ | 140% | Utenti con difficoltà visive |
+
+### Preferenze Salvate
+- `ftm_coach_view`: Vista selezionata (classica, compatta, standard, dettagliata)
+- `ftm_coach_zoom`: Livello zoom (90, 100, 120, 140)
+
+### Note Coach
+- Tabella: `local_coachmanager_notes`
+- Campi: `id`, `studentid`, `coachid`, `notes`, `timecreated`, `timemodified`
+- Visibilità: Coach proprietario + Segreteria (capability `local/coachmanager:viewallnotes`)
+
+### Export Word
+- File: `export_word.php`
+- Libreria: PHPWord (se disponibile) oppure HTML Word-compatible (fallback)
+- Contenuto: Info studente, progressi, timeline, note coach
