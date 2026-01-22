@@ -4,6 +4,7 @@
  *
  * @package    local_competencyxmlimport
  * @copyright  2026 FTM
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require_once(__DIR__ . '/../../config.php');
@@ -13,7 +14,8 @@ require_capability('moodle/site:config', context_system::instance());
 
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url(new moodle_url('/local/competencyxmlimport/diagnose_competencies.php'));
-$PAGE->set_title('Diagnosi Competenze');
+$PAGE->set_title(get_string('pluginname', 'local_competencyxmlimport') . ' - Diagnosi');
+$PAGE->set_heading(get_string('pluginname', 'local_competencyxmlimport'));
 
 echo $OUTPUT->header();
 

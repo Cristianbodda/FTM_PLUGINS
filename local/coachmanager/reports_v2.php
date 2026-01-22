@@ -19,9 +19,10 @@ $tab = optional_param('tab', 'panoramica', PARAM_ALPHA);
 $sector_filter = optional_param('sector', 'all', PARAM_ALPHANUMEXT); // Filtro settore globale
 $print_sector = optional_param('print_sector', 'all', PARAM_ALPHANUMEXT); // Settore per stampa
 
-// Richiede login
+// Richiede login e capability
 require_login();
 $context = context_system::instance();
+require_capability('local/coachmanager:viewreports', $context);
 
 // ============================================
 // SELETTORE STUDENTE (se studentid non passato)
@@ -695,19 +696,9 @@ ksort($all_sectors);
 // 11c. FILTRA AREE IN BASE AL SETTORE SELEZIONATO
 // ============================================
 $filtered_areas_data = $areas_data;
-// DEBUG: mostra settori disponibili
-echo "<!-- DEBUG sector_filter: " . $sector_filter . " -->\n";
-echo "<!-- DEBUG sectors_data keys: " . implode(", ", array_keys($sectors_data)) . " -->\n";
-echo "<!-- DEBUG isset check: " . (isset($sectors_data[strtoupper($sector_filter)]) ? "YES" : "NO") . " -->\n";
-// DEBUG: mostra settori disponibili
-echo "<!-- DEBUG sector_filter: " . $sector_filter . " -->\n";
-echo "<!-- DEBUG sectors_data keys: " . implode(", ", array_keys($sectors_data)) . " -->\n";
-echo "<!-- DEBUG isset check: " . (isset($sectors_data[strtoupper($sector_filter)]) ? "YES" : "NO") . " -->\n";
 
 if ($sector_filter !== 'all' && isset($sectors_data[strtoupper($sector_filter)])) {
     $filtered_areas_data = $sectors_data[strtoupper($sector_filter)]['areas'];
-echo "<!-- DEBUG INSIDE IF: filtered_areas_data count: " . count($filtered_areas_data) . " -->\n";
-echo "<!-- DEBUG INSIDE IF: filtered keys: " . implode(", ", array_keys($filtered_areas_data)) . " -->\n";
 }
 
 // Ricalcola statistiche per i dati filtrati
