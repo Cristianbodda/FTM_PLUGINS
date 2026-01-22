@@ -17,10 +17,10 @@ function local_coachmanager_extend_navigation(global_navigation $navigation) {
         return;
     }
 
-    // Aggiungi nodo principale (Dashboard Coach)
+    // Aggiungi nodo principale (Dashboard Coach V2)
     $node = $navigation->add(
         get_string('coach_dashboard', 'local_coachmanager'),
-        new moodle_url('/local/coachmanager/coach_dashboard.php'),
+        new moodle_url('/local/coachmanager/coach_dashboard_v2.php'),
         navigation_node::TYPE_CUSTOM,
         null,
         'coachmanager',
@@ -32,7 +32,7 @@ function local_coachmanager_extend_navigation(global_navigation $navigation) {
     // Aggiungi sotto-nodi
     $node->add(
         get_string('my_students', 'local_coachmanager'),
-        new moodle_url('/local/coachmanager/coach_dashboard.php'),
+        new moodle_url('/local/coachmanager/coach_dashboard_v2.php'),
         navigation_node::TYPE_CUSTOM,
         null,
         'coachmanager_students'
