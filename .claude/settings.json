@@ -1,0 +1,69 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git diff:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(php:*)",
+      "Bash(php -r:*)",
+      "Bash(php -l:*)",
+      "Bash(npm:*)",
+      "Bash(dir:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell:*)",
+      "Bash(curl:*)",
+      "Bash(where:*)",
+      "WebFetch(domain:test-urc.hizuvala.myhostpoint.ch)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:docs.moodle.org)",
+      "WebSearch"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(del /s /q C:\\:*)",
+      "Bash(format:*)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(**/secrets/**)",
+      "Read(**/credentials*)"
+    ]
+  },
+  "env": {
+    "FTM_PROJECT": "FTM_PLUGINS_NEW",
+    "MOODLE_VERSION": "4.5",
+    "PHP_VERSION": "8.1"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -Command \"$file = $env:CLAUDE_FILE_PATH; if ($file -match '\\.php$') { $result = php -l $file 2>&1; if ($LASTEXITCODE -ne 0) { Write-Host \\\"PHP Syntax Error: $result\\\" -ForegroundColor Red; exit 1 } else { Write-Host \\\"PHP Syntax OK: $file\\\" -ForegroundColor Green } }\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -Command \"$cmd = $env:CLAUDE_BASH_COMMAND; if ($cmd -match 'DROP TABLE|DROP DATABASE|TRUNCATE|DELETE FROM.*WHERE 1|rm -rf /') { Write-Host 'BLOCKED: Dangerous command detected' -ForegroundColor Red; exit 2 }\""
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,357 @@
+{
+  "plugin": "local_ftm_scheduler",
+  "generated_at": "2026-01-22",
+  "tables": {
+    "local_ftm_groups": {
+      "comment": "Gruppi di studenti (Giallo, Grigio, Rosso, Marrone, Viola)",
+      "fields": {
+        "id": {"type": "int", "length": 10, "notnull": true, "sequence": true},
+        "name": {"type": "char", "length": 100, "notnull": true, "comment": "Nome gruppo es: Gruppo Giallo - KW04"},
+        "color": {"type": "char", "length": 20, "notnull": true, "comment": "giallo, grigio, rosso, marrone, viola"},
+        "color_hex": {"type": "char", "length": 7, "notnull": true, "comment": "Colore HEX es: #FFFF00"},
+        "entry_date": {"type": "int", "length": 10, "notnull": true, "comment": "Data inizio gruppo (timestamp)"},
+        "planned_end_date": {"type": "int", "length": 10, "notnull": false, "comment": "Data fine prevista"},
+        "calendar_week": {"type": "int", "length": 2, "notnull": false, "comment": "Settimana calendario KW"},
+        "status": {"type": "char", "length": 20, "notnull": true, "default": "planning", "comment": "planning, active, completed"},
+        "timecreated": {"type": "int", "length": 10, "notnull": true},
+        "timemodified": {"type": "int", "length": 10, "notnull": true},
+        "createdby": {"type": "int", "length": 10, "notnull": false}
+      },
+      "keys": {
+        "primary": {"type": "primary", "fields": ["id"]},
+        "createdby": {"type": "foreign", "fields": ["createdby"], "reftable": "user", "reffields": ["id"]}
+      },
+      "indexes": {
+        "status": {"unique": false, "fields": ["status"]},
+        "entry_date": {"unique": false, "fields": ["entry_date"]},
+        "color": {"unique": false, "fields": ["color"]}
+      }
+    },
+    "local_ftm_group_members": {
+      "comment": "Membri dei gruppi",
+      "fields": {
+        "id": {"type": "int", "length": 10, "notnull": true, "sequence": true},
+        "groupid": {"type": "int", "length": 10, "notnull": true},
+        "userid": {"type": "int", "length": 10, "notnull": true},
+        "current_week": {"type": "int", "length": 2, "notnull": true, "default": 1, "comment": "Settimana corrente 1-10"},
+        "extended_weeks": {"type": "int", "length": 2, "notnull": true, "default": 0, "comment": "Settimane estensione oltre le 6"},
+        "status": {"type": "char", "length": 20, "notnull": true, "default": "active", "comment": "active, delayed, completed, withdrawn"},
+        "timecreated": {"type": "int", "length": 10, "notnull": true},
+        "timemodified": {"type": "int", "length": 10, "notnull": true}
+      },
+      "keys": {
+        "primary": {"type": "primary", "fields": ["id"]},
+        "groupid": {"type": "foreign", "fields": ["groupid"], "reftable": "local_ftm_groups", "reffields": ["id"]},
+        "userid": {"type": "foreign", "fields": ["userid"], "reftable": "user", "reffields": ["id"]}
+      },
+      "indexes": {
+        "groupid_userid": {"unique": true, "fields": ["groupid", "userid"]},
+        "status": {"unique": false, "fields": ["status"]}
+      }
+    },
+    "local_ftm_rooms": {
+      "comment": "Aule disponibili",
+      "fields": {
+        "id": {"type": "int", "length": 10, "notnull": true, "sequence": true},
+        "name": {"type": "char", "length": 100, "notnull": true, "comment": "Nome aula es: AULA 1"},
+        "shortname": {"type": "char", "length": 20, "notnull": true, "comment": "Nome breve es: A1"},
+        "capacity": {"type": "int", "length": 3, "notnull": true, "default": 10, "comment": "Numero postazioni"},
+        "is_lab": {"type": "int", "length": 1, "notnull": true, "default": 0, "comment": "1=laboratorio, 0=teoria"},
+        "capabilities_json": {"type": "text", "notnull": false, "comment": "JSON con attrezzature disponibili"},
+        "color_hex": {"type": "char", "length": 7, "notnull": false, "comment": "Colore per visualizzazione"},
+        "sortorder": {"type": "int", "length": 3, "notnull": true, "default": 0},
+        "active": {"type": "int", "length": 1, "notnull": true, "default": 1}
+      },
+      "keys": {
+        "primary": {"type": "primary", "fields": ["id"]}
+      },
+      "indexes": {
+        "shortname": {"unique": true, "fields": ["shortname"]},
+        "active": {"unique": false, "fields": ["active"]}
+      }
+    },
+    "local_ftm_week1_template": {
+      "comment": "Template attivita fisse settimana 1",
+      "fields": {
+        "id": {"type": "int", "length": 10, "notnull": true, "sequence": true},
+        "name": {"type": "char", "length": 255, "notnull": true, "comment": "Nome attivita"},
+        "day_of_week": {"type": "int", "length": 1, "notnull": true, "comment": "1=Lun, 2=Mar, 3=Mer, 4=Gio, 5=Ven"},
+        "time_slot": {"type": "char", "length": 10, "notnull": true, "comment": "matt, pom"},
+        "time_start": {"type": "char", "length": 5, "notnull": true, "comment": "08:30"},
+        "time_end": {"type": "char", "length": 5, "notnull": true, "comment": "11:45"},
+        "default_roomid": {"type": "int", "length": 10, "notnull": false},
+        "is_mandatory": {"type": "int", "length": 1, "notnull": true, "default": 1},
+        "is_remote": {"type": "int", "length": 1, "notnull": true, "default": 0},
+        "description": {"type": "text", "notnull": false},
+        "sortorder": {"type": "int", "length": 3, "notnull": true, "default": 0},
+        "active": {"type": "int", "length": 1, "notnull": true, "default": 1}
+      },
+      "keys": {
+        "primary": {"type": "primary", "fields": ["id"]},
+        "default_roomid": {"type": "foreign", "fields": ["default_roomid"], "reftable": "local_ftm_rooms", "reffields": ["id"]}
+      },
+      "indexes": {
+        "day_slot": {"unique": false, "fields": ["day_of_week", "time_slot"]}
+      }
+    },
+    "local_ftm_atelier_catalog": {
+      "comment": "Catalogo atelier disponibili settimane 3-6",
+      "fields": {
+        "id": {"type": "int", "length": 10, "notnull": true, "sequence": true},
+        "name": {"type": "char", "length": 255, "notnull": true, "comment": "Nome atelier"},
+        "shortname": {"type": "char", "length": 50, "notnull": true, "comment": "Codice es: At. CV"},
+        "typical_week_start": {"type": "int", "length": 2, "notnull": true, "default": 3},
+        "typical_week_end": {"type": "int", "length": 2, "notnull": true, "default": 6},
+        "typical_day": {"type": "int", "length": 1, "notnull": false, "comment": "Giorno tipico 1-5"},
+        "typical_slot": {"type": "char", "length": 10, "notnull": false, "comment": "matt, pom"},
+        "max_participants": {"type": "int", "length": 3, "notnull": true, "default": 16},
+        "is_mandatory": {"type": "int", "length": 1, "notnull": true, "default": 0, "comment": "1=obbligatorio (es. Bilancio)"},
+        "mandatory_week": {"type": "int", "length": 2, "notnull": false, "comment": "Settimana obbligatoria se is_mandatory"},
+        "description": {"type": "text", "notnull": false},
+        "sortorder": {"type": "int", "length": 3, "notnull": true, "default": 0},
+        "active": {"type": "int", "length": 1, "notnull": true, "default": 1}
+      },
+      "keys": {
+        "primary": {"type": "primary", "fields": ["id"]}
+      },
+      "indexes": {
+        "shortname": {"unique": true, "fields": ["shortname"]}
+      }
+    },
+    "local_ftm_activities": {
+      "comment": "Attivita pianificate (istanze reali)",
+      "fields": {
+        "id": {"type": "int", "length": 10, "notnull": true, "sequence": true},
+        "name": {"type": "char", "length": 255, "notnull": true},
+        "activity_type": {"type": "char", "length": 30, "notnull": true, "comment": "week1, week2_test, week2_lab, atelier, external"},
+        "groupid": {"type": "int", "length": 10, "notnull": false, "comment": "Gruppo associato (null per esterni)"},
+        "target_week": {"type": "int", "length": 2, "notnull": false, "comment": "Settimana target 1-10"},
+        "date_start": {"type": "int", "length": 10, "notnull": true},
+        "date_end": {"type": "int", "length": 10, "notnull": true},
+        "roomid": {"type": "int", "length": 10, "notnull": false},
+        "teacherid": {"type": "int", "length": 10, "notnull": false, "comment": "Coach/Docente assegnato"},
+        "max_participants": {"type": "int", "length": 3, "notnull": false},
+        "atelierid": {"type": "int", "length": 10, "notnull": false, "comment": "Riferimento catalogo atelier"},
+        "templateid": {"type": "int", "length": 10, "notnull": false, "comment": "Riferimento template sett.1"},
+        "status": {"type": "char", "length": 20, "notnull": true, "default": "scheduled", "comment": "scheduled, in_progress, completed, cancelled"},
+        "has_conflict": {"type": "int", "length": 1, "notnull": true, "default": 0},
+        "notes": {"type": "text", "notnull": false},
+        "timecreated": {"type": "int", "length": 10, "notnull": true},
+        "timemodified": {"type": "int", "length": 10, "notnull": true},
+        "createdby": {"type": "int", "length": 10, "notnull": false}
+      },
+      "keys": {
+        "primary": {"type": "primary", "fields": ["id"]},
+        "groupid": {"type": "foreign", "fields": ["groupid"], "reftable": "local_ftm_groups", "reffields": ["id"]},
+        "roomid": {"type": "foreign", "fields": ["roomid"], "reftable": "local_ftm_rooms", "reffields": ["id"]},
+        "teacherid": {"type": "foreign", "fields": ["teacherid"], "reftable": "user", "reffields": ["id"]},
+        "atelierid": {"type": "foreign", "fields": ["atelierid"], "reftable": "local_ftm_atelier_catalog", "reffields": ["id"]},
+        "templateid": {"type": "foreign", "fields": ["templateid"], "reftable": "local_ftm_week1_template", "reffields": ["id"]}
+      },
+      "indexes": {
+        "date_start": {"unique": false, "fields": ["date_start"]},
+        "activity_type": {"unique": false, "fields": ["activity_type"]},
+        "status": {"unique": false, "fields": ["status"]},
+        "groupid_week": {"unique": false, "fields": ["groupid", "target_week"]}
+      }
+    },
+    "local_ftm_enrollments": {
+      "comment": "Iscrizioni studenti alle attivita",
+      "fields": {
+        "id": {"type": "int", "length": 10, "notnull": true, "sequence": true},
+        "activityid": {"type": "int", "length": 10, "notnull": true},
+        "userid": {"type": "int", "length": 10, "notnull": true},
+        "groupid": {"type": "int", "length": 10, "notnull": false},
+        "enrolledby": {"type": "int", "length": 10, "notnull": false, "comment": "Chi ha iscritto (coach/segreteria)"},
+        "enrollment_type": {"type": "char", "length": 20, "notnull": true, "default": "auto", "comment": "auto, manual, coach"},
+        "status": {"type": "char", "length": 20, "notnull": true, "default": "enrolled", "comment": "enrolled, attended, absent, cancelled"},
+        "attended": {"type": "int", "length": 1, "notnull": false, "comment": "1=presente, 0=assente"},
+        "notification_sent": {"type": "int", "length": 1, "notnull": true, "default": 0},
+        "reminder_sent": {"type": "int", "length": 1, "notnull": true, "default": 0},
+        "marked_by": {"type": "int", "length": 10, "notnull": false, "comment": "User who marked attendance"},
+        "marked_at": {"type": "int", "length": 10, "notnull": false, "comment": "Timestamp when marked"},
+        "absence_notified": {"type": "int", "length": 1, "notnull": true, "default": 0, "comment": "1=notification sent"},
+        "calendar_eventid": {"type": "int", "length": 10, "notnull": false, "comment": "ID evento calendario Moodle"},
+        "timecreated": {"type": "int", "length": 10, "notnull": true},
+        "timemodified": {"type": "int", "length": 10, "notnull": true}
+      },
+      "keys": {
+        "primary": {"type": "primary", "fields": ["id"]},
+        "activityid": {"type": "foreign", "fields": ["activityid"], "reftable": "local_ftm_activities", "reffields": ["id"]},
+        "userid": {"type": "foreign", "fields": ["userid"], "reftable": "user", "reffields": ["id"]},
+        "groupid": {"type": "foreign", "fields": ["groupid"], "reftable": "local_ftm_groups", "reffields": ["id"]},
+        "enrolledby": {"type": "foreign", "fields": ["enrolledby"], "reftable": "user", "reffields": ["id"]},
+        "marked_by": {"type": "foreign", "fields": ["marked_by"], "reftable": "user", "reffields": ["id"]}
+      },
+      "indexes": {
+        "activityid_userid": {"unique": true, "fields": ["activityid", "userid"]},
+        "status": {"unique": false, "fields": ["status"]}
+      }
+    },
+    "local_ftm_week2_choices": {
+      "comment": "Scelte test/lab settimana 2 per studente",
+      "fields": {
+        "id": {"type": "int", "length": 10, "notnull": true, "sequence": true},
+        "userid": {"type": "int", "length": 10, "notnull": true},
+        "groupid": {"type": "int", "length": 10, "notnull": true},
+        "test_mon_quizid": {"type": "int", "length": 10, "notnull": false, "comment": "Quiz Lunedi"},
+        "test_thu_quizid": {"type": "int", "length": 10, "notnull": false, "comment": "Quiz Giovedi"},
+        "lab_tue_type": {"type": "char", "length": 50, "notnull": false, "comment": "Tipo lab Martedi"},
+        "lab_fri_type": {"type": "char", "length": 50, "notnull": false, "comment": "Tipo lab Venerdi"},
+        "chosen_by": {"type": "int", "length": 10, "notnull": false, "comment": "Coach che ha scelto"},
+        "approved_at": {"type": "int", "length": 10, "notnull": false},
+        "status": {"type": "char", "length": 20, "notnull": true, "default": "pending", "comment": "pending, confirmed"},
+        "timecreated": {"type": "int", "length": 10, "notnull": true},
+        "timemodified": {"type": "int", "length": 10, "notnull": true}
+      },
+      "keys": {
+        "primary": {"type": "primary", "fields": ["id"]},
+        "userid": {"type": "foreign", "fields": ["userid"], "reftable": "user", "reffields": ["id"]},
+        "groupid": {"type": "foreign", "fields": ["groupid"], "reftable": "local_ftm_groups", "reffields": ["id"]},
+        "chosen_by": {"type": "foreign", "fields": ["chosen_by"], "reftable": "user", "reffields": ["id"]}
+      },
+      "indexes": {
+        "userid_groupid": {"unique": true, "fields": ["userid", "groupid"]},
+        "status": {"unique": false, "fields": ["status"]}
+      }
+    },
+    "local_ftm_external_bookings": {
+      "comment": "Prenotazioni aule per progetti esterni (URAR, AI, Extra-LADI)",
+      "fields": {
+        "id": {"type": "int", "length": 10, "notnull": true, "sequence": true},
+        "project_name": {"type": "char", "length": 100, "notnull": true, "comment": "BIT URAR, BIT AI, Corso Extra LADI"},
+        "roomid": {"type": "int", "length": 10, "notnull": true},
+        "date_start": {"type": "int", "length": 10, "notnull": true},
+        "date_end": {"type": "int", "length": 10, "notnull": true},
+        "responsible": {"type": "char", "length": 10, "notnull": false, "comment": "Iniziali responsabile es: GM, RB"},
+        "notes": {"type": "text", "notnull": false},
+        "recurring": {"type": "char", "length": 20, "notnull": false, "comment": "none, weekly, biweekly"},
+        "recurring_until": {"type": "int", "length": 10, "notnull": false},
+        "timecreated": {"type": "int", "length": 10, "notnull": true},
+        "createdby": {"type": "int", "length": 10, "notnull": false}
+      },
+      "keys": {
+        "primary": {"type": "primary", "fields": ["id"]},
+        "roomid": {"type": "foreign", "fields": ["roomid"], "reftable": "local_ftm_rooms", "reffields": ["id"]},
+        "createdby": {"type": "foreign", "fields": ["createdby"], "reftable": "user", "reffields": ["id"]}
+      },
+      "indexes": {
+        "date_start": {"unique": false, "fields": ["date_start"]},
+        "project_name": {"unique": false, "fields": ["project_name"]}
+      }
+    },
+    "local_ftm_coaches": {
+      "comment": "Mapping coach iniziali e ruoli",
+      "fields": {
+        "id": {"type": "int", "length": 10, "notnull": true, "sequence": true},
+        "userid": {"type": "int", "length": 10, "notnull": true},
+        "initials": {"type": "char", "length": 5, "notnull": true, "comment": "GM, RB, CB, FM, NC"},
+        "role": {"type": "char", "length": 50, "notnull": true, "default": "coach", "comment": "coach, secretary, teacher"},
+        "can_week2_mon_tue": {"type": "int", "length": 1, "notnull": true, "default": 0, "comment": "Puo fare sett.2 Lun-Mar"},
+        "can_week2_thu_fri": {"type": "int", "length": 1, "notnull": true, "default": 0, "comment": "Puo fare sett.2 Gio-Ven"},
+        "active": {"type": "int", "length": 1, "notnull": true, "default": 1}
+      },
+      "keys": {
+        "primary": {"type": "primary", "fields": ["id"]},
+        "userid": {"type": "foreign", "fields": ["userid"], "reftable": "user", "reffields": ["id"]}
+      },
+      "indexes": {
+        "initials": {"unique": true, "fields": ["initials"]},
+        "userid": {"unique": true, "fields": ["userid"]}
+      }
+    }
+  },
+  "field_aliases": {
+    "local_ftm_groups": "g",
+    "local_ftm_group_members": "gm",
+    "local_ftm_rooms": "r",
+    "local_ftm_week1_template": "w1t",
+    "local_ftm_atelier_catalog": "ac",
+    "local_ftm_activities": "a",
+    "local_ftm_enrollments": "e",
+    "local_ftm_week2_choices": "w2c",
+    "local_ftm_external_bookings": "eb",
+    "local_ftm_coaches": "c"
+  },
+  "common_errors": {
+    "activity_date": "WRONG - use date_start and date_end",
+    "start_date": "WRONG - use date_start",
+    "end_date": "WRONG - use date_end",
+    "room_id": "WRONG - use roomid",
+    "group_id": "WRONG - use groupid",
+    "user_id": "WRONG - use userid",
+    "teacher_id": "WRONG - use teacherid",
+    "atelier_id": "WRONG - use atelierid",
+    "template_id": "WRONG - use templateid",
+    "activity_id": "WRONG - use activityid",
+    "title": "WRONG - use name",
+    "type": "WRONG - use activity_type",
+    "week": "WRONG - use target_week or current_week",
+    "colour": "WRONG - use color",
+    "colour_hex": "WRONG - use color_hex",
+    "created": "WRONG - use timecreated",
+    "modified": "WRONG - use timemodified",
+    "created_by": "WRONG - use createdby",
+    "enrolled_by": "WRONG - use enrolledby",
+    "chosen_by_user": "WRONG - use chosen_by",
+    "is_laboratory": "WRONG - use is_lab",
+    "max_capacity": "WRONG - use capacity or max_participants",
+    "day": "WRONG - use day_of_week",
+    "slot": "WRONG - use time_slot",
+    "start_time": "WRONG - use time_start",
+    "end_time": "WRONG - use time_end"
+  },
+  "relationships": {
+    "local_ftm_groups": {
+      "has_many": ["local_ftm_group_members", "local_ftm_activities", "local_ftm_enrollments", "local_ftm_week2_choices"]
+    },
+    "local_ftm_rooms": {
+      "has_many": ["local_ftm_week1_template", "local_ftm_activities", "local_ftm_external_bookings"]
+    },
+    "local_ftm_activities": {
+      "belongs_to": ["local_ftm_groups", "local_ftm_rooms", "local_ftm_atelier_catalog", "local_ftm_week1_template"],
+      "has_many": ["local_ftm_enrollments"]
+    },
+    "local_ftm_enrollments": {
+      "belongs_to": ["local_ftm_activities", "local_ftm_groups"]
+    },
+    "local_ftm_week2_choices": {
+      "belongs_to": ["local_ftm_groups"]
+    },
+    "local_ftm_external_bookings": {
+      "belongs_to": ["local_ftm_rooms"]
+    },
+    "local_ftm_coaches": {
+      "belongs_to": ["user"]
+    }
+  },
+  "status_values": {
+    "local_ftm_groups.status": ["planning", "active", "completed"],
+    "local_ftm_group_members.status": ["active", "delayed", "completed", "withdrawn"],
+    "local_ftm_activities.status": ["scheduled", "in_progress", "completed", "cancelled"],
+    "local_ftm_enrollments.status": ["enrolled", "attended", "absent", "cancelled"],
+    "local_ftm_enrollments.enrollment_type": ["auto", "manual", "coach"],
+    "local_ftm_week2_choices.status": ["pending", "confirmed"],
+    "local_ftm_coaches.role": ["coach", "secretary", "teacher"],
+    "local_ftm_external_bookings.recurring": ["none", "weekly", "biweekly"]
+  },
+  "color_values": {
+    "local_ftm_groups.color": ["giallo", "grigio", "rosso", "marrone", "viola"],
+    "local_ftm_groups.color_hex": {
+      "giallo": "#FFFF00",
+      "grigio": "#808080",
+      "rosso": "#FF0000",
+      "marrone": "#996633",
+      "viola": "#7030A0"
+    }
+  },
+  "activity_types": ["week1", "week2_test", "week2_lab", "atelier", "external"],
+  "time_slots": ["matt", "pom"],
+  "days_of_week": {
+    "1": "Lunedi",
+    "2": "Martedi",
+    "3": "Mercoledi",
+    "4": "Giovedi",
+    "5": "Venerdi"
+  }
+}

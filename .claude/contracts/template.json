@@ -1,0 +1,77 @@
+{
+  "_comment": "Template contratto per coordinamento agenti FTM",
+  "_version": "1.0",
+
+  "task": {
+    "id": "TASK_XXX",
+    "name": "Nome del task",
+    "description": "Descrizione dettagliata",
+    "created_at": "2026-01-22T10:00:00",
+    "status": "pending"
+  },
+
+  "schema": {
+    "plugin": "local_ftm_scheduler",
+    "tables": [],
+    "fields_map": {},
+    "relationships": [],
+    "common_joins": []
+  },
+
+  "backend": {
+    "files_to_create": [],
+    "files_to_modify": [],
+    "classes": [],
+    "functions": [],
+    "ajax_endpoint": null,
+    "ajax_actions": [],
+    "capabilities_required": [],
+    "dependencies": []
+  },
+
+  "frontend": {
+    "css_prefix": "",
+    "js_namespace": "",
+    "html_ids": [],
+    "html_classes": [],
+    "modals": [],
+    "forms": [],
+    "ajax_calls": []
+  },
+
+  "lang": {
+    "component": "",
+    "strings_en": {},
+    "strings_it": {}
+  },
+
+  "validation": {
+    "security_checks": [
+      "sql_injection",
+      "xss",
+      "csrf",
+      "input_validation",
+      "authentication",
+      "authorization"
+    ],
+    "db_checks": [
+      "field_names",
+      "table_names",
+      "joins"
+    ],
+    "integration_checks": [
+      "api_match",
+      "css_conflicts",
+      "js_conflicts",
+      "id_uniqueness"
+    ]
+  },
+
+  "output": {
+    "files_created": [],
+    "files_modified": [],
+    "validation_status": null,
+    "conflicts_resolved": [],
+    "warnings": []
+  }
+}

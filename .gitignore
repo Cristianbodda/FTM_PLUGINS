@@ -1,6 +1,10 @@
-# Auto Claude data directory
+# Auto Claude data directory (session cache)
 .auto-claude/
-.claude/
+
+# Claude local settings (contiene permessi locali e possibili credenziali)
+.claude/settings.local.json
 
 # Temp files
 tmpclaude-*
+
+# NOTE: .claude/ NON è esclusa - contiene documentazione progetto (agents, skills, commands)
