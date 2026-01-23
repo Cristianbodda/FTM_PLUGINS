@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_ftm_scheduler';
-$plugin->version = 2026012201;  // YYYYMMDDXX - Added attendance tracking fields (marked_by, marked_at, absence_notified), max_participants to 16
+$plugin->version = 2026012202;  // YYYYMMDDXX - Added attendance page, notification helper, secretary dashboard
 $plugin->requires = 2023100900; // Moodle 4.3+
 $plugin->maturity = MATURITY_ALPHA;
 $plugin->release = 'v1.0.0';

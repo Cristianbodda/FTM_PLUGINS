@@ -91,7 +91,7 @@ function get_absence_statistics($start, $end) {
                    SUM(CASE WHEN e.status = 'absent' THEN 1 ELSE 0 END) as absent
             FROM {local_ftm_enrollments} e
             JOIN {local_ftm_activities} a ON e.activityid = a.id
-            WHERE a.activity_date >= :start AND a.activity_date <= :end";
+            WHERE a.date_start >= :start AND a.date_start <= :end";
 
     $result = $DB->get_record_sql($sql, ['start' => $start, 'end' => $end]);
 
@@ -110,7 +110,7 @@ function get_absence_statistics($start, $end) {
             FROM {user} u
             JOIN {local_ftm_enrollments} e ON e.userid = u.id
             JOIN {local_ftm_activities} a ON e.activityid = a.id
-            WHERE a.activity_date >= :start AND a.activity_date <= :end
+            WHERE a.date_start >= :start AND a.date_start <= :end
             AND e.status IN ('attended', 'absent')
             GROUP BY u.id, u.firstname, u.lastname
             HAVING SUM(CASE WHEN e.status = 'absent' THEN 1 ELSE 0 END) > 0

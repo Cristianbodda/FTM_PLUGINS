@@ -274,20 +274,62 @@ class report_generator {
         return $defaults[$sector] ?? [];
     }
     
+    /**
+     * Lista dei settori validi riconosciuti dal sistema
+     */
+    private static $validSectors = [
+        'AUTOMOBILE', 'AUTOVEICOLO',
+        'AUTOMAZIONE', 'AUTOM', 'AUTOMAZ',
+        'CHIMFARM', 'CHIM', 'CHIMICA', 'FARMACEUTICA',
+        'ELETTRICITÀ', 'ELETTRICITA', 'ELETTR', 'ELETT',
+        'LOGISTICA', 'LOG',
+        'MECCANICA', 'MECC',
+        'METALCOSTRUZIONE', 'METAL',
+        'GENERICO', 'GEN'
+    ];
+
+    /**
+     * Rileva il settore dalle competenze usando voto di maggioranza
+     *
+     * @param array $competencies Array di competenze con chiave 'idnumber'
+     * @return string|null Il settore più frequente o null se non trovato
+     */
     public static function detect_sector_from_competencies($competencies) {
         if (empty($competencies)) {
             return null;
         }
-        
-        $first = reset($competencies);
-        $idnumber = $first['idnumber'] ?? '';
-        
-        if (empty($idnumber)) {
+
+        // Conta le occorrenze di ogni settore
+        $sectorCounts = [];
+
+        foreach ($competencies as $comp) {
+            $idnumber = $comp['idnumber'] ?? '';
+
+            if (empty($idnumber)) {
+                continue;
+            }
+
+            // Estrae la prima parte prima dell'underscore
+            $parts = explode('_', $idnumber);
+            $potentialSector = strtoupper($parts[0] ?? '');
+
+            // Verifica che sia un settore valido (deve avere almeno 2 parti e settore riconosciuto)
+            if (count($parts) >= 2 && in_array($potentialSector, self::$validSectors)) {
+                if (!isset($sectorCounts[$potentialSector])) {
+                    $sectorCounts[$potentialSector] = 0;
+                }
+                $sectorCounts[$potentialSector]++;
+            }
+        }
+
+        // Se nessun settore valido trovato, ritorna null
+        if (empty($sectorCounts)) {
             return null;
         }
-        
-        $parts = explode('_', $idnumber);
-        return $parts[0] ?? null;
+
+        // Restituisce il settore con più occorrenze
+        arsort($sectorCounts);
+        return key($sectorCounts);
     }
     
     public static function get_student_quiz_attempts($userid, $courseid = null) {

@@ -40,15 +40,15 @@ class notification_helper {
 
         // Get activity info
         $activity = $DB->get_record('local_ftm_activities', ['id' => $enrollment->activityid],
-            'id, title, activity_date, start_time, end_time, room_id');
+            'id, name, date_start, date_end, roomid, atelierid');
         if (!$activity) {
             return false;
         }
 
         // Get atelier info if available
         $atelier_name = '';
-        if (!empty($activity->atelier_id)) {
-            $atelier = $DB->get_record('local_ftm_atelier_catalog', ['id' => $activity->atelier_id], 'name');
+        if (!empty($activity->atelierid)) {
+            $atelier = $DB->get_record('local_ftm_atelier_catalog', ['id' => $activity->atelierid], 'name');
             if ($atelier) {
                 $atelier_name = $atelier->name;
             }
@@ -56,8 +56,8 @@ class notification_helper {
 
         // Get room info
         $room_name = '';
-        if (!empty($activity->room_id)) {
-            $room = $DB->get_record('local_ftm_rooms', ['id' => $activity->room_id], 'name');
+        if (!empty($activity->roomid)) {
+            $room = $DB->get_record('local_ftm_rooms', ['id' => $activity->roomid], 'name');
             if ($room) {
                 $room_name = $room->name;
             }
@@ -67,9 +67,9 @@ class notification_helper {
         $data = new \stdClass();
         $data->student_name = fullname($student);
         $data->student_id = $student->id;
-        $data->activity_title = $activity->title;
-        $data->activity_date = date('d/m/Y', $activity->activity_date);
-        $data->activity_time = $activity->start_time . ' - ' . $activity->end_time;
+        $data->activity_title = $activity->name;
+        $data->activity_date = date('d/m/Y', $activity->date_start);
+        $data->activity_time = date('H:i', $activity->date_start) . ' - ' . date('H:i', $activity->date_end);
         $data->atelier_name = $atelier_name;
         $data->room_name = $room_name;
 
@@ -361,7 +361,7 @@ class notification_helper {
                 JOIN {local_ftm_activities} a ON e.activityid = a.id
                 WHERE e.userid = :userid
                 AND e.status = 'absent'
-                AND a.activity_date >= :date_limit";
+                AND a.date_start >= :date_limit";
         $stats->recent_absences = $DB->count_records_sql($sql, [
             'userid' => $studentid,
             'date_limit' => $thirty_days_ago
