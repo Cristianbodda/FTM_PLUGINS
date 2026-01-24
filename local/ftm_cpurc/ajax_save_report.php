@@ -59,6 +59,8 @@ try {
     // Section 5: Sector competencies.
     $data->sector_competency_rating = optional_param('sector_competency_rating', null, PARAM_INT);
     $data->sector_competency_text = optional_param('sector_competency_text', '', PARAM_TEXT);
+    $data->possible_sectors = optional_param('possible_sectors', '', PARAM_TEXT);
+    $data->final_summary = optional_param('final_summary', '', PARAM_TEXT);
 
     // Section 6: Transversal competencies (JSON).
     $data->personal_competencies = optional_param('personal_competencies', '[]', PARAM_RAW);
@@ -66,10 +68,19 @@ try {
     $data->methodological_competencies = optional_param('methodological_competencies', '[]', PARAM_RAW);
     $data->tic_competencies = optional_param('tic_competencies', '[]', PARAM_RAW);
 
+    // Section 6b: Observation fields for transversal competencies.
+    $data->obs_personal = optional_param('obs_personal', '', PARAM_TEXT);
+    $data->obs_social = optional_param('obs_social', '', PARAM_TEXT);
+    $data->obs_methodological = optional_param('obs_methodological', '', PARAM_TEXT);
+
     // Section 7: Job search.
     $data->dossier_complete = optional_param('dossier_complete', 0, PARAM_INT);
     $data->search_channels = optional_param('search_channels', '[]', PARAM_RAW);
     $data->search_evaluation = optional_param('search_evaluation', null, PARAM_INT);
+
+    // Section 7b: Observation fields for job search.
+    $data->obs_search_channels = optional_param('obs_search_channels', '', PARAM_TEXT);
+    $data->obs_search_evaluation = optional_param('obs_search_evaluation', '', PARAM_TEXT);
 
     // Section 9: Outcome.
     $data->hired = optional_param('hired', 0, PARAM_INT);

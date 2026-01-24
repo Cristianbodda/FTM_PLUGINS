@@ -125,6 +125,23 @@ class cpurc_manager {
             }
         }
 
+        // Report status filter.
+        if (!empty($filters['report_status'])) {
+            if ($filters['report_status'] === 'none') {
+                $where[] = "r.id IS NULL";
+            } else if ($filters['report_status'] === 'draft') {
+                $where[] = "r.status = 'draft'";
+            } else if ($filters['report_status'] === 'complete') {
+                $where[] = "(r.status = 'final' OR r.status = 'sent')";
+            }
+        }
+
+        // Coach filter.
+        if (!empty($filters['coach'])) {
+            $where[] = "sc.coachid = :coachid";
+            $params['coachid'] = $filters['coach'];
+        }
+
         // Date range filter.
         if (!empty($filters['date_from'])) {
             $where[] = "cs.date_start >= :datefrom";
@@ -138,12 +155,16 @@ class cpurc_manager {
         $wheresql = implode(' AND ', $where);
 
         // Build query with all required user fields for fullname.
+        // Include coach from local_student_coaching (shared table).
         $sql = "SELECT cs.*, u.id as moodleuserid, u.firstname, u.lastname, u.email,
                        u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename,
-                       r.id as reportid, r.status as report_status
+                       r.id as reportid, r.status as report_status,
+                       sc.coachid, coach.firstname as coach_firstname, coach.lastname as coach_lastname
                 FROM {local_ftm_cpurc_students} cs
                 JOIN {user} u ON u.id = cs.userid
                 LEFT JOIN {local_ftm_cpurc_reports} r ON r.studentid = cs.id
+                LEFT JOIN {local_student_coaching} sc ON sc.userid = cs.userid
+                LEFT JOIN {user} coach ON coach.id = sc.coachid
                 WHERE {$wheresql}
                 ORDER BY cs.date_start DESC, u.lastname ASC, u.firstname ASC";
 
@@ -347,5 +368,273 @@ class cpurc_manager {
             'week' => self::calculate_week_number($student->date_start),
             'sector_name' => profession_mapper::get_sector_name($student->sector_detected),
         ];
+    }
+
+    /**
+     * Get available coaches.
+     *
+     * @return array Array of coach records.
+     */
+    public static function get_coaches() {
+        global $DB;
+
+        // Try to get coaches from local_ftm_coaches first (scheduler).
+        $coaches = [];
+        $dbman = $DB->get_manager();
+
+        if ($dbman->table_exists('local_ftm_coaches')) {
+            $coaches = $DB->get_records_sql(
+                "SELECT c.userid, u.firstname, u.lastname, c.initials
+                 FROM {local_ftm_coaches} c
+                 JOIN {user} u ON u.id = c.userid
+                 WHERE c.active = 1 AND c.role = 'coach'
+                 ORDER BY u.lastname, u.firstname"
+            );
+        }
+
+        // If no coaches found, get from role assignments.
+        if (empty($coaches)) {
+            $coachroleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
+            if ($coachroleid) {
+                $coaches = $DB->get_records_sql(
+                    "SELECT DISTINCT u.id as userid, u.firstname, u.lastname, '' as initials
+                     FROM {user} u
+                     JOIN {role_assignments} ra ON ra.userid = u.id
+                     WHERE ra.roleid = :roleid AND u.deleted = 0
+                     ORDER BY u.lastname, u.firstname",
+                    ['roleid' => $coachroleid]
+                );
+            }
+        }
+
+        return $coaches;
+    }
+
+    /**
+     * Assign coach to student.
+     * Uses shared local_student_coaching table.
+     *
+     * @param int $userid Moodle user ID.
+     * @param int $coachid Coach user ID.
+     * @param int $courseid Course ID (optional).
+     * @return bool Success.
+     */
+    public static function assign_coach($userid, $coachid, $courseid = 0) {
+        global $DB;
+
+        // Check if coaching record exists.
+        $existing = $DB->get_record('local_student_coaching', [
+            'userid' => $userid,
+            'courseid' => $courseid
+        ]);
+
+        $now = time();
+
+        if ($existing) {
+            // Update existing record.
+            $existing->coachid = $coachid;
+            $existing->timemodified = $now;
+            return $DB->update_record('local_student_coaching', $existing);
+        } else {
+            // Create new record.
+            $record = new \stdClass();
+            $record->userid = $userid;
+            $record->coachid = $coachid;
+            $record->courseid = $courseid;
+            $record->status = 'active';
+            $record->current_week = 1;
+            $record->date_start = $now;
+            $record->date_end = $now + (6 * 7 * 24 * 60 * 60); // 6 weeks.
+            $record->timecreated = $now;
+            $record->timemodified = $now;
+            return $DB->insert_record('local_student_coaching', $record);
+        }
+    }
+
+    /**
+     * Get student's assigned coach.
+     *
+     * @param int $userid Moodle user ID.
+     * @return object|false Coach user record or false.
+     */
+    public static function get_student_coach($userid) {
+        global $DB;
+
+        return $DB->get_record_sql(
+            "SELECT u.id, u.firstname, u.lastname, u.email
+             FROM {local_student_coaching} sc
+             JOIN {user} u ON u.id = sc.coachid
+             WHERE sc.userid = :userid AND sc.status = 'active'",
+            ['userid' => $userid]
+        );
+    }
+
+    /**
+     * Get student sectors (multi-sector support).
+     * Uses shared local_student_sectors table.
+     *
+     * @param int $userid Moodle user ID.
+     * @return array Array of sector records.
+     */
+    public static function get_student_sectors($userid) {
+        global $DB;
+
+        $dbman = $DB->get_manager();
+        if (!$dbman->table_exists('local_student_sectors')) {
+            // Fallback to cpurc single sector.
+            $student = $DB->get_record('local_ftm_cpurc_students', ['userid' => $userid]);
+            if ($student && !empty($student->sector_detected)) {
+                return [(object)[
+                    'sector' => $student->sector_detected,
+                    'is_primary' => 1,
+                    'source' => 'cpurc',
+                    'quiz_count' => 0
+                ]];
+            }
+            return [];
+        }
+
+        return $DB->get_records_sql(
+            "SELECT *
+             FROM {local_student_sectors}
+             WHERE userid = :userid
+             ORDER BY is_primary DESC, quiz_count DESC, timecreated ASC",
+            ['userid' => $userid]
+        );
+    }
+
+    /**
+     * Set student sectors (primary, secondary, tertiary).
+     *
+     * @param int $userid Moodle user ID.
+     * @param string $primary Primary sector code.
+     * @param string $secondary Secondary sector code (optional).
+     * @param string $tertiary Tertiary sector code (optional).
+     * @param int $courseid Course ID (optional).
+     * @return bool Success.
+     */
+    public static function set_student_sectors($userid, $primary, $secondary = '', $tertiary = '', $courseid = 0) {
+        global $DB;
+
+        $dbman = $DB->get_manager();
+        if (!$dbman->table_exists('local_student_sectors')) {
+            // Fallback: update cpurc table only.
+            $student = $DB->get_record('local_ftm_cpurc_students', ['userid' => $userid]);
+            if ($student) {
+                $student->sector_detected = $primary;
+                $student->timemodified = time();
+                return $DB->update_record('local_ftm_cpurc_students', $student);
+            }
+            return false;
+        }
+
+        $now = time();
+
+        // Clear all existing is_primary flags for this user.
+        $DB->execute(
+            "UPDATE {local_student_sectors} SET is_primary = 0, timemodified = :time WHERE userid = :userid",
+            ['time' => $now, 'userid' => $userid]
+        );
+
+        // Helper function to upsert sector.
+        $upsertSector = function($sector, $isPrimary, $rank) use ($DB, $userid, $courseid, $now) {
+            if (empty($sector)) {
+                return;
+            }
+
+            $existing = $DB->get_record('local_student_sectors', [
+                'userid' => $userid,
+                'courseid' => $courseid,
+                'sector' => $sector
+            ]);
+
+            if ($existing) {
+                $existing->is_primary = $isPrimary;
+                $existing->source = 'manual';
+                $existing->timemodified = $now;
+                $DB->update_record('local_student_sectors', $existing);
+            } else {
+                $record = new \stdClass();
+                $record->userid = $userid;
+                $record->courseid = $courseid;
+                $record->sector = $sector;
+                $record->is_primary = $isPrimary;
+                $record->source = 'manual';
+                $record->quiz_count = 0;
+                $record->first_detected = $now;
+                $record->last_detected = $now;
+                $record->timecreated = $now;
+                $record->timemodified = $now;
+                $DB->insert_record('local_student_sectors', $record);
+            }
+        };
+
+        // Set sectors with proper priority.
+        $upsertSector($primary, 1, 1);
+        $upsertSector($secondary, 0, 2);
+        $upsertSector($tertiary, 0, 3);
+
+        // Also update cpurc student table for compatibility.
+        $student = $DB->get_record('local_ftm_cpurc_students', ['userid' => $userid]);
+        if ($student) {
+            $student->sector_detected = $primary;
+            $student->timemodified = $now;
+            $DB->update_record('local_ftm_cpurc_students', $student);
+        }
+
+        // Sync with coaching table.
+        self::sync_coaching_sector($userid, $courseid, $primary);
+
+        return true;
+    }
+
+    /**
+     * Sync sector to coaching table.
+     *
+     * @param int $userid User ID.
+     * @param int $courseid Course ID.
+     * @param string $sector Sector code.
+     */
+    private static function sync_coaching_sector($userid, $courseid, $sector) {
+        global $DB;
+
+        $dbman = $DB->get_manager();
+        if (!$dbman->table_exists('local_student_coaching')) {
+            return;
+        }
+
+        $now = time();
+
+        if ($courseid > 0) {
+            $DB->execute(
+                "UPDATE {local_student_coaching} SET sector = :sector, timemodified = :time
+                 WHERE userid = :userid AND courseid = :courseid",
+                ['sector' => $sector, 'time' => $now, 'userid' => $userid, 'courseid' => $courseid]
+            );
+        } else {
+            $DB->execute(
+                "UPDATE {local_student_coaching} SET sector = :sector, timemodified = :time
+                 WHERE userid = :userid",
+                ['sector' => $sector, 'time' => $now, 'userid' => $userid]
+            );
+        }
+    }
+
+    /**
+     * Get all students with complete reports for bulk export.
+     *
+     * @return array Array of student IDs.
+     */
+    public static function get_students_with_reports() {
+        global $DB;
+
+        return $DB->get_records_sql(
+            "SELECT cs.id, cs.userid, u.firstname, u.lastname
+             FROM {local_ftm_cpurc_students} cs
+             JOIN {user} u ON u.id = cs.userid
+             JOIN {local_ftm_cpurc_reports} r ON r.studentid = cs.id
+             WHERE r.status IN ('draft', 'final', 'sent')
+             ORDER BY u.lastname, u.firstname"
+        );
     }
 }

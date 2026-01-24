@@ -1,10 +1,10 @@
 # FTM PLUGINS - Guida Completa per Claude
 
-**Ultimo aggiornamento:** 22 Gennaio 2026 (ore 16:30)
+**Ultimo aggiornamento:** 24 Gennaio 2026 (ore 11:00)
 
 ## Panoramica Progetto
 
-Ecosistema di 11 plugin Moodle per gestione competenze professionali.
+Ecosistema di 12 plugin Moodle per gestione competenze professionali.
 
 Target: Moodle 4.5+ / 5.0 | Licenza: GPL-3.0
 
@@ -12,7 +12,7 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (22/01/2026)
+## STATO ATTUALE SVILUPPO (24/01/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -21,6 +21,7 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 - Gestione Gruppi colore (Giallo, Grigio, Rosso, Marrone, Viola)
 - Gestione Aule e Atelier
 - Generazione automatica attivita
+- Tabella `local_ftm_coaches` per gestione coach (CB, FM, GM, RB)
 
 #### 2. Sector Manager + Student Report (local_competencymanager)
 - Sistema Multi-Settore per studenti
@@ -28,6 +29,8 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 - Rilevamento automatico settori da quiz
 - Capability `managesectors` per coach/segreteria
 - **Student Report Print** con radar 490px, logo FTM, sezioni configurabili
+- Tabella `local_student_sectors` per multi-settore (primary, secondary, tertiary)
+- Tabella `local_student_coaching` per assegnazione coach-studente (condivisa)
 
 #### 3. Test Suite (local_ftm_testsuite)
 - 5 Agenti di test: Security, Database, AJAX, Structure, Language
@@ -38,6 +41,7 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 - Popup bloccante per autovalutazione
 - Sistema doppia password skip
 - Observer per rilevazione settori
+- **Filtro settore primario:** assegna solo competenze del settore primario studente
 
 #### 5. Setup Universale Quiz (local_competencyxmlimport) - AGGIORNATO 19/01/2026
 Sistema completo per import quiz e assegnazione competenze:
@@ -59,10 +63,17 @@ Dashboard avanzata per coach con interfaccia ottimizzata per utenti 50+:
 - **Preferenze Utente:** Vista e zoom salvati automaticamente
 - **File:** `coach_dashboard_v2.php`, `export_word.php`
 
-### IN SVILUPPO
-
-#### 7. Sistema Import CPURC (local_ftm_cpurc)
-Sistema per importare utenti da CSV CPURC e generare report Word finali.
+#### 7. Sistema CPURC (local_ftm_cpurc) - COMPLETATO 24/01/2026
+Sistema completo per gestione studenti CPURC con import CSV e report Word:
+- **Import CSV:** Importa utenti da file CSV CPURC con mapping automatico campi
+- **Dashboard Segreteria:** Lista studenti con filtri (URC, settore, stato report, coach)
+- **Student Card:** Scheda studente completa con 4 tab (Anagrafica, Percorso, Assenze, Stage)
+- **Coach Assignment:** Assegnazione coach FTM sincronizzata con tutti i plugin
+- **Multi-Settore:** Primario (quiz/autovalutazione), Secondario, Terziario (suggerimenti coach)
+- **Report Word:** Generazione documento Word finale per ogni studente
+- **Export Excel:** Esportazione completa dati in formato Excel
+- **Export Word Bulk:** ZIP con tutti i report Word (filtro draft/final)
+- **Profession Mapper:** Mapping automatico professione → settore
 
 ---
 
@@ -129,16 +140,17 @@ Sistema per importare utenti da CSV CPURC e generare report Word finali.
 
 ---
 
-## Plugin (11 totali)
+## Plugin (12 totali)
 
-### Local (9)
+### Local (10)
 - **competencymanager** - Core gestione competenze + Sector Manager
-- **coachmanager** - Coaching formatori + Dashboard
+- **coachmanager** - Coaching formatori + Dashboard V2
 - **competencyreport** - Report studenti
 - **competencyxmlimport** - Import XML/Word/Excel + Setup Universale
 - **ftm_hub** - Hub centrale
 - **ftm_scheduler** - Pianificazione calendario
 - **ftm_testsuite** - Testing automatizzato
+- **ftm_cpurc** - Gestione CPURC + Report Word
 - **labeval** - Valutazione laboratori
 - **selfassessment** - Autovalutazione + rilevazione settori
 
@@ -339,15 +351,20 @@ ftm_hub (centrale)
 ├── competencymanager (core + sector_manager)
 │   ├── competencyreport
 │   ├── competencyxmlimport (+ setup_universale)
-│   ├── selfassessment (+ observer settori)
-│   └── coachmanager
+│   ├── selfassessment (+ observer settori + filtro primario)
+│   └── coachmanager (+ dashboard V2)
 ├── labeval
-├── ftm_scheduler (+ link sector_admin)
+├── ftm_scheduler (+ local_ftm_coaches)
 ├── ftm_testsuite
-└── ftm_cpurc (import CSV + report Word)
+└── ftm_cpurc (gestione completa CPURC)
 
 qbank_competenciesbyquestion <- competencymanager
 block_ftm_tools -> ftm_hub
+
+Tabelle Condivise:
+├── local_student_coaching (coachmanager ↔ ftm_cpurc)
+├── local_student_sectors (competencymanager ↔ ftm_cpurc ↔ selfassessment)
+└── local_ftm_coaches (ftm_scheduler → tutti)
 ```
 
 ---
@@ -355,6 +372,10 @@ block_ftm_tools -> ftm_hub
 ## RISORSE
 
 - Server Test: https://test-urc.hizuvala.myhostpoint.ch
+- **CPURC Dashboard:** /local/ftm_cpurc/index.php
+- **CPURC Student Card:** /local/ftm_cpurc/student_card.php?id=X
+- **CPURC Report:** /local/ftm_cpurc/report.php?id=X
+- **CPURC Import CSV:** /local/ftm_cpurc/import.php
 - **Coach Dashboard V2:** /local/coachmanager/coach_dashboard_v2.php
 - Coach Dashboard (originale): /local/coachmanager/coach_dashboard.php
 - **Student Report:** /local/competencymanager/student_report.php?userid=X&courseid=Y
@@ -471,3 +492,153 @@ body { padding-top: 75px; } /* Spazio header */
 - **Font:** Didact Gothic (Google Fonts)
 - **Colore accento:** #dd0000 (rosso FTM)
 - **Header running:** Logo + nome organizzazione su ogni pagina
+
+---
+
+## SISTEMA CPURC - DETTAGLI TECNICI (24/01/2026)
+
+### Panoramica
+Sistema completo per la gestione degli studenti CPURC (Centro Professionale URC) con import da CSV, gestione anagrafica, assegnazione coach/settori e generazione report Word.
+
+### File Principali
+```
+local/ftm_cpurc/
+├── index.php                 # Dashboard segreteria con filtri
+├── student_card.php          # Scheda studente (4 tab)
+├── report.php                # Compilazione report Word
+├── import.php                # Import CSV CPURC
+├── export_excel.php          # Export Excel completo
+├── export_word.php           # Export singolo Word
+├── export_word_bulk.php      # Export ZIP tutti i Word
+├── ajax_assign_coach.php     # AJAX assegnazione coach
+├── ajax_save_sectors.php     # AJAX salvataggio settori
+├── ajax_delete_sector.php    # AJAX eliminazione settore
+├── classes/
+│   ├── cpurc_manager.php     # Manager principale
+│   ├── csv_importer.php      # Parser CSV
+│   ├── word_exporter.php     # Generatore Word
+│   └── profession_mapper.php # Mapping professione→settore
+└── db/
+    └── install.xml           # Schema database
+```
+
+### Tabelle Database
+
+#### local_ftm_cpurc_students
+| Campo | Tipo | Descrizione |
+|-------|------|-------------|
+| id | BIGINT | Primary key |
+| userid | BIGINT | FK → mdl_user.id |
+| personal_number | VARCHAR(50) | Numero personale URC |
+| urc_office | VARCHAR(100) | Ufficio URC di riferimento |
+| urc_consultant | VARCHAR(200) | Consulente URC |
+| date_start | BIGINT | Data inizio percorso |
+| date_end_planned | BIGINT | Data fine pianificata |
+| date_end_actual | BIGINT | Data fine effettiva |
+| sector_detected | VARCHAR(50) | Settore rilevato |
+| last_profession | VARCHAR(200) | Ultima professione |
+| status | VARCHAR(20) | Stato (active, closed) |
+| absence_* | INT | Campi assenze (x, o, a, b, c, d, e, f, g, h, i) |
+| stage_* | Vari | Campi stage (company, contact, dates) |
+
+#### local_ftm_cpurc_reports
+| Campo | Tipo | Descrizione |
+|-------|------|-------------|
+| id | BIGINT | Primary key |
+| studentid | BIGINT | FK → local_ftm_cpurc_students.id |
+| coachid | BIGINT | FK → mdl_user.id (coach) |
+| status | VARCHAR(20) | draft, final, sent |
+| narrative_* | TEXT | Campi narrativi (comportamento, competenze, etc.) |
+| conclusion_* | Vari | Campi conclusione |
+
+### Dashboard Segreteria (index.php)
+
+#### Filtri Disponibili
+| Filtro | Tipo | Descrizione |
+|--------|------|-------------|
+| search | Text | Ricerca nome/cognome/email |
+| urc | Select | Ufficio URC |
+| sector | Select | Settore |
+| reportstatus | Select | Nessuno/Bozza/Completo |
+| coach | Select | Coach assegnato |
+
+#### Colonne Tabella
+- Nome studente (link a student_card)
+- URC
+- Settore (badge colorato)
+- Settimana (1-6+)
+- Coach (dropdown editabile)
+- Stato Report (badge)
+- Azioni (Card, Report, Word)
+
+#### Export
+- **Excel:** Tutti i dati in formato .xlsx
+- **Word ZIP:** Archivio con tutti i report Word
+
+### Student Card (student_card.php)
+
+#### Tab Disponibili
+1. **Anagrafica:** Dati personali, contatti, indirizzo, dati amministrativi
+2. **Percorso:** Dati URC, percorso FTM, coach assegnato, settori multi-livello
+3. **Assenze:** Riepilogo assenze (X, O, A, B, C, D, E, F, G, H, I, TOT)
+4. **Stage:** Dati azienda, contatto, date, conclusione
+
+#### Coach Assignment
+- Dropdown con coach da `local_ftm_coaches` (scheduler)
+- Fallback a ruolo editingteacher se tabella non presente
+- Salvataggio in `local_student_coaching` (condivisa)
+- Sincronizzato con competencymanager e coachmanager
+
+#### Multi-Settore
+- **Primario:** Determina quiz e autovalutazione assegnati
+- **Secondario/Terziario:** Suggerimenti per il coach
+- Pulsanti X per eliminare settori
+- Salvataggio in `local_student_sectors` (condivisa)
+
+### Report Word (report.php)
+
+#### Sezioni Documento
+1. Intestazione con logo FTM
+2. Dati anagrafici studente
+3. Percorso formativo
+4. Valutazione comportamentale
+5. Competenze acquisite
+6. Stage e pratica
+7. Raccomandazioni coach
+8. Conclusione e firma
+
+#### Campi Narrativi
+- `narrative_behavior` - Comportamento
+- `narrative_technical` - Competenze tecniche
+- `narrative_transversal` - Competenze trasversali
+- `narrative_recommendations` - Raccomandazioni
+- `narrative_conclusion` - Conclusione
+
+### Integrazione con Altri Plugin
+
+#### selfassessment/observer.php
+```php
+// Filtra competenze per settore primario
+$primarySector = self::get_student_primary_sector($userid);
+if (!empty($primarySector)) {
+    $competencySector = self::get_competency_sector($competencyid);
+    if ($competencySector !== $primarySector) {
+        continue; // Skip competenza di altro settore
+    }
+}
+```
+
+#### Tabelle Condivise
+| Tabella | Plugin Owner | Usata da |
+|---------|--------------|----------|
+| local_student_coaching | competencymanager | ftm_cpurc, coachmanager |
+| local_student_sectors | competencymanager | ftm_cpurc, selfassessment |
+| local_ftm_coaches | ftm_scheduler | ftm_cpurc, coachmanager |
+
+### Capabilities
+| Capability | Descrizione |
+|------------|-------------|
+| local/ftm_cpurc:view | Visualizza dashboard e student card |
+| local/ftm_cpurc:edit | Modifica dati, assegna coach/settori |
+| local/ftm_cpurc:import | Importa CSV |
+| local/ftm_cpurc:generatereport | Genera e esporta report Word |

@@ -118,16 +118,29 @@
         <FIELD NAME="sector_competency_rating" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Rating 1-5"/>
         <FIELD NAME="sector_competency_text" TYPE="text" NOTNULL="false"/>
 
+        <!-- SEZIONE 5b: Possibili settori e sintesi -->
+        <FIELD NAME="possible_sectors" TYPE="text" NOTNULL="false" COMMENT="Possibili settori e ambiti professionali"/>
+        <FIELD NAME="final_summary" TYPE="text" NOTNULL="false" COMMENT="Sintesi conclusiva"/>
+
         <!-- SEZIONE 6: Competenze trasversali (JSON) -->
         <FIELD NAME="personal_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of ratings"/>
         <FIELD NAME="social_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of ratings"/>
         <FIELD NAME="methodological_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of ratings"/>
         <FIELD NAME="tic_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of ratings"/>
 
+        <!-- SEZIONE 6b: Osservazioni competenze trasversali -->
+        <FIELD NAME="obs_personal" TYPE="text" NOTNULL="false" COMMENT="Osservazioni competenze personali"/>
+        <FIELD NAME="obs_social" TYPE="text" NOTNULL="false" COMMENT="Osservazioni competenze sociali"/>
+        <FIELD NAME="obs_methodological" TYPE="text" NOTNULL="false" COMMENT="Osservazioni competenze metodologiche"/>
+
         <!-- SEZIONE 7: Ricerca impiego -->
         <FIELD NAME="dossier_complete" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="0/1"/>
         <FIELD NAME="search_channels" TYPE="text" NOTNULL="false" COMMENT="JSON array"/>
         <FIELD NAME="search_evaluation" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Rating 1-5"/>
+
+        <!-- SEZIONE 7b: Osservazioni ricerca impiego -->
+        <FIELD NAME="obs_search_channels" TYPE="text" NOTNULL="false" COMMENT="Osservazioni canali ricerca"/>
+        <FIELD NAME="obs_search_evaluation" TYPE="text" NOTNULL="false" COMMENT="Osservazioni valutazione ricerca"/>
 
         <!-- SEZIONE 8: Colloqui svolti -->
         <FIELD NAME="interviews_json" TYPE="text" NOTNULL="false" COMMENT="JSON array of interviews"/>

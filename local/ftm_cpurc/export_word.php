@@ -15,21 +15,37 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and dependencies.
+ * Export CPURC report to Word format.
  *
  * @package    local_ftm_cpurc
  * @copyright  2026 Fondazione Terzo Millennio
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+require_once(__DIR__ . '/../../config.php');
 
-$plugin->component = 'local_ftm_cpurc';
-$plugin->version = 2026012305;  // Add coach observation fields to reports.
-$plugin->requires = 2024042200; // Moodle 4.4+
-$plugin->maturity = MATURITY_BETA;
-$plugin->release = 'v1.1.0';
-$plugin->dependencies = [
-    'local_competencymanager' => ANY_VERSION,
-    'local_ftm_scheduler' => ANY_VERSION,
-];
+require_login();
+
+$context = context_system::instance();
+require_capability('local/ftm_cpurc:generatereport', $context);
+
+$id = required_param('id', PARAM_INT);
+
+// Get student data.
+$student = \local_ftm_cpurc\cpurc_manager::get_student($id);
+if (!$student) {
+    throw new moodle_exception('studentnotfound', 'local_ftm_cpurc');
+}
+
+// Get report data.
+$report = \local_ftm_cpurc\cpurc_manager::get_report($id);
+
+// Check if report exists.
+if (!$report) {
+    // Create empty report object for export.
+    $report = new stdClass();
+}
+
+// Create exporter and download.
+$exporter = new \local_ftm_cpurc\word_exporter($student, $report);
+$exporter->download();

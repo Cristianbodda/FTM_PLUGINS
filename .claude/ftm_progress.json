@@ -1,25 +1,25 @@
 {
   "meta": {
-    "version": "1.0.0",
-    "last_session": "2026-01-22",
-    "total_sessions": 1
+    "version": "1.1.0",
+    "last_session": "2026-01-24",
+    "total_sessions": 3
   },
   "plugins_progress": {
     "coachmanager": {
-      "completion": 85,
+      "completion": 95,
       "features_total": 10,
-      "features_done": 8,
-      "features_in_progress": 1,
+      "features_done": 9,
+      "features_in_progress": 0,
       "last_update": "2026-01-22",
-      "notes": "Dashboard V2 completata, navigazione aggiornata"
+      "notes": "Dashboard V2 completata con zoom accessibilita e 4 viste"
     },
     "competencymanager": {
-      "completion": 90,
+      "completion": 95,
       "features_total": 12,
       "features_done": 11,
       "features_in_progress": 0,
-      "last_update": "2026-01-22",
-      "notes": "Sector Manager funzionante, Student Report completo"
+      "last_update": "2026-01-24",
+      "notes": "Sector Manager + Student Report Print + Multi-settore completato"
     },
     "competencyreport": {
       "completion": 80,
@@ -32,9 +32,9 @@
     "competencyxmlimport": {
       "completion": 95,
       "features_total": 8,
-      "features_done": 7,
-      "features_in_progress": 1,
-      "last_update": "2026-01-22",
+      "features_done": 8,
+      "features_in_progress": 0,
+      "last_update": "2026-01-19",
       "notes": "Setup Universale completo, import Word/Excel funzionante"
     },
     "ftm_common": {
@@ -46,12 +46,12 @@
       "notes": "Design system creato, da espandere utilities condivise"
     },
     "ftm_cpurc": {
-      "completion": 40,
-      "features_total": 6,
-      "features_done": 2,
-      "features_in_progress": 1,
-      "last_update": "2026-01-22",
-      "notes": "Import CSV base, report Word da completare"
+      "completion": 100,
+      "features_total": 10,
+      "features_done": 10,
+      "features_in_progress": 0,
+      "last_update": "2026-01-24",
+      "notes": "COMPLETATO - Import CSV, Dashboard, Student Card, Report Word, Export Excel/ZIP, Coach assignment, Multi-settore"
     },
     "ftm_hub": {
       "completion": 75,
@@ -65,9 +65,9 @@
       "completion": 95,
       "features_total": 10,
       "features_done": 9,
-      "features_in_progress": 1,
+      "features_in_progress": 0,
       "last_update": "2026-01-22",
-      "notes": "Calendario completo, gruppi colore funzionanti"
+      "notes": "Calendario completo, gruppi colore, gestione coach"
     },
     "ftm_testsuite": {
       "completion": 85,
@@ -86,21 +86,21 @@
       "notes": "Valutazione base funzionante"
     },
     "selfassessment": {
-      "completion": 90,
+      "completion": 95,
       "features_total": 7,
-      "features_done": 6,
-      "features_in_progress": 1,
-      "last_update": "2026-01-22",
-      "notes": "Popup bloccante, doppia password, observer settori"
+      "features_done": 7,
+      "features_in_progress": 0,
+      "last_update": "2026-01-24",
+      "notes": "Popup bloccante, doppia password, observer settori, filtro primario"
     }
   },
   "overall": {
-    "completion": 77,
+    "completion": 85,
     "health_status": "good",
-    "last_health_check": "2026-01-22T03:00:28",
+    "last_health_check": "2026-01-24T11:00:00",
     "health_results": {
-      "ok": 15,
-      "warn": 2,
+      "ok": 17,
+      "warn": 1,
       "error": 0
     }
   },
@@ -111,6 +111,40 @@
       "features_completed": 5,
       "commits": 4,
       "notes": "Aggiunto sistema agenti FTM, comandi, colloqui collapsible, fix security"
+    },
+    {
+      "date": "2026-01-23",
+      "duration_minutes": 240,
+      "features_completed": 6,
+      "commits": 5,
+      "notes": "ftm_cpurc: Import CSV, Dashboard, Student Card, Report Word base"
+    },
+    {
+      "date": "2026-01-24",
+      "duration_minutes": 180,
+      "features_completed": 5,
+      "commits": 3,
+      "notes": "ftm_cpurc: Export Excel/Word bulk, Coach assignment, Multi-settore, filtro settore primario in selfassessment"
+    }
+  ],
+  "milestones": [
+    {
+      "name": "FTM CPURC 1.0",
+      "date": "2026-01-24",
+      "status": "completed",
+      "description": "Sistema CPURC completo con import CSV, gestione studenti, report Word"
+    },
+    {
+      "name": "Coach Dashboard V2",
+      "date": "2026-01-22",
+      "status": "completed",
+      "description": "Dashboard coach con zoom accessibilita e 4 viste configurabili"
+    },
+    {
+      "name": "Setup Universale Quiz",
+      "date": "2026-01-19",
+      "status": "completed",
+      "description": "Import quiz con assegnazione competenze automatica"
     }
   ]
 }

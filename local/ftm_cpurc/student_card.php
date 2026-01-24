@@ -280,6 +280,33 @@ echo $OUTPUT->header();
     margin: 0 0 15px 0;
     font-size: 14px;
 }
+
+/* Sector clear button */
+.sector-clear {
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 8px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.sector-clear:hover {
+    opacity: 1;
+}
+
+/* Sector delete button in badges */
+.sector-delete-btn {
+    cursor: pointer;
+    font-size: 10px;
+    margin-left: 5px;
+    opacity: 0.7;
+    transition: all 0.2s;
+}
+
+.sector-delete-btn:hover {
+    opacity: 1;
+    transform: scale(1.2);
+}
 </style>
 
 <div class="student-card">
@@ -461,6 +488,57 @@ echo $OUTPUT->header();
                 </div>
             </div>
 
+            <!-- Coach FTM Assignment -->
+            <?php
+            $coaches = \local_ftm_cpurc\cpurc_manager::get_coaches();
+            $currentCoach = \local_ftm_cpurc\cpurc_manager::get_student_coach($student->userid);
+            ?>
+            <div class="form-section" id="coach-assignment-section">
+                <h3>👨‍🏫 Coach FTM Assegnato</h3>
+                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">
+                    Assegna il coach responsabile per questo studente. Sincronizzato con tutti i plugin FTM.
+                </p>
+                <div class="form-grid form-grid-2">
+                    <div class="form-group">
+                        <label>Coach Attuale</label>
+                        <div id="current-coach-display" class="value-display" style="display: flex; align-items: center; gap: 10px;">
+                            <?php if ($currentCoach): ?>
+                                <span class="coach-badge" style="background: #E0F2FE; color: #0369A1; padding: 4px 12px; border-radius: 15px; font-weight: 600;">
+                                    <?php echo s($currentCoach->firstname . ' ' . $currentCoach->lastname); ?>
+                                </span>
+                                <small style="color: #666;">(<?php echo s($currentCoach->email); ?>)</small>
+                            <?php else: ?>
+                                <span style="color: #999;">⚠️ Nessun coach assegnato</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Cambia Coach <span class="sector-clear" data-target="coach_select" title="Rimuovi assegnazione">❌</span></label>
+                        <select id="coach_select" data-userid="<?php echo $student->userid; ?>" style="flex: 1;">
+                            <option value="">-- Seleziona Coach --</option>
+                            <?php foreach ($coaches as $c): ?>
+                                <?php
+                                $coachLabel = $c->firstname . ' ' . $c->lastname;
+                                if (!empty($c->initials)) {
+                                    $coachLabel .= ' (' . $c->initials . ')';
+                                }
+                                $selected = ($currentCoach && $currentCoach->id == $c->userid) ? 'selected' : '';
+                                ?>
+                                <option value="<?php echo $c->userid; ?>" <?php echo $selected; ?>>
+                                    <?php echo s($coachLabel); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button type="button" id="btn-save-coach" class="cpurc-btn cpurc-btn-primary">
+                        💾 Salva Coach
+                    </button>
+                    <span id="coach-save-status" style="margin-left: 15px; font-size: 13px;"></span>
+                </div>
+            </div>
+
             <div class="form-section">
                 <h3>Professione e Settore</h3>
                 <div class="form-grid form-grid-2">
@@ -469,7 +547,7 @@ echo $OUTPUT->header();
                         <div class="value-display"><?php echo s($student->last_profession ?: '-'); ?></div>
                     </div>
                     <div class="form-group">
-                        <label><?php echo get_string('sector', 'local_ftm_cpurc'); ?></label>
+                        <label>Settore rilevato (da professione)</label>
                         <div class="value-display">
                             <?php if (!empty($student->sector_detected)): ?>
                                 <span class="sector-badge sector-<?php echo $student->sector_detected; ?>">
@@ -481,6 +559,103 @@ echo $OUTPUT->header();
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Multi-Sector Assignment -->
+            <?php
+            $allSectors = [
+                'AUTOMOBILE' => 'Automobile',
+                'MECCANICA' => 'Meccanica',
+                'LOGISTICA' => 'Logistica',
+                'ELETTRICITA' => 'Elettricita',
+                'AUTOMAZIONE' => 'Automazione',
+                'METALCOSTRUZIONE' => 'Metalcostruzione',
+                'CHIMFARM' => 'Chimico-Farmaceutico',
+            ];
+            $studentSectors = \local_ftm_cpurc\cpurc_manager::get_student_sectors($student->userid);
+            $primarySector = '';
+            $secondarySector = '';
+            $tertiarySector = '';
+
+            $rank = 1;
+            foreach ($studentSectors as $sec) {
+                if ($sec->is_primary == 1) {
+                    $primarySector = $sec->sector;
+                } else if ($rank == 1 && empty($primarySector)) {
+                    $primarySector = $sec->sector;
+                } else if ($rank == 2 || (empty($secondarySector) && $sec->sector != $primarySector)) {
+                    $secondarySector = $sec->sector;
+                    $rank = 3;
+                } else if (empty($tertiarySector) && $sec->sector != $primarySector && $sec->sector != $secondarySector) {
+                    $tertiarySector = $sec->sector;
+                }
+            }
+            ?>
+            <div class="form-section" id="sector-assignment-section">
+                <h3>🎯 Assegnazione Settori</h3>
+                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">
+                    <strong>Primario:</strong> Assegna quiz e autovalutazione |
+                    <strong>Secondario/Terziario:</strong> Suggerimenti per il coach
+                </p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>🥇 Settore Primario <span class="sector-clear" data-target="sector_primary" title="Rimuovi">❌</span></label>
+                        <select id="sector_primary" class="sector-select" data-userid="<?php echo $student->userid; ?>">
+                            <option value="">-- Seleziona --</option>
+                            <?php foreach ($allSectors as $code => $name): ?>
+                                <option value="<?php echo $code; ?>" <?php echo ($primarySector === $code) ? 'selected' : ''; ?>>
+                                    <?php echo s($name); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🥈 Settore Secondario <span class="sector-clear" data-target="sector_secondary" title="Rimuovi">❌</span></label>
+                        <select id="sector_secondary" class="sector-select" data-userid="<?php echo $student->userid; ?>">
+                            <option value="">-- Nessuno --</option>
+                            <?php foreach ($allSectors as $code => $name): ?>
+                                <option value="<?php echo $code; ?>" <?php echo ($secondarySector === $code) ? 'selected' : ''; ?>>
+                                    <?php echo s($name); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🥉 Settore Terziario <span class="sector-clear" data-target="sector_tertiary" title="Rimuovi">❌</span></label>
+                        <select id="sector_tertiary" class="sector-select" data-userid="<?php echo $student->userid; ?>">
+                            <option value="">-- Nessuno --</option>
+                            <?php foreach ($allSectors as $code => $name): ?>
+                                <option value="<?php echo $code; ?>" <?php echo ($tertiarySector === $code) ? 'selected' : ''; ?>>
+                                    <?php echo s($name); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button type="button" id="btn-save-sectors" class="cpurc-btn cpurc-btn-primary">
+                        💾 Salva Settori
+                    </button>
+                    <span id="sector-save-status" style="margin-left: 15px; font-size: 13px;"></span>
+                </div>
+
+                <?php if (!empty($studentSectors)): ?>
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                    <strong style="font-size: 12px;">Settori rilevati automaticamente (da quiz):</strong>
+                    <div id="detected-sectors-list" style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <?php foreach ($studentSectors as $sec): ?>
+                            <span class="sector-badge sector-<?php echo $sec->sector; ?>" style="display: inline-flex; align-items: center; gap: 5px;" data-sector="<?php echo $sec->sector; ?>">
+                                <?php if ($sec->is_primary): ?>🥇<?php endif; ?>
+                                <?php echo s(\local_ftm_cpurc\profession_mapper::get_sector_name($sec->sector)); ?>
+                                <?php if ($sec->quiz_count > 0): ?>
+                                    <small>(<?php echo $sec->quiz_count; ?> quiz)</small>
+                                <?php endif; ?>
+                                <span class="sector-delete-btn" data-sector="<?php echo $sec->sector; ?>" data-userid="<?php echo $student->userid; ?>" title="Elimina settore">❌</span>
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
 
             <div class="form-section">
@@ -688,6 +863,167 @@ echo $OUTPUT->header();
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+// Clear sector dropdown buttons
+document.querySelectorAll('.sector-clear').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        const targetId = this.dataset.target;
+        const select = document.getElementById(targetId);
+        if (select) {
+            select.value = '';
+        }
+    });
+});
+
+// Delete detected sector buttons
+document.querySelectorAll('.sector-delete-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        const sector = this.dataset.sector;
+        const userid = this.dataset.userid;
+        const badge = this.closest('.sector-badge');
+
+        if (!confirm('Eliminare il settore ' + sector + '?')) {
+            return;
+        }
+
+        badge.style.opacity = '0.5';
+
+        fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_delete_sector.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'sesskey=<?php echo sesskey(); ?>&userid=' + userid + '&sector=' + encodeURIComponent(sector)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                badge.remove();
+                // Also clear from dropdowns if selected
+                ['sector_primary', 'sector_secondary', 'sector_tertiary'].forEach(function(id) {
+                    const select = document.getElementById(id);
+                    if (select && select.value === sector) {
+                        select.value = '';
+                    }
+                });
+            } else {
+                badge.style.opacity = '1';
+                alert('Errore: ' + data.message);
+            }
+        })
+        .catch(error => {
+            badge.style.opacity = '1';
+            console.error('Error:', error);
+        });
+    });
+});
+
+// Clear coach dropdown button
+document.querySelectorAll('.sector-clear[data-target="coach_select"]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        const select = document.getElementById('coach_select');
+        if (select) {
+            select.value = '';
+        }
+    });
+});
+
+// Save coach
+document.getElementById('btn-save-coach')?.addEventListener('click', function() {
+    const userid = document.getElementById('coach_select').dataset.userid;
+    const coachid = document.getElementById('coach_select').value;
+
+    const statusEl = document.getElementById('coach-save-status');
+    const btn = this;
+    const displayEl = document.getElementById('current-coach-display');
+
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Salvataggio...';
+    statusEl.innerHTML = '';
+
+    fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_assign_coach.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'sesskey=<?php echo sesskey(); ?>&userid=' + userid + '&coachid=' + coachid
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '💾 Salva Coach';
+
+        if (data.success) {
+            statusEl.innerHTML = '<span style="color: #28a745;">✅ ' + data.message + '</span>';
+
+            // Update display
+            if (data.coach) {
+                displayEl.innerHTML = '<span class="coach-badge" style="background: #E0F2FE; color: #0369A1; padding: 4px 12px; border-radius: 15px; font-weight: 600;">' +
+                    data.coach.name + '</span>' +
+                    (data.coach.email ? '<small style="color: #666;">(' + data.coach.email + ')</small>' : '');
+            } else {
+                displayEl.innerHTML = '<span style="color: #999;">⚠️ Nessun coach assegnato</span>';
+            }
+        } else {
+            statusEl.innerHTML = '<span style="color: #dc3545;">❌ ' + data.message + '</span>';
+        }
+
+        setTimeout(() => { statusEl.innerHTML = ''; }, 5000);
+    })
+    .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = '💾 Salva Coach';
+        statusEl.innerHTML = '<span style="color: #dc3545;">❌ Errore di connessione</span>';
+        console.error('Error:', error);
+    });
+});
+
+// Save sectors
+document.getElementById('btn-save-sectors')?.addEventListener('click', function() {
+    const userid = document.getElementById('sector_primary').dataset.userid;
+    const primary = document.getElementById('sector_primary').value;
+    const secondary = document.getElementById('sector_secondary').value;
+    const tertiary = document.getElementById('sector_tertiary').value;
+
+    const statusEl = document.getElementById('sector-save-status');
+    const btn = this;
+
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Salvataggio...';
+    statusEl.innerHTML = '';
+
+    fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_save_sectors.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'sesskey=<?php echo sesskey(); ?>&userid=' + userid +
+              '&primary=' + encodeURIComponent(primary) +
+              '&secondary=' + encodeURIComponent(secondary) +
+              '&tertiary=' + encodeURIComponent(tertiary)
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '💾 Salva Settori';
+
+        if (data.success) {
+            statusEl.innerHTML = '<span style="color: #28a745;">✅ ' + data.message + '</span>';
+        } else {
+            statusEl.innerHTML = '<span style="color: #dc3545;">❌ ' + data.message + '</span>';
+        }
+
+        setTimeout(() => { statusEl.innerHTML = ''; }, 5000);
+    })
+    .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = '💾 Salva Settori';
+        statusEl.innerHTML = '<span style="color: #dc3545;">❌ Errore di connessione</span>';
+        console.error('Error:', error);
+    });
+});
+</script>
 
 <?php
 echo $OUTPUT->footer();

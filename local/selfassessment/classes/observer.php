@@ -81,19 +81,32 @@ class observer {
             return;
         }
         
+        // Get student's primary sector (if set).
+        $primarySector = self::get_student_primary_sector($userid);
+
         // Assegna ogni competenza per l'autovalutazione
         $now = time();
         $assigned = 0;
-        
+
         foreach ($mappings as $mapping) {
             $competencyid = $mapping->competencyid;
-            
+
+            // If student has a primary sector, only assign competencies from that sector.
+            if (!empty($primarySector)) {
+                $competencySector = self::get_competency_sector($competencyid);
+                if (!empty($competencySector) && $competencySector !== $primarySector) {
+                    // Skip competencies from non-primary sectors.
+                    debugging("SelfAssessment: Skipping competency $competencyid (sector $competencySector) - not primary sector ($primarySector)", DEBUG_DEVELOPER);
+                    continue;
+                }
+            }
+
             // Verifica se già assegnata
             $exists = $DB->record_exists('local_selfassessment_assign', [
                 'userid' => $userid,
                 'competencyid' => $competencyid
             ]);
-            
+
             if (!$exists) {
                 $record = new \stdClass();
                 $record->userid = $userid;
@@ -101,7 +114,7 @@ class observer {
                 $record->source = 'quiz';
                 $record->sourceid = $quizid;
                 $record->timecreated = $now;
-                
+
                 try {
                     $DB->insert_record('local_selfassessment_assign', $record);
                     $assigned++;
@@ -119,6 +132,57 @@ class observer {
 
         // Rileva e registra i settori dalle competenze del quiz (opzionale)
         self::detect_sectors_safe($userid, $quizid, $mappings);
+    }
+
+    /**
+     * Get student's primary sector from local_student_sectors.
+     *
+     * @param int $userid User ID.
+     * @return string|null Primary sector code or null if not set.
+     */
+    private static function get_student_primary_sector($userid) {
+        global $DB;
+
+        // Check if table exists.
+        $dbman = $DB->get_manager();
+        if (!$dbman->table_exists('local_student_sectors')) {
+            return null;
+        }
+
+        // Get primary sector.
+        $record = $DB->get_record('local_student_sectors', [
+            'userid' => $userid,
+            'is_primary' => 1
+        ]);
+
+        return $record ? $record->sector : null;
+    }
+
+    /**
+     * Get sector from competency idnumber.
+     *
+     * @param int $competencyid Competency ID.
+     * @return string|null Sector code or null.
+     */
+    private static function get_competency_sector($competencyid) {
+        global $DB;
+
+        // Get competency idnumber.
+        $competency = $DB->get_record('competency', ['id' => $competencyid]);
+        if (!$competency || empty($competency->idnumber)) {
+            return null;
+        }
+
+        // Extract sector from idnumber (e.g., "LOGISTICA_LO_A1" → "LOGISTICA").
+        $parts = explode('_', $competency->idnumber);
+        if (!empty($parts[0])) {
+            // Normalize encoding.
+            $sector = strtoupper($parts[0]);
+            $sector = str_replace(['À', 'È', 'É', 'Ì', 'Ò', 'Ù'], ['A', 'E', 'E', 'I', 'O', 'U'], $sector);
+            return $sector;
+        }
+
+        return null;
     }
 
     /**

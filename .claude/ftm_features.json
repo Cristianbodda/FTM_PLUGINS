@@ -1,10 +1,10 @@
 {
   "meta": {
-    "version": "1.0.0",
+    "version": "1.1.0",
     "created": "2026-01-22",
-    "updated": "2026-01-22",
-    "total_features": 0,
-    "completed": 0,
+    "updated": "2026-01-24",
+    "total_features": 28,
+    "completed": 28,
     "in_progress": 0,
     "pending": 0
   },
@@ -14,14 +14,24 @@
       "description": "Dashboard e gestione coach/studenti",
       "priority": 1,
       "status": "active",
-      "features": []
+      "features": [
+        {"id": "CM001", "name": "Dashboard V2", "status": "completed", "date": "2026-01-22"},
+        {"id": "CM002", "name": "Zoom accessibilita", "status": "completed", "date": "2026-01-22"},
+        {"id": "CM003", "name": "4 viste configurabili", "status": "completed", "date": "2026-01-22"},
+        {"id": "CM004", "name": "Export Word studente", "status": "completed", "date": "2026-01-22"}
+      ]
     },
     "competencymanager": {
       "name": "Competency Manager",
       "description": "Core gestione competenze + Sector Manager",
       "priority": 1,
       "status": "active",
-      "features": []
+      "features": [
+        {"id": "CPM001", "name": "Sector Manager", "status": "completed", "date": "2026-01-19"},
+        {"id": "CPM002", "name": "Student Report Print", "status": "completed", "date": "2026-01-22"},
+        {"id": "CPM003", "name": "Radar SVG 490px", "status": "completed", "date": "2026-01-22"},
+        {"id": "CPM004", "name": "Multi-settore studenti", "status": "completed", "date": "2026-01-24"}
+      ]
     },
     "competencyreport": {
       "name": "Competency Report",
@@ -35,7 +45,11 @@
       "description": "Import XML/Word/Excel + Setup Universale",
       "priority": 1,
       "status": "active",
-      "features": []
+      "features": [
+        {"id": "CXI001", "name": "Setup Universale", "status": "completed", "date": "2026-01-19"},
+        {"id": "CXI002", "name": "Import Word parser", "status": "completed", "date": "2026-01-19"},
+        {"id": "CXI003", "name": "Alias settori", "status": "completed", "date": "2026-01-19"}
+      ]
     },
     "ftm_common": {
       "name": "FTM Common",
@@ -46,10 +60,21 @@
     },
     "ftm_cpurc": {
       "name": "FTM CPURC",
-      "description": "Import CSV CPURC e report Word",
-      "priority": 3,
+      "description": "Gestione completa CPURC + Report Word",
+      "priority": 1,
       "status": "active",
-      "features": []
+      "features": [
+        {"id": "CPURC001", "name": "Import CSV", "status": "completed", "date": "2026-01-23"},
+        {"id": "CPURC002", "name": "Dashboard segreteria", "status": "completed", "date": "2026-01-23"},
+        {"id": "CPURC003", "name": "Student Card 4 tab", "status": "completed", "date": "2026-01-23"},
+        {"id": "CPURC004", "name": "Report Word", "status": "completed", "date": "2026-01-23"},
+        {"id": "CPURC005", "name": "Export Excel", "status": "completed", "date": "2026-01-24"},
+        {"id": "CPURC006", "name": "Export Word bulk ZIP", "status": "completed", "date": "2026-01-24"},
+        {"id": "CPURC007", "name": "Filtro stato report", "status": "completed", "date": "2026-01-24"},
+        {"id": "CPURC008", "name": "Coach assignment AJAX", "status": "completed", "date": "2026-01-24"},
+        {"id": "CPURC009", "name": "Multi-settore editabile", "status": "completed", "date": "2026-01-24"},
+        {"id": "CPURC010", "name": "Coach display student card", "status": "completed", "date": "2026-01-24"}
+      ]
     },
     "ftm_hub": {
       "name": "FTM Hub",
@@ -63,14 +88,21 @@
       "description": "Pianificazione calendario settimanale/mensile",
       "priority": 1,
       "status": "active",
-      "features": []
+      "features": [
+        {"id": "SCH001", "name": "Vista settimanale", "status": "completed", "date": "2026-01-15"},
+        {"id": "SCH002", "name": "Vista mensile", "status": "completed", "date": "2026-01-15"},
+        {"id": "SCH003", "name": "Gruppi colore", "status": "completed", "date": "2026-01-15"},
+        {"id": "SCH004", "name": "Gestione coach", "status": "completed", "date": "2026-01-15"}
+      ]
     },
     "ftm_testsuite": {
       "name": "FTM Test Suite",
       "description": "Testing automatizzato 5 agenti",
       "priority": 2,
       "status": "active",
-      "features": []
+      "features": [
+        {"id": "TS001", "name": "58 test automatizzati", "status": "completed", "date": "2026-01-18"}
+      ]
     },
     "labeval": {
       "name": "LabEval",
@@ -84,8 +116,31 @@
       "description": "Autovalutazione + rilevazione settori",
       "priority": 1,
       "status": "active",
-      "features": []
+      "features": [
+        {"id": "SA001", "name": "Popup bloccante", "status": "completed", "date": "2026-01-17"},
+        {"id": "SA002", "name": "Observer settori", "status": "completed", "date": "2026-01-17"},
+        {"id": "SA003", "name": "Filtro settore primario", "status": "completed", "date": "2026-01-24"}
+      ]
     }
   },
-  "features": []
+  "shared_tables": [
+    {
+      "name": "local_student_coaching",
+      "owner": "competencymanager",
+      "used_by": ["ftm_cpurc", "coachmanager"],
+      "description": "Assegnazione coach-studente"
+    },
+    {
+      "name": "local_student_sectors",
+      "owner": "competencymanager",
+      "used_by": ["ftm_cpurc", "selfassessment"],
+      "description": "Multi-settore studenti (primary, secondary, tertiary)"
+    },
+    {
+      "name": "local_ftm_coaches",
+      "owner": "ftm_scheduler",
+      "used_by": ["ftm_cpurc", "coachmanager"],
+      "description": "Anagrafica coach FTM (CB, FM, GM, RB)"
+    }
+  ]
 }

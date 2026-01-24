@@ -143,6 +143,13 @@ $string['save_draft'] = 'Save Draft';
 $string['export_data'] = 'Export Data';
 $string['hired'] = 'Hired';
 $string['not_hired'] = 'Not Hired';
+$string['possible_sectors'] = 'Possible sectors and areas';
+$string['final_summary'] = 'Final summary';
+$string['obs_personal'] = 'Personal competencies observations';
+$string['obs_social'] = 'Social competencies observations';
+$string['obs_methodological'] = 'Methodological competencies observations';
+$string['obs_search_channels'] = 'Search channels observations';
+$string['obs_search_evaluation'] = 'Job search capability evaluation';
 
 // URC Offices.
 $string['urc_bellinzona'] = 'URC Bellinzona';
@@ -163,7 +170,17 @@ $string['sector_chimfarm'] = 'Chemical-Pharmaceutical';
 // Messages.
 $string['student_saved'] = 'Student data saved successfully';
 $string['report_saved'] = 'Report saved successfully';
+$string['studentnotfound'] = 'Student not found';
 $string['error_invalid_csv'] = 'Invalid CSV file format';
 $string['error_missing_required'] = 'Missing required fields: {$a}';
 $string['error_user_exists'] = 'User already exists: {$a}';
 $string['error_save_failed'] = 'Failed to save data';
+
+// Export.
+$string['export_word'] = 'Export to Word';
+$string['export_pdf'] = 'Export to PDF';
+$string['templatenotfound'] = 'Template file not found: {$a}';
+$string['cannotcreatetempdir'] = 'Cannot create temporary directory';
+$string['cannotopentempate'] = 'Cannot open template file';
+$string['invaliddocument'] = 'Invalid document structure';
+$string['cannotcreateoutput'] = 'Cannot create output file';

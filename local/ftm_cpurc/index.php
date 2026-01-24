@@ -41,6 +41,8 @@ $search = optional_param('search', '', PARAM_TEXT);
 $urc = optional_param('urc', '', PARAM_TEXT);
 $sector = optional_param('sector', '', PARAM_TEXT);
 $status = optional_param('status', '', PARAM_TEXT);
+$reportstatus = optional_param('reportstatus', '', PARAM_TEXT);
+$coach = optional_param('coach', 0, PARAM_INT);
 
 // Get data.
 $stats = \local_ftm_cpurc\cpurc_manager::get_stats();
@@ -49,9 +51,12 @@ $students = \local_ftm_cpurc\cpurc_manager::get_students([
     'urc' => $urc,
     'sector' => $sector,
     'status' => $status,
+    'report_status' => $reportstatus,
+    'coach' => $coach,
 ]);
 $urclist = \local_ftm_cpurc\cpurc_manager::get_urc_offices();
 $sectorlist = \local_ftm_cpurc\cpurc_manager::get_sectors();
+$coachlist = \local_ftm_cpurc\cpurc_manager::get_coaches();
 
 // Check import capability.
 $canimport = has_capability('local/ftm_cpurc:import', $context);
@@ -313,8 +318,14 @@ echo $OUTPUT->header();
     <div class="page-header">
         <h2>👥 <?php echo get_string('cpurc_manager', 'local_ftm_cpurc'); ?></h2>
         <div class="header-buttons">
+            <a href="<?php echo new moodle_url('/local/ftm_cpurc/export_excel.php', ['search' => $search, 'urc' => $urc, 'sector' => $sector, 'status' => $status, 'reportstatus' => $reportstatus, 'coach' => $coach]); ?>" class="cpurc-btn cpurc-btn-success">
+                📊 Export Excel
+            </a>
+            <a href="<?php echo new moodle_url('/local/ftm_cpurc/export_word_bulk.php'); ?>" class="cpurc-btn cpurc-btn-success">
+                📦 Export Word (ZIP)
+            </a>
             <?php if ($canimport): ?>
-            <a href="<?php echo new moodle_url('/local/ftm_cpurc/import.php'); ?>" class="cpurc-btn cpurc-btn-success">
+            <a href="<?php echo new moodle_url('/local/ftm_cpurc/import.php'); ?>" class="cpurc-btn cpurc-btn-primary">
                 📥 <?php echo get_string('import_csv', 'local_ftm_cpurc'); ?>
             </a>
             <?php endif; ?>
@@ -400,10 +411,31 @@ echo $OUTPUT->header();
                     </select>
                 </div>
                 <div class="filter-group">
+                    <label>Report</label>
+                    <select name="reportstatus">
+                        <option value="">Tutti</option>
+                        <option value="none" <?php echo $reportstatus === 'none' ? 'selected' : ''; ?>>🔴 Non iniziato</option>
+                        <option value="draft" <?php echo $reportstatus === 'draft' ? 'selected' : ''; ?>>🟡 Bozza</option>
+                        <option value="complete" <?php echo $reportstatus === 'complete' ? 'selected' : ''; ?>>🟢 Completo</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Coach</label>
+                    <select name="coach">
+                        <option value="">Tutti</option>
+                        <?php foreach ($coachlist as $c): ?>
+                            <option value="<?php echo $c->userid; ?>" <?php echo $coach == $c->userid ? 'selected' : ''; ?>>
+                                <?php echo s($c->lastname . ' ' . $c->firstname); ?>
+                                <?php if (!empty($c->initials)): ?>(<?php echo s($c->initials); ?>)<?php endif; ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="filter-group">
                     <label>&nbsp;</label>
                     <button type="submit" class="cpurc-btn cpurc-btn-primary">🔍 Filtra</button>
                 </div>
-                <?php if ($search || $urc || $sector || $status): ?>
+                <?php if ($search || $urc || $sector || $status || $reportstatus || $coach): ?>
                 <div class="filter-group">
                     <label>&nbsp;</label>
                     <a href="<?php echo new moodle_url('/local/ftm_cpurc/index.php'); ?>" class="cpurc-btn cpurc-btn-secondary">
@@ -433,8 +465,8 @@ echo $OUTPUT->header();
                     <tr>
                         <th>Settimana</th>
                         <th>Nome</th>
-                        <th>Email</th>
                         <th>URC</th>
+                        <th>Coach</th>
                         <th>Settore</th>
                         <th>Inizio</th>
                         <th>Report</th>
@@ -453,12 +485,21 @@ echo $OUTPUT->header();
                             </span>
                         </td>
                         <td>
-                            <strong><?php echo s($student->lastname); ?></strong> <?php echo s($student->firstname); ?>
-                        </td>
-                        <td>
-                            <a href="mailto:<?php echo s($student->email); ?>"><?php echo s($student->email); ?></a>
+                            <strong><?php echo s($student->lastname); ?></strong> <?php echo s($student->firstname); ?><br>
+                            <small style="color: #666;"><?php echo s($student->email); ?></small>
                         </td>
                         <td><?php echo s($student->urc_office ?? '-'); ?></td>
+                        <td>
+                            <select class="coach-select" data-userid="<?php echo $student->userid; ?>" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px; min-width: 100px;">
+                                <option value="">-- Nessuno --</option>
+                                <?php foreach ($coachlist as $c): ?>
+                                    <option value="<?php echo $c->userid; ?>" <?php echo ($student->coachid == $c->userid) ? 'selected' : ''; ?>>
+                                        <?php echo s($c->lastname . ' ' . $c->firstname); ?>
+                                        <?php if (!empty($c->initials)): ?>(<?php echo s($c->initials); ?>)<?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </td>
                         <td>
                             <?php if (!empty($student->sector_detected)): ?>
                                 <span class="sector-badge sector-<?php echo $student->sector_detected; ?>">
@@ -472,12 +513,12 @@ echo $OUTPUT->header();
                         <td>
                             <?php if (!empty($student->reportid)): ?>
                                 <?php if ($student->report_status === 'draft'): ?>
-                                    <span class="report-badge report-draft">Bozza</span>
+                                    <span class="report-badge report-draft">🟡 Bozza</span>
                                 <?php else: ?>
-                                    <span class="report-badge report-final">Finale</span>
+                                    <span class="report-badge report-final">🟢 Finale</span>
                                 <?php endif; ?>
                             <?php else: ?>
-                                <span class="report-badge report-none">-</span>
+                                <span class="report-badge report-none">🔴 -</span>
                             <?php endif; ?>
                         </td>
                         <td>
@@ -486,6 +527,10 @@ echo $OUTPUT->header();
                                    class="action-btn" title="Scheda">📋</a>
                                 <a href="<?php echo new moodle_url('/local/ftm_cpurc/report.php', ['id' => $student->id]); ?>"
                                    class="action-btn" title="Report">📝</a>
+                                <?php if (!empty($student->reportid)): ?>
+                                <a href="<?php echo new moodle_url('/local/ftm_cpurc/export_word.php', ['id' => $student->id]); ?>"
+                                   class="action-btn" title="Esporta Word">📄</a>
+                                <?php endif; ?>
                             </div>
                         </td>
                     </tr>
@@ -498,6 +543,43 @@ echo $OUTPUT->header();
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+// Coach assignment AJAX
+document.querySelectorAll('.coach-select').forEach(function(select) {
+    select.addEventListener('change', function() {
+        const userid = this.dataset.userid;
+        const coachid = this.value;
+        const selectEl = this;
+
+        selectEl.style.opacity = '0.5';
+
+        fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_assign_coach.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'sesskey=<?php echo sesskey(); ?>&userid=' + userid + '&coachid=' + coachid
+        })
+        .then(response => response.json())
+        .then(data => {
+            selectEl.style.opacity = '1';
+            if (data.success) {
+                selectEl.style.borderColor = '#28a745';
+                setTimeout(() => { selectEl.style.borderColor = '#ddd'; }, 2000);
+            } else {
+                alert('Errore: ' + data.message);
+                selectEl.style.borderColor = '#dc3545';
+            }
+        })
+        .catch(error => {
+            selectEl.style.opacity = '1';
+            selectEl.style.borderColor = '#dc3545';
+            console.error('Error:', error);
+        });
+    });
+});
+</script>
 
 <?php
 echo $OUTPUT->footer();
