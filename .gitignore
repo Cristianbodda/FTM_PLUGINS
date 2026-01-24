@@ -6,5 +6,12 @@
 
 # Temp files
 tmpclaude-*
+nul
+
+# Node modules
+node_modules/
+
+# Test results
+test-results/
 
 # NOTE: .claude/ NON è esclusa - contiene documentazione progetto (agents, skills, commands)
