@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida Completa per Claude
 
-**Ultimo aggiornamento:** 24 Gennaio 2026 (ore 11:00)
+**Ultimo aggiornamento:** 27 Gennaio 2026 (ore 17:30)
 
 ## Panoramica Progetto
 
@@ -12,7 +12,7 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (24/01/2026)
+## STATO ATTUALE SVILUPPO (27/01/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -23,12 +23,17 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 - Generazione automatica attivita
 - Tabella `local_ftm_coaches` per gestione coach (CB, FM, GM, RB)
 
-#### 2. Sector Manager + Student Report (local_competencymanager)
+#### 2. Sector Manager + Student Report (local_competencymanager) - AGGIORNATO 27/01/2026
 - Sistema Multi-Settore per studenti
 - Interfaccia segreteria: `sector_admin.php`
 - Rilevamento automatico settori da quiz
 - Capability `managesectors` per coach/segreteria
-- **Student Report Print** con radar 490px, logo FTM, sezioni configurabili
+- **Student Report Print v2** con:
+  - Radar 360px compatto per far stare grafico + tabella nella stessa pagina
+  - Rettangoli colorati pieni per TUTTE le aree DETTAGLIO (A-G)
+  - Fix overlap header su pagine successive (padding-top 85px)
+  - Nomi quiz/autovalutazione visibili sopra i radar ("Fonte:")
+  - Font tabella 7pt compatto, logo FTM, sezioni configurabili
 - Tabella `local_student_sectors` per multi-settore (primary, secondary, tertiary)
 - Tabella `local_student_coaching` per assegnazione coach-studente (condivisa)
 

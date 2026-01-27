@@ -839,6 +839,92 @@ if ($hasAutovalutazione && !$autovalutazioneTimestamp) {
 }
 // ============================================
 
+// ============================================
+// CARICAMENTO SETTORI ASSEGNATI (per stampa)
+// ============================================
+$studentAssignedSectors = [];
+$studentPrimarySector = null;
+try {
+    // Carica i settori assegnati allo studente dalla tabella local_student_sectors
+    $studentAssignedSectors = \local_competencymanager\sector_manager::get_student_sectors_with_quiz_data($userid);
+    // Il settore primario è il primo (type = 'primary')
+    foreach ($studentAssignedSectors as $sec) {
+        if (($sec->type ?? '') === 'primary' || empty($studentPrimarySector)) {
+            $studentPrimarySector = $sec->sector ?? $sec->sector_alias ?? null;
+            if (($sec->type ?? '') === 'primary') break;
+        }
+    }
+} catch (Exception $e) {
+    // Se sector_manager non disponibile, usa $sector dai competencies
+    debugging('sector_manager not available: ' . $e->getMessage(), DEBUG_DEVELOPER);
+}
+
+// Se non c'è settore assegnato, usa quello rilevato dalle competenze
+if (empty($studentPrimarySector) && !empty($sector)) {
+    $studentPrimarySector = $sector;
+}
+
+// ============================================
+// CARICAMENTO NOMI QUIZ E AUTOVALUTAZIONE (per stampa)
+// ============================================
+$selectedQuizNames = [];
+$autovalutazioneQuizName = null;
+
+// Carica i nomi dei quiz selezionati per la stampa
+if (!empty($availableQuizzes)) {
+    foreach ($availableQuizzes as $quiz) {
+        // Se ci sono quiz selezionati, filtra solo quelli
+        if (!empty($selectedQuizzes)) {
+            if (in_array($quiz->id, $selectedQuizzes)) {
+                $selectedQuizNames[] = format_string($quiz->name);
+            }
+        } else {
+            // Se nessun quiz selezionato, usa tutti
+            $selectedQuizNames[] = format_string($quiz->name);
+        }
+    }
+}
+
+// DEBUG: mostra i quiz caricati
+if ($print) {
+    echo "<!-- DEBUG QUIZ NAMES: " . count($selectedQuizNames) . " quiz - " . implode(', ', $selectedQuizNames) . " -->\n";
+}
+
+// Carica il nome del quiz/fonte autovalutazione
+if (!empty($autovalutazioneResult)) {
+    $dbman = $DB->get_manager();
+
+    // Cerca il nome dalla tabella local_coachmanager_assessment
+    if ($dbman->table_exists('local_coachmanager_assessment')) {
+        $assessment = $DB->get_record_sql(
+            "SELECT * FROM {local_coachmanager_assessment}
+             WHERE userid = :userid AND courseid = :courseid
+             ORDER BY timecreated DESC LIMIT 1",
+            ['userid' => $userid, 'courseid' => $courseid]
+        );
+        if ($assessment) {
+            // Prova a estrarre il nome dal campo details JSON
+            $details = json_decode($assessment->details ?? '{}', true);
+            if (!empty($details['quiz_name'])) {
+                $autovalutazioneQuizName = format_string($details['quiz_name']);
+            } elseif (!empty($details['source'])) {
+                $autovalutazioneQuizName = format_string($details['source']);
+            }
+        }
+    }
+
+    // Se non trovato, cerca in local_selfassessment
+    if (empty($autovalutazioneQuizName) && $dbman->table_exists('local_selfassessment')) {
+        // Il plugin selfassessment non ha un nome quiz specifico, usa nome generico
+        $autovalutazioneQuizName = 'Autovalutazione Competenze';
+    }
+
+    // Fallback
+    if (empty($autovalutazioneQuizName)) {
+        $autovalutazioneQuizName = 'Autovalutazione';
+    }
+}
+
 // Include file di visualizzazione stampa
 if ($print) {
     include(__DIR__ . '/student_report_print.php');

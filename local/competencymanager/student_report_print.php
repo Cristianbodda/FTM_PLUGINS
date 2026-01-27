@@ -101,6 +101,26 @@ function render_section_radar_dettagli($params) {
     $areasData = $params['areasData'];
     $competencyDescriptions = $params['competencyDescriptions'];
 
+    // Colori di fallback per settore/area
+    $defaultColors = [
+        'A' => '#3498db',      // Blu - Area A
+        'B' => '#e67e22',      // Arancione - Area B
+        'C' => '#9b59b6',      // Viola - Area C
+        'D' => '#1abc9c',      // Teal - Area D
+        'E' => '#e74c3c',      // Rosso - Area E
+        'F' => '#f39c12',      // Giallo - Area F
+        'MECCANICA' => '#3498db',
+        'METALCOSTRUZIONE' => '#e67e22',
+        'AUTOMOBILE' => '#27ae60',
+        'ELETTRICITÀ' => '#f1c40f',
+        'LOGISTICA' => '#9b59b6',
+        'AUTOMAZIONE' => '#1abc9c',
+        'CHIMFARM' => '#e74c3c',
+        'default' => '#bc3d2f', // FTM red-dark
+    ];
+
+    $isFirstArea = true; // Track first area to avoid page-break issues
+
     foreach ($params['printRadarAreas'] as $areaCode):
         if (!isset($areasData[$areaCode])) continue;
         $areaData = $areasData[$areaCode];
@@ -111,11 +131,40 @@ function render_section_radar_dettagli($params) {
             $displayName = $compInfo ? ($compInfo['name'] ?? $code) : $code;
             $areaCompetencies[] = ['label' => $displayName, 'value' => $comp['percentage']];
         }
+
+        // Determina il colore con fallback
+        $areaColor = $areaData['color'] ?? null;
+        if (empty($areaColor)) {
+            // Prova a ottenere il colore dal codice area (es. "A", "B") o dal nome
+            $areaKey = strtoupper(substr($areaCode, 0, 1)); // Prima lettera
+            $areaColor = $defaultColors[$areaKey] ?? $defaultColors[strtoupper($areaCode)] ?? $defaultColors['default'];
+        }
+
+        // TUTTE le aree iniziano su nuova pagina per garantire lo stile uniforme del box-shadow
+        $pageBreakStyle = 'page-break-before: always;';
+        $paddingTopStyle = 'padding-top: 75px;'; // Spazio per header fisso
+        $isFirstArea = false;
+
+        // Calcola colore di sfondo chiaro (20% opacity)
+        $bgLight = $areaColor . '33'; // Hex con 20% alpha
     ?>
-    <div class="section">
-        <div class="section-title" style="background: <?php echo $areaData['color']; ?>;"><?php echo $areaData['icon']; ?> DETTAGLIO: <?php echo $areaData['name']; ?></div>
-        <div class="radar-container"><?php echo generate_svg_radar($areaCompetencies, $areaData['icon'] . ' ' . $areaData['name'] . ' - ' . $areaData['percentage'] . '%', 320, $areaData['color'] . '40', $areaData['color']); ?></div>
-        <table><thead><tr><th>Codice</th><th>Competenza</th><th>Risposte</th><th>%</th><th>Valutazione</th></tr></thead><tbody>
+    <!-- DEBUG v2.7 - AREA: <?php echo $areaCode; ?> - COLOR: <?php echo $areaColor; ?> -->
+    <div class="section" style="<?php echo $pageBreakStyle; ?> page-break-inside: avoid; margin-top: 0; <?php echo $paddingTopStyle; ?>">
+        <div style="
+            background-color: <?php echo $areaColor; ?> !important;
+            box-shadow: inset 0 0 0 1000px <?php echo $areaColor; ?>;
+            color: white !important;
+            padding: 12px 18px;
+            font-weight: bold;
+            font-size: 13pt;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+        "><?php echo $areaData['icon']; ?> DETTAGLIO: <?php echo $areaData['name']; ?></div>
+        <div class="radar-container" style="page-break-inside: avoid;"><?php echo generate_svg_radar($areaCompetencies, $areaData['icon'] . ' ' . $areaData['name'] . ' - ' . $areaData['percentage'] . '%', 320, $areaColor . '40', $areaColor); ?></div>
+        <table style="page-break-inside: auto;"><thead><tr><th>Codice</th><th>Competenza</th><th>Risposte</th><th>%</th><th>Valutazione</th></tr></thead><tbody>
         <?php foreach ($areaData['competencies'] as $comp): $code = $comp['idnumber'] ?: $comp['name']; $compInfo = $competencyDescriptions[$code] ?? null; $displayName = $compInfo ? ($compInfo['full_name'] ?? $compInfo['name']) : $code; $band = get_evaluation_band($comp['percentage']); ?>
         <tr><td><small><?php echo $code; ?></small></td><td><?php echo htmlspecialchars($displayName); ?></td><td style="text-align:center;"><?php echo $comp['correct_questions']; ?>/<?php echo $comp['total_questions']; ?></td><td style="text-align:center;"><span class="badge badge-<?php echo $band['class']; ?>"><?php echo $comp['percentage']; ?>%</span></td><td style="color:<?php echo $band['color']; ?>;font-weight:bold;"><?php echo $band['icon'] . ' ' . $band['label']; ?></td></tr>
         <?php endforeach; ?>
@@ -198,6 +247,10 @@ function render_section_dual_radar($params) {
     $autovalutazioneAreas = $params['autovalutazioneAreas'];
     $areasData = $params['areasData'];
 
+    // Estrai i nomi dei quiz dai parametri
+    $autovalutazioneQuizName = $params['autovalutazioneQuizName'] ?? null;
+    $selectedQuizNames = $params['selectedQuizNames'] ?? [];
+
     // Prepara i dati per la legenda COMPLETA (come prima)
     $legendData = [];
     foreach ($areasData as $code => $area) {
@@ -225,30 +278,38 @@ function render_section_dual_radar($params) {
     // PAGINA 1: RADAR AUTOVALUTAZIONE + LEGENDA COMPLETA
     // ============================================
     ?>
+    <?php
+    // Prepara il testo per l'autovalutazione
+    $autoDisplayText = !empty($autovalutazioneQuizName) ? $autovalutazioneQuizName : 'Autovalutazione Competenze';
+    ?>
     <div class="section page-break-before" style="page-break-inside: avoid;">
         <div class="section-title purple">🧑 AUTOVALUTAZIONE - Come lo studente si percepisce</div>
 
-        <div style="text-align: center; margin: 10px 0;">
+        <div style="text-align: center; margin: 3px 0 5px 0; padding: 5px; background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1)); border-radius: 4px; border: 1px solid rgba(102,126,234,0.3);">
+            <span style="font-size: 9pt; color: #667eea; font-weight: 600;">📋 Fonte: <?php echo htmlspecialchars($autoDisplayText); ?></span>
+        </div>
+
+        <div style="text-align: center; margin: 5px 0;">
             <?php
             $autoRadarData = [];
             foreach ($autovalutazioneAreas as $code => $area) {
                 $autoRadarData[] = ['label' => $area['icon'] . ' ' . $area['name'], 'value' => $area['percentage']];
             }
-            // Radar 490px (+40% totale) - maxLabelLen=250 per etichette complete
-            echo generate_svg_radar($autoRadarData, '', 490, 'rgba(102,126,234,0.3)', '#667eea', 9, 250);
+            // Radar ridotto a 360px per far stare tabella nella stessa pagina
+            echo generate_svg_radar($autoRadarData, '', 360, 'rgba(102,126,234,0.3)', '#667eea', 8, 200);
             ?>
         </div>
 
-        <!-- LEGENDA COMPLETA (Auto, Reale, Gap) - DIMENSIONE +20% -->
-        <div style="padding: 10px; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;">
-            <h6 style="margin: 0 0 8px; color: #34495e; font-size: 11pt; font-weight: bold;">📋 Legenda Aree di Competenza</h6>
-            <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+        <!-- LEGENDA COMPATTA - DEVE STARE NELLA STESSA PAGINA -->
+        <div style="padding: 6px; background: #f8f9fa; border-radius: 4px; border: 1px solid #dee2e6; page-break-inside: avoid;">
+            <h6 style="margin: 0 0 4px; color: #34495e; font-size: 9pt; font-weight: bold;">📋 Legenda Aree di Competenza</h6>
+            <table style="width: 100%; border-collapse: collapse; font-size: 7pt; page-break-inside: avoid;">
                 <thead>
                     <tr>
-                        <th style="background: #34495e; color: white; padding: 5px 8px; text-align: left; border: 1px solid #2c3e50;">Area</th>
-                        <th style="background: #667eea; color: white; padding: 5px 8px; text-align: center; width: 70px; border: 1px solid #5a6fd6;">🧑 Auto</th>
-                        <th style="background: #28a745; color: white; padding: 5px 8px; text-align: center; width: 70px; border: 1px solid #1e7e34;">📊 Reale</th>
-                        <th style="background: #34495e; color: white; padding: 5px 8px; text-align: center; width: 65px; border: 1px solid #2c3e50;">Gap</th>
+                        <th style="background: #34495e; color: white; padding: 3px 5px; text-align: left; border: 1px solid #2c3e50;">Area</th>
+                        <th style="background: #667eea; color: white; padding: 3px 5px; text-align: center; width: 55px; border: 1px solid #5a6fd6;">🧑 Auto</th>
+                        <th style="background: #28a745; color: white; padding: 3px 5px; text-align: center; width: 55px; border: 1px solid #1e7e34;">📊 Reale</th>
+                        <th style="background: #34495e; color: white; padding: 3px 5px; text-align: center; width: 50px; border: 1px solid #2c3e50;">Gap</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -261,18 +322,18 @@ function render_section_dual_radar($params) {
                         $bgColor = ($gap > 15) ? '#fadbd8' : (($gap < -15) ? '#fef9e7' : '#d5f5e3');
                     ?>
                     <tr style="background: <?php echo $bgColor; ?>;">
-                        <td style="padding: 5px 8px; border: 1px solid #dee2e6;"><strong><?php echo $item['icon']; ?></strong> <?php echo htmlspecialchars($item['name']); ?></td>
-                        <td style="padding: 5px 8px; text-align: center; border: 1px solid #dee2e6;">
+                        <td style="padding: 2px 5px; border: 1px solid #dee2e6; font-size: 7pt;"><strong><?php echo $item['icon']; ?></strong> <?php echo htmlspecialchars($item['name']); ?></td>
+                        <td style="padding: 2px 4px; text-align: center; border: 1px solid #dee2e6;">
                             <?php if (is_numeric($item['auto'])): ?>
-                            <span style="padding: 2px 6px; background: #667eea; color: white; border-radius: 3px; font-weight: bold;"><?php echo round($item['auto']); ?>%</span>
+                            <span style="padding: 1px 4px; background: #667eea; color: white; border-radius: 2px; font-weight: bold; font-size: 7pt;"><?php echo round($item['auto']); ?>%</span>
                             <?php else: ?>-<?php endif; ?>
                         </td>
-                        <td style="padding: 5px 8px; text-align: center; border: 1px solid #dee2e6;">
+                        <td style="padding: 2px 4px; text-align: center; border: 1px solid #dee2e6;">
                             <?php if (is_numeric($item['perf'])): ?>
-                            <span style="padding: 2px 6px; background: #28a745; color: white; border-radius: 3px; font-weight: bold;"><?php echo round($item['perf']); ?>%</span>
+                            <span style="padding: 1px 4px; background: #28a745; color: white; border-radius: 2px; font-weight: bold; font-size: 7pt;"><?php echo round($item['perf']); ?>%</span>
                             <?php else: ?>-<?php endif; ?>
                         </td>
-                        <td style="padding: 5px 8px; text-align: center; border: 1px solid #dee2e6; color: <?php echo $gapColor; ?>; font-weight: bold;">
+                        <td style="padding: 2px 4px; text-align: center; border: 1px solid #dee2e6; color: <?php echo $gapColor; ?>; font-weight: bold; font-size: 7pt;">
                             <?php if (is_numeric($item['auto']) && is_numeric($item['perf'])): ?>
                             <?php echo $gapIcon . ($gap > 0 ? '+' : '') . round($gap); ?>%
                             <?php else: ?>-<?php endif; ?>
@@ -288,31 +349,37 @@ function render_section_dual_radar($params) {
     // ============================================
     // PAGINA 2: RADAR PERFORMANCE + LEGENDA COMPLETA
     // ============================================
+    // Prepara il testo per i quiz
+    $quizDisplayText = !empty($selectedQuizNames) ? implode(', ', $selectedQuizNames) : 'Quiz Competenze';
     ?>
     <div class="section page-break-before" style="page-break-inside: avoid;">
         <div class="section-title green">📊 PERFORMANCE REALE - Risultati dai Quiz</div>
 
-        <div style="text-align: center; margin: 10px 0;">
+        <div style="text-align: center; margin: 3px 0 5px 0; padding: 5px; background: linear-gradient(135deg, rgba(40,167,69,0.1), rgba(46,204,113,0.1)); border-radius: 4px; border: 1px solid rgba(40,167,69,0.3);">
+            <span style="font-size: 9pt; color: #28a745; font-weight: 600;">📝 Fonte: <?php echo htmlspecialchars($quizDisplayText); ?></span>
+        </div>
+
+        <div style="text-align: center; margin: 5px 0;">
             <?php
             $perfRadarData = [];
             foreach ($areasData as $code => $area) {
                 $perfRadarData[] = ['label' => $area['icon'] . ' ' . $area['name'], 'value' => $area['percentage']];
             }
-            // Radar 490px (+40% totale) - maxLabelLen=250 per etichette complete
-            echo generate_svg_radar($perfRadarData, '', 490, 'rgba(40,167,69,0.3)', '#28a745', 9, 250);
+            // Radar ridotto a 360px per far stare tabella nella stessa pagina
+            echo generate_svg_radar($perfRadarData, '', 360, 'rgba(40,167,69,0.3)', '#28a745', 8, 200);
             ?>
         </div>
 
-        <!-- LEGENDA COMPLETA (Auto, Reale, Gap) - DIMENSIONE +20% -->
-        <div style="padding: 10px; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6;">
-            <h6 style="margin: 0 0 8px; color: #34495e; font-size: 11pt; font-weight: bold;">📋 Legenda Aree di Competenza</h6>
-            <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt;">
+        <!-- LEGENDA COMPATTA - DEVE STARE NELLA STESSA PAGINA -->
+        <div style="padding: 6px; background: #f8f9fa; border-radius: 4px; border: 1px solid #dee2e6; page-break-inside: avoid;">
+            <h6 style="margin: 0 0 4px; color: #34495e; font-size: 9pt; font-weight: bold;">📋 Legenda Aree di Competenza</h6>
+            <table style="width: 100%; border-collapse: collapse; font-size: 7pt; page-break-inside: avoid;">
                 <thead>
                     <tr>
-                        <th style="background: #34495e; color: white; padding: 5px 8px; text-align: left; border: 1px solid #2c3e50;">Area</th>
-                        <th style="background: #667eea; color: white; padding: 5px 8px; text-align: center; width: 70px; border: 1px solid #5a6fd6;">🧑 Auto</th>
-                        <th style="background: #28a745; color: white; padding: 5px 8px; text-align: center; width: 70px; border: 1px solid #1e7e34;">📊 Reale</th>
-                        <th style="background: #34495e; color: white; padding: 5px 8px; text-align: center; width: 65px; border: 1px solid #2c3e50;">Gap</th>
+                        <th style="background: #34495e; color: white; padding: 3px 5px; text-align: left; border: 1px solid #2c3e50;">Area</th>
+                        <th style="background: #667eea; color: white; padding: 3px 5px; text-align: center; width: 55px; border: 1px solid #5a6fd6;">🧑 Auto</th>
+                        <th style="background: #28a745; color: white; padding: 3px 5px; text-align: center; width: 55px; border: 1px solid #1e7e34;">📊 Reale</th>
+                        <th style="background: #34495e; color: white; padding: 3px 5px; text-align: center; width: 50px; border: 1px solid #2c3e50;">Gap</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -325,18 +392,18 @@ function render_section_dual_radar($params) {
                         $bgColor = ($gap > 15) ? '#fadbd8' : (($gap < -15) ? '#fef9e7' : '#d5f5e3');
                     ?>
                     <tr style="background: <?php echo $bgColor; ?>;">
-                        <td style="padding: 5px 8px; border: 1px solid #dee2e6;"><strong><?php echo $item['icon']; ?></strong> <?php echo htmlspecialchars($item['name']); ?></td>
-                        <td style="padding: 5px 8px; text-align: center; border: 1px solid #dee2e6;">
+                        <td style="padding: 2px 5px; border: 1px solid #dee2e6; font-size: 7pt;"><strong><?php echo $item['icon']; ?></strong> <?php echo htmlspecialchars($item['name']); ?></td>
+                        <td style="padding: 2px 4px; text-align: center; border: 1px solid #dee2e6;">
                             <?php if (is_numeric($item['auto'])): ?>
-                            <span style="padding: 2px 6px; background: #667eea; color: white; border-radius: 3px; font-weight: bold;"><?php echo round($item['auto']); ?>%</span>
+                            <span style="padding: 1px 4px; background: #667eea; color: white; border-radius: 2px; font-weight: bold; font-size: 7pt;"><?php echo round($item['auto']); ?>%</span>
                             <?php else: ?>-<?php endif; ?>
                         </td>
-                        <td style="padding: 5px 8px; text-align: center; border: 1px solid #dee2e6;">
+                        <td style="padding: 2px 4px; text-align: center; border: 1px solid #dee2e6;">
                             <?php if (is_numeric($item['perf'])): ?>
-                            <span style="padding: 2px 6px; background: #28a745; color: white; border-radius: 3px; font-weight: bold;"><?php echo round($item['perf']); ?>%</span>
+                            <span style="padding: 1px 4px; background: #28a745; color: white; border-radius: 2px; font-weight: bold; font-size: 7pt;"><?php echo round($item['perf']); ?>%</span>
                             <?php else: ?>-<?php endif; ?>
                         </td>
-                        <td style="padding: 5px 8px; text-align: center; border: 1px solid #dee2e6; color: <?php echo $gapColor; ?>; font-weight: bold;">
+                        <td style="padding: 2px 4px; text-align: center; border: 1px solid #dee2e6; color: <?php echo $gapColor; ?>; font-weight: bold; font-size: 7pt;">
                             <?php if (is_numeric($item['auto']) && is_numeric($item['perf'])): ?>
                             <?php echo $gapIcon . ($gap > 0 ? '+' : '') . round($gap); ?>%
                             <?php else: ?>-<?php endif; ?>
@@ -923,7 +990,7 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
         @media print {
             body {
                 padding: 0;
-                padding-top: 75px; /* Maggiore distanza dall'header */
+                padding-top: 85px; /* Distanza dall'header fisso (header 55px + padding 16px + border 3px + margine 11px) */
                 font-size: 9pt;
             }
 
@@ -931,6 +998,13 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
             .running-header {
                 position: fixed;
                 top: 0;
+                z-index: 9999;
+            }
+
+            /* Sezioni che iniziano su nuova pagina devono avere padding-top extra */
+            .section[style*="page-break-before: always"] {
+                padding-top: 75px !important; /* Spazio per l'header fisso */
+                margin-top: 0 !important;
             }
 
             /* Righe tabella più sottili in stampa */
@@ -941,7 +1015,8 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
 
             /* Mantieni colori in stampa */
             .header, .section-title, .badge, .stat-box, .evaluation-box,
-            .colloquio-hint, .running-header, .progress-fill {
+            .colloquio-hint, .running-header, .progress-fill,
+            table td[style*="background"], table th[style*="background"] {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 color-adjust: exact !important;
@@ -968,7 +1043,7 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
         /* ============================================
            UTILITY CLASSES
            ============================================ */
-        .page-break-before { page-break-before: always; }
+        .page-break-before { page-break-before: always; padding-top: 75px; } /* Extra padding per header fisso */
         .page-break-after { page-break-after: always; }
         .no-break { page-break-inside: avoid; }
     </style>
@@ -983,12 +1058,26 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
          RUNNING HEADER (ripetuto su ogni pagina)
          Con logo FTM
          ============================================ -->
+    <?php
+    // Prepara il settore da mostrare nel running header
+    $runningHeaderSector = null;
+    if (!empty($studentPrimarySector)) {
+        $runningHeaderSector = strtoupper($studentPrimarySector);
+    } elseif (!empty($sector)) {
+        $runningHeaderSector = strtoupper($sector);
+    } elseif (!empty($courseSector)) {
+        $runningHeaderSector = strtoupper($courseSector);
+    }
+    ?>
     <div class="running-header">
         <div class="logo-section">
             <div class="logo-box">
                 <img src="<?php echo $logoUrl; ?>" alt="FTM Logo">
             </div>
             <span class="student-name"><?php echo fullname($student); ?></span>
+            <?php if ($runningHeaderSector): ?>
+            <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; font-size: 8pt; margin-left: 8px;"><?php echo $runningHeaderSector; ?></span>
+            <?php endif; ?>
         </div>
         <div class="center">
             <strong>SCHEDA COMPETENZE</strong><br>
@@ -1022,7 +1111,39 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
                 <p><strong>Studente:</strong> <?php echo fullname($student); ?></p>
                 <p><strong>Email:</strong> <?php echo $student->email; ?></p>
                 <?php if ($course): ?><p><strong>Corso:</strong> <?php echo format_string($course->fullname); ?></p><?php endif; ?>
-                <?php if (!empty($printSectorFilter) && $printSectorFilter !== 'all'): ?>
+                <?php
+                // Mostra sempre il settore dello studente
+                $displaySector = null;
+                $sectorSource = '';
+
+                // Priorità: 1) Settore primario assegnato, 2) Settore rilevato dai quiz, 3) Settore dal corso
+                if (!empty($studentPrimarySector)) {
+                    $displaySector = strtoupper($studentPrimarySector);
+                    $sectorSource = 'assegnato';
+                } elseif (!empty($sector)) {
+                    $displaySector = strtoupper($sector);
+                    $sectorSource = 'rilevato';
+                } elseif (!empty($courseSector)) {
+                    $displaySector = strtoupper($courseSector);
+                    $sectorSource = 'dal corso';
+                }
+
+                // Se c'è un filtro settore attivo E diverso dal settore principale, mostralo
+                $hasFilter = !empty($printSectorFilter) && $printSectorFilter !== 'all';
+                $filterIsDifferent = $hasFilter && strtoupper($printSectorFilter) !== $displaySector;
+                ?>
+                <?php if ($displaySector): ?>
+                <p><strong>Settore:</strong>
+                    <span style="background: linear-gradient(135deg, var(--ftm-red) 0%, var(--ftm-red-dark) 100%); color: white; padding: 3px 12px; border-radius: 4px; font-weight: bold;">
+                        <?php echo $displaySector; ?>
+                    </span>
+                    <?php if ($filterIsDifferent): ?>
+                    <span style="margin-left: 8px; background: #ffc107; color: #333; padding: 2px 8px; border-radius: 4px; font-size: 9pt;">
+                        Filtro: <?php echo strtoupper($printSectorFilter); ?>
+                    </span>
+                    <?php endif; ?>
+                </p>
+                <?php elseif ($hasFilter): ?>
                 <p><strong>Settore:</strong> <span style="background: #ffc107; color: #333; padding: 2px 8px; border-radius: 4px;"><?php echo strtoupper($printSectorFilter); ?></span></p>
                 <?php endif; ?>
                 <p><strong>Data stampa:</strong> <?php echo date('d/m/Y H:i'); ?></p>
@@ -1061,6 +1182,9 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
         'autovalutazioneAreas' => $autovalutazioneAreas ?? [],
         'gapAnalysisData' => $gapAnalysisData ?? [],
         'colloquioHints' => $colloquioHints ?? [],
+        // Nomi quiz per i titoli dei radar
+        'selectedQuizNames' => $selectedQuizNames ?? [],
+        'autovalutazioneQuizName' => $autovalutazioneQuizName ?? null,
     ];
 
     // Mappa sezioni -> funzioni di rendering

@@ -1,0 +1,30 @@
+
+============================================================
+FTM HEALTH CHECK - 26/01/2026, 10:14:52
+============================================================
+
+[LOGIN]...
+[LOGIN] OK
+
+[Coach Dashboard V2]...
+[Coach Dashboard V2] OK (3/3)
+
+[Coach Dashboard]...
+[Coach Dashboard] OK (2/2)
+
+[FTM Scheduler]...
+[FTM Scheduler] OK (1/1)
+
+[Setup Universale]...
+[Setup Universale] WARN (0/1)
+
+Report salvato: ./reports/report_2026-01-26T09-14-52.json
+
+============================================================
+RIEPILOGO
+============================================================
+OK:    3
+WARN:  1
+ERROR: 0
+
+⚠️  ATTENZIONE: Verificare i problemi rilevati!

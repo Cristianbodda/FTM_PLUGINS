@@ -1,6 +1,20 @@
 # REFLECT - Stato Progetto FTM competencyxmlimport
 
-**Ultimo aggiornamento:** 15 Gennaio 2026
+**Ultimo aggiornamento:** 27 Gennaio 2026
+
+---
+
+## NOTA: STUDENT REPORT PRINT v2 (27/01/2026)
+
+Nella sessione del 27 gennaio sono stati completati importanti fix al sistema di stampa PDF del report competenze:
+
+### Fix Applicati
+1. **Overlap header fisso** - Le sezioni DETTAGLIO ora hanno padding-top corretto per non finire sotto l'header rosso
+2. **Stile uniforme aree** - Tutte le aree (A-G) hanno lo stesso stile con rettangolo colorato pieno (box-shadow + background-color)
+3. **Tabelle legenda compatte** - Radar 360px + font 7pt per far stare grafico e tabella nella stessa pagina
+4. **Nomi quiz visibili** - Aggiunto "Fonte:" sopra i radar con nome quiz/autovalutazione
+
+Vedi `local/competencymanager/PROJECT_STATUS.md` per dettagli tecnici.
 
 ---
 

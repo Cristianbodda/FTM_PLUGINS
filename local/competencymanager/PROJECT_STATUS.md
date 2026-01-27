@@ -1,7 +1,7 @@
 # Competency Manager - Stato Progetto
 
-**Ultimo aggiornamento:** 16 Gennaio 2026
-**Versione:** 2.3.0 (2026011601)
+**Ultimo aggiornamento:** 27 Gennaio 2026
+**Versione:** 2.4.0 (2026012701)
 
 ## Stato: ATTIVO
 
@@ -123,6 +123,46 @@ get_sector_stats($courseid = 0)
 | `competencymanager:managecoaching` | Gestire coaching studenti | editingteacher, manager |
 | `competencymanager:assigncoach` | Assegnare studenti ai coach | manager |
 | `competencymanager:managesectors` | **NUOVO** Gestire settori studenti | editingteacher, manager |
+
+---
+
+## Modifiche 27/01/2026 - Student Report Print v2
+
+### Fix Stampa PDF Professionale
+
+#### 1. Fix Overlap Header su Pagine Successive
+- **Problema:** Le sezioni DETTAGLIO (pagine 7-12) apparivano sotto l'header rosso fisso
+- **Soluzione:**
+  - `body padding-top: 85px` in @media print
+  - Tutte le aree DETTAGLIO con `page-break-before: always` e `padding-top: 75px`
+  - Classe `.page-break-before` con padding-top extra
+
+#### 2. Stile Uniforme Titoli DETTAGLIO
+- **Problema:** Area A aveva stile diverso (solo bordo) rispetto a B, C, D, E, F, G (sfondo pieno)
+- **Soluzione:**
+  - Tutte le aree ora iniziano su nuova pagina
+  - Doppio fallback: `background-color` + `box-shadow: inset 0 0 0 1000px [color]`
+  - Aggiunto `color-adjust: exact` per compatibilita browser
+
+#### 3. Tabelle Legenda Compatte
+- **Problema:** Tabella legenda finiva nella pagina successiva, separata dal grafico radar
+- **Soluzione:**
+  - Radar ridotto da 490px a **360px**
+  - Font tabella ridotto da 8.5pt a **7pt**
+  - Padding celle ridotto da 5px 8px a **2px 4px**
+  - Larghezza colonne ridotte (70px -> 55px)
+
+#### 4. Nomi Quiz e Autovalutazione
+- Aggiunto caricamento nomi quiz selezionati in student_report.php
+- Passaggio parametri `selectedQuizNames` e `autovalutazioneQuizName` al template stampa
+- Visualizzazione "Fonte:" sopra ogni radar con nome quiz/autovalutazione
+
+#### File Modificati
+```
+local/competencymanager/
+├── student_report.php           # Caricamento nomi quiz per stampa
+└── student_report_print.php     # Fix layout stampa professionale
+```
 
 ---
 

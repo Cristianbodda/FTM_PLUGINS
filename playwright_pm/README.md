@@ -79,6 +79,18 @@ playwright_pm/
 Le credenziali sono hardcoded negli script per ambiente di test.
 **NON USARE IN PRODUZIONE!**
 
+## Report e Screenshot
+
+I report automatici vengono salvati in:
+- `reports/` - JSON con risultati health check
+- `screenshots/` - Screenshot di tutte le pagine testate
+- `logs/` - Log dello scheduler
+
+### Screenshot Recenti (27/01/2026)
+- `competencymanager_student_report.png` - Report studente con radar
+- `coachmanager_coach_dashboard_v2.png` - Dashboard coach v2
+- `ftm_scheduler_ftm_scheduler.png` - Scheduler FTM
+
 ---
 
-*Ultimo aggiornamento: 22 Gennaio 2026*
+*Ultimo aggiornamento: 27 Gennaio 2026*
