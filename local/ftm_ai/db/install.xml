@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/ftm_ai/db" VERSION="20260128" COMMENT="FTM AI plugin tables">
+  <TABLES>
+    <TABLE NAME="local_ftm_ai_usage" COMMENT="Tracks API usage for cost monitoring">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Timestamp of API call"/>
+        <FIELD NAME="prompt_tokens" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Tokens used in prompt"/>
+        <FIELD NAME="completion_tokens" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Tokens used in completion"/>
+        <FIELD NAME="total_tokens" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Total tokens used"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="timecreated_idx" UNIQUE="false" FIELDS="timecreated" COMMENT="For daily usage queries"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

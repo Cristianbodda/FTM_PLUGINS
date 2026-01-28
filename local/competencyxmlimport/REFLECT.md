@@ -1,6 +1,33 @@
 # REFLECT - Stato Progetto FTM competencyxmlimport
 
-**Ultimo aggiornamento:** 27 Gennaio 2026
+**Ultimo aggiornamento:** 28 Gennaio 2026
+
+---
+
+## NOTA: GAP COMMENTS + FTM AI (28/01/2026)
+
+Nella sessione del 28 gennaio sono stati sviluppati:
+
+### 1. Gap Comments System
+Sistema automatico di suggerimenti basati su gap analysis:
+- **79 aree mappate** con attivita lavorative specifiche
+- **File:** `local/competencymanager/gap_comments_mapping.php`
+- **Integrazione:** student_report.php e student_report_print.php
+- **Bug fix:** Aggiunta condizione `$printSuggerimentiRapporto` per visualizzazione
+
+### 2. FTM AI Plugin (STANDBY)
+Plugin per integrare Azure OpenAI con mascheramento dati sensibili:
+- **Anonimizzazione:** Nome, cognome, AVS, email, telefono mai inviati
+- **File:** `local/ftm_ai/` (plugin completo)
+- **Stato:** Pronto per installazione, in standby per focus su quiz
+
+### 3. Guida Coach PowerPoint
+Generata guida operativa per coach:
+- **Screenshots:** Playwright script `coach_guide_screenshots.mjs`
+- **PowerPoint:** 16 slide con stile FTM
+- **Output:** `FTM_Guida_Coach_Operativa.pptx`
+
+Vedi `local/competencymanager/PROJECT_STATUS.md` e `local/ftm_ai/README.md` per dettagli.
 
 ---
 
@@ -177,4 +204,4 @@ Vedi `CLAUDE.md` nella root e `local/coachmanager/PROJECT_STATUS.md` per dettagl
 
 ---
 
-*Generato per sessione di sviluppo FTM - 13 Gennaio 2026*
+*Generato per sessione di sviluppo FTM - 28 Gennaio 2026*

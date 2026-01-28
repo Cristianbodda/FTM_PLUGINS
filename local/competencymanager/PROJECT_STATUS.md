@@ -1,7 +1,7 @@
 # Competency Manager - Stato Progetto
 
-**Ultimo aggiornamento:** 27 Gennaio 2026
-**Versione:** 2.4.0 (2026012701)
+**Ultimo aggiornamento:** 28 Gennaio 2026
+**Versione:** 2.5.0 (2026012800)
 
 ## Stato: ATTIVO
 
@@ -10,8 +10,49 @@
 #### 1. Core Competency Manager
 Gestione framework competenze FTM con 7 settori.
 
-#### 2. Sector Manager (NUOVO 15/01/2026)
+#### 2. Sector Manager (15/01/2026)
 Sistema multi-settore per studenti.
+
+#### 3. Gap Comments System (NUOVO 28/01/2026)
+Sistema automatico di suggerimenti basati su gap analysis.
+
+### Gap Comments System - Dettaglio (28/01/2026)
+
+Sistema automatico per generare suggerimenti personalizzati basati sul confronto tra autovalutazione e quiz performance.
+
+#### File
+```
+local/competencymanager/
+└── gap_comments_mapping.php    # 79 aree mappate con attivita lavorative
+```
+
+#### Funzionalita
+- **79 aree mappate** con attivita lavorative specifiche per ogni settore
+- **Confronto automatico** Quiz vs Autovalutazione per ogni area
+- **Tre tipi di feedback:**
+  - Sovrastima (autovalutazione > quiz)
+  - Sottostima (autovalutazione < quiz)
+  - Allineamento (differenza <= soglia)
+- **Due toni disponibili:**
+  - Formale (per Suggerimenti Rapporto)
+  - Colloquiale (per Spunti Colloquio)
+
+#### Funzione Principale
+```php
+function generate_gap_comment($areaKey, $autovalutazione, $performance, $tone = 'formale') {
+    return [
+        'tipo' => 'sovrastima|sottostima|allineamento',
+        'commento' => '...testo generato...',
+        'attivita' => ['attivita1', 'attivita2', ...]
+    ];
+}
+```
+
+#### Integrazione
+- `student_report.php` - Sezione "Suggerimenti Rapporto"
+- `student_report_print.php` - Sezione stampabile
+
+---
 
 ### Sector Manager - Dettaglio
 
@@ -123,6 +164,28 @@ get_sector_stats($courseid = 0)
 | `competencymanager:managecoaching` | Gestire coaching studenti | editingteacher, manager |
 | `competencymanager:assigncoach` | Assegnare studenti ai coach | manager |
 | `competencymanager:managesectors` | **NUOVO** Gestire settori studenti | editingteacher, manager |
+
+---
+
+## Modifiche 28/01/2026 - Gap Comments System
+
+### Nuova Funzionalita: Suggerimenti Automatici Gap Analysis
+
+#### File Creati
+```
+local/competencymanager/
+└── gap_comments_mapping.php    # 79 aree con attivita lavorative
+```
+
+#### Integrazione
+- Aggiunto caricamento `gap_comments_mapping.php` in `student_report.php`
+- Fix condizioni per includere `$printSuggerimentiRapporto` nel calcolo dati
+- Aggiunto messaggio informativo quando dati gap non disponibili
+
+#### Bug Fix
+- **Problema:** Sezione "Suggerimenti Rapporto" non mostrava contenuto in stampa
+- **Causa:** Condizione `$printSuggerimentiRapporto` mancante nel caricamento dati autovalutazione
+- **Soluzione:** Aggiunte condizioni in due punti di `student_report.php`
 
 ---
 

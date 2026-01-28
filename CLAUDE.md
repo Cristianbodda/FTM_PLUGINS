@@ -1,10 +1,10 @@
 # FTM PLUGINS - Guida Completa per Claude
 
-**Ultimo aggiornamento:** 27 Gennaio 2026 (ore 17:30)
+**Ultimo aggiornamento:** 28 Gennaio 2026
 
 ## Panoramica Progetto
 
-Ecosistema di 12 plugin Moodle per gestione competenze professionali.
+Ecosistema di 13 plugin Moodle per gestione competenze professionali.
 
 Target: Moodle 4.5+ / 5.0 | Licenza: GPL-3.0
 
@@ -23,11 +23,12 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 - Generazione automatica attivita
 - Tabella `local_ftm_coaches` per gestione coach (CB, FM, GM, RB)
 
-#### 2. Sector Manager + Student Report (local_competencymanager) - AGGIORNATO 27/01/2026
+#### 2. Sector Manager + Student Report (local_competencymanager) - AGGIORNATO 28/01/2026
 - Sistema Multi-Settore per studenti
 - Interfaccia segreteria: `sector_admin.php`
 - Rilevamento automatico settori da quiz
 - Capability `managesectors` per coach/segreteria
+- **Gap Comments System (NUOVO 28/01/2026):** Suggerimenti automatici basati su gap analysis
 - **Student Report Print v2** con:
   - Radar 360px compatto per far stare grafico + tabella nella stessa pagina
   - Rettangoli colorati pieni per TUTTE le aree DETTAGLIO (A-G)
@@ -36,6 +37,22 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
   - Font tabella 7pt compatto, logo FTM, sezioni configurabili
 - Tabella `local_student_sectors` per multi-settore (primary, secondary, tertiary)
 - Tabella `local_student_coaching` per assegnazione coach-studente (condivisa)
+
+#### 2b. Gap Comments System (NUOVO 28/01/2026)
+Sistema automatico di suggerimenti basati su gap analysis:
+- **79 aree mappate** con attivita lavorative specifiche
+- **Confronto Quiz vs Autovalutazione** per ogni area
+- **Suggerimenti contestuali** basati su sovra/sottostima
+- **Due toni:** Formale (report) e Colloquiale (spunti colloquio)
+- **File:** `gap_comments_mapping.php`
+
+#### 2c. FTM AI Integration (IN STANDBY - local_ftm_ai)
+Plugin per integrare Azure OpenAI/Copilot con mascheramento dati sensibili:
+- **Anonimizzazione automatica:** Rimuove nome, cognome, AVS, email, telefono prima di inviare
+- **Varianti linguistiche:** Evita ripetizioni nei testi generati
+- **Analisi predittiva:** Identifica studenti a rischio
+- **Fallback deterministico:** Se AI non disponibile, usa template
+- **Stato:** STANDBY - Plugin completo, pronto per installazione
 
 #### 3. Test Suite (local_ftm_testsuite)
 - 5 Agenti di test: Security, Database, AJAX, Structure, Language
@@ -145,13 +162,14 @@ Sistema completo per gestione studenti CPURC con import CSV e report Word:
 
 ---
 
-## Plugin (12 totali)
+## Plugin (13 totali)
 
-### Local (10)
-- **competencymanager** - Core gestione competenze + Sector Manager
+### Local (11)
+- **competencymanager** - Core gestione competenze + Sector Manager + Gap Comments
 - **coachmanager** - Coaching formatori + Dashboard V2
 - **competencyreport** - Report studenti
 - **competencyxmlimport** - Import XML/Word/Excel + Setup Universale
+- **ftm_ai** - **NUOVO** Integrazione Azure OpenAI con anonimizzazione (STANDBY)
 - **ftm_hub** - Hub centrale
 - **ftm_scheduler** - Pianificazione calendario
 - **ftm_testsuite** - Testing automatizzato
@@ -353,11 +371,12 @@ modals: 12px;
 
 ```
 ftm_hub (centrale)
-├── competencymanager (core + sector_manager)
+├── competencymanager (core + sector_manager + gap_comments)
 │   ├── competencyreport
 │   ├── competencyxmlimport (+ setup_universale)
 │   ├── selfassessment (+ observer settori + filtro primario)
-│   └── coachmanager (+ dashboard V2)
+│   ├── coachmanager (+ dashboard V2)
+│   └── ftm_ai (integrazione AI con anonimizzazione) [STANDBY]
 ├── labeval
 ├── ftm_scheduler (+ local_ftm_coaches)
 ├── ftm_testsuite
@@ -369,7 +388,8 @@ block_ftm_tools -> ftm_hub
 Tabelle Condivise:
 ├── local_student_coaching (coachmanager ↔ ftm_cpurc)
 ├── local_student_sectors (competencymanager ↔ ftm_cpurc ↔ selfassessment)
-└── local_ftm_coaches (ftm_scheduler → tutti)
+├── local_ftm_coaches (ftm_scheduler → tutti)
+└── local_ftm_ai_usage (ftm_ai - logging chiamate API)
 ```
 
 ---
@@ -647,3 +667,131 @@ if (!empty($primarySector)) {
 | local/ftm_cpurc:edit | Modifica dati, assegna coach/settori |
 | local/ftm_cpurc:import | Importa CSV |
 | local/ftm_cpurc:generatereport | Genera e esporta report Word |
+
+---
+
+## GAP COMMENTS SYSTEM - DETTAGLI TECNICI (28/01/2026)
+
+### Panoramica
+Sistema automatico per generare suggerimenti basati sul confronto tra autovalutazione e quiz performance.
+
+### File Principale
+```
+local/competencymanager/
+└── gap_comments_mapping.php    # 79 aree mappate con attivita lavorative
+```
+
+### Funzione Principale
+```php
+function generate_gap_comment($areaKey, $autovalutazione, $performance, $tone = 'formale') {
+    // Calcola gap: autovalutazione - performance
+    // gap > 0: Sovrastima (studente si valuta meglio di quanto sia)
+    // gap < 0: Sottostima (studente si sottovaluta)
+    // gap = 0: Allineamento
+
+    return [
+        'tipo' => 'sovrastima|sottostima|allineamento',
+        'commento' => '...testo generato...',
+        'attivita' => ['attivita1', 'attivita2', ...]
+    ];
+}
+```
+
+### Toni Disponibili
+| Tono | Uso | Stile |
+|------|-----|-------|
+| `formale` | Suggerimenti Rapporto | Terza persona, professionale |
+| `colloquiale` | Spunti Colloquio | Diretto al "tu", empatico |
+
+### Integrazione nel Report
+- **Sezione "Suggerimenti Rapporto":** Testo formale per documentazione
+- **Sezione "Spunti Colloquio":** Punti di discussione per il coach
+
+### Aree Coperte (79 totali)
+Tutti i 7 settori FTM con aree A-G e sotto-aree (es. MECCANICA_A_01, AUTOMOBILE_B_03).
+
+---
+
+## FTM AI INTEGRATION - DETTAGLI TECNICI (28/01/2026 - STANDBY)
+
+### Panoramica
+Plugin per integrare Azure OpenAI (Copilot) con mascheramento automatico dei dati sensibili.
+**Stato:** Completo e pronto per installazione, ma in STANDBY.
+
+### File Struttura
+```
+local/ftm_ai/
+├── version.php                  # Plugin definition
+├── settings.php                 # Admin configuration Azure
+├── classes/
+│   ├── anonymizer.php           # Mascheramento PII
+│   ├── azure_openai.php         # Client API Azure
+│   └── service.php              # Facade semplificata
+├── db/
+│   └── install.xml              # Tabella usage logging
+├── lang/
+│   └── en/local_ftm_ai.php      # Stringhe lingua
+└── README.md                    # Documentazione completa
+```
+
+### Privacy - Dati MAI inviati ad Azure
+- Nome e cognome
+- Email
+- Numero AVS (756.XXXX.XXXX.XX)
+- Telefono
+- Indirizzo
+- IBAN
+- Data di nascita
+
+### Uso nel Codice
+```php
+$service = new \local_ftm_ai\service();
+
+if ($service->is_available()) {
+    $result = $service->generate_student_suggestions(
+        $userid,           // ID studente Moodle
+        $competencyData,   // Array competenze
+        $gapData,          // Array gap analysis
+        'formale',         // Tono: 'formale' o 'colloquiale'
+        $historyData       // Storico opzionale
+    );
+
+    if ($result['success']) {
+        echo $result['suggestions']; // Nome studente gia reinserito!
+    }
+}
+```
+
+### Configurazione Admin
+| Setting | Descrizione |
+|---------|-------------|
+| azure_endpoint | URL Azure OpenAI (es. https://myresource.openai.azure.com) |
+| azure_api_key | API Key del deployment |
+| azure_deployment | Nome deployment (es. gpt-4) |
+| daily_limit | Limite richieste giornaliere |
+| max_tokens | Max token per richiesta |
+
+### Per Riprendere lo Sviluppo
+1. Copia `local/ftm_ai` nel Moodle `/local/`
+2. Amministrazione > Notifiche per installare
+3. Configura credenziali Azure in admin settings
+4. Integra nel `student_report.php` con bottone "Genera con AI"
+
+---
+
+## GUIDA COACH - POWERPOINT (28/01/2026)
+
+### File Generati
+- **Screenshots:** `playwright_pm/coach_guide_screenshots.mjs` (Playwright)
+- **PowerPoint:** `C:\Users\cristian.bodda\Downloads\create_coach_guide_pptx.py`
+- **Output:** `FTM_Guida_Coach_Operativa.pptx` (16 slide)
+
+### Contenuto Guida
+1. Accesso Dashboard Coach V2
+2. Configurazione Vista e Zoom
+3. Filtri e Ricerca Studenti
+4. Lettura Card Studente
+5. Timeline 6 Settimane
+6. Report Competenze
+7. Gap Analysis e Suggerimenti
+8. Export Word

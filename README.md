@@ -1,27 +1,52 @@
 # FTM PLUGINS
 
-Ecosistema di 12 plugin Moodle per la gestione delle competenze professionali.
+Ecosistema di 13 plugin Moodle per la gestione delle competenze professionali.
 
-**Versione:** 5.0 | **Target:** Moodle 4.5+ / 5.0 | **Licenza:** GPL-3.0
+**Versione:** 5.1 | **Target:** Moodle 4.5+ / 5.0 | **Licenza:** GPL-3.0
 
 ---
 
-## Stato Sviluppo (24 Gennaio 2026)
+## Stato Sviluppo (28 Gennaio 2026)
 
 | Plugin | Versione | Stato |
 |--------|----------|-------|
 | ftm_scheduler | 1.0 | **Attivo** - Vista Settimana + Mese + Gestione Coach |
-| competencymanager | 2.3.0 | **Attivo** - Sector Manager + Student Report Print |
+| competencymanager | 2.5.0 | **Attivo** - Sector Manager + Gap Comments + Student Report |
 | selfassessment | 1.2.0 | **Attivo** - Popup + rilevazione settori + filtro primario |
 | coachmanager | 2.2.0 | **Attivo** - Dashboard V2 con zoom accessibilita |
 | competencyxmlimport | 4.1 | **Attivo** - Setup Universale migliorato |
-| ftm_cpurc | 1.0.0 | **COMPLETATO 24/01** - Gestione CPURC completa |
+| ftm_cpurc | 1.0.0 | **Attivo** - Gestione CPURC completa |
+| ftm_ai | 1.0.0-alpha | **STANDBY** - Azure OpenAI con anonimizzazione |
 | ftm_testsuite | 1.0 | **Attivo** - 58 test automatizzati |
 | Altri plugin | - | Stabili |
 
 ---
 
-## Sistema CPURC (NUOVO 24/01/2026)
+## Gap Comments System (NUOVO 28/01/2026)
+
+Sistema automatico di suggerimenti basati su gap analysis:
+- **79 aree mappate** con attivita lavorative specifiche
+- **Confronto Quiz vs Autovalutazione** per ogni area
+- **Suggerimenti contestuali** basati su sovra/sottostima
+- **Due toni:** Formale (report) e Colloquiale (spunti colloquio)
+
+File: `local/competencymanager/gap_comments_mapping.php`
+
+---
+
+## FTM AI Integration (STANDBY - 28/01/2026)
+
+Plugin per integrare Azure OpenAI (Copilot) con mascheramento dati sensibili:
+- **Anonimizzazione automatica:** Nome, cognome, AVS, email, telefono mai inviati
+- **Varianti linguistiche:** Evita ripetizioni nei testi generati
+- **Analisi predittiva:** Identifica studenti a rischio
+- **Fallback deterministico:** Usa template se AI non disponibile
+
+**Stato:** Completo e pronto per installazione, in attesa di configurazione Azure.
+
+---
+
+## Sistema CPURC (24/01/2026)
 
 Sistema completo per gestione studenti CPURC con import CSV e report Word.
 
@@ -79,15 +104,16 @@ Settori: GENERICO
 
 ---
 
-## Plugin (12 totali)
+## Plugin (13 totali)
 
-### Local (10)
+### Local (11)
 | Plugin | Descrizione |
 |--------|-------------|
-| `competencymanager` | Core gestione competenze + Sector Manager + Student Report |
+| `competencymanager` | Core gestione competenze + Sector Manager + Gap Comments |
 | `coachmanager` | Coaching formatori + Dashboard V2 |
 | `competencyreport` | Report studenti |
 | `competencyxmlimport` | Import XML/Word/Excel + Setup Universale |
+| `ftm_ai` | **NUOVO** Integrazione Azure OpenAI con anonimizzazione (STANDBY) |
 | `ftm_cpurc` | Gestione CPURC + Import CSV + Report Word |
 | `ftm_hub` | Hub centrale |
 | `ftm_scheduler` | Pianificazione calendario + Gestione Coach |
@@ -114,6 +140,7 @@ Settori: GENERICO
 | `local_student_coaching` | Assegnazione coach-studente | competencymanager, ftm_cpurc, coachmanager |
 | `local_student_sectors` | Multi-settore studenti | competencymanager, ftm_cpurc, selfassessment |
 | `local_ftm_coaches` | Anagrafica coach (CB, FM, GM, RB) | ftm_scheduler -> tutti |
+| `local_ftm_ai_usage` | Logging chiamate API Azure | ftm_ai |
 
 ---
 
@@ -170,4 +197,4 @@ https://test-urc.hizuvala.myhostpoint.ch
 ---
 
 *Sviluppato per FTM - Fondazione Terzo Millennio*
-*Ultimo aggiornamento: 24 Gennaio 2026*
+*Ultimo aggiornamento: 28 Gennaio 2026*

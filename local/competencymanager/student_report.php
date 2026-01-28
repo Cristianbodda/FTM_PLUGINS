@@ -18,6 +18,7 @@
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/classes/report_generator.php');
 require_once(__DIR__ . '/area_mapping.php');
+require_once(__DIR__ . '/gap_comments_mapping.php');
 
 require_login();
 
@@ -65,6 +66,17 @@ $printSpuntiColloquio = optional_param('print_spunti', 0, PARAM_INT);
 $printSectorFilter = optional_param('print_sector', 'all', PARAM_ALPHANUMEXT);
 
 // ============================================
+// PARAMETRI SUGGERIMENTI RAPPORTO (Commenti Automatici Gap)
+// ============================================
+$showSuggerimentiRapporto = optional_param('show_suggerimenti', 0, PARAM_INT);
+$printSuggerimentiRapporto = optional_param('print_suggerimenti', 0, PARAM_INT);
+// Tono: 'formale' (per URC/datori lavoro) o 'colloquiale' (per uso interno coach)
+$tonoCommenti = optional_param('tono_commenti', 'formale', PARAM_ALPHA);
+if (!in_array($tonoCommenti, ['formale', 'colloquiale'])) {
+    $tonoCommenti = 'formale';
+}
+
+// ============================================
 // ORDINAMENTO SEZIONI STAMPA (impostabile dal coach)
 // ============================================
 $sectionOrder = [
@@ -77,6 +89,7 @@ $sectionOrder = [
     'dual_radar'     => optional_param('order_dual_radar', 7, PARAM_INT),
     'gap_analysis'   => optional_param('order_gap', 8, PARAM_INT),
     'spunti'         => optional_param('order_spunti', 9, PARAM_INT),
+    'suggerimenti'   => optional_param('order_suggerimenti', 10, PARAM_INT),
 ];
 // Ordina per valore (ordine di stampa)
 asort($sectionOrder);
@@ -84,19 +97,22 @@ asort($sectionOrder);
 // ============================================
 // SOGLIE CONFIGURABILI (impostabili dal coach)
 // ============================================
-// Soglia per considerare un gap come "allineato" (default 15%)
-$sogliaAllineamento = optional_param('soglia_allineamento', 15, PARAM_INT);
+// Soglia per considerare un gap come "allineato" (default 10%)
+// < 10% = Allineato (verde)
+$sogliaAllineamento = optional_param('soglia_allineamento', 10, PARAM_INT);
 // Limita il range valido: minimo 5%, massimo 40%
 $sogliaAllineamento = max(5, min(40, $sogliaAllineamento));
 
-// Soglia per considerare un gap come "critico" (default 30%)
-$sogliaCritico = optional_param('soglia_critico', 30, PARAM_INT);
-// Limita il range valido: minimo 20%, massimo 60%
-$sogliaCritico = max(20, min(60, $sogliaCritico));
+// Soglia per considerare un gap come "da monitorare" (default 25%)
+// 10-25% = Da monitorare (arancione)
+// > 25% = Critico (rosso)
+$sogliaMonitorare = optional_param('soglia_monitorare', 25, PARAM_INT);
+// Limita il range valido: minimo 15%, massimo 60%
+$sogliaMonitorare = max(15, min(60, $sogliaMonitorare));
 
-// Assicura che soglia critico sia sempre > soglia allineamento
-if ($sogliaCritico <= $sogliaAllineamento) {
-    $sogliaCritico = $sogliaAllineamento + 15;
+// Assicura che soglia monitorare sia sempre > soglia allineamento
+if ($sogliaMonitorare <= $sogliaAllineamento) {
+    $sogliaMonitorare = $sogliaAllineamento + 15;
 }
 // ============================================
 
@@ -789,8 +805,8 @@ $colloquioHints = null;
 $autovalutazioneAreas = null;
 
 // Carica solo se almeno una opzione è attivata
-if ($showDualRadar || $showGapAnalysis || $showSpuntiColloquio || 
-    $printDualRadar || $printGapAnalysis || $printSpuntiColloquio) {
+if ($showDualRadar || $showGapAnalysis || $showSpuntiColloquio || $showSuggerimentiRapporto ||
+    $printDualRadar || $printGapAnalysis || $printSpuntiColloquio || $printSuggerimentiRapporto) {
     
     $autovalutazioneResult = get_student_self_assessment($userid, $courseid, $courseSector);
     
@@ -799,7 +815,8 @@ if ($showDualRadar || $showGapAnalysis || $showSpuntiColloquio ||
         $autovalutazioneTimestamp = $autovalutazioneResult['timestamp'];
         
         // Calcola gap se richiesto - USA SOGLIE CONFIGURABILI
-        if ($showGapAnalysis || $printGapAnalysis || $showSpuntiColloquio || $printSpuntiColloquio) {
+        if ($showGapAnalysis || $printGapAnalysis || $showSpuntiColloquio || $printSpuntiColloquio ||
+            $showSuggerimentiRapporto || $printSuggerimentiRapporto) {
             $gapAnalysisData = calculate_gap_analysis($autovalutazioneData, $competencies, $sogliaAllineamento);
         }
         
@@ -1816,6 +1833,7 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
                     <!-- SOGLIE CONFIGURABILI - passate alla stampa -->
                     <input type="hidden" name="soglia_allineamento" value="<?php echo $sogliaAllineamento; ?>">
                     <input type="hidden" name="soglia_critico" value="<?php echo $sogliaCritico; ?>">
+                    <input type="hidden" name="soglia_monitorare" value="<?php echo $sogliaMonitorare; ?>">
 
                     <!-- FILTRO SETTORE PER STAMPA -->
                     <div class="mb-3 p-3" style="background: #f8f9fa; border-radius: 8px;">
@@ -1882,6 +1900,28 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
                                 <input type="checkbox" class="custom-control-input section-check" id="print_spunti" name="print_spunti" value="1">
                                 <label class="custom-control-label" for="print_spunti"><strong>💬 Spunti Colloquio</strong></label>
                             </div>
+                            <div class="custom-control custom-checkbox mb-2">
+                                <input type="checkbox" class="custom-control-input section-check" id="print_suggerimenti" name="print_suggerimenti" value="1">
+                                <label class="custom-control-label" for="print_suggerimenti"><strong>📋 Suggerimenti Rapporto</strong></label>
+                                <small class="d-block text-muted ml-4">Commenti automatici basati sul gap con attivita lavorative</small>
+                            </div>
+                            <!-- Opzioni tono commenti (visibili solo se suggerimenti abilitati) -->
+                            <div id="suggerimentiOptions" class="ml-4 mt-2 mb-2 p-2" style="background: #f8f9fa; border-radius: 5px; border-left: 3px solid #667eea; display: none;">
+                                <label class="small font-weight-bold">Tono commenti:</label>
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" class="custom-control-input" id="tono_formale" name="tono_commenti" value="formale" checked>
+                                    <label class="custom-control-label" for="tono_formale">Formale <small class="text-muted">(URC/Aziende)</small></label>
+                                </div>
+                                <div class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" class="custom-control-input" id="tono_colloquiale" name="tono_commenti" value="colloquiale">
+                                    <label class="custom-control-label" for="tono_colloquiale">Colloquiale <small class="text-muted">(Coach interno)</small></label>
+                                </div>
+                            </div>
+                            <script>
+                            document.getElementById('print_suggerimenti').addEventListener('change', function() {
+                                document.getElementById('suggerimentiOptions').style.display = this.checked ? 'block' : 'none';
+                            });
+                            </script>
                             <?php endif; ?>
                         </div>
                         <div class="col-md-6">
@@ -2059,8 +2099,24 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
                                             <option value="7">7</option>
                                             <option value="8">8</option>
                                             <option value="9" selected>9</option>
+                                            <option value="10">10</option>
                                         </select>
                                         <label class="mb-0">💬 Spunti Colloquio</label>
+                                    </div>
+                                    <div class="form-group mb-2 d-flex align-items-center">
+                                        <select name="order_suggerimenti" class="form-control form-control-sm mr-2" style="width: 60px;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                            <option value="10" selected>10</option>
+                                        </select>
+                                        <label class="mb-0">📋 Suggerimenti Rapporto</label>
                                     </div>
                                     <?php endif; ?>
                                 </div>

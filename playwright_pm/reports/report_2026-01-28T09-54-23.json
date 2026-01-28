@@ -1,0 +1,10 @@
+{
+  "timestamp": "28/01/2026, 10:54:23",
+  "checks": [],
+  "summary": {
+    "ok": 0,
+    "warn": 0,
+    "error": 0
+  },
+  "error": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://test-urc.hizuvala.myhostpoint.ch/login/index.php\", waiting until \"load\"\u001b[22m\n"
+}

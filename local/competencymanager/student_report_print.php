@@ -16,6 +16,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+// Include mappatura commenti gap (se non già incluso)
+require_once(__DIR__ . '/gap_comments_mapping.php');
+
 // ============================================
 // FUNZIONI DI RENDERING PER ORDINAMENTO
 // ============================================
@@ -571,6 +574,256 @@ function render_section_spunti($params) {
     <?php
 }
 
+/**
+ * Render sezione Suggerimenti Rapporto (Commenti Gap Automatici)
+ * Genera commenti orientati alle attivita lavorative basati sul gap analysis
+ */
+function render_section_suggerimenti_rapporto($params) {
+    // Debug: verifica se la sezione è abilitata
+    if (empty($params['printSuggerimentiRapporto'])) return;
+
+    // Se mancano i dati gap analysis, mostra messaggio informativo
+    if (empty($params['gapAnalysisData'])) {
+        ?>
+        <div class="section">
+            <div class="section-title purple">📋 SUGGERIMENTI RAPPORTO</div>
+            <div class="alert alert-warning" style="margin: 15px 0; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;">
+                <strong>⚠️ Dati non disponibili</strong><br>
+                Per generare i suggerimenti automatici e necessario:
+                <ul style="margin: 10px 0 0 20px;">
+                    <li>Avere un quiz di autovalutazione completato</li>
+                    <li>Attivare la sezione "Gap Analysis" nelle opzioni</li>
+                </ul>
+            </div>
+        </div>
+        <?php
+        return;
+    }
+
+    $gapAnalysisData = $params['gapAnalysisData'];
+    $areasData = $params['areasData'] ?? [];
+    $autovalutazioneAreas = $params['autovalutazioneAreas'] ?? [];
+    $tono = $params['tonoCommenti'] ?? 'formale';
+    $studentName = $params['studentName'] ?? 'Lo studente';
+    $sogliaAllineato = $params['sogliaAllineamento'] ?? 10;
+    $sogliaMonitorare = $params['sogliaMonitorare'] ?? 25;
+
+    // Genera commenti per ogni area del gap analysis
+    $commentiAree = [];
+
+    foreach ($gapAnalysisData as $gapData) {
+        $idnumber = $gapData['idnumber'] ?? '';
+
+        // Estrai chiave area dall'idnumber (es. AUTOMOBILE_A_1 -> AUTOMOBILE_A)
+        $parts = explode('_', $idnumber);
+        if (count($parts) >= 2) {
+            $areaKey = $parts[0] . '_' . $parts[1];
+        } else {
+            $areaKey = $idnumber;
+        }
+
+        // Genera commento
+        $commento = generate_gap_comment(
+            $areaKey,
+            $gapData['autovalutazione'] ?? 0,
+            $gapData['performance'] ?? 0,
+            $tono,
+            $studentName,
+            $sogliaAllineato,
+            $sogliaMonitorare
+        );
+
+        $commento['competenza_nome'] = $gapData['name'] ?? $areaKey;
+        $commento['idnumber'] = $idnumber;
+        $commentiAree[$areaKey][] = $commento;
+    }
+
+    // Genera riepilogo globale
+    $tuttiCommenti = [];
+    foreach ($commentiAree as $areaCommenti) {
+        foreach ($areaCommenti as $c) {
+            $tuttiCommenti[] = $c;
+        }
+    }
+    $riepilogoGlobale = generate_global_summary($tuttiCommenti, $tono);
+
+    // Conta per tipo
+    $countCritici = count(array_filter($tuttiCommenti, fn($c) => $c['tipo'] === 'sopravvalutazione_critica'));
+    $countMonitorare = count(array_filter($tuttiCommenti, fn($c) => $c['tipo'] === 'sopravvalutazione_lieve'));
+    $countOk = count(array_filter($tuttiCommenti, fn($c) => $c['tipo'] === 'allineato'));
+    $countPotenziale = count(array_filter($tuttiCommenti, fn($c) => $c['tipo'] === 'sottovalutazione'));
+    ?>
+    <div class="section page-break-before">
+        <div class="section-title purple">
+            <?php echo $tono === 'formale' ? '📋' : '💡'; ?>
+            SUGGERIMENTI RAPPORTO
+            <?php if ($tono === 'colloquiale'): ?>
+            <span style="font-size: 10pt; font-weight: normal; color: #666;">(Uso interno coach)</span>
+            <?php else: ?>
+            <span style="font-size: 10pt; font-weight: normal; color: #666;">(Report formale)</span>
+            <?php endif; ?>
+        </div>
+
+        <!-- Riepilogo rapido -->
+        <div style="background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <h4 style="margin: 0 0 10px; color: #34495e;">📊 Riepilogo Analisi Gap</h4>
+            <div class="stats-grid" style="margin-bottom: 10px;">
+                <div class="stat-box red" style="padding: 8px;">
+                    <div class="stat-number" style="color: #dc3545; font-size: 20pt;"><?php echo $countCritici; ?></div>
+                    <div class="stat-label" style="font-size: 8pt;">🔴 Critici</div>
+                </div>
+                <div class="stat-box yellow" style="padding: 8px;">
+                    <div class="stat-number" style="color: #f39c12; font-size: 20pt;"><?php echo $countMonitorare; ?></div>
+                    <div class="stat-label" style="font-size: 8pt;">🟠 Monitorare</div>
+                </div>
+                <div class="stat-box green" style="padding: 8px;">
+                    <div class="stat-number" style="color: #28a745; font-size: 20pt;"><?php echo $countOk; ?></div>
+                    <div class="stat-label" style="font-size: 8pt;">🟢 Allineati</div>
+                </div>
+                <div class="stat-box blue" style="padding: 8px;">
+                    <div class="stat-number" style="color: #17a2b8; font-size: 20pt;"><?php echo $countPotenziale; ?></div>
+                    <div class="stat-label" style="font-size: 8pt;">🔵 Potenziale</div>
+                </div>
+            </div>
+            <p style="margin: 0; font-size: 10pt; color: #495057;"><?php echo $riepilogoGlobale; ?></p>
+        </div>
+
+        <?php
+        // Raggruppa commenti per tipo per visualizzazione ordinata
+        $critici = array_filter($tuttiCommenti, fn($c) => $c['tipo'] === 'sopravvalutazione_critica');
+        $monitorare = array_filter($tuttiCommenti, fn($c) => $c['tipo'] === 'sopravvalutazione_lieve');
+        $allineati = array_filter($tuttiCommenti, fn($c) => $c['tipo'] === 'allineato');
+        $sottovalutati = array_filter($tuttiCommenti, fn($c) => $c['tipo'] === 'sottovalutazione');
+        ?>
+
+        <?php if (!empty($critici)): ?>
+        <!-- SEZIONE CRITICI -->
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #dc3545; border-bottom: 3px solid #dc3545; padding-bottom: 5px; margin-bottom: 15px;">
+                🔴 Aree Critiche - Richiesta Attenzione (<?php echo count($critici); ?>)
+            </h4>
+            <?php foreach ($critici as $c): ?>
+            <div style="background: #fff5f5; border-left: 4px solid #dc3545; padding: 12px 15px; margin-bottom: 10px; border-radius: 0 8px 8px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <strong style="color: #dc3545; font-size: 11pt;"><?php echo htmlspecialchars($c['area_nome'] ?? $c['competenza_nome']); ?></strong>
+                    <span class="badge badge-danger">Gap: <?php echo round($c['gap'], 1); ?>%</span>
+                </div>
+                <p style="margin: 0 0 10px; font-size: 10pt; color: #333;"><?php echo $c['commento']; ?></p>
+                <?php if (!empty($c['attivita_bassa'])): ?>
+                <div style="background: #ffeaea; padding: 8px; border-radius: 4px; font-size: 9pt;">
+                    <strong style="color: #c0392b;">⚠️ Cautele:</strong>
+                    <ul style="margin: 5px 0 0 15px; padding: 0;">
+                        <?php foreach (array_slice($c['attivita_bassa'], 0, 3) as $att): ?>
+                        <li><?php echo htmlspecialchars($att); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($monitorare)): ?>
+        <!-- SEZIONE DA MONITORARE -->
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #f39c12; border-bottom: 3px solid #f39c12; padding-bottom: 5px; margin-bottom: 15px;">
+                🟠 Aree da Monitorare (<?php echo count($monitorare); ?>)
+            </h4>
+            <?php foreach ($monitorare as $c): ?>
+            <div style="background: #fffbf0; border-left: 4px solid #f39c12; padding: 12px 15px; margin-bottom: 10px; border-radius: 0 8px 8px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <strong style="color: #b7950b; font-size: 11pt;"><?php echo htmlspecialchars($c['area_nome'] ?? $c['competenza_nome']); ?></strong>
+                    <span class="badge badge-warning">Gap: <?php echo round($c['gap'], 1); ?>%</span>
+                </div>
+                <p style="margin: 0 0 10px; font-size: 10pt; color: #333;"><?php echo $c['commento']; ?></p>
+                <?php if (!empty($c['attivita_alta'])): ?>
+                <div style="font-size: 9pt; color: #666;">
+                    <strong>Con supervisione:</strong> <?php echo htmlspecialchars(implode(', ', array_slice($c['attivita_alta'], 0, 3))); ?>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($allineati)): ?>
+        <!-- SEZIONE ALLINEATI -->
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #28a745; border-bottom: 3px solid #28a745; padding-bottom: 5px; margin-bottom: 15px;">
+                🟢 Aree Allineate - Buona Consapevolezza (<?php echo count($allineati); ?>)
+            </h4>
+            <table style="width: 100%; font-size: 9pt;">
+                <thead>
+                    <tr>
+                        <th style="background: #d4edda; color: #155724; padding: 8px; text-align: left;">Area</th>
+                        <th style="background: #d4edda; color: #155724; padding: 8px; text-align: center; width: 80px;">Gap</th>
+                        <th style="background: #d4edda; color: #155724; padding: 8px; text-align: left;">Attivita Consentite</th>
+                        <th style="background: #d4edda; color: #155724; padding: 8px; text-align: left;">Ruoli Adatti</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach (array_slice($allineati, 0, 10) as $c): ?>
+                    <tr style="background: #f8fff9;">
+                        <td style="padding: 6px; border-bottom: 1px solid #c3e6cb;">
+                            <strong><?php echo htmlspecialchars($c['area_nome'] ?? $c['competenza_nome']); ?></strong>
+                        </td>
+                        <td style="padding: 6px; border-bottom: 1px solid #c3e6cb; text-align: center;">
+                            <span class="badge badge-success"><?php echo round($c['gap'], 1); ?>%</span>
+                        </td>
+                        <td style="padding: 6px; border-bottom: 1px solid #c3e6cb; font-size: 8pt;">
+                            <?php echo !empty($c['attivita_alta']) ? htmlspecialchars(implode(', ', array_slice($c['attivita_alta'], 0, 2))) : '-'; ?>
+                        </td>
+                        <td style="padding: 6px; border-bottom: 1px solid #c3e6cb; font-size: 8pt;">
+                            <?php echo !empty($c['ruoli_adatti']) ? htmlspecialchars(implode(', ', array_slice($c['ruoli_adatti'], 0, 2))) : '-'; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($sottovalutati)): ?>
+        <!-- SEZIONE SOTTOVALUTATI (Potenziale nascosto) -->
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #17a2b8; border-bottom: 3px solid #17a2b8; padding-bottom: 5px; margin-bottom: 15px;">
+                🔵 Potenziale da Valorizzare - Sottovalutazione (<?php echo count($sottovalutati); ?>)
+            </h4>
+            <?php foreach ($sottovalutati as $c): ?>
+            <div style="background: #f0f9ff; border-left: 4px solid #17a2b8; padding: 12px 15px; margin-bottom: 10px; border-radius: 0 8px 8px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <strong style="color: #138496; font-size: 11pt;"><?php echo htmlspecialchars($c['area_nome'] ?? $c['competenza_nome']); ?></strong>
+                    <span class="badge badge-info">Gap: <?php echo round($c['gap'], 1); ?>%</span>
+                </div>
+                <p style="margin: 0 0 10px; font-size: 10pt; color: #333;"><?php echo $c['commento']; ?></p>
+                <?php if (!empty($c['attivita_alta'])): ?>
+                <div style="background: #e3f4fc; padding: 8px; border-radius: 4px; font-size: 9pt;">
+                    <strong style="color: #0c5460;">✨ Gia pronto per:</strong>
+                    <ul style="margin: 5px 0 0 15px; padding: 0;">
+                        <?php foreach (array_slice($c['attivita_alta'], 0, 3) as $att): ?>
+                        <li><?php echo htmlspecialchars($att); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- Legenda soglie -->
+        <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-size: 8pt; color: #666;">
+            <strong>Soglie configurate:</strong>
+            🟢 Allineato: gap &lt; <?php echo $sogliaAllineato; ?>% |
+            🟠 Monitorare: gap <?php echo $sogliaAllineato; ?>-<?php echo $sogliaMonitorare; ?>% |
+            🔴 Critico: gap &gt; <?php echo $sogliaMonitorare; ?>% |
+            🔵 Sottovalutazione: performance &gt; autovalutazione
+        </div>
+    </div>
+    <?php
+}
+
 // ============================================
 // FINE FUNZIONI DI RENDERING
 // ============================================
@@ -795,6 +1048,7 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
         .section-title.purple { background: linear-gradient(135deg, var(--ftm-red) 0%, var(--ftm-red-dark) 100%); }
         .section-title.pink { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
         .section-title.coral { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: #333; }
+        .section-title.purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
 
         /* ============================================
            EVALUATION BOX
@@ -1185,6 +1439,12 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
         // Nomi quiz per i titoli dei radar
         'selectedQuizNames' => $selectedQuizNames ?? [],
         'autovalutazioneQuizName' => $autovalutazioneQuizName ?? null,
+        // Parametri Suggerimenti Rapporto (Commenti Gap Automatici)
+        'printSuggerimentiRapporto' => $printSuggerimentiRapporto ?? false,
+        'tonoCommenti' => $tonoCommenti ?? 'formale',
+        'sogliaAllineamento' => $sogliaAllineamento ?? 10,
+        'sogliaMonitorare' => $sogliaMonitorare ?? 25,
+        'studentName' => fullname($student),
     ];
 
     // Mappa sezioni -> funzioni di rendering
@@ -1198,6 +1458,7 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
         'dual_radar'     => 'render_section_dual_radar',
         'gap_analysis'   => 'render_section_gap_analysis',
         'spunti'         => 'render_section_spunti',
+        'suggerimenti'   => 'render_section_suggerimenti_rapporto',
     ];
 
     // Render sezioni nell'ordine specificato
