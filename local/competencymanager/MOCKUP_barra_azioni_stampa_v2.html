@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOCKUP V2 - Barra Azioni Stampa Compatta</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --viola-start: #667eea;
+            --viola-end: #764ba2;
+            --blu-primary: #007bff;
+            --verde-success: #28a745;
+            --giallo-warning: #ffc107;
+            --rosso-danger: #dc3545;
+            --grigio-secondary: #6c757d;
+            --cyan-info: #17a2b8;
+            --bg-page: #f4f6f9;
+            --bg-card: #ffffff;
+            --text-dark: #333333;
+            --text-muted: #6c757d;
+            --arancio-folder: #f5a623;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-page);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 30px;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        .mockup-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: var(--rosso-danger);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 1000;
+        }
+
+        h2 {
+            color: var(--viola-start);
+            margin-bottom: 10px;
+            font-size: 1.4rem;
+        }
+
+        .description {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        /* =============================================
+           BARRA AZIONI COMPATTA
+           ============================================= */
+        .actions-bar-compact {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 40px;
+        }
+
+        .actions-row-compact {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .divider {
+            width: 2px;
+            height: 40px;
+            background: #e0e0e0;
+            margin: 0 10px;
+        }
+
+        /* Bottoni */
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .action-btn span.icon { font-size: 18px; }
+
+        .action-btn.btn-success { background: var(--verde-success); color: white; }
+        .action-btn.btn-primary { background: var(--blu-primary); color: white; }
+        .action-btn.btn-secondary { background: var(--grigio-secondary); color: white; }
+        .action-btn.btn-purple { background: linear-gradient(135deg, var(--viola-start), var(--viola-end)); color: white; }
+
+        /* =============================================
+           MODAL STAMPA PERSONALIZZATA
+           ============================================= */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            padding: 20px 25px;
+            background: linear-gradient(135deg, var(--viola-start), var(--viola-end));
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 { margin: 0; font-size: 18px; }
+
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px 25px;
+            overflow-y: auto;
+            max-height: calc(90vh - 140px);
+        }
+
+        .modal-footer {
+            padding: 15px 25px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Preset rapidi */
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .preset-btn {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--viola-start);
+            background: #f8f9ff;
+        }
+
+        .preset-btn.active {
+            border-color: var(--viola-start);
+            background: var(--viola-start);
+            color: white;
+        }
+
+        /* =============================================
+           SEZIONI COLLASSABILI
+           ============================================= */
+        .print-section {
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .print-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .print-section-header:hover {
+            background: #e9ecef;
+        }
+
+        .print-section-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .print-section-title .badge {
+            background: var(--viola-start);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .collapse-icon {
+            font-size: 14px;
+            color: var(--text-muted);
+            transition: transform 0.3s;
+        }
+
+        .print-section.collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .print-section-content {
+            padding: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .print-section.collapsed .print-section-content {
+            display: none;
+        }
+
+        /* =============================================
+           OPZIONI DI STAMPA CON ORDINE
+           ============================================= */
+        .print-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .print-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .print-option:hover {
+            border-color: var(--viola-start);
+            background: #f8f9ff;
+        }
+
+        .print-option.selected {
+            border-color: var(--viola-start);
+            background: rgba(102, 126, 234, 0.08);
+        }
+
+        .print-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Checkbox */
+        .print-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--viola-start);
+            flex-shrink: 0;
+        }
+
+        /* Ordine di stampa */
+        .print-order {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .print-order-input {
+            width: 45px;
+            height: 32px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--viola-start);
+            transition: all 0.2s;
+        }
+
+        .print-order-input:focus {
+            border-color: var(--viola-start);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .print-order-input:disabled {
+            background: #f0f0f0;
+            color: #ccc;
+            border-color: #e0e0e0;
+        }
+
+        .print-order-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Contenuto opzione */
+        .print-option-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .print-option-label {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-dark);
+        }
+
+        .print-option-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* =============================================
+           OPZIONI AGGIUNTIVE
+           ============================================= */
+        .additional-options {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        .additional-options-title {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 12px;
+            color: var(--text-dark);
+        }
+
+        .additional-options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .additional-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .additional-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--viola-start);
+        }
+
+        /* =============================================
+           BOTTONI FOOTER
+           ============================================= */
+        .modal-btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .modal-btn.btn-cancel {
+            background: #e0e0e0;
+            color: var(--text-dark);
+        }
+
+        .modal-btn.btn-save {
+            background: var(--blu-primary);
+            color: white;
+        }
+
+        .modal-btn.btn-print {
+            background: var(--verde-success);
+            color: white;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .footer-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* =============================================
+           INFO BOX
+           ============================================= */
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            color: #1565c0;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .info-box .icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .actions-row-compact { flex-direction: column; }
+            .action-btn { width: 100%; justify-content: center; }
+            .divider { display: none; }
+            .print-option { flex-wrap: wrap; }
+            .print-order { width: 100%; justify-content: flex-end; margin-top: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="mockup-badge">MOCKUP V2 - Stampa Compatta + Ordine</div>
+
+    <div class="container">
+
+        <h2>Barra Azioni Compatta</h2>
+        <p class="description">
+            Layout compatto con separatori visivi. Clicca su "Personalizzata" per vedere il modal con ordine e sezioni collassabili.
+        </p>
+
+        <!-- =============================================
+             BARRA AZIONI COMPATTA
+             ============================================= -->
+        <div class="actions-bar-compact">
+            <div class="actions-row-compact">
+                <button class="action-btn btn-success" onclick="alert('Stampa Standard avviata')">
+                    <span class="icon">&#128424;</span>
+                    Standard
+                </button>
+
+                <button class="action-btn btn-primary" onclick="alert('Stampa Completa avviata')">
+                    <span class="icon">&#128203;</span>
+                    Completa
+                </button>
+
+                <button class="action-btn btn-purple" onclick="openPrintModal()">
+                    <span class="icon">&#9881;</span>
+                    Personalizzata
+                </button>
+
+                <div class="divider"></div>
+
+                <button class="action-btn btn-secondary">
+                    <span class="icon">&#128269;</span>
+                    Vista Completa
+                </button>
+            </div>
+        </div>
+
+        <p style="text-align: center; color: var(--verde-success); font-size: 14px; margin-bottom: 30px;">
+            &#9650; Clicca su <strong>"Personalizzata"</strong> per vedere il modal con tutte le opzioni &#9650;
+        </p>
+
+    </div>
+
+    <!-- =============================================
+         MODAL STAMPA PERSONALIZZATA
+         ============================================= -->
+    <div class="modal-overlay" id="printModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>&#9881; Stampa Personalizzata</h3>
+                <button class="modal-close" onclick="closePrintModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+
+                <!-- Info Box -->
+                <div class="info-box">
+                    <span class="icon">&#128161;</span>
+                    <div>
+                        <strong>Ordine di stampa:</strong> Usa i numeri per definire l'ordine delle sezioni nel PDF.
+                        Le sezioni deselezionate non verranno stampate.
+                    </div>
+                </div>
+
+                <!-- Preset Rapidi -->
+                <div class="preset-buttons">
+                    <span style="color: var(--text-muted); font-size: 13px; margin-right: 5px;">Preset:</span>
+                    <button class="preset-btn active" onclick="applyPreset('standard', this)">Standard</button>
+                    <button class="preset-btn" onclick="applyPreset('complete', this)">Completa</button>
+                    <button class="preset-btn" onclick="applyPreset('minimal', this)">Minimale</button>
+                    <button class="preset-btn" onclick="applyPreset('none', this)">Deseleziona</button>
+                </div>
+
+                <!-- =============================================
+                     SEZIONE: BASE
+                     ============================================= -->
+                <div class="print-section" id="section-base">
+                    <div class="print-section-header" onclick="toggleSection('section-base')">
+                        <div class="print-section-title">
+                            &#128196; Sezioni Base
+                        </div>
+                        <span class="collapse-icon">&#9660;</span>
+                    </div>
+                    <div class="print-section-content">
+                        <div class="print-options">
+                            <label class="print-option selected">
+                                <input type="checkbox" checked onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#128100; Header Studente</div>
+                                    <div class="print-option-desc">Nome, email, corso, punteggio globale</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="1" min="1" max="20">
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+
+                            <label class="print-option selected">
+                                <input type="checkbox" checked onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#128994; Box Valutazione</div>
+                                    <div class="print-option-desc">CRITICO / SUFFICIENTE / BUONO / ECCELLENTE</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="2" min="1" max="20">
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =============================================
+                     SEZIONE: GRAFICI E RADAR
+                     ============================================= -->
+                <div class="print-section" id="section-grafici">
+                    <div class="print-section-header" onclick="toggleSection('section-grafici')">
+                        <div class="print-section-title">
+                            &#128202; Grafici e Radar
+                        </div>
+                        <span class="collapse-icon">&#9660;</span>
+                    </div>
+                    <div class="print-section-content">
+                        <div class="print-options">
+                            <label class="print-option selected">
+                                <input type="checkbox" checked onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#128202; Radar Aree di Competenza</div>
+                                    <div class="print-option-desc">Grafico radar principale con tutte le aree</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="3" min="1" max="20">
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+
+                            <label class="print-option">
+                                <input type="checkbox" onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#127919; Dual Radar Confronto</div>
+                                    <div class="print-option-desc">Quiz vs Autovalutazione affiancati</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="7" min="1" max="20" disabled>
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =============================================
+                     SEZIONE: TABELLE E ANALISI
+                     ============================================= -->
+                <div class="print-section" id="section-tabelle">
+                    <div class="print-section-header" onclick="toggleSection('section-tabelle')">
+                        <div class="print-section-title">
+                            &#128203; Tabelle e Analisi
+                        </div>
+                        <span class="collapse-icon">&#9660;</span>
+                    </div>
+                    <div class="print-section-content">
+                        <div class="print-options">
+                            <label class="print-option selected">
+                                <input type="checkbox" checked onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#128193; Tabella Legenda Aree</div>
+                                    <div class="print-option-desc">Area / Auto / Reale / Gap</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="4" min="1" max="20">
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+
+                            <label class="print-option">
+                                <input type="checkbox" onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#128200; Gap Analysis Dettagliata</div>
+                                    <div class="print-option-desc">Analisi scostamenti Auto vs Reale per area</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="8" min="1" max="20" disabled>
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+
+                            <label class="print-option">
+                                <input type="checkbox" onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#128203; Dettaglio Competenze</div>
+                                    <div class="print-option-desc">Lista completa competenze per ogni area</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="9" min="1" max="20" disabled>
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+
+                            <label class="print-option">
+                                <input type="checkbox" onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#128200; Progressi nel Tempo</div>
+                                    <div class="print-option-desc">Grafico evoluzione punteggi</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="10" min="1" max="20" disabled>
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =============================================
+                     SEZIONE: PIANO E AZIONI
+                     ============================================= -->
+                <div class="print-section" id="section-piano">
+                    <div class="print-section-header" onclick="toggleSection('section-piano')">
+                        <div class="print-section-title">
+                            &#128218; Piano e Azioni
+                        </div>
+                        <span class="collapse-icon">&#9660;</span>
+                    </div>
+                    <div class="print-section-content">
+                        <div class="print-options">
+                            <label class="print-option">
+                                <input type="checkbox" onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#128218; Piano Azioni Formativo</div>
+                                    <div class="print-option-desc">Azioni consigliate per ogni area critica</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="11" min="1" max="20" disabled>
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+
+                            <label class="print-option">
+                                <input type="checkbox" onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#128221; Riepilogo Quiz Completati</div>
+                                    <div class="print-option-desc">Lista quiz con punteggi e date</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="12" min="1" max="20" disabled>
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =============================================
+                     SEZIONE: COACH (CoachManager)
+                     ============================================= -->
+                <div class="print-section" id="section-coach">
+                    <div class="print-section-header" onclick="toggleSection('section-coach')">
+                        <div class="print-section-title">
+                            &#128172; Sezioni Coach
+                            <span class="badge">CoachManager</span>
+                        </div>
+                        <span class="collapse-icon">&#9660;</span>
+                    </div>
+                    <div class="print-section-content">
+                        <div class="print-options">
+                            <label class="print-option selected">
+                                <input type="checkbox" checked onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#128161; Suggerimenti Rapporto</div>
+                                    <div class="print-option-desc">Commenti automatici basati sui gap per il colloquio</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="5" min="1" max="20">
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+
+                            <label class="print-option">
+                                <input type="checkbox" onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#128172; Spunti Colloquio</div>
+                                    <div class="print-option-desc">Domande suggerite da porre allo studente</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="6" min="1" max="20" disabled>
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+
+                            <label class="print-option">
+                                <input type="checkbox" onchange="toggleOption(this)">
+                                <div class="print-option-content">
+                                    <div class="print-option-label">&#128221; Note Coach</div>
+                                    <div class="print-option-desc">Spazio per annotazioni manuali</div>
+                                </div>
+                                <div class="print-order">
+                                    <input type="number" class="print-order-input" value="13" min="1" max="20" disabled>
+                                    <span class="print-order-label">ordine</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =============================================
+                     OPZIONI AGGIUNTIVE
+                     ============================================= -->
+                <div class="additional-options">
+                    <div class="additional-options-title">&#9881; Opzioni Formato</div>
+                    <div class="additional-options-grid">
+                        <label class="additional-option">
+                            <input type="checkbox" checked>
+                            <span>Includi data e ora stampa</span>
+                        </label>
+                        <label class="additional-option">
+                            <input type="checkbox" checked>
+                            <span>Includi logo istituto</span>
+                        </label>
+                        <label class="additional-option">
+                            <input type="checkbox">
+                            <span>Formato landscape</span>
+                        </label>
+                        <label class="additional-option">
+                            <input type="checkbox">
+                            <span>Numeri di pagina</span>
+                        </label>
+                        <label class="additional-option">
+                            <input type="checkbox">
+                            <span>Intestazione su ogni pagina</span>
+                        </label>
+                        <label class="additional-option">
+                            <input type="checkbox">
+                            <span>Scala di grigi (risparmio ink)</span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-cancel" onclick="closePrintModal()">Annulla</button>
+                <div class="footer-buttons">
+                    <button class="modal-btn btn-save">&#128190; Salva Preset</button>
+                    <button class="modal-btn btn-print">&#128424; Genera Stampa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openPrintModal() {
+            document.getElementById('printModal').classList.add('active');
+        }
+
+        function closePrintModal() {
+            document.getElementById('printModal').classList.remove('active');
+        }
+
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            section.classList.toggle('collapsed');
+        }
+
+        function toggleOption(checkbox) {
+            const option = checkbox.closest('.print-option');
+            const orderInput = option.querySelector('.print-order-input');
+
+            if (checkbox.checked) {
+                option.classList.add('selected');
+                orderInput.disabled = false;
+            } else {
+                option.classList.remove('selected');
+                orderInput.disabled = true;
+            }
+        }
+
+        function applyPreset(preset, button) {
+            const allOptions = document.querySelectorAll('.print-option');
+            const checkboxes = document.querySelectorAll('.print-option input[type="checkbox"]');
+
+            // Reset
+            allOptions.forEach(opt => opt.classList.remove('selected'));
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+                const orderInput = cb.closest('.print-option').querySelector('.print-order-input');
+                if (orderInput) orderInput.disabled = true;
+            });
+
+            // Apply preset
+            let indices = [];
+            if (preset === 'standard') {
+                indices = [0, 1, 2, 4, 8]; // Header, Valutazione, Radar, Tabella, Suggerimenti
+            } else if (preset === 'complete') {
+                indices = Array.from({length: checkboxes.length}, (_, i) => i); // Tutti
+            } else if (preset === 'minimal') {
+                indices = [0, 1]; // Solo Header e Valutazione
+            }
+
+            indices.forEach(i => {
+                if (checkboxes[i]) {
+                    checkboxes[i].checked = true;
+                    allOptions[i].classList.add('selected');
+                    const orderInput = allOptions[i].querySelector('.print-order-input');
+                    if (orderInput) orderInput.disabled = false;
+                }
+            });
+
+            // Update active button
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            if (button) button.classList.add('active');
+        }
+
+        // Close modal on overlay click
+        document.getElementById('printModal').addEventListener('click', function(e) {
+            if (e.target === this) closePrintModal();
+        });
+
+        // Close modal on Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closePrintModal();
+        });
+    </script>
+</body>
+</html>

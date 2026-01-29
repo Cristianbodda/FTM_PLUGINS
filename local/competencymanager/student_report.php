@@ -952,6 +952,15 @@ if ($print) {
 // OUTPUT NORMALE
 // ========================================
 echo $OUTPUT->header();
+
+// ========================================
+// NAVIGATION BAR (Coach Friendly)
+// ========================================
+$nav_studentid = $userid;
+$nav_studentname = fullname($student);
+$nav_courseid = $courseid;
+$nav_current = 'quiz';
+include(__DIR__ . '/../coachmanager/coach_navigation.php');
 ?>
 
 <style>

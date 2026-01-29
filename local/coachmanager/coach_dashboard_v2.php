@@ -2602,9 +2602,13 @@ function render_view_standard($students, $dashboard) {
 
                     <!-- Card Footer -->
                     <div class="student-card-footer">
+                        <button class="btn btn-info btn-sm"
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_student_view.php?studentid=<?php echo $student->id; ?>'">
+                            &#128203; Profilo Semplice
+                        </button>
                         <button class="btn btn-secondary btn-sm"
                                 onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>'">
-                            &#128202; Report
+                            &#128202; Report Avanzato
                         </button>
                         <?php if ($is_end6): ?>
                         <button class="btn btn-warning btn-sm"
@@ -2804,9 +2808,13 @@ function render_view_dettagliata($students, $dashboard) {
 
                 <!-- Panel Footer -->
                 <div class="panel-footer">
+                    <button class="btn btn-info"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_student_view.php?studentid=<?php echo $student->id; ?>'">
+                        &#128203; Profilo Semplice
+                    </button>
                     <button class="btn btn-secondary"
                             onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>'">
-                        &#128202; Report Dettagliato
+                        &#128202; Report Avanzato
                     </button>
                     <button class="btn btn-primary"
                             onclick="location.href='reports_v2.php?studentid=<?php echo $student->id; ?>'">
@@ -2942,6 +2950,10 @@ function render_view_classica($students, $dashboard) {
                     </div>
 
                     <div class="student-card-footer">
+                        <button class="btn btn-info btn-sm"
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_student_view.php?studentid=<?php echo $student->id; ?>'">
+                            &#128203; Profilo
+                        </button>
                         <button class="btn btn-secondary btn-sm"
                                 onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>'">
                             Report

@@ -27,15 +27,164 @@ $PAGE->set_heading('Quiz Competencies Editor');
 $PAGE->set_pagelayout('admin');
 
 // Parametri
-$quizid = required_param('quizid', PARAM_INT);
+$quizid = optional_param('quizid', 0, PARAM_INT);
 $action = optional_param('fts_action', '', PARAM_ALPHA);
 $frameworkid = optional_param('fts_frameworkid', 0, PARAM_INT);
 $export_format = optional_param('export', '', PARAM_ALPHA);
+$search = optional_param('search', '', PARAM_TEXT);
 
 global $DB, $CFG;
 
-// Carica info quiz
-$quiz = $DB->get_record('quiz', ['id' => $quizid], '*', MUST_EXIST);
+// ============================================================================
+// SE NON C'E' QUIZID, MOSTRA PAGINA SELEZIONE QUIZ
+// ============================================================================
+if ($quizid == 0) {
+    echo $OUTPUT->header();
+
+    // Cerca quiz
+    $search_sql = '';
+    $search_params = [];
+    if (!empty($search)) {
+        $search_sql = " AND (q.name LIKE ? OR c.shortname LIKE ? OR c.fullname LIKE ?)";
+        $search_params = ["%{$search}%", "%{$search}%", "%{$search}%"];
+    }
+
+    $quizzes = $DB->get_records_sql("
+        SELECT q.id, q.name, q.timeopen, q.timeclose,
+               c.id as courseid, c.shortname, c.fullname,
+               (SELECT COUNT(*) FROM {quiz_slots} qs WHERE qs.quizid = q.id) as question_count,
+               (SELECT COUNT(*) FROM {quiz_slots} qs2
+                JOIN {question_references} qr ON qr.itemid = qs2.id AND qr.component = 'mod_quiz'
+                JOIN {question_bank_entries} qbe ON qbe.id = qr.questionbankentryid
+                JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
+                LEFT JOIN {qbank_competenciesbyquestion} qc ON qc.questionid = qv.questionid
+                WHERE qs2.quizid = q.id AND qc.id IS NULL) as orphan_count
+        FROM {quiz} q
+        JOIN {course} c ON c.id = q.course
+        WHERE 1=1 {$search_sql}
+        ORDER BY c.shortname, q.name
+    ", $search_params);
+
+    ?>
+    <style>
+    .quiz-selector { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .quiz-header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 25px; border-radius: 12px; margin-bottom: 25px; }
+    .quiz-header h2 { margin: 0 0 10px 0; }
+    .search-box { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .search-box input[type="text"] { width: 300px; padding: 10px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; }
+    .search-box button { padding: 10px 25px; background: #1e3c72; color: white; border: none; border-radius: 8px; cursor: pointer; margin-left: 10px; }
+    .quiz-table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .quiz-table th { background: #34495e; color: white; padding: 15px; text-align: left; font-weight: 600; }
+    .quiz-table td { padding: 12px 15px; border-bottom: 1px solid #eee; }
+    .quiz-table tr:hover { background: #f8f9fa; }
+    .quiz-table tr:last-child td { border-bottom: none; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-success { background: #d4edda; color: #155724; }
+    .badge-danger { background: #f8d7da; color: #721c24; }
+    .badge-info { background: #cce5ff; color: #004085; }
+    .btn-edit { display: inline-block; padding: 8px 16px; background: #28a745; color: white; text-decoration: none; border-radius: 6px; font-size: 13px; }
+    .btn-edit:hover { background: #218838; color: white; text-decoration: none; }
+    .stats-row { display: flex; gap: 20px; margin-bottom: 25px; }
+    .stat-card { flex: 1; background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .stat-card .number { font-size: 36px; font-weight: 700; color: #1e3c72; }
+    .stat-card .label { font-size: 13px; color: #666; margin-top: 5px; }
+    </style>
+
+    <div class="quiz-selector">
+        <div class="quiz-header">
+            <h2>Quiz Competencies Editor</h2>
+            <p>Seleziona un quiz per visualizzare e modificare le domande e le competenze associate.</p>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="number"><?php echo count($quizzes); ?></div>
+                <div class="label">Quiz Totali</div>
+            </div>
+            <div class="stat-card">
+                <div class="number"><?php echo array_sum(array_column($quizzes, 'question_count')); ?></div>
+                <div class="label">Domande Totali</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" style="color: #dc3545;"><?php echo array_sum(array_column($quizzes, 'orphan_count')); ?></div>
+                <div class="label">Senza Competenza</div>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <form method="get" action="">
+                <input type="text" name="search" value="<?php echo s($search); ?>" placeholder="Cerca quiz per nome o corso...">
+                <button type="submit">Cerca</button>
+                <?php if (!empty($search)): ?>
+                    <a href="?" style="margin-left: 10px; color: #666;">Mostra tutti</a>
+                <?php endif; ?>
+            </form>
+        </div>
+
+        <table class="quiz-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome Quiz</th>
+                    <th>Corso</th>
+                    <th>Domande</th>
+                    <th>Senza Competenza</th>
+                    <th>Azione</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($quizzes as $q): ?>
+                <tr>
+                    <td><strong><?php echo $q->id; ?></strong></td>
+                    <td><?php echo format_string($q->name); ?></td>
+                    <td>
+                        <span class="badge badge-info"><?php echo $q->shortname; ?></span>
+                    </td>
+                    <td>
+                        <span class="badge badge-success"><?php echo $q->question_count; ?></span>
+                    </td>
+                    <td>
+                        <?php if ($q->orphan_count > 0): ?>
+                            <span class="badge badge-danger"><?php echo $q->orphan_count; ?> orfane</span>
+                        <?php else: ?>
+                            <span class="badge badge-success">OK</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <a href="?quizid=<?php echo $q->id; ?>" class="btn-edit">Apri Editor</a>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                <?php if (empty($quizzes)): ?>
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 30px; color: #666;">
+                        Nessun quiz trovato<?php echo !empty($search) ? ' per "' . s($search) . '"' : ''; ?>
+                    </td>
+                </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <?php
+    echo $OUTPUT->footer();
+    die();
+}
+
+// ============================================================================
+// CARICA QUIZ SELEZIONATO
+// ============================================================================
+$quiz = $DB->get_record('quiz', ['id' => $quizid]);
+if (!$quiz) {
+    echo $OUTPUT->header();
+    echo '<div class="alert alert-danger" style="max-width: 600px; margin: 50px auto; padding: 20px; border-radius: 10px;">';
+    echo '<h4>Quiz non trovato</h4>';
+    echo '<p>Il quiz con ID <strong>' . $quizid . '</strong> non esiste nel database.</p>';
+    echo '<p><a href="?" class="btn btn-primary">Torna alla lista quiz</a></p>';
+    echo '</div>';
+    echo $OUTPUT->footer();
+    die();
+}
 $course = $DB->get_record('course', ['id' => $quiz->course], '*', MUST_EXIST);
 
 // Nome file per export (nome quiz pulito + data)
@@ -119,7 +268,7 @@ $questions_with_answers = [];
 foreach ($questions as $q) {
     $q->answers = [];
     $q->suggested_competency = null;
-    
+
     // Estrai competenza suggerita dal nome
     if (preg_match('/([A-Z]+_[A-Z]+_[A-Z0-9]+)\s*$/', $q->questionname, $matches)) {
         $suggested_idnumber = strtoupper($matches[1]);
@@ -127,19 +276,23 @@ foreach ($questions as $q) {
             $q->suggested_competency = $competencies_by_idnumber[$suggested_idnumber];
         }
     }
-    
-    // Carica risposte in base al tipo
+
+    // Carica risposte in base al tipo (con ID per permettere modifica)
     if ($q->qtype === 'multichoice' || $q->qtype === 'truefalse') {
         $answers = $DB->get_records('question_answers', ['question' => $q->questionid], 'id ASC');
+        $idx = 0;
         foreach ($answers as $ans) {
             $q->answers[] = (object)[
+                'id' => $ans->id,
+                'index' => $idx,
                 'text' => strip_tags($ans->answer),
                 'fraction' => $ans->fraction,
                 'is_correct' => ($ans->fraction > 0)
             ];
+            $idx++;
         }
     }
-    
+
     $questions_with_answers[$q->questionid] = $q;
 }
 
@@ -150,20 +303,23 @@ $messagetype = '';
 // GESTIONE AZIONI
 // ============================================================================
 
-// Salvataggio competenze
+// Salvataggio competenze E risposte corrette
 if ($action === 'save' && confirm_sesskey()) {
     $new_competencies = optional_param_array('fts_comp', [], PARAM_INT);
+    $new_correct_answers = optional_param_array('fts_correct', [], PARAM_INT);
     $saved = 0;
     $updated = 0;
     $removed = 0;
-    
+    $answers_changed = 0;
+
+    // Salva competenze
     foreach ($new_competencies as $questionid => $new_compid) {
         $questionid = (int)$questionid;
         $new_compid = (int)$new_compid;
-        
+
         // Trova competenza attuale
         $current = $DB->get_record('qbank_competenciesbyquestion', ['questionid' => $questionid]);
-        
+
         if ($new_compid > 0) {
             if ($current) {
                 if ($current->competencyid != $new_compid) {
@@ -191,10 +347,40 @@ if ($action === 'save' && confirm_sesskey()) {
             }
         }
     }
-    
-    $message = "✅ Salvato! {$saved} nuove assegnazioni, {$updated} aggiornate, {$removed} rimosse.";
+
+    // Salva risposte corrette
+    foreach ($new_correct_answers as $questionid => $correct_answer_id) {
+        $questionid = (int)$questionid;
+        $correct_answer_id = (int)$correct_answer_id;
+
+        if ($correct_answer_id > 0) {
+            // Ottieni tutte le risposte della domanda
+            $all_answers = $DB->get_records('question_answers', ['question' => $questionid]);
+
+            $changed = false;
+            foreach ($all_answers as $ans) {
+                $new_fraction = ($ans->id == $correct_answer_id) ? 1.0 : 0.0;
+
+                // Controlla se c'e' un cambiamento
+                if (abs($ans->fraction - $new_fraction) > 0.001) {
+                    $ans->fraction = $new_fraction;
+                    $DB->update_record('question_answers', $ans);
+                    $changed = true;
+                }
+            }
+
+            if ($changed) {
+                $answers_changed++;
+            }
+        }
+    }
+
+    $message = "Salvato! Competenze: {$saved} nuove, {$updated} aggiornate, {$removed} rimosse.";
+    if ($answers_changed > 0) {
+        $message .= " Risposte corrette modificate: {$answers_changed}";
+    }
     $messagetype = 'success';
-    
+
     // Ricarica dati
     redirect(new moodle_url('/local/ftm_testsuite/quiz_competencies_editor.php', [
         'quizid' => $quizid,
@@ -562,12 +748,22 @@ echo $OUTPUT->header();
     border-radius: 8px;
     background: #f8f9fa;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 10px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+.answer-item:hover {
+    background: #e9ecef;
+    border-color: #1e3c72;
 }
 .answer-item.correct {
     background: #d4edda;
     border: 2px solid #28a745;
+}
+.answer-item input[type="radio"] {
+    accent-color: #28a745;
 }
 .answer-item .letter {
     min-width: 28px;
@@ -725,23 +921,34 @@ echo $OUTPUT->header();
                     <?php echo strip_tags($q->questiontext); ?>
                 </div>
                 
-                <!-- Risposte -->
+                <!-- Risposte con selezione risposta corretta -->
                 <?php if (!empty($q->answers)): ?>
-                <div class="answers-grid">
-                    <?php 
-                    $letters = ['A', 'B', 'C', 'D', 'E', 'F'];
-                    foreach ($q->answers as $idx => $ans): 
-                    ?>
-                    <div class="answer-item <?php echo $ans->is_correct ? 'correct' : ''; ?>">
-                        <div class="letter"><?php echo $letters[$idx] ?? '?'; ?></div>
-                        <div class="text">
-                            <?php echo $ans->text; ?>
-                            <?php if ($ans->is_correct): ?>
-                            <strong style="color: #28a745;"> ✓ CORRETTA</strong>
-                            <?php endif; ?>
-                        </div>
+                <div class="answers-section">
+                    <div class="answers-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <strong style="font-size: 13px; color: #666;">Risposte (seleziona quella corretta):</strong>
                     </div>
-                    <?php endforeach; ?>
+                    <div class="answers-grid">
+                        <?php
+                        $letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+                        foreach ($q->answers as $idx => $ans):
+                        ?>
+                        <label class="answer-item <?php echo $ans->is_correct ? 'correct' : ''; ?>" style="cursor: pointer;">
+                            <input type="radio"
+                                   name="fts_correct[<?php echo $q->questionid; ?>]"
+                                   value="<?php echo $ans->id; ?>"
+                                   <?php echo $ans->is_correct ? 'checked' : ''; ?>
+                                   style="margin-right: 8px; transform: scale(1.3);"
+                                   onchange="this.closest('.answers-grid').querySelectorAll('.answer-item').forEach(el => el.classList.remove('correct')); this.closest('.answer-item').classList.add('correct');">
+                            <div class="letter"><?php echo $letters[$idx] ?? '?'; ?></div>
+                            <div class="text">
+                                <?php echo $ans->text; ?>
+                                <?php if ($ans->is_correct): ?>
+                                <strong style="color: #28a745;"> (attuale)</strong>
+                                <?php endif; ?>
+                            </div>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
                 <?php endif; ?>
                 
@@ -795,21 +1002,22 @@ echo $OUTPUT->header();
         </div>
         <?php endforeach; ?>
         
-        <!-- Save Button -->
-        <?php if ($frameworkid > 0): ?>
-        <div style="position: sticky; bottom: 20px; text-align: center; padding: 20px;">
-            <button type="submit" class="btn btn-primary" style="padding: 15px 40px; font-size: 16px;">
-                💾 Salva Tutte le Modifiche
+        <!-- Save Button (sempre visibile per salvare risposte corrette) -->
+        <div style="position: sticky; bottom: 20px; text-align: center; padding: 20px; background: rgba(255,255,255,0.95); border-radius: 12px; box-shadow: 0 -4px 20px rgba(0,0,0,0.1);">
+            <button type="submit" class="btn btn-primary" style="padding: 15px 40px; font-size: 16px; background: #28a745;">
+                💾 Salva Tutte le Modifiche (Competenze + Risposte Corrette)
             </button>
+            <p style="margin: 10px 0 0; font-size: 12px; color: #666;">
+                Puoi modificare le risposte corrette anche senza selezionare un framework competenze
+            </p>
         </div>
-        <?php endif; ?>
         
     </form>
     
     <!-- Link -->
     <div style="text-align: center; margin-top: 25px; padding-bottom: 80px;">
-        <a href="fix_orphan_questions.php" class="btn btn-secondary">← Torna a Domande Orfane</a>
-        <a href="run.php" class="btn btn-secondary" style="margin-left: 10px;">▶️ Esegui Test</a>
+        <a href="quiz_competencies_editor.php" class="btn btn-secondary">← Torna alla Lista Quiz</a>
+        <a href="index.php" class="btn btn-secondary" style="margin-left: 10px;">🏠 FTM Test Suite</a>
     </div>
     
 </div>

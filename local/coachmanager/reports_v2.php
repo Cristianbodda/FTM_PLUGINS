@@ -22,7 +22,7 @@ $print_sector = optional_param('print_sector', 'all', PARAM_ALPHANUMEXT); // Set
 // Richiede login e capability
 require_login();
 $context = context_system::instance();
-require_capability('local/coachmanager:viewreports', $context);
+require_capability('local/coachmanager:view', $context);
 
 // ============================================
 // SELETTORE STUDENTE (se studentid non passato)

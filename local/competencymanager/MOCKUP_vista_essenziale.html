@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOCKUP - Vista Essenziale Report Studente</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f4f6f9;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* =============================================
+           NAVBAR VIOLA (coach_navigation.php)
+           ============================================= */
+        .coach-nav-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 0;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            overflow: hidden;
+        }
+
+        .coach-nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .coach-nav-student {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .coach-nav-student-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+
+        .coach-nav-student-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .coach-nav-student-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+        }
+
+        .coach-nav-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .coach-nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .coach-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .coach-nav-btn.active {
+            background: white;
+            color: #667eea;
+        }
+
+        /* =============================================
+           HEADER STUDENTE (esistente)
+           ============================================= */
+        .student-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .student-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .student-avatar {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .student-details h2 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .student-details p {
+            opacity: 0.85;
+            font-size: 14px;
+            margin: 2px 0;
+        }
+
+        .student-score {
+            text-align: right;
+        }
+
+        .student-score .score-number {
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .student-score .score-label {
+            opacity: 0.85;
+            font-size: 14px;
+        }
+
+        /* =============================================
+           BOX VALUTAZIONE (esistente)
+           ============================================= */
+        .evaluation-box {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 25px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 5px solid #28a745;
+        }
+
+        .evaluation-box.critical { border-left-color: #dc3545; }
+        .evaluation-box.warning { border-left-color: #ffc107; }
+        .evaluation-box.good { border-left-color: #28a745; }
+        .evaluation-box.excellent { border-left-color: #17a2b8; }
+
+        .evaluation-icon {
+            font-size: 48px;
+            line-height: 1;
+        }
+
+        .evaluation-content {
+            flex: 1;
+        }
+
+        .evaluation-content h4 {
+            color: #28a745;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .evaluation-box.critical .evaluation-content h4 { color: #dc3545; }
+        .evaluation-box.warning .evaluation-content h4 { color: #d39e00; }
+        .evaluation-box.good .evaluation-content h4 { color: #28a745; }
+        .evaluation-box.excellent .evaluation-content h4 { color: #17a2b8; }
+
+        .evaluation-content p {
+            color: #666;
+            font-size: 14px;
+            margin: 3px 0;
+        }
+
+        .evaluation-stats {
+            text-align: center;
+            padding: 15px 25px;
+            background: #d4edda;
+            border-radius: 10px;
+        }
+
+        .evaluation-box.critical .evaluation-stats { background: #f8d7da; }
+        .evaluation-box.warning .evaluation-stats { background: #fff3cd; }
+        .evaluation-box.good .evaluation-stats { background: #d4edda; }
+        .evaluation-box.excellent .evaluation-stats { background: #d1ecf1; }
+
+        .evaluation-stats .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #28a745;
+        }
+
+        .evaluation-box.critical .evaluation-stats .stat-number { color: #dc3545; }
+        .evaluation-box.warning .evaluation-stats .stat-number { color: #d39e00; }
+        .evaluation-box.good .evaluation-stats .stat-number { color: #28a745; }
+        .evaluation-box.excellent .evaluation-stats .stat-number { color: #17a2b8; }
+
+        .evaluation-stats small {
+            color: #666;
+            font-size: 12px;
+        }
+
+        /* =============================================
+           CARD GENERICA
+           ============================================= */
+        .card {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 15px 20px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header.bg-primary {
+            background: #007bff;
+        }
+
+        .card-header.bg-purple {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-header.bg-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .card-header h5 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-header .options-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .card-header .options-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        /* =============================================
+           RADAR PLACEHOLDER
+           ============================================= */
+        .radar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 350px;
+            position: relative;
+        }
+
+        .radar-placeholder {
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e8f4fc 0%, #f0f4f8 100%);
+            border: 3px dashed #007bff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #007bff;
+        }
+
+        .radar-placeholder span {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .radar-placeholder p {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* Area summary sotto il radar */
+        .area-summary {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .area-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .area-item .area-letter {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 14px;
+        }
+
+        .area-item .area-name {
+            flex: 1;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .area-item .area-score {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .area-item .area-bar {
+            width: 60px;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .area-item .area-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+
+        /* =============================================
+           DUAL RADAR (Confronto)
+           ============================================= */
+        .dual-radar-container {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .dual-radar-side {
+            text-align: center;
+        }
+
+        .dual-radar-side h6 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .dual-radar-placeholder {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dual-radar-placeholder.quiz {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 3px dashed #2196f3;
+            color: #2196f3;
+        }
+
+        .dual-radar-placeholder.autoval {
+            background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+            border: 3px dashed #9c27b0;
+            color: #9c27b0;
+        }
+
+        .dual-radar-placeholder span {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+
+        .dual-radar-placeholder p {
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .vs-divider {
+            font-size: 24px;
+            font-weight: 700;
+            color: #999;
+            padding: 0 10px;
+        }
+
+        /* =============================================
+           WARNING BOX (Autovalutazione mancante)
+           ============================================= */
+        .warning-box {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .warning-box .warning-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+
+        .warning-box h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .warning-box p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .warning-box .btn-warning {
+            background: #ffc107;
+            color: #333;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .warning-box .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+
+        /* =============================================
+           BARRA AZIONI
+           ============================================= */
+        .actions-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            text-decoration: none;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .action-btn.btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .action-btn.btn-success:hover {
+            background: #218838;
+        }
+
+        .action-btn.btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .action-btn.btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .action-btn.btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .action-btn.btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .action-btn span {
+            font-size: 20px;
+        }
+
+        .action-btn small {
+            display: block;
+            font-size: 11px;
+            opacity: 0.85;
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        /* =============================================
+           MOCKUP BADGE
+           ============================================= */
+        .mockup-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(220, 53, 69, 0.4);
+        }
+
+        /* =============================================
+           RESPONSIVE
+           ============================================= */
+        @media (max-width: 768px) {
+            .student-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+
+            .student-info {
+                flex-direction: column;
+            }
+
+            .student-score {
+                text-align: center;
+            }
+
+            .evaluation-box {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .dual-radar-container {
+                grid-template-columns: 1fr;
+            }
+
+            .vs-divider {
+                padding: 10px 0;
+            }
+
+            .actions-row {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mockup-badge">MOCKUP - Vista Essenziale</div>
+
+    <div class="container">
+
+        <!-- =============================================
+             NAVBAR VIOLA (coach_navigation.php)
+             ============================================= -->
+        <div class="coach-nav-bar">
+            <div class="coach-nav-header">
+                <div class="coach-nav-student">
+                    <div class="coach-nav-student-icon">&#128100;</div>
+                    <div>
+                        <div class="coach-nav-student-label">Report Studente</div>
+                        <div class="coach-nav-student-name">Mario Rossi</div>
+                    </div>
+                </div>
+                <div class="coach-nav-buttons">
+                    <a href="#" class="coach-nav-btn">&#128101; Lista</a>
+                    <a href="#" class="coach-nav-btn active">&#128221; Quiz</a>
+                    <a href="#" class="coach-nav-btn">&#9733; Autoval</a>
+                    <a href="#" class="coach-nav-btn">&#128295; Lab</a>
+                    <a href="#" class="coach-nav-btn">&#128200; Confronti</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- =============================================
+             HEADER STUDENTE
+             ============================================= -->
+        <div class="student-header">
+            <div class="student-info">
+                <div class="student-avatar">MR</div>
+                <div class="student-details">
+                    <h2>Mario Rossi</h2>
+                    <p>&#128231; mario.rossi@esempio.ch</p>
+                    <p>&#128218; AFC Meccanica di Produzione 2024-2025</p>
+                </div>
+            </div>
+            <div class="student-score">
+                <div class="score-number">85%</div>
+                <div class="score-label">Punteggio globale</div>
+            </div>
+        </div>
+
+        <!-- =============================================
+             BOX VALUTAZIONE
+             ============================================= -->
+        <div class="evaluation-box good">
+            <div class="evaluation-icon">&#128994;</div>
+            <div class="evaluation-content">
+                <h4>VALUTAZIONE: BUONO</h4>
+                <p>Lo studente dimostra una buona padronanza delle competenze tecniche di base.</p>
+                <p><strong>&#128161; Azione:</strong> Consolidare con pratica e approfondire le aree sotto il 70%</p>
+            </div>
+            <div class="evaluation-stats">
+                <div class="stat-number">156/184</div>
+                <small>risposte corrette</small>
+            </div>
+        </div>
+
+        <!-- =============================================
+             CARD RADAR AREE
+             ============================================= -->
+        <div class="card">
+            <div class="card-header bg-primary">
+                <h5>&#128202; Radar Aree di Competenza</h5>
+                <button class="options-btn">&#9881; Opzioni &#9662;</button>
+            </div>
+            <div class="card-body">
+                <div class="radar-container">
+                    <div class="radar-placeholder">
+                        <span>&#128202;</span>
+                        <p>GRAFICO RADAR</p>
+                        <small style="color: #666; font-weight: 400;">7 aree di competenza</small>
+                    </div>
+                </div>
+
+                <div class="area-summary">
+                    <div class="area-item">
+                        <div class="area-letter" style="background: #e74c3c;">A</div>
+                        <div class="area-name">Sicurezza sul lavoro</div>
+                        <div class="area-score" style="color: #28a745;">92%</div>
+                        <div class="area-bar"><div class="area-bar-fill" style="width: 92%; background: #28a745;"></div></div>
+                    </div>
+                    <div class="area-item">
+                        <div class="area-letter" style="background: #3498db;">B</div>
+                        <div class="area-name">Qualita e precisione</div>
+                        <div class="area-score" style="color: #28a745;">88%</div>
+                        <div class="area-bar"><div class="area-bar-fill" style="width: 88%; background: #28a745;"></div></div>
+                    </div>
+                    <div class="area-item">
+                        <div class="area-letter" style="background: #9b59b6;">C</div>
+                        <div class="area-name">Competenze tecniche</div>
+                        <div class="area-score" style="color: #ffc107;">72%</div>
+                        <div class="area-bar"><div class="area-bar-fill" style="width: 72%; background: #ffc107;"></div></div>
+                    </div>
+                    <div class="area-item">
+                        <div class="area-letter" style="background: #1abc9c;">D</div>
+                        <div class="area-name">Documentazione</div>
+                        <div class="area-score" style="color: #28a745;">85%</div>
+                        <div class="area-bar"><div class="area-bar-fill" style="width: 85%; background: #28a745;"></div></div>
+                    </div>
+                    <div class="area-item">
+                        <div class="area-letter" style="background: #e67e22;">E</div>
+                        <div class="area-name">Manutenzione</div>
+                        <div class="area-score" style="color: #dc3545;">58%</div>
+                        <div class="area-bar"><div class="area-bar-fill" style="width: 58%; background: #dc3545;"></div></div>
+                    </div>
+                    <div class="area-item">
+                        <div class="area-letter" style="background: #34495e;">F</div>
+                        <div class="area-name">Organizzazione</div>
+                        <div class="area-score" style="color: #28a745;">90%</div>
+                        <div class="area-bar"><div class="area-bar-fill" style="width: 90%; background: #28a745;"></div></div>
+                    </div>
+                    <div class="area-item">
+                        <div class="area-letter" style="background: #f39c12;">G</div>
+                        <div class="area-name">Comunicazione</div>
+                        <div class="area-score" style="color: #ffc107;">75%</div>
+                        <div class="area-bar"><div class="area-bar-fill" style="width: 75%; background: #ffc107;"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =============================================
+             CARD CONFRONTO RADAR (con dati)
+             ============================================= -->
+        <div class="card">
+            <div class="card-header bg-purple">
+                <h5>&#127919; Confronto: Quiz vs Autovalutazione</h5>
+            </div>
+            <div class="card-body">
+                <div class="dual-radar-container">
+                    <div class="dual-radar-side">
+                        <h6>&#128221; Performance Quiz</h6>
+                        <div class="dual-radar-placeholder quiz">
+                            <span>&#128202;</span>
+                            <p>RADAR QUIZ</p>
+                            <small style="color: #666; font-weight: 400;">Risultati oggettivi</small>
+                        </div>
+                        <p style="margin-top: 10px; color: #2196f3; font-weight: 600;">Media: 85%</p>
+                    </div>
+
+                    <div class="vs-divider">VS</div>
+
+                    <div class="dual-radar-side">
+                        <h6>&#9733; Autovalutazione</h6>
+                        <div class="dual-radar-placeholder autoval">
+                            <span>&#128100;</span>
+                            <p>RADAR AUTOVAL</p>
+                            <small style="color: #666; font-weight: 400;">Percezione studente</small>
+                        </div>
+                        <p style="margin-top: 10px; color: #9c27b0; font-weight: 600;">Media: 4.2/6</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- =============================================
+             ALTERNATIVA: CARD AUTOVALUTAZIONE MANCANTE
+             ============================================= -->
+        <div class="card" style="border: 2px dashed #ffc107;">
+            <div class="card-header bg-warning">
+                <h5>&#9888;&#65039; Autovalutazione Non Disponibile</h5>
+            </div>
+            <div class="card-body">
+                <div class="warning-box">
+                    <div class="warning-icon">&#128683;</div>
+                    <h4>Confronto non disponibile</h4>
+                    <p>Lo studente non ha ancora compilato l'autovalutazione delle competenze.<br>
+                    Il confronto Quiz vs Autovalutazione non puo essere visualizzato.</p>
+                    <button class="btn-warning">&#9993; Invia Sollecito Autovalutazione</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- =============================================
+             BARRA AZIONI STAMPA
+             ============================================= -->
+        <div class="actions-bar">
+            <div class="actions-row">
+                <button class="action-btn btn-success">
+                    <span>&#128424;</span>
+                    <div>
+                        Stampa Standard
+                        <small>Radar + Confronto + Spunti Colloquio</small>
+                    </div>
+                </button>
+
+                <button class="action-btn btn-primary">
+                    <span>&#128203;</span>
+                    <div>
+                        Stampa Completa
+                        <small>Tutte le sezioni (modale opzioni)</small>
+                    </div>
+                </button>
+
+                <button class="action-btn btn-secondary">
+                    <span>&#9881;</span>
+                    <div>
+                        Vista Completa
+                        <small>Mostra tutte le funzioni avanzate</small>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <div style="text-align: center; padding: 20px; color: #999; font-size: 13px;">
+            <p><strong>MOCKUP</strong> - Questo e' un prototipo della Vista Essenziale</p>
+            <p>Apri questo file nel browser per vedere l'anteprima</p>
+            <p style="margin-top: 10px;">File: <code>local/competencymanager/MOCKUP_vista_essenziale.html</code></p>
+        </div>
+
+    </div>
+</body>
+</html>

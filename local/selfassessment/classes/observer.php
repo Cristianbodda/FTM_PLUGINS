@@ -18,18 +18,23 @@ class observer {
      */
     public static function quiz_attempt_submitted(\mod_quiz\event\attempt_submitted $event) {
         global $DB;
-        
+
         $userid = $event->relateduserid;
-        $quizid = $event->other['quizid'] ?? null;
         $attemptid = $event->objectid;
-        
-        if (!$userid || !$quizid) {
+
+        if (!$userid || !$attemptid) {
             return;
         }
-        
-        // Trova le domande del quiz attempt
+
+        // Trova l'attempt nel database
         $attempt = $DB->get_record('quiz_attempts', ['id' => $attemptid]);
         if (!$attempt) {
+            return;
+        }
+
+        // Ottieni quizid dall'attempt (più affidabile che da event->other)
+        $quizid = $attempt->quiz;
+        if (!$quizid) {
             return;
         }
         
@@ -95,8 +100,7 @@ class observer {
             if (!empty($primarySector)) {
                 $competencySector = self::get_competency_sector($competencyid);
                 if (!empty($competencySector) && $competencySector !== $primarySector) {
-                    // Skip competencies from non-primary sectors.
-                    debugging("SelfAssessment: Skipping competency $competencyid (sector $competencySector) - not primary sector ($primarySector)", DEBUG_DEVELOPER);
+                    // Skip competencies from non-primary sectors (silent).
                     continue;
                 }
             }
@@ -127,11 +131,53 @@ class observer {
         // Invia notifica allo studente se ci sono nuove assegnazioni
         if ($assigned > 0) {
             self::send_assignment_notification($userid, $quizid, $assigned);
-            debugging("SelfAssessment: Assigned $assigned competencies to user $userid from quiz $quizid", DEBUG_DEVELOPER);
+            // Mostra messaggio di congratulazioni allo studente (notifica verde)
+            self::show_success_message($userid, $assigned);
+            // Setta flag per redirect a compile.php
+            self::set_redirect_flag($userid);
         }
 
-        // Rileva e registra i settori dalle competenze del quiz (opzionale)
+        // Rileva e registra i settori dalle competenze del quiz (silenzioso)
         self::detect_sectors_safe($userid, $quizid, $mappings);
+    }
+
+    /**
+     * Setta un flag per indicare che lo studente deve essere reindirizzato a compile.php
+     * Il redirect effettivo avviene via JavaScript nella pagina di revisione quiz
+     */
+    private static function set_redirect_flag($userid) {
+        global $USER, $SESSION;
+
+        // Solo se l'utente corrente è lo studente
+        if ($USER->id != $userid) {
+            return;
+        }
+
+        // Verifica skip permanente
+        global $DB;
+        $status = $DB->get_record('local_selfassessment_status', ['userid' => $userid]);
+        if ($status && $status->skip_accepted) {
+            return; // Ha skip permanente, non fare redirect
+        }
+
+        // Setta flag nella sessione per il redirect
+        $SESSION->selfassessment_redirect_pending = true;
+    }
+
+    /**
+     * Mostra un messaggio di congratulazioni allo studente
+     */
+    private static function show_success_message($userid, $count) {
+        global $USER;
+
+        // Mostra solo se l'utente corrente è lo studente che ha completato il quiz
+        if ($USER->id != $userid) {
+            return;
+        }
+
+        // Messaggio di congratulazioni
+        $message = get_string('competencies_assigned_success', 'local_selfassessment', $count);
+        \core\notification::success($message);
     }
 
     /**
@@ -206,13 +252,9 @@ class observer {
         try {
             require_once($sector_manager_file);
             $competencyids = array_map(function($m) { return $m->competencyid; }, $mappings);
-            $detected_sectors = \local_competencymanager\sector_manager::detect_sectors_from_quiz($userid, $quizid, $competencyids);
-            if (!empty($detected_sectors)) {
-                debugging("SelfAssessment: Detected sectors for user $userid: " . implode(', ', $detected_sectors), DEBUG_DEVELOPER);
-            }
+            \local_competencymanager\sector_manager::detect_sectors_from_quiz($userid, $quizid, $competencyids);
         } catch (\Exception $e) {
             // Errore silenzioso - non blocca il quiz
-            debugging("SelfAssessment: Error detecting sectors: " . $e->getMessage(), DEBUG_DEVELOPER);
         }
     }
 
@@ -259,7 +301,7 @@ class observer {
             message_send($message);
             return true;
         } catch (\Exception $e) {
-            debugging("SelfAssessment: Failed to send notification to user $userid: " . $e->getMessage(), DEBUG_DEVELOPER);
+            // Errore silenzioso - la notifica non è critica
             return false;
         }
     }

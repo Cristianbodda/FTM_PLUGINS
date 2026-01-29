@@ -1,0 +1,32 @@
+{
+  "timestamp": "29/01/2026, 10:24:07",
+  "checks": [
+    {
+      "name": "Coach Dashboard V2",
+      "status": "OK",
+      "found": "3/3",
+      "hasErrors": false,
+      "screenshot": "2026-01-29T09-24-07_coach_dashboard_v2.png"
+    },
+    {
+      "name": "Coach Dashboard",
+      "status": "ERROR",
+      "error": "page.goto: Page crashed\nCall log:\n\u001b[2m  - navigating to \"https://test-urc.hizuvala.myhostpoint.ch/local/coachmanager/coach_dashboard.php\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    },
+    {
+      "name": "FTM Scheduler",
+      "status": "ERROR",
+      "error": "page.goto: Page crashed\nCall log:\n\u001b[2m  - navigating to \"https://test-urc.hizuvala.myhostpoint.ch/local/ftm_scheduler/index.php\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    },
+    {
+      "name": "Setup Universale",
+      "status": "ERROR",
+      "error": "page.goto: Page crashed\nCall log:\n\u001b[2m  - navigating to \"https://test-urc.hizuvala.myhostpoint.ch/local/competencyxmlimport/setup_universale.php\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    }
+  ],
+  "summary": {
+    "ok": 1,
+    "warn": 0,
+    "error": 3
+  }
+}

@@ -63,14 +63,21 @@ if (empty($assigned_competencies)) {
 }
 
 // Organizza competenze assegnate per area
+// MAPPING COMPLETO - Tutti i settori formativi
 $areas = [];
 $area_map = [
+    // ============================================
     // AUTOMOBILE
+    // ============================================
     'AUTOMOBILE_MAu' => ['nome' => 'Manutenzione Auto', 'icona' => '🚗', 'colore' => '#3498db'],
-    'AUTOMOBILE_MR' => ['nome' => 'Manutenzione e Riparazione', 'icona' => '🔧', 'colore' => '#e74c3c'],
+    'AUTOMOBILE_MR' => ['nome' => 'Manutenzione e Riparazione Auto', 'icona' => '🔧', 'colore' => '#e74c3c'],
+    'AUTOMOBILE' => ['nome' => 'Automobile', 'icona' => '🚗', 'colore' => '#3498db'],
+
+    // ============================================
     // MECCANICA
+    // ============================================
     'MECCANICA_ASS' => ['nome' => 'Assemblaggio', 'icona' => '🔩', 'colore' => '#f39c12'],
-    'MECCANICA_AUT' => ['nome' => 'Automazione', 'icona' => '🤖', 'colore' => '#e74c3c'],
+    'MECCANICA_AUT' => ['nome' => 'Automazione Meccanica', 'icona' => '🤖', 'colore' => '#e74c3c'],
     'MECCANICA_CNC' => ['nome' => 'Controllo Numerico CNC', 'icona' => '🖥️', 'colore' => '#00bcd4'],
     'MECCANICA_CSP' => ['nome' => 'Collaborazione', 'icona' => '🤝', 'colore' => '#8e44ad'],
     'MECCANICA_DIS' => ['nome' => 'Disegno Tecnico', 'icona' => '📐', 'colore' => '#3498db'],
@@ -78,21 +85,118 @@ $area_map = [
     'MECCANICA_LAV' => ['nome' => 'Lavorazioni Generali', 'icona' => '🏭', 'colore' => '#9e9e9e'],
     'MECCANICA_LMC' => ['nome' => 'Lavorazioni Macchine', 'icona' => '⚙️', 'colore' => '#607d8b'],
     'MECCANICA_LMB' => ['nome' => 'Lavorazioni Manuali', 'icona' => '🔧', 'colore' => '#795548'],
-    'MECCANICA_MAN' => ['nome' => 'Manutenzione', 'icona' => '🔨', 'colore' => '#e67e22'],
+    'MECCANICA_MAN' => ['nome' => 'Manutenzione Meccanica', 'icona' => '🔨', 'colore' => '#e67e22'],
     'MECCANICA_MIS' => ['nome' => 'Misurazione', 'icona' => '📏', 'colore' => '#1abc9c'],
     'MECCANICA_PIA' => ['nome' => 'Pianificazione', 'icona' => '📋', 'colore' => '#9b59b6'],
     'MECCANICA_PRO' => ['nome' => 'Programmazione', 'icona' => '💻', 'colore' => '#2ecc71'],
+    'MECCANICA_PRG' => ['nome' => 'Programmazione', 'icona' => '💻', 'colore' => '#2ecc71'],  // Altro formato
     'MECCANICA_SIC' => ['nome' => 'Sicurezza e Qualità', 'icona' => '🛡️', 'colore' => '#c0392b'],
+    'MECCANICA_SAQ' => ['nome' => 'Sicurezza e Qualità', 'icona' => '🛡️', 'colore' => '#c0392b'],  // Altro formato
+    'MECCANICA_PIAN' => ['nome' => 'Pianificazione', 'icona' => '📋', 'colore' => '#9b59b6'],  // Formato esteso
+    'MECCANICA_GEN' => ['nome' => 'Meccanica Generale', 'icona' => '⚙️', 'colore' => '#607d8b'],
+    'MECCANICA' => ['nome' => 'Meccanica', 'icona' => '⚙️', 'colore' => '#607d8b'],
+    'MECC_' => ['nome' => 'Meccanica', 'icona' => '⚙️', 'colore' => '#607d8b'],
+
+    // ============================================
     // LOGISTICA
+    // ============================================
     'LOGISTICA_LO' => ['nome' => 'Logistica', 'icona' => '📦', 'colore' => '#ff9800'],
     'LOGISTICA' => ['nome' => 'Logistica', 'icona' => '📦', 'colore' => '#ff9800'],
-    // AUTOMAZIONE (standalone)
+
+    // ============================================
+    // AUTOMAZIONE
+    // ============================================
+    'AUTOMAZIONE_' => ['nome' => 'Automazione', 'icona' => '🤖', 'colore' => '#673ab7'],
     'AUTOMAZIONE' => ['nome' => 'Automazione', 'icona' => '🤖', 'colore' => '#673ab7'],
     'AUTO_EA' => ['nome' => 'Elettronica e Automazione', 'icona' => '⚡', 'colore' => '#673ab7'],
-    // ELETTRONICA
-    'ELETTRONICA' => ['nome' => 'Elettronica', 'icona' => '⚡', 'colore' => '#2196f3'],
-    // MECC (abbreviato)
-    'MECC_' => ['nome' => 'Meccanica', 'icona' => '⚙️', 'colore' => '#607d8b'],
+
+    // ============================================
+    // ELETTRONICA / ELETTRICITA
+    // ============================================
+    'ELETTRONICA_' => ['nome' => 'Elettronica', 'icona' => '🔌', 'colore' => '#2196f3'],
+    'ELETTRONICA' => ['nome' => 'Elettronica', 'icona' => '🔌', 'colore' => '#2196f3'],
+    'ELETTRICITÀ_' => ['nome' => 'Elettricità', 'icona' => '💡', 'colore' => '#ffc107'],  // Con accento
+    'ELETTRICITÀ' => ['nome' => 'Elettricità', 'icona' => '💡', 'colore' => '#ffc107'],   // Con accento
+    'ELETTRICITA_' => ['nome' => 'Elettricità', 'icona' => '💡', 'colore' => '#ffc107'],  // Senza accento
+    'ELETTRICITA' => ['nome' => 'Elettricità', 'icona' => '💡', 'colore' => '#ffc107'],   // Senza accento
+    'ELET_' => ['nome' => 'Elettrotecnica', 'icona' => '⚡', 'colore' => '#ff9800'],
+
+    // ============================================
+    // CHIMICA / FARMACEUTICA
+    // ============================================
+    'CHIMFARM_' => ['nome' => 'Chimica Farmaceutica', 'icona' => '🧪', 'colore' => '#9c27b0'],
+    'CHIMFARM' => ['nome' => 'Chimica Farmaceutica', 'icona' => '🧪', 'colore' => '#9c27b0'],
+    'CHIMICA_' => ['nome' => 'Chimica', 'icona' => '⚗️', 'colore' => '#673ab7'],
+    'CHIMICA' => ['nome' => 'Chimica', 'icona' => '⚗️', 'colore' => '#673ab7'],
+    'FARMACEUTICA' => ['nome' => 'Farmaceutica', 'icona' => '💊', 'colore' => '#e91e63'],
+
+    // ============================================
+    // METALCOSTRUZIONE
+    // ============================================
+    'METALCOSTRUZIONE_' => ['nome' => 'Metalcostruzione', 'icona' => '🔩', 'colore' => '#455a64'],
+    'METALCOSTRUZIONE' => ['nome' => 'Metalcostruzione', 'icona' => '🔩', 'colore' => '#455a64'],
+    'METAL_' => ['nome' => 'Metalcostruzione', 'icona' => '🔩', 'colore' => '#455a64'],
+
+    // ============================================
+    // INFORMATICA
+    // ============================================
+    'INFORMATICA_' => ['nome' => 'Informatica', 'icona' => '💻', 'colore' => '#00bcd4'],
+    'INFORMATICA' => ['nome' => 'Informatica', 'icona' => '💻', 'colore' => '#00bcd4'],
+    'ICT_' => ['nome' => 'ICT', 'icona' => '🖥️', 'colore' => '#00bcd4'],
+
+    // ============================================
+    // SICUREZZA
+    // ============================================
+    'SICUREZZA_' => ['nome' => 'Sicurezza', 'icona' => '🛡️', 'colore' => '#f44336'],
+    'SICUREZZA' => ['nome' => 'Sicurezza', 'icona' => '🛡️', 'colore' => '#f44336'],
+
+    // ============================================
+    // COMPETENZE GENERICHE / TRASVERSALI
+    // ============================================
+    'GEN_' => ['nome' => 'Competenze Generiche', 'icona' => '📚', 'colore' => '#795548'],  // GEN_A, GEN_B, etc.
+    'GEN' => ['nome' => 'Competenze Generiche', 'icona' => '📚', 'colore' => '#795548'],
+    'GENERICO_' => ['nome' => 'Competenze Generiche', 'icona' => '📚', 'colore' => '#795548'],
+    'GENERICO' => ['nome' => 'Competenze Generiche', 'icona' => '📚', 'colore' => '#795548'],
+    'GENERICHE' => ['nome' => 'Competenze Generiche', 'icona' => '📚', 'colore' => '#795548'],
+    'TRASVERSALI' => ['nome' => 'Competenze Trasversali', 'icona' => '🎯', 'colore' => '#607d8b'],
+    'SOFT_' => ['nome' => 'Soft Skills', 'icona' => '🤝', 'colore' => '#9c27b0'],
+
+    // ============================================
+    // EDILIZIA / COSTRUZIONI
+    // ============================================
+    'EDILIZIA_' => ['nome' => 'Edilizia', 'icona' => '🏗️', 'colore' => '#795548'],
+    'EDILIZIA' => ['nome' => 'Edilizia', 'icona' => '🏗️', 'colore' => '#795548'],
+    'COSTRUZIONI' => ['nome' => 'Costruzioni', 'icona' => '🏗️', 'colore' => '#8d6e63'],
+
+    // ============================================
+    // RISTORAZIONE / ALIMENTARE
+    // ============================================
+    'RISTORAZIONE' => ['nome' => 'Ristorazione', 'icona' => '🍽️', 'colore' => '#ff5722'],
+    'ALIMENTARE' => ['nome' => 'Settore Alimentare', 'icona' => '🥗', 'colore' => '#4caf50'],
+    'CUCINA' => ['nome' => 'Cucina', 'icona' => '👨‍🍳', 'colore' => '#ff9800'],
+
+    // ============================================
+    // COMMERCIO / VENDITA
+    // ============================================
+    'COMMERCIO' => ['nome' => 'Commercio', 'icona' => '🛒', 'colore' => '#3f51b5'],
+    'VENDITA' => ['nome' => 'Vendita', 'icona' => '💰', 'colore' => '#4caf50'],
+
+    // ============================================
+    // OLD_ prefixes (vecchie competenze legacy)
+    // ============================================
+    'OLD_LOGISTICA' => ['nome' => 'Logistica', 'icona' => '📦', 'colore' => '#ff9800'],
+    'OLD_MECCANICA' => ['nome' => 'Meccanica', 'icona' => '⚙️', 'colore' => '#607d8b'],
+    'OLD_AUTOMOBILE' => ['nome' => 'Automobile', 'icona' => '🚗', 'colore' => '#3498db'],
+    'OLD_CHIMFARM' => ['nome' => 'Chimica Farmaceutica', 'icona' => '🧪', 'colore' => '#9c27b0'],
+    'OLD_CHIMICA' => ['nome' => 'Chimica', 'icona' => '⚗️', 'colore' => '#673ab7'],
+    'OLD_ELETTRONICA' => ['nome' => 'Elettronica', 'icona' => '🔌', 'colore' => '#2196f3'],
+    'OLD_ELETTRICITA' => ['nome' => 'Elettricità', 'icona' => '💡', 'colore' => '#ffc107'],
+    'OLD_AUTOMAZIONE' => ['nome' => 'Automazione', 'icona' => '🤖', 'colore' => '#673ab7'],
+    'OLD_METALCOSTRUZIONE' => ['nome' => 'Metalcostruzione', 'icona' => '🔩', 'colore' => '#455a64'],
+    'OLD_INFORMATICA' => ['nome' => 'Informatica', 'icona' => '💻', 'colore' => '#00bcd4'],
+    'OLD_GENERICO' => ['nome' => 'Competenze Generiche', 'icona' => '📚', 'colore' => '#795548'],
+    'OLD_02' => ['nome' => 'Legacy', 'icona' => '📁', 'colore' => '#9e9e9e'],  // Formato OLD_02-04, etc.
+    'OLD_' => ['nome' => 'Legacy', 'icona' => '📁', 'colore' => '#9e9e9e'],
 ];
 
 foreach ($assigned_competencies as $comp) {
@@ -203,41 +307,210 @@ echo $OUTPUT->header();
     transition: width 0.3s ease;
 }
 
-/* Bloom Legend */
+/* Bloom Legend - Versione Dettagliata Collassabile */
 .bloom-legend {
     background: white;
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 16px;
     margin-bottom: 25px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
 }
 
-.bloom-legend h3 {
-    margin: 0 0 15px 0;
-    font-size: 1.1em;
-    color: #2c3e50;
+.bloom-legend-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 18px 25px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: filter 0.2s ease;
 }
 
-.bloom-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+.bloom-legend-header:hover {
+    filter: brightness(1.05);
+}
+
+.bloom-legend-header h3 {
+    margin: 0;
+    font-size: 1.15em;
+    display: flex;
+    align-items: center;
     gap: 10px;
 }
 
-.bloom-item {
+.bloom-legend-header .toggle-arrow {
+    font-size: 1.2em;
+    transition: transform 0.3s ease;
+}
+
+.bloom-legend.open .toggle-arrow {
+    transform: rotate(180deg);
+}
+
+.bloom-legend-body {
+    display: none;
+    padding: 25px;
+    background: #fafbfc;
+}
+
+.bloom-legend.open .bloom-legend-body {
+    display: block;
+}
+
+.bloom-intro {
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    padding: 15px 20px;
+    margin-bottom: 25px;
+    border-radius: 0 10px 10px 0;
+    font-size: 0.95em;
+    line-height: 1.6;
+    color: #1565c0;
+}
+
+.bloom-intro strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1.05em;
+}
+
+.bloom-levels-detailed {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.bloom-level-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border-left: 5px solid;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bloom-level-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.bloom-level-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 12px;
+}
+
+.bloom-level-number {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4em;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+
+.bloom-level-title {
+    font-size: 1.15em;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.bloom-level-subtitle {
+    font-size: 0.9em;
+    color: #7f8c8d;
+    margin-top: 2px;
+}
+
+.bloom-level-description {
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    font-size: 0.95em;
+}
+
+.bloom-level-examples {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.bloom-level-examples strong {
+    display: block;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+
+.bloom-level-examples ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.bloom-level-examples li {
+    color: #666;
+    margin-bottom: 6px;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+.bloom-level-examples li:last-child {
+    margin-bottom: 0;
+}
+
+.bloom-quick-ref {
+    margin-top: 20px;
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
+    border-radius: 10px;
+    border: 1px solid #ffd54f;
+}
+
+.bloom-quick-ref strong {
+    display: block;
+    color: #f57f17;
+    margin-bottom: 10px;
+}
+
+.bloom-quick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+}
+
+.bloom-quick-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    background: #f8f9fa;
-    border-radius: 8px;
     font-size: 0.85em;
 }
 
-.bloom-dot {
-    width: 12px;
-    height: 12px;
+.bloom-quick-dot {
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 0.8em;
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .bloom-level-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .bloom-quick-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 /* Area Card */
@@ -626,16 +899,196 @@ echo $OUTPUT->header();
         </div>
     </div>
     
-    <!-- Bloom Legend -->
-    <div class="bloom-legend">
-        <h3>📊 Scala di valutazione (Tassonomia di Bloom)</h3>
-        <div class="bloom-grid">
-            <?php foreach ($bloom_levels as $level => $info): ?>
-            <div class="bloom-item">
-                <span class="bloom-dot" style="background: <?php echo $info['colore']; ?>"></span>
-                <span><strong><?php echo $level; ?></strong> - <?php echo $info['nome']; ?></span>
+    <!-- Bloom Legend - Versione Dettagliata -->
+    <div class="bloom-legend" id="bloomLegend">
+        <div class="bloom-legend-header" onclick="toggleBloomLegend()">
+            <h3>📊 Come valutare le tue competenze? (clicca per aprire)</h3>
+            <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="bloom-legend-body">
+            <div class="bloom-intro">
+                <strong>💡 Come funziona questa autovalutazione?</strong>
+                Devi valutare quanto conosci ogni argomento usando una scala da 1 a 6.
+                Non preoccuparti: non è un esame! Serve solo a capire dove sei forte e dove hai bisogno di aiuto.
+                <strong>Sii onesto</strong> - più sei sincero, più il tuo coach potrà aiutarti nel modo giusto.
             </div>
-            <?php endforeach; ?>
+
+            <div class="bloom-levels-detailed">
+                <!-- LIVELLO 1 - RICORDO -->
+                <div class="bloom-level-card" style="border-color: #e74c3c;">
+                    <div class="bloom-level-header">
+                        <div class="bloom-level-number" style="background: #e74c3c;">1</div>
+                        <div>
+                            <div class="bloom-level-title">RICORDO</div>
+                            <div class="bloom-level-subtitle">So di cosa si parla, conosco i termini base</div>
+                        </div>
+                    </div>
+                    <div class="bloom-level-description">
+                        Hai sentito parlare dell'argomento e ricordi alcune informazioni di base.
+                        Se qualcuno ti chiede qualcosa, riesci a dire "sì, so cos'è" ma non molto di più.
+                    </div>
+                    <div class="bloom-level-examples">
+                        <strong>📝 Esempi pratici:</strong>
+                        <ul>
+                            <li>So che esiste il calibro, ma non ricordo bene come si usa</li>
+                            <li>Ho sentito parlare del tornio durante il corso</li>
+                            <li>Conosco i nomi dei principali attrezzi ma non sempre so a cosa servono</li>
+                            <li>Ricordo che esistono norme di sicurezza ma non le so elencare</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- LIVELLO 2 - COMPRENDO -->
+                <div class="bloom-level-card" style="border-color: #e67e22;">
+                    <div class="bloom-level-header">
+                        <div class="bloom-level-number" style="background: #e67e22;">2</div>
+                        <div>
+                            <div class="bloom-level-title">COMPRENDO</div>
+                            <div class="bloom-level-subtitle">Capisco il significato e posso spiegarlo</div>
+                        </div>
+                    </div>
+                    <div class="bloom-level-description">
+                        Non solo sai che qualcosa esiste, ma capisci anche <strong>perché</strong> funziona così e <strong>a cosa serve</strong>.
+                        Potresti spiegarlo a un compagno con parole tue.
+                    </div>
+                    <div class="bloom-level-examples">
+                        <strong>📝 Esempi pratici:</strong>
+                        <ul>
+                            <li>Capisco perché si usa il calibro: per misurare con precisione</li>
+                            <li>So spiegare a cosa serve la lubrificazione nelle macchine</li>
+                            <li>Capisco perché bisogna indossare i DPI (guanti, occhiali...)</li>
+                            <li>Posso descrivere le differenze tra due attrezzi simili</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- LIVELLO 3 - APPLICO -->
+                <div class="bloom-level-card" style="border-color: #f1c40f;">
+                    <div class="bloom-level-header">
+                        <div class="bloom-level-number" style="background: #f1c40f; color: #333;">3</div>
+                        <div>
+                            <div class="bloom-level-title">APPLICO</div>
+                            <div class="bloom-level-subtitle">So usare le conoscenze nella pratica</div>
+                        </div>
+                    </div>
+                    <div class="bloom-level-description">
+                        Riesci a <strong>fare le cose in pratica</strong>, seguendo le istruzioni o procedure standard.
+                        Se ti dicono cosa fare, lo sai fare correttamente.
+                    </div>
+                    <div class="bloom-level-examples">
+                        <strong>📝 Esempi pratici:</strong>
+                        <ul>
+                            <li>So usare il calibro e leggere correttamente la misura</li>
+                            <li>Riesco a montare un pezzo seguendo il disegno tecnico</li>
+                            <li>So eseguire una saldatura base rispettando la procedura</li>
+                            <li>Riesco a compilare correttamente un modulo di lavoro</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- LIVELLO 4 - ANALIZZO -->
+                <div class="bloom-level-card" style="border-color: #27ae60;">
+                    <div class="bloom-level-header">
+                        <div class="bloom-level-number" style="background: #27ae60;">4</div>
+                        <div>
+                            <div class="bloom-level-title">ANALIZZO</div>
+                            <div class="bloom-level-subtitle">So scomporre i problemi e trovare le cause</div>
+                        </div>
+                    </div>
+                    <div class="bloom-level-description">
+                        Quando qualcosa non funziona, riesci a capire <strong>dove sta il problema</strong>.
+                        Sai distinguere cosa è importante da cosa non lo è.
+                    </div>
+                    <div class="bloom-level-examples">
+                        <strong>📝 Esempi pratici:</strong>
+                        <ul>
+                            <li>Se una misura è sbagliata, capisco se è colpa dello strumento o mia</li>
+                            <li>So identificare quale componente causa un malfunzionamento</li>
+                            <li>Riesco a capire perché un pezzo è venuto difettoso</li>
+                            <li>So leggere un disegno complesso e capire l'ordine delle lavorazioni</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- LIVELLO 5 - VALUTO -->
+                <div class="bloom-level-card" style="border-color: #3498db;">
+                    <div class="bloom-level-header">
+                        <div class="bloom-level-number" style="background: #3498db;">5</div>
+                        <div>
+                            <div class="bloom-level-title">VALUTO</div>
+                            <div class="bloom-level-subtitle">So giudicare la qualità e scegliere la soluzione migliore</div>
+                        </div>
+                    </div>
+                    <div class="bloom-level-description">
+                        Non solo trovi i problemi, ma sai anche <strong>quale soluzione è la migliore</strong> tra diverse opzioni.
+                        Riesci a giudicare se un lavoro è fatto bene o male.
+                    </div>
+                    <div class="bloom-level-examples">
+                        <strong>📝 Esempi pratici:</strong>
+                        <ul>
+                            <li>So dire se un pezzo rispetta gli standard di qualità richiesti</li>
+                            <li>Posso scegliere l'utensile più adatto tra diversi disponibili</li>
+                            <li>So valutare se una procedura è sicura o se ci sono rischi</li>
+                            <li>Riesco a decidere se un macchinario ha bisogno di manutenzione</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- LIVELLO 6 - CREO -->
+                <div class="bloom-level-card" style="border-color: #9b59b6;">
+                    <div class="bloom-level-header">
+                        <div class="bloom-level-number" style="background: #9b59b6;">6</div>
+                        <div>
+                            <div class="bloom-level-title">CREO</div>
+                            <div class="bloom-level-subtitle">So progettare soluzioni nuove e migliorare quelle esistenti</div>
+                        </div>
+                    </div>
+                    <div class="bloom-level-description">
+                        Sei in grado di <strong>inventare qualcosa di nuovo</strong> o migliorare significativamente
+                        un processo esistente. Puoi insegnare agli altri e proporre innovazioni.
+                    </div>
+                    <div class="bloom-level-examples">
+                        <strong>📝 Esempi pratici:</strong>
+                        <ul>
+                            <li>Ho ideato un metodo più veloce per fare una lavorazione</li>
+                            <li>Posso progettare un pezzo da zero partendo dalle specifiche</li>
+                            <li>So creare procedure di lavoro per gli altri colleghi</li>
+                            <li>Riesco a combinare tecniche diverse per risolvere problemi nuovi</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Riferimento rapido -->
+            <div class="bloom-quick-ref">
+                <strong>🎯 Riferimento rapido - In sintesi:</strong>
+                <div class="bloom-quick-grid">
+                    <div class="bloom-quick-item">
+                        <span class="bloom-quick-dot" style="background: #e74c3c;">1</span>
+                        <span>Ne ho sentito parlare</span>
+                    </div>
+                    <div class="bloom-quick-item">
+                        <span class="bloom-quick-dot" style="background: #e67e22;">2</span>
+                        <span>Capisco a cosa serve</span>
+                    </div>
+                    <div class="bloom-quick-item">
+                        <span class="bloom-quick-dot" style="background: #f1c40f; color: #333;">3</span>
+                        <span>Lo so fare</span>
+                    </div>
+                    <div class="bloom-quick-item">
+                        <span class="bloom-quick-dot" style="background: #27ae60;">4</span>
+                        <span>Trovo i problemi</span>
+                    </div>
+                    <div class="bloom-quick-item">
+                        <span class="bloom-quick-dot" style="background: #3498db;">5</span>
+                        <span>So qual è il meglio</span>
+                    </div>
+                    <div class="bloom-quick-item">
+                        <span class="bloom-quick-dot" style="background: #9b59b6;">6</span>
+                        <span>Invento e miglioro</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -716,6 +1169,11 @@ const totalCompetencies = <?php echo $total_assigned; ?>;
 // Toggle area open/close
 function toggleArea(prefix) {
     document.getElementById('area-' + prefix).classList.toggle('open');
+}
+
+// Toggle Bloom legend open/close
+function toggleBloomLegend() {
+    document.getElementById('bloomLegend').classList.toggle('open');
 }
 
 // Update progress bar

@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida Completa per Claude
 
-**Ultimo aggiornamento:** 28 Gennaio 2026
+**Ultimo aggiornamento:** 29 Gennaio 2026
 
 ## Panoramica Progetto
 
@@ -12,7 +12,7 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (27/01/2026)
+## STATO ATTUALE SVILUPPO (29/01/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -59,13 +59,19 @@ Plugin per integrare Azure OpenAI/Copilot con mascheramento dati sensibili:
 - 58 test automatizzati totali
 - Interfaccia web: `agent_tests.php`
 
-#### 4. Self Assessment (local_selfassessment)
+#### 4. Self Assessment (local_selfassessment) - AGGIORNATO 29/01/2026
 - Popup bloccante per autovalutazione
-- Sistema doppia password skip
+- Sistema doppia password skip (6807 temporaneo, FTM permanente)
 - Observer per rilevazione settori
 - **Filtro settore primario:** assegna solo competenze del settore primario studente
+- **NUOVO: Hook System Moodle 4.3+** - Migrato da callback deprecato a nuovo sistema hook
+- **NUOVO: Bloom Legend Dettagliata** - Legenda collassabile con esempi pratici per ogni livello (1-6)
+- **NUOVO: Area Mapping Completo** - Supporto tutti i prefissi (CHIMFARM, ELETTRICITÀ, GEN, MECCANICA_*, OLD_*)
+- **NUOVO: Tool Diagnostici** - diagnose_critest.php, catchup_test_users.php, analyze_all_prefixes.php
+- **File hook:** `classes/hook_callbacks.php`, `db/hooks.php`
+- **Version:** 1.3.1 (2026012903)
 
-#### 5. Setup Universale Quiz (local_competencyxmlimport) - AGGIORNATO 19/01/2026
+#### 5. Setup Universale Quiz (local_competencyxmlimport) - AGGIORNATO 29/01/2026
 Sistema completo per import quiz e assegnazione competenze:
 - **Import XML/Word** con parsing automatico
 - **Estrazione codici competenza** con regex flessibile (supporta caratteri accentati)
@@ -73,9 +79,18 @@ Sistema completo per import quiz e assegnazione competenze:
 - **Aggiornamento livello difficoltà** per competenze già assegnate
 - **Debug integrato** per troubleshooting
 - **Riepilogo finale** con tabella quiz/domande/livello
+- **NUOVO: Quiz Export Tool** - Export domande, risposte e competenze in CSV/Excel
+  - Selezione multipla quiz per corso
+  - Anteprima HTML con risposte corrette evidenziate
+  - Export CSV con colonne: Quiz, #, Domanda, Risposte A-D, Corretta, Competenza, Difficoltà
+  - Utile per analisi duplicati e pulizia question bank
+  - **File:** `quiz_export.php`, `classes/quiz_exporter.php`, `classes/quiz_excel_exporter.php`
 
-#### 6. Coach Dashboard V2 (local_coachmanager) - NUOVO 22/01/2026
+#### 6. Coach Dashboard V2 (local_coachmanager) - AGGIORNATO 29/01/2026
 Dashboard avanzata per coach con interfaccia ottimizzata per utenti 50+:
+- **NUOVO: Coach Navigation** - Navbar unificata per navigazione coach (`coach_navigation.php`)
+- **NUOVO: Coach Student View** - Vista studente dedicata per coach (`coach_student_view.php`)
+- **NUOVO: Inviti Autovalutazione** - Sistema invio inviti con AJAX (`ajax_send_invitation.php`)
 - **4 Viste Configurabili:** Classica, Compatta, Standard, Dettagliata
 - **Zoom Accessibilità:** A- (90%), A (100%), A+ (120%), A++ (140%)
 - **Filtri Orizzontali:** Corso, Colore Gruppo, Settimana, Stato

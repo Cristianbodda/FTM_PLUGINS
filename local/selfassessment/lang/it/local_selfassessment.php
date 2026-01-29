@@ -139,3 +139,20 @@ $string['notification_reminder_small'] = 'Reminder autovalutazione dal coach';
 // No competencies
 $string['no_competencies'] = 'Nessuna competenza da autovalutare';
 $string['no_competencies_desc'] = 'Al momento non hai competenze assegnate per l\'autovalutazione. Completa un quiz con domande associate a competenze per sbloccare questa funzione.';
+
+// Success message after quiz completion
+$string['competencies_assigned_success'] = 'Ottimo lavoro! Ti sono state assegnate {$a} nuove competenze da autovalutare. Continua cosi!';
+
+// Invasive reminder strings
+$string['reminder_banner_text'] = 'Hai competenze da autovalutare!';
+$string['reminder_banner_button'] = 'Compila Ora';
+$string['reminder_modal_title'] = 'Autovalutazione in Sospeso';
+$string['reminder_modal_text'] = 'Prima di continuare, completa l\'autovalutazione delle tue competenze. Questo aiuterà il tuo coach a capire dove hai bisogno di supporto.';
+$string['reminder_modal_button'] = 'Compila Autovalutazione';
+$string['reminder_modal_skip'] = 'Continua Senza Compilare';
+$string['reminder_skip_code_prompt'] = 'Hai un codice di bypass?';
+$string['reminder_skip_temp_success'] = 'Skip temporaneo attivato';
+$string['reminder_skip_perm_success'] = 'Skip permanente salvato - non vedrai più questi reminder';
+$string['reminder_skip_error'] = 'Codice non valido';
+$string['quiz_blocked_title'] = 'Quiz Bloccato';
+$string['quiz_blocked_message'] = 'Per continuare con i quiz, devi prima completare l\'autovalutazione delle competenze già assegnate.';

@@ -505,6 +505,13 @@ $header_class = $is_new_design ? 'ftm-header' : 'ftm-header-classic';
         </div>
         <div class="card-body">
             <div class="action-grid">
+                <a href="quiz_competencies_editor.php" class="action-card" style="border: 3px solid #28a745;">
+                    <div class="icon">✏️</div>
+                    <h4>Quiz Competencies Editor</h4>
+                    <p>Visualizza e modifica domande quiz con competenze, risposte e export Excel</p>
+                    <span class="btn btn-success">Apri Editor</span>
+                </a>
+
                 <a href="find_orphan_questions.php" class="action-card">
                     <div class="icon">🔍</div>
                     <h4>Domande Orfane</h4>

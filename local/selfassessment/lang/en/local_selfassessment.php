@@ -139,3 +139,20 @@ $string['notification_reminder_small'] = 'Self assessment reminder from coach';
 // No competencies
 $string['no_competencies'] = 'No competencies to self-assess';
 $string['no_competencies_desc'] = 'You currently have no competencies assigned for self-assessment. Complete a quiz with questions linked to competencies to unlock this feature.';
+
+// Success message after quiz completion
+$string['competencies_assigned_success'] = 'Great job! {$a} new competencies have been assigned for your self-assessment. Keep up the good work!';
+
+// Invasive reminder strings
+$string['reminder_banner_text'] = 'You have competencies to self-assess!';
+$string['reminder_banner_button'] = 'Complete Now';
+$string['reminder_modal_title'] = 'Self-Assessment Pending';
+$string['reminder_modal_text'] = 'Before continuing, complete your competency self-assessment. This will help your coach understand where you need support.';
+$string['reminder_modal_button'] = 'Complete Self-Assessment';
+$string['reminder_modal_skip'] = 'Continue Without Completing';
+$string['reminder_skip_code_prompt'] = 'Do you have a bypass code?';
+$string['reminder_skip_temp_success'] = 'Temporary skip activated';
+$string['reminder_skip_perm_success'] = 'Permanent skip saved - you will not see these reminders again';
+$string['reminder_skip_error'] = 'Invalid code';
+$string['quiz_blocked_title'] = 'Quiz Blocked';
+$string['quiz_blocked_message'] = 'To continue with quizzes, you must first complete the self-assessment of your already assigned competencies.';
