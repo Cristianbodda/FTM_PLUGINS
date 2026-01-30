@@ -512,6 +512,13 @@ $header_class = $is_new_design ? 'ftm-header' : 'ftm-header-classic';
                     <span class="btn btn-success">Apri Editor</span>
                 </a>
 
+                <a href="../competencyxmlimport/quiz_export.php<?php echo $selected_courseid > 0 ? '?courseid=' . $selected_courseid : ''; ?>" class="action-card" style="border: 3px solid #17a2b8;">
+                    <div class="icon">📤</div>
+                    <h4>Quiz Export Tool</h4>
+                    <p>Esporta domande, risposte e competenze dei quiz in CSV/Excel per analisi duplicati</p>
+                    <span class="btn btn-info">Esporta Quiz</span>
+                </a>
+
                 <a href="find_orphan_questions.php" class="action-card">
                     <div class="icon">🔍</div>
                     <h4>Domande Orfane</h4>

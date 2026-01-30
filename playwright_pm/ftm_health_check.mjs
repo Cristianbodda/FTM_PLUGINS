@@ -38,7 +38,7 @@ const HEALTH_CHECKS = [
         name: 'Bilancio Competenze',
         plugin: 'coachmanager',
         url: '/local/coachmanager/index.php',
-        checks: ['competenc', 'student'],
+        checks: ['studente', 'quiz'],
         priority: 'MEDIUM'
     },
 
@@ -57,13 +57,8 @@ const HEALTH_CHECKS = [
         checks: ['report', 'competenc'],
         priority: 'MEDIUM'
     },
-    {
-        name: 'Area Mapping',
-        plugin: 'competencymanager',
-        url: '/local/competencymanager/area_mapping.php',
-        checks: ['mapping', 'area'],
-        priority: 'LOW'
-    },
+    // Area Mapping rimosso: è una libreria PHP (nessun output HTML)
+    // Il file area_mapping.php contiene solo variabili e funzioni
 
     // ========== 3. COMPETENCYREPORT ==========
     {
