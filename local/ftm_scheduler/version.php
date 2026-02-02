@@ -27,7 +27,7 @@ defined('MOODLE_INTERNAL') || die();
 $plugin->component = 'local_ftm_scheduler';
 $plugin->version = 2026012202;  // YYYYMMDDXX - Added attendance page, notification helper, secretary dashboard
 $plugin->requires = 2023100900; // Moodle 4.3+
-$plugin->maturity = MATURITY_ALPHA;
+$plugin->maturity = MATURITY_STABLE;
 $plugin->release = 'v1.0.0';
 
 // Dipendenze da altri plugin FTM

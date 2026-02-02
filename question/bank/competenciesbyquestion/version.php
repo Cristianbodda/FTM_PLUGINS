@@ -11,7 +11,7 @@ defined('MOODLE_INTERNAL') || die();
 $plugin->component = 'qbank_competenciesbyquestion';
 $plugin->version   = 2025120601;  // AUMENTATO: era 2025120600, ora è 2025120601
 $plugin->requires  = 2022112800;  // Moodle 4.1 o superiore
-$plugin->maturity  = MATURITY_ALPHA; // Durante sviluppo
+$plugin->maturity  = MATURITY_STABLE;
 $plugin->release   = 'v1.1 - Livelli di difficoltà';
 
 $plugin->dependencies = [];
