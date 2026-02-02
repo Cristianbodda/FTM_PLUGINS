@@ -76,7 +76,7 @@ if ($action === 'export' && !empty($quizids)) {
         echo "\xEF\xBB\xBF";
 
         // Header row.
-        echo "Quiz;#;Domanda;Risposta A;Risposta B;Risposta C;Risposta D;Corretta;Codice Competenza;Nome Competenza;Difficolta\n";
+        echo "Quiz;#;Domanda;Risposta A;Risposta B;Risposta C;Risposta D;Corretta;Settore;Codice Competenza;Descrizione Competenza;Difficolta\n";
 
         foreach ($quizids as $qid) {
             $quiz = $DB->get_record('quiz', ['id' => $qid], 'name');
@@ -110,10 +110,17 @@ if ($action === 'export' && !empty($quizids)) {
                 }
 
                 $compcode = $q->competency_code ?? '';
-                $compname = str_replace(';', ',', $q->competency_name ?? '');
+                // Pulisce HTML dalla descrizione competenza
+                $compdesc = $q->competency_description ?? '';
+                $compdesc = strip_tags(html_entity_decode($compdesc, ENT_QUOTES, 'UTF-8'));
+                $compdesc = preg_replace('/\s+/', ' ', trim($compdesc));
+                $compdesc = str_replace(';', ',', $compdesc);
                 $difficulty = $q->difficultylevel ?? 1;
 
-                echo "{$quizname};{$num};{$questiontext};{$answers[0]};{$answers[1]};{$answers[2]};{$answers[3]};{$correct};{$compcode};{$compname};{$difficulty}\n";
+                // Extract sector from competency code.
+                $sector = $exporter->extract_sector_from_competency($compcode);
+
+                echo "{$quizname};{$num};{$questiontext};{$answers[0]};{$answers[1]};{$answers[2]};{$answers[3]};{$correct};{$sector};{$compcode};{$compdesc};{$difficulty}\n";
                 $num++;
             }
         }
@@ -494,10 +501,13 @@ function getSelectedQuizIds() {
 
 function loadPreview() {
     var quizIds = getSelectedQuizIds();
-    if (quizIds.length === 0) return;
+    if (quizIds.length === 0) {
+        alert('Seleziona almeno un quiz');
+        return;
+    }
 
     var container = document.getElementById('questions-container');
-    container.innerHTML = '<p>Caricamento in corso...</p>';
+    container.innerHTML = '<p><i class="fa fa-spinner fa-spin"></i> Caricamento in corso...</p>';
     document.getElementById('quiz-preview').classList.add('visible');
 
     var courseName = document.getElementById('courseid').options[document.getElementById('courseid').selectedIndex].text;
@@ -506,15 +516,32 @@ function loadPreview() {
 
     // Load each quiz
     var promises = quizIds.map(function(quizid) {
-        return fetch(wwwroot + '/local/competencyxmlimport/ajax_quiz_export.php?action=preview&quizid=' + quizid + '&sesskey=' + sesskey)
-            .then(function(response) { return response.json(); });
+        var url = wwwroot + '/local/competencyxmlimport/ajax_quiz_export.php?action=preview&quizid=' + quizid + '&sesskey=' + sesskey;
+        console.log('Fetching:', url);
+
+        return fetch(url)
+            .then(function(response) {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error('HTTP error ' + response.status + ' for quiz ' + quizid);
+                }
+                return response.json();
+            })
+            .then(function(data) {
+                console.log('Data received for quiz ' + quizid + ':', data);
+                if (!data.success) {
+                    throw new Error(data.message || 'Errore sconosciuto per quiz ' + quizid);
+                }
+                return data;
+            });
     });
 
     Promise.all(promises).then(function(results) {
+        console.log('All results:', results);
         renderMultipleQuizzes(results);
     }).catch(function(error) {
         console.error('Error:', error);
-        container.innerHTML = '<p class="text-danger">Errore durante il caricamento</p>';
+        container.innerHTML = '<div class="alert alert-danger"><strong>Errore:</strong> ' + error.message + '<br><small>Controlla la console del browser per dettagli (F12)</small></div>';
     });
 }
 
@@ -559,10 +586,16 @@ function renderMultipleQuizzes(results) {
             html += '</div>';
 
             if (q.competency_code) {
+                // Extract sector from competency code (first part before underscore).
+                var sector = q.competency_code.split('_')[0] || '';
+
                 html += '<div class="competency-badge has-comp">';
+                if (sector) {
+                    html += '<strong>Settore:</strong> ' + sector + ' | ';
+                }
                 html += '<strong>Competenza:</strong> ' + q.competency_code;
-                if (q.competency_name) {
-                    html += ' - ' + q.competency_name;
+                if (q.competency_description) {
+                    html += ' - ' + q.competency_description;
                 }
                 var stars = '';
                 for (var s = 0; s < (q.difficultylevel || 1); s++) {
@@ -584,10 +617,24 @@ function renderMultipleQuizzes(results) {
 }
 
 function printQuiz() {
+    var quizIds = getSelectedQuizIds();
+    if (quizIds.length === 0) {
+        alert('Seleziona almeno un quiz');
+        return;
+    }
+
     // First load preview if not visible
     if (!document.getElementById('quiz-preview').classList.contains('visible')) {
         loadPreview();
-        setTimeout(function() { window.print(); }, 1000);
+        // Wait for content to load before printing
+        setTimeout(function() {
+            var container = document.getElementById('questions-container');
+            if (container.querySelector('.question-item')) {
+                window.print();
+            } else {
+                alert('Attendi il caricamento del contenuto prima di stampare');
+            }
+        }, 2000);
     } else {
         window.print();
     }

@@ -68,3 +68,4 @@ $string['answerc'] = 'Answer C';
 $string['answerd'] = 'Answer D';
 $string['competencycode'] = 'Competency Code';
 $string['competencyname'] = 'Competency Name';
+$string['competencydescription'] = 'Competency Description';

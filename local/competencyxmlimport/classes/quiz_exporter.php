@@ -406,6 +406,53 @@ HTML;
     }
 
     /**
+     * Extract sector from competency idnumber.
+     *
+     * The idnumber format is SETTORE_AREA_NUMERO (e.g., MECCANICA_DT_01).
+     * This method extracts the first part (sector).
+     *
+     * @param string $competencycode The competency idnumber.
+     * @return string The sector name or empty string if not found.
+     */
+    public function extract_sector_from_competency($competencycode) {
+        if (empty($competencycode)) {
+            return '';
+        }
+
+        // Split by underscore and get the first part.
+        $parts = explode('_', $competencycode);
+        if (empty($parts[0])) {
+            return '';
+        }
+
+        $sector = strtoupper(trim($parts[0]));
+
+        // Handle common aliases to normalize sector names.
+        $aliases = [
+            'AUTOVEICOLO' => 'AUTOMOBILE',
+            'AUTOM' => 'AUTOMAZIONE',
+            'AUTOMAZ' => 'AUTOMAZIONE',
+            'CHIM' => 'CHIMFARM',
+            'CHIMICA' => 'CHIMFARM',
+            'FARMACEUTICA' => 'CHIMFARM',
+            'ELETTRICITA' => 'ELETTRICITÀ',
+            'ELETTR' => 'ELETTRICITÀ',
+            'ELETT' => 'ELETTRICITÀ',
+            'LOG' => 'LOGISTICA',
+            'MECC' => 'MECCANICA',
+            'METAL' => 'METALCOSTRUZIONE',
+            'GEN' => 'GENERICO',
+            'GENERICO' => 'GENERICO',
+            'GENERICHE' => 'GENERICO',
+            'TRASVERSALI' => 'GENERICO',
+            'SOFT' => 'GENERICO',
+            'OLD' => 'LEGACY',
+        ];
+
+        return $aliases[$sector] ?? $sector;
+    }
+
+    /**
      * Export a quiz to Excel format.
      *
      * @param int $quizid The quiz ID.
@@ -475,7 +522,7 @@ HTML;
             get_string('answerd', 'local_competencyxmlimport'),
             get_string('correctanswer', 'local_competencyxmlimport'),
             get_string('competencycode', 'local_competencyxmlimport'),
-            get_string('competencyname', 'local_competencyxmlimport'),
+            get_string('competencydescription', 'local_competencyxmlimport'),
             get_string('difficulty', 'local_competencyxmlimport')
         ];
 
@@ -526,9 +573,11 @@ HTML;
 
             // Competency info.
             $competencycode = !empty($question->competency_code) ? $question->competency_code : '';
-            $competencyname = !empty($question->competency_name) ? $question->competency_name : '';
+            $competencydesc = !empty($question->competency_description) ? $question->competency_description : '';
+            // Pulisce HTML dalla descrizione
+            $competencydesc = strip_tags(html_entity_decode($competencydesc, ENT_QUOTES, 'UTF-8'));
             $worksheet->write_string($row, 7, $competencycode, $formatcompetency);
-            $worksheet->write_string($row, 8, $competencyname, $formatcompetency);
+            $worksheet->write_string($row, 8, $competencydesc, $formatcompetency);
 
             // Difficulty.
             $worksheet->write_number($row, 9, (int)$question->difficultylevel, $formatnormal);

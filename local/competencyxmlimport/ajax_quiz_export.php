@@ -56,7 +56,7 @@ try {
                     'questiontext' => format_text($q->questiontext, FORMAT_HTML),
                     'qtype' => $q->qtype,
                     'competency_code' => $q->competency_code,
-                    'competency_name' => $q->competency_name,
+                    'competency_description' => strip_tags(html_entity_decode($q->competency_description ?? '', ENT_QUOTES, 'UTF-8')),
                     'difficultylevel' => $q->difficultylevel,
                     'answers' => array_values(array_map(function($a) {
                         return [
