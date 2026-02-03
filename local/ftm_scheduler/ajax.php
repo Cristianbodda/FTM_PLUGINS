@@ -102,8 +102,8 @@ try {
                 
                 // Edit/Delete buttons
                 $content .= '<div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">';
-                $content .= '<a href="' . (new moodle_url('/local/ftm_scheduler/action.php', ['action' => 'edit_activity', 'id' => $id]))->out() . '" class="ftm-btn ftm-btn-primary" style="margin-right: 10px;">✏️ Modifica</a>';
-                $content .= '<a href="' . (new moodle_url('/local/ftm_scheduler/action.php', ['action' => 'delete_activity', 'id' => $id, 'sesskey' => sesskey()]))->out() . '" class="ftm-btn ftm-btn-danger" onclick="return confirm(\'Sei sicuro di voler eliminare questa attività?\')">🗑️ Elimina</a>';
+                $content .= '<a href="' . (new moodle_url('/local/ftm_scheduler/edit_activity.php', ['id' => $id]))->out() . '" class="ftm-btn ftm-btn-primary" style="margin-right: 10px;">✏️ Modifica</a>';
+                $content .= '<a href="' . (new moodle_url('/local/ftm_scheduler/edit_activity.php', ['id' => $id, 'delete' => 1, 'sesskey' => sesskey()]))->out() . '" class="ftm-btn ftm-btn-danger" onclick="return confirm(\'Sei sicuro di voler eliminare questa attività?\')">🗑️ Elimina</a>';
                 $content .= '</div>';
                 
                 $result = [
@@ -150,8 +150,8 @@ try {
                 
                 // Edit/Delete buttons
                 $content .= '<div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">';
-                $content .= '<a href="' . (new moodle_url('/local/ftm_scheduler/action.php', ['action' => 'edit_external', 'id' => $id]))->out() . '" class="ftm-btn ftm-btn-primary" style="margin-right: 10px;">✏️ Modifica</a>';
-                $content .= '<a href="' . (new moodle_url('/local/ftm_scheduler/action.php', ['action' => 'delete_external', 'id' => $id, 'sesskey' => sesskey()]))->out() . '" class="ftm-btn ftm-btn-danger" onclick="return confirm(\'Sei sicuro di voler eliminare questo progetto esterno?\')">🗑️ Elimina</a>';
+                $content .= '<a href="' . (new moodle_url('/local/ftm_scheduler/edit_external.php', ['id' => $id]))->out() . '" class="ftm-btn ftm-btn-primary" style="margin-right: 10px;">✏️ Modifica</a>';
+                $content .= '<a href="' . (new moodle_url('/local/ftm_scheduler/edit_external.php', ['id' => $id, 'delete' => 1, 'sesskey' => sesskey()]))->out() . '" class="ftm-btn ftm-btn-danger" onclick="return confirm(\'Sei sicuro di voler eliminare questo progetto esterno?\')">🗑️ Elimina</a>';
                 $content .= '</div>';
                 
                 $result = [

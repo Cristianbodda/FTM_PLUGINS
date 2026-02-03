@@ -586,6 +586,7 @@ class manager {
     private static function get_monday_of_week_ts($year, $week) {
         $dto = new \DateTime();
         $dto->setISODate($year, $week, 1);
+        $dto->setTime(0, 0, 0); // IMPORTANTE: Imposta mezzanotte, altrimenti usa l'ora corrente!
         return $dto->getTimestamp();
     }
 

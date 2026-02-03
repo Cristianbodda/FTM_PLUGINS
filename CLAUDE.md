@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida Completa per Claude
 
-**Ultimo aggiornamento:** 29 Gennaio 2026
+**Ultimo aggiornamento:** 3 Febbraio 2026
 
 ## Panoramica Progetto
 
@@ -12,16 +12,27 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (29/01/2026)
+## STATO ATTUALE SVILUPPO (03/02/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
-#### 1. FTM Scheduler (local_ftm_scheduler)
+#### 1. FTM Scheduler (local_ftm_scheduler) - AGGIORNATO 03/02/2026
 - Vista Calendario Settimanale e Mensile
 - Gestione Gruppi colore (Giallo, Grigio, Rosso, Marrone, Viola)
 - Gestione Aule e Atelier
 - Generazione automatica attivita
 - Tabella `local_ftm_coaches` per gestione coach (CB, FM, GM, RB)
+- **NUOVO: Excel Calendar Import** - Import completo da file Excel planning mensile
+  - **Struttura 3 Aule:** K-L (Aula 1), M-N (Aula 2), O-P (Aula 3)
+  - **Rilevamento colore celle:** Determina gruppo da colore sfondo (giallo, grigio, rosso, marrone, viola)
+  - **Celle nere = Esterni:** LADI, BIT AI, BIT URAR rilevati automaticamente
+  - **Lettura commenti/note:** Attività esterne lette dai commenti Excel
+  - **Coach-Group inference:** Associa gruppi a coach per settimana
+  - **Preview prima import:** Anteprima completa con filtri
+  - **Edit Activity/External:** Pagine modifica attività e progetti esterni
+  - **File:** `import_calendar.php`, `classes/calendar_importer.php`, `edit_activity.php`, `edit_external.php`
+  - **Debug tools:** `debug_rooms.php`, `debug_parser.php`, `debug_external.php`
+- **Version:** 2026020324
 
 #### 2. Sector Manager + Student Report (local_competencymanager) - AGGIORNATO 28/01/2026
 - Sistema Multi-Settore per studenti
@@ -810,3 +821,111 @@ if ($service->is_available()) {
 6. Report Competenze
 7. Gap Analysis e Suggerimenti
 8. Export Word
+
+---
+
+## FTM SCHEDULER - EXCEL IMPORT (03/02/2026)
+
+### Panoramica
+Sistema completo per importare attività dal file Excel di planning mensile con rilevamento automatico di coach, gruppi, aule e progetti esterni.
+
+### Struttura Colonne Excel
+| Colonna | Contenuto | Esempio |
+|---------|-----------|---------|
+| A | Data | 03/02/2026 |
+| C | Matt/Pom | Mattina / Pomeriggio |
+| K | Aula 1 - Coach | DB |
+| L | Aula 1 - Attività/Colore | (nero = LADI) |
+| M | Aula 2 - Coach | GM, FM, RB |
+| N | Aula 2 - Attività | GR. GRIGIO, At. Canali |
+| O | Aula 3 - Coach | RB (nota con attività) |
+| P | Aula 3 - Colore | (nero = esterno) |
+
+### Rilevamento Colori Celle
+| Colore | Gruppo |
+|--------|--------|
+| Giallo | GIALLO |
+| Grigio | GRIGIO |
+| Rosso | ROSSO |
+| Marrone | MARRONE |
+| Viola | VIOLA |
+| Nero | Esterno (LADI, BIT) |
+
+### File Principali
+```
+local/ftm_scheduler/
+├── import_calendar.php         # Pagina import con preview
+├── classes/calendar_importer.php # Parser Excel completo
+├── edit_activity.php           # Modifica attività
+├── edit_external.php           # Modifica progetti esterni
+├── ajax_import_calendar.php    # Endpoint AJAX import
+├── ajax_delete_activities.php  # Endpoint eliminazione
+└── debug_rooms.php             # Tool debug 3 aule
+```
+
+### Classe calendar_importer
+
+```php
+// Metodi principali
+$importer = new \local_ftm_scheduler\calendar_importer(2026);
+$preview = $importer->preview_file($filepath, 'Febbraio');
+$result = $importer->import_file($filepath, ['sheets' => ['Febbraio']]);
+```
+
+### Parsing Multi-Aula
+Per ogni riga con Matt/Pom, vengono create fino a 3 attività (una per aula con contenuto):
+
+```php
+// parse_room_data($sheet, $row, $coachCol, $activityCol, $roomNum, ...)
+$aula1 = parse_room_data($sheet, $row, 'K', 'L', 1, ...); // Aula 1
+$aula2 = parse_room_data($sheet, $row, 'M', 'N', 2, ...); // Aula 2
+$aula3 = parse_room_data($sheet, $row, 'O', 'P', 3, ...); // Aula 3
+```
+
+### Rilevamento Colore Cella
+```php
+private function get_cell_background_color($sheet, $cellRef) {
+    $style = $sheet->getStyle($cellRef);
+    $fill = $style->getFill();
+    if ($fill->getFillType() === Fill::FILL_SOLID) {
+        return '#' . $fill->getStartColor()->getRGB();
+    }
+    return null;
+}
+```
+
+### Lettura Commenti Excel
+```php
+private function get_cell_comment($sheet, $cellRef) {
+    $comment = $sheet->getComment($cellRef);
+    if ($comment && $comment->getText()) {
+        return trim($comment->getText()->getPlainText());
+    }
+    return '';
+}
+```
+
+### Coach-Group Inference
+Il sistema costruisce una mappa coach→gruppo per settimana nella prima passata:
+```php
+$this->coach_group_map['2026-W07']['GM'] = 'grigio';
+$this->coach_group_map['2026-W07']['FM'] = 'grigio';
+```
+Poi usa questa mappa per assegnare gruppi ad attività come LABORATORIO che non hanno gruppo esplicito.
+
+### Statistiche Import
+```php
+$stats = [
+    'total_rows' => 58,
+    'activities_created' => 38,
+    'external_bookings_created' => 20,
+    'errors' => 0,
+];
+```
+
+### URL Utili
+- **Import:** `/local/ftm_scheduler/import_calendar.php`
+- **Debug Aule:** `/local/ftm_scheduler/debug_rooms.php`
+- **Debug Parser:** `/local/ftm_scheduler/debug_parser.php`
+- **Modifica Attività:** `/local/ftm_scheduler/edit_activity.php?id=X`
+- **Modifica Esterno:** `/local/ftm_scheduler/edit_external.php?id=X`

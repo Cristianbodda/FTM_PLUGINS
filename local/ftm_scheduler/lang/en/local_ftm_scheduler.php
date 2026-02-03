@@ -237,3 +237,24 @@ $string['absence_notification_footer'] = 'This is an automatic notification from
 
 // Message provider
 $string['messageprovider:absence_notification'] = 'Absence notifications';
+
+// Calendar Import
+$string['import_calendar'] = 'Import Calendar from Excel';
+$string['import_instructions'] = 'Import activities from Excel planning file';
+$string['import_year'] = 'Reference Year';
+$string['import_sheets'] = 'Sheets to Import';
+$string['import_preview'] = 'Preview';
+$string['import_execute'] = 'Import Activities';
+$string['import_update_existing'] = 'Update existing activities';
+$string['import_dry_run'] = 'Preview only (do not import)';
+$string['import_success'] = 'Import completed successfully';
+$string['import_success_stats'] = '{$a->created} activities created, {$a->updated} updated, {$a->skipped} skipped';
+$string['import_error_nofile'] = 'No file uploaded';
+$string['import_error_invalidfile'] = 'Invalid file type. Please upload an Excel file (.xlsx or .xls)';
+$string['import_error_upload'] = 'Error uploading file';
+$string['import_error_reading'] = 'Error reading Excel file';
+$string['import_select_sheets'] = 'Select Sheets to Import';
+$string['import_select_all'] = 'Select All';
+$string['import_deselect_all'] = 'Deselect All';
+$string['import_activities_found'] = '{$a} activities found';
+$string['import_back_to_calendar'] = 'Back to Calendar';

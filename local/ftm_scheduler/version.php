@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_ftm_scheduler';
-$plugin->version = 2026012202;  // YYYYMMDDXX - Added attendance page, notification helper, secretary dashboard
+$plugin->version = 2026020324;  // YYYYMMDDXX - Fixed coach query to JOIN with user table for fullname
 $plugin->requires = 2023100900; // Moodle 4.3+
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v1.0.0';
+$plugin->release = 'v1.1.0';
 
 // Dipendenze da altri plugin FTM
 $plugin->dependencies = [

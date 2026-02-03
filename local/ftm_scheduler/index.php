@@ -962,6 +962,11 @@ echo $OUTPUT->header();
             <a href="<?php echo new moodle_url('/local/competencymanager/sector_admin.php'); ?>" class="ftm-btn ftm-btn-secondary">
                 👥 Gestione Settori
             </a>
+            <?php if (has_capability('local/ftm_scheduler:manage', $context)): ?>
+            <a href="<?php echo new moodle_url('/local/ftm_scheduler/import_calendar.php'); ?>" class="ftm-btn ftm-btn-secondary">
+                📊 Importa Excel
+            </a>
+            <?php endif; ?>
             <button class="ftm-btn ftm-btn-success" onclick="ftmOpenModal('newGruppo')">
                 ➕ Nuovo Gruppo
             </button>

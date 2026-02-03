@@ -198,3 +198,63 @@ $string['ftm_scheduler:managegroups'] = 'Gestire i gruppi';
 $string['ftm_scheduler:manageactivities'] = 'Gestire le attività';
 $string['ftm_scheduler:managerooms'] = 'Gestire le aule';
 $string['ftm_scheduler:enrollstudents'] = 'Iscrivere studenti';
+$string['ftm_scheduler:markattendance'] = 'Registrare presenze';
+
+// Attendance
+$string['attendance'] = 'Presenze';
+$string['attendance_title'] = 'Registro Presenze';
+$string['attendance_date'] = 'Data';
+$string['attendance_student'] = 'Studente';
+$string['attendance_status'] = 'Stato';
+$string['attendance_actions'] = 'Azioni';
+$string['attendance_present'] = 'Presente';
+$string['attendance_absent'] = 'Assente';
+$string['attendance_pending'] = 'In attesa';
+$string['attendance_marked_by'] = 'Registrato da';
+$string['attendance_marked_at'] = 'Registrato il';
+$string['mark_present'] = 'Segna Presente';
+$string['mark_absent'] = 'Segna Assente';
+$string['mark_all_present'] = 'Segna Tutti Presenti';
+$string['student'] = 'Studente';
+$string['activity'] = 'Attività';
+$string['date'] = 'Data';
+$string['time'] = 'Ora';
+$string['room'] = 'Aula';
+$string['no_activities_today'] = 'Nessuna attività programmata per questa data';
+$string['select_activity'] = 'Seleziona un\'attività per registrare le presenze';
+$string['export_attendance'] = 'Esporta Presenze';
+$string['attendance_updated'] = 'Presenze aggiornate con successo';
+$string['prev_day'] = 'Giorno Precedente';
+$string['next_day'] = 'Giorno Successivo';
+$string['today'] = 'Oggi';
+
+// Absence notifications
+$string['absence_notification_title'] = 'Notifica Assenza Studente';
+$string['absence_notification_subject'] = 'Assenza: {$a}';
+$string['absence_notification_intro'] = 'Uno studente è stato segnato come assente da un\'attività.';
+$string['absence_notification_small'] = '{$a->student_name} assente da {$a->activity_title} il {$a->activity_date}';
+$string['absence_notification_footer'] = 'Questa è una notifica automatica da FTM Scheduler.';
+
+// Message provider
+$string['messageprovider:absence_notification'] = 'Notifiche assenze';
+
+// Calendar Import
+$string['import_calendar'] = 'Importa Calendario da Excel';
+$string['import_instructions'] = 'Importa attività da file Excel di pianificazione';
+$string['import_year'] = 'Anno di Riferimento';
+$string['import_sheets'] = 'Fogli da Importare';
+$string['import_preview'] = 'Anteprima';
+$string['import_execute'] = 'Importa Attività';
+$string['import_update_existing'] = 'Aggiorna attività esistenti';
+$string['import_dry_run'] = 'Solo anteprima (non importare)';
+$string['import_success'] = 'Importazione completata con successo';
+$string['import_success_stats'] = '{$a->created} attività create, {$a->updated} aggiornate, {$a->skipped} saltate';
+$string['import_error_nofile'] = 'Nessun file caricato';
+$string['import_error_invalidfile'] = 'Tipo file non valido. Carica un file Excel (.xlsx o .xls)';
+$string['import_error_upload'] = 'Errore durante il caricamento del file';
+$string['import_error_reading'] = 'Errore nella lettura del file Excel';
+$string['import_select_sheets'] = 'Seleziona i Fogli da Importare';
+$string['import_select_all'] = 'Seleziona Tutti';
+$string['import_deselect_all'] = 'Deseleziona Tutti';
+$string['import_activities_found'] = '{$a} attività trovate';
+$string['import_back_to_calendar'] = 'Torna al Calendario';
