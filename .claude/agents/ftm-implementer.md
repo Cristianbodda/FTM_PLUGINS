@@ -1,3 +1,8 @@
+---
+name: ftm-implementer
+description: Implementa funzionalità FTM per Moodle
+---
+
 # AGENT: FTM Implementer
 
 ## Metadata

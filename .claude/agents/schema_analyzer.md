@@ -1,3 +1,8 @@
+---
+name: schema-analyzer
+description: Analizza struttura database prima dello sviluppo
+---
+
 # SCHEMA ANALYZER AGENT
 
 ## Ruolo

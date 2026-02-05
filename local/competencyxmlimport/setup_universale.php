@@ -16,6 +16,7 @@ require_once($CFG->libdir . '/questionlib.php');
 require_once($CFG->libdir . '/filelib.php');
 require_once(__DIR__ . '/classes/xml_validator.php');
 require_once(__DIR__ . '/classes/word_import_helper.php');
+require_once(__DIR__ . '/classes/excel_quiz_importer.php');
 
 // Parametri
 $courseid = required_param('courseid', PARAM_INT);
@@ -91,6 +92,17 @@ if (optional_param('clear_word', 0, PARAM_INT)) {
     unset($SESSION->word_import_suggested_name);
     unset($SESSION->word_import_valid_competencies);
     unset($SESSION->word_import_sector);
+    redirect(new moodle_url('/local/competencyxmlimport/setup_universale.php',
+        ['courseid' => $courseid, 'step' => 3]));
+}
+
+// Pulisci sessione Excel se richiesto
+if (optional_param('clear_excel', 0, PARAM_INT)) {
+    if (isset($SESSION->excel_import_file) && file_exists($SESSION->excel_import_file)) {
+        @unlink($SESSION->excel_import_file);
+    }
+    unset($SESSION->excel_import_file);
+    unset($SESSION->excel_import_filename);
     redirect(new moodle_url('/local/competencyxmlimport/setup_universale.php',
         ['courseid' => $courseid, 'step' => 3]));
 }
@@ -970,10 +982,33 @@ if ($step == 3):
                     }
                     continue;
                 }
-                
+
+                // === GESTIONE FILE EXCEL (.xlsx, .xlsb) ===
+                if (in_array($ext, ['xlsx', 'xlsb', 'xls'])) {
+                    // Pulisci sessione precedente
+                    if (isset($SESSION->excel_import_file) && file_exists($SESSION->excel_import_file)) {
+                        @unlink($SESSION->excel_import_file);
+                    }
+                    unset($SESSION->excel_import_file);
+                    unset($SESSION->excel_import_filename);
+
+                    // Salva il file temporaneo
+                    $excel_tmp_path = $CFG->tempdir . '/excel_import_' . time() . '_' . uniqid() . '.' . $ext;
+                    if (move_uploaded_file($tmp_name, $excel_tmp_path)) {
+                        // Memorizza in sessione
+                        $SESSION->excel_import_file = $excel_tmp_path;
+                        $SESSION->excel_import_filename = $filename;
+
+                        $upload_message = '📊 File Excel caricato: ' . $filename . '. Analisi in corso...';
+                    } else {
+                        $upload_error .= "❌ Errore caricamento Excel: $filename<br>";
+                    }
+                    continue;
+                }
+
                 // === GESTIONE FILE XML (codice esistente) ===
                 if ($ext !== 'xml') {
-                    $upload_error .= "⚠️ File ignorato (usa .xml o .docx): $filename<br>";
+                    $upload_error .= "⚠️ File ignorato (usa .xml, .docx o .xlsx): $filename<br>";
                     continue;
                 }
                 
@@ -1824,7 +1859,147 @@ if ($step == 3):
     // ========== FINE EDITOR COMPETENZE ==========
     </script>
     <?php endif; ?>
-    
+
+    <?php
+    // === SEZIONE REVISIONE EXCEL ===
+    $show_excel_review = isset($SESSION->excel_import_file) && file_exists($SESSION->excel_import_file);
+    if ($show_excel_review):
+        $excelImporter = new \local_competencyxmlimport\excel_quiz_importer($frameworkid, $sector);
+        $excelImporter->load_file($SESSION->excel_import_file);
+        $excelSummary = $excelImporter->get_summary();
+        $quizCount = $excelSummary['quiz_count'];
+        $totalQuestions = $excelSummary['total_questions'];
+    ?>
+    <div class="panel" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; margin-bottom: 20px;">
+        <h3 style="color: white; margin-bottom: 15px;"><span class="icon">📊</span> Import Excel Multi-Quiz: <?php echo htmlspecialchars($SESSION->excel_import_filename); ?></h3>
+
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px;">
+            <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 28px; font-weight: bold;"><?php echo $quizCount; ?></div>
+                <div style="font-size: 13px; opacity: 0.9;">Quiz da Creare</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 28px; font-weight: bold;"><?php echo $totalQuestions; ?></div>
+                <div style="font-size: 13px; opacity: 0.9;">Domande Totali</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 28px; font-weight: bold;"><?php echo $excelSummary['validation']['valid_competencies']; ?></div>
+                <div style="font-size: 13px; opacity: 0.9;">Competenze Valide</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 28px; font-weight: bold; <?php echo $excelSummary['validation']['invalid_competencies'] > 0 ? 'color: #fcd34d;' : ''; ?>"><?php echo $excelSummary['validation']['invalid_competencies']; ?></div>
+                <div style="font-size: 13px; opacity: 0.9;">Competenze Non Valide</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 13px;">
+                    ⭐ <?php echo $excelSummary['validation']['by_difficulty'][1]; ?> |
+                    ⭐⭐ <?php echo $excelSummary['validation']['by_difficulty'][2]; ?> |
+                    ⭐⭐⭐ <?php echo $excelSummary['validation']['by_difficulty'][3]; ?>
+                </div>
+                <div style="font-size: 13px; opacity: 0.9;">Distribuzione Difficolta</div>
+            </div>
+        </div>
+
+        <!-- Quiz List Preview -->
+        <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px; max-height: 250px; overflow-y: auto;">
+            <strong style="display: block; margin-bottom: 10px;">📋 Quiz che verranno creati:</strong>
+            <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.3);">
+                        <th style="text-align: left; padding: 8px 5px;">#</th>
+                        <th style="text-align: left; padding: 8px 5px;">Nome Quiz</th>
+                        <th style="text-align: center; padding: 8px 5px;">Domande</th>
+                        <th style="text-align: center; padding: 8px 5px;">Competenze OK</th>
+                        <th style="text-align: center; padding: 8px 5px;">Difficolta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $qnum = 0; foreach ($excelSummary['quizzes'] as $quiz): $qnum++; ?>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <td style="padding: 6px 5px;"><?php echo $qnum; ?></td>
+                        <td style="padding: 6px 5px; font-weight: 500;"><?php echo htmlspecialchars($quiz['short_name']); ?></td>
+                        <td style="text-align: center; padding: 6px 5px;"><?php echo $quiz['question_count']; ?></td>
+                        <td style="text-align: center; padding: 6px 5px;">
+                            <?php if ($quiz['invalid_competencies'] > 0): ?>
+                            <span style="color: #fcd34d;"><?php echo $quiz['valid_competencies']; ?>/<?php echo $quiz['question_count']; ?></span>
+                            <?php else: ?>
+                            <?php echo $quiz['valid_competencies']; ?>
+                            <?php endif; ?>
+                        </td>
+                        <td style="text-align: center; padding: 6px 5px;">
+                            <?php
+                            $d = $quiz['difficulty_distribution'];
+                            $avg = ($d[1] * 1 + $d[2] * 2 + $d[3] * 3) / max(1, array_sum($d));
+                            echo str_repeat('⭐', round($avg));
+                            ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <?php if (!empty($excelSummary['validation']['invalid_codes'])): ?>
+        <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <strong>⚠️ Competenze non trovate nel framework:</strong>
+            <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">
+                <?php foreach ($excelSummary['validation']['invalid_codes'] as $code): ?>
+                <span style="background: #fcd34d; color: #92400e; padding: 4px 10px; border-radius: 4px; font-family: monospace; font-size: 13px;"><?php echo htmlspecialchars($code); ?></span>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($excelSummary['warnings']) && count($excelSummary['warnings']) > 0): ?>
+        <details style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <summary style="cursor: pointer; font-weight: 600;">⚠️ Avvisi (<?php echo count($excelSummary['warnings']); ?>)</summary>
+            <ul style="margin: 10px 0 0 0; padding-left: 20px; max-height: 150px; overflow-y: auto;">
+                <?php foreach (array_slice($excelSummary['warnings'], 0, 20) as $warning): ?>
+                <li style="font-size: 13px;"><?php echo htmlspecialchars($warning); ?></li>
+                <?php endforeach; ?>
+                <?php if (count($excelSummary['warnings']) > 20): ?>
+                <li style="font-size: 13px; font-style: italic;">... e altri <?php echo count($excelSummary['warnings']) - 20; ?> avvisi</li>
+                <?php endif; ?>
+            </ul>
+        </details>
+        <?php endif; ?>
+
+        <?php if (!empty($excelSummary['errors'])): ?>
+        <div style="background: rgba(255,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <strong>❌ Errori:</strong>
+            <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                <?php foreach ($excelSummary['errors'] as $error): ?>
+                <li style="font-size: 13px;"><?php echo htmlspecialchars($error); ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <?php endif; ?>
+
+        <form method="post" action="?courseid=<?php echo $courseid; ?>&step=5&action=executeexcel&sesskey=<?php echo sesskey(); ?>">
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div style="flex: 1;">
+                    <p style="margin: 0 0 10px 0; font-size: 14px;">
+                        Verranno creati <strong><?php echo $quizCount; ?> quiz</strong> con <strong><?php echo $totalQuestions; ?> domande</strong> totali.
+                        Le categorie domande saranno organizzate come: <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 3px;"><?php echo htmlspecialchars($sector); ?> → [Nome Quiz]</code>
+                    </p>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary" style="background: white; color: #059669; border: none; padding: 12px 30px; font-weight: 600; font-size: 15px;" <?php echo !$excelSummary['can_import'] ? 'disabled' : ''; ?>>
+                        🚀 Importa <?php echo $quizCount; ?> Quiz (<?php echo $totalQuestions; ?> Domande)
+                    </button>
+                </div>
+                <div>
+                    <a href="?courseid=<?php echo $courseid; ?>&step=3&clear_excel=1"
+                       class="btn btn-secondary" style="background: rgba(255,255,255,0.3); color: white; border: none; padding: 12px 20px;">
+                        ✕ Annulla
+                    </a>
+                </div>
+            </div>
+            <input type="hidden" name="assign_competencies" value="1">
+        </form>
+    </div>
+    <?php endif; ?>
+
     <?php if (!empty($sector_files)): ?>
     <div class="panel">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -2094,6 +2269,145 @@ if ($step == 4):
                 <button type="submit" class="btn btn-primary">🚀 Avvia Setup</button>
             </div>
         </form>
+    </div>
+</div>
+
+<?php
+endif;
+
+// ============================================================================
+// STEP 5: ESECUZIONE DA EXCEL
+// ============================================================================
+
+if ($step == 5 && $action === 'executeexcel'):
+    require_sesskey();
+
+    $frameworkid = $session_data['frameworkid'];
+    $sector = $session_data['sector'];
+    $framework = $DB->get_record('competency_framework', ['id' => $frameworkid]);
+
+    $assign_competencies = optional_param('assign_competencies', 1, PARAM_INT);
+
+    // Verify Excel file exists
+    if (!isset($SESSION->excel_import_file) || !file_exists($SESSION->excel_import_file)) {
+        redirect(new moodle_url('/local/competencyxmlimport/setup_universale.php',
+            ['courseid' => $courseid, 'step' => 3]),
+            'File Excel non trovato. Ricarica il file.',
+            null, \core\output\notification::NOTIFY_ERROR);
+    }
+?>
+
+<div class="setup-page">
+    <div class="setup-header">
+        <h2>📊 Import Excel Multi-Quiz in Esecuzione...</h2>
+        <p>Framework: <strong><?php echo format_string($framework->shortname); ?></strong> | Settore: <strong><?php echo $sector; ?></strong></p>
+    </div>
+
+    <div class="steps-container">
+        <div class="step-item completed"><div class="step-number">✓</div><div class="step-label">Framework</div></div>
+        <div class="step-item completed"><div class="step-number">✓</div><div class="step-label">Settore</div></div>
+        <div class="step-item completed"><div class="step-number">✓</div><div class="step-label">File Excel</div></div>
+        <div class="step-item completed"><div class="step-number">✓</div><div class="step-label">Configura</div></div>
+        <div class="step-item active"><div class="step-number">5</div><div class="step-label">Esegui</div></div>
+    </div>
+
+    <div class="panel">
+        <h3><span class="icon">📋</span> Log Import Excel Multi-Quiz</h3>
+        <div class="progress-log">
+<?php
+    ob_implicit_flush(true);
+
+    echo '<div class="log-line info">🔄 Inizio import Excel multi-quiz...</div>';
+
+    // Create importer and load file
+    $importer = new \local_competencyxmlimport\excel_quiz_importer($frameworkid, $sector);
+    $importer->load_file($SESSION->excel_import_file);
+
+    $quizCount = $importer->get_quiz_count();
+    $questionCount = $importer->get_total_questions();
+    echo '<div class="log-line">📊 Trovati ' . $quizCount . ' quiz con ' . $questionCount . ' domande totali nel file Excel</div>';
+
+    // Debug: show validation stats
+    $summary = $importer->get_summary();
+    $validComp = $summary['validation']['valid_competencies'];
+    $invalidComp = $summary['validation']['invalid_competencies'];
+    echo '<div class="log-line">🔍 Validazione competenze: ' . $validComp . ' valide, ' . $invalidComp . ' non trovate nel framework</div>';
+    if (!empty($summary['validation']['invalid_codes'])) {
+        $sampleInvalid = array_slice($summary['validation']['invalid_codes'], 0, 5);
+        echo '<div class="log-line warning" style="margin-left: 20px; font-size: 12px;">Codici non trovati (esempio): ' . implode(', ', $sampleInvalid) . '</div>';
+    }
+    // Show sample competencies from DB
+    $dbCompetencies = $DB->get_records_sql("SELECT idnumber FROM {competency} WHERE competencyframeworkid = ? LIMIT 5", [$frameworkid]);
+    if ($dbCompetencies) {
+        $dbCodes = array_column((array)$dbCompetencies, 'idnumber');
+        echo '<div class="log-line" style="margin-left: 20px; font-size: 12px; color: #666;">Codici nel DB (esempio): ' . implode(', ', $dbCodes) . '</div>';
+    }
+
+    // Show quiz list
+    $quizzes = $importer->get_quizzes();
+    echo '<div class="log-line" style="margin-left: 20px; font-size: 12px; color: #666;">Quiz: ';
+    $quizNames = [];
+    foreach ($quizzes as $name => $data) {
+        $quizNames[] = $data['short_name'] . ' (' . count($data['questions']) . ')';
+    }
+    echo implode(', ', $quizNames);
+    echo '</div>';
+
+    // Execute multi-quiz import
+    echo '<div class="log-line info">🚀 Creazione quiz e domande...</div>';
+
+    $result = $importer->create_all_quizzes($courseid, $assign_competencies);
+
+    if ($result['success']) {
+        echo '<div class="log-line success" style="font-size: 15px; font-weight: bold;">✅ Import completato!</div>';
+        echo '<div class="log-line success">📚 Quiz creati: ' . $result['quizzes_created'] . '</div>';
+        echo '<div class="log-line success">❓ Domande create: ' . $result['questions_created'] . '</div>';
+        if ($result['questions_existing'] > 0) {
+            echo '<div class="log-line warning">⚠️ Domande esistenti (aggiornate): ' . $result['questions_existing'] . '</div>';
+        }
+        echo '<div class="log-line success">🎯 Competenze assegnate: ' . $result['competencies_assigned'] . '</div>';
+
+        // Detail per quiz
+        if (!empty($result['quiz_details'])) {
+            echo '<div class="log-line" style="margin-top: 15px; font-weight: bold;">📋 Dettaglio per Quiz:</div>';
+            foreach ($result['quiz_details'] as $qd) {
+                $status = ($qd['created'] > 0) ? '✅' : '📂';
+                echo '<div class="log-line" style="margin-left: 20px; font-size: 13px;">';
+                echo $status . ' <strong>' . htmlspecialchars($qd['name']) . '</strong> - ';
+                echo $qd['questions'] . ' domande';
+                if ($qd['existing'] > 0) {
+                    echo ' (' . $qd['existing'] . ' esistenti)';
+                }
+                echo ', ' . $qd['competencies'] . ' competenze';
+                echo '</div>';
+            }
+        }
+
+        echo '<div class="log-line success" style="font-size: 16px; margin-top: 20px; padding: 10px; background: #d1fae5; border-radius: 6px;">🎉 IMPORT MULTI-QUIZ COMPLETATO CON SUCCESSO!</div>';
+    } else {
+        echo '<div class="log-line error">❌ Errore durante l\'import</div>';
+        foreach ($result['errors'] as $error) {
+            echo '<div class="log-line error">   ' . htmlspecialchars($error) . '</div>';
+        }
+    }
+
+    // Cleanup
+    if (file_exists($SESSION->excel_import_file)) {
+        @unlink($SESSION->excel_import_file);
+    }
+    unset($SESSION->excel_import_file);
+    unset($SESSION->excel_import_filename);
+?>
+        </div>
+
+        <div class="btn-group" style="margin-top: 20px;">
+            <a href="<?php echo new moodle_url('/local/competencyxmlimport/setup_universale.php', ['courseid' => $courseid, 'step' => 1]); ?>" class="btn btn-secondary">
+                ← Nuovo Import
+            </a>
+            <a href="<?php echo new moodle_url('/course/view.php', ['id' => $courseid]); ?>" class="btn btn-primary">
+                📚 Vai al Corso
+            </a>
+        </div>
     </div>
 </div>
 

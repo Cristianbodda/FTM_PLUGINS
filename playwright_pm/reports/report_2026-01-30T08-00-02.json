@@ -1,0 +1,10 @@
+{
+  "timestamp": "30/01/2026, 09:00:02",
+  "checks": [],
+  "summary": {
+    "ok": 0,
+    "warn": 0,
+    "error": 0
+  },
+  "error": "Login fallito"
+}

@@ -1,3 +1,8 @@
+---
+name: moodle-refactor
+description: Refactoring codice Moodle secondo best practices
+---
+
 # AGENT: Moodle Refactor
 
 ## Metadata

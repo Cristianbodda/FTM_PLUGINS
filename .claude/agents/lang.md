@@ -1,3 +1,8 @@
+---
+name: lang
+description: Gestisce stringhe di lingua EN/IT per Moodle
+---
+
 # LANG AGENT
 
 ## Ruolo

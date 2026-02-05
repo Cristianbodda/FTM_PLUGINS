@@ -1,3 +1,8 @@
+---
+name: ftm-investigator
+description: Analizza codebase FTM per trovare bug e problemi
+---
+
 # AGENT: FTM Investigator
 
 ## Metadata

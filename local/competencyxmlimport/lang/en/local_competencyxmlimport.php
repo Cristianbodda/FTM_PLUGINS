@@ -69,3 +69,27 @@ $string['answerd'] = 'Answer D';
 $string['competencycode'] = 'Competency Code';
 $string['competencyname'] = 'Competency Name';
 $string['competencydescription'] = 'Competency Description';
+
+// Excel Import strings
+$string['excelimport'] = 'Excel Import';
+$string['uploadexcel'] = 'Upload Excel File';
+$string['excelformat'] = 'Excel file format (.xlsx, .xlsb)';
+$string['excelformatdesc'] = 'Upload an Excel file exported from the Quiz Export tool. Columns: #, Question, Answer A-D, Correct, Competency Code, Description, Difficulty';
+$string['filenotfound'] = 'File not found';
+$string['invalidfileformat'] = 'Invalid file format. Please upload .xlsx or .xlsb file';
+$string['notenoughcolumns'] = 'Excel file must have at least 7 columns';
+$string['noquestionsfound'] = 'No questions found in the Excel file';
+$string['toofewanswers'] = 'Question {$a} has fewer than 2 answers';
+$string['invalidcorrectanswer'] = 'Question {$a->num} has invalid correct answer: {$a->letter}';
+$string['competencynotfound_excel'] = 'Competency code "{$a->code}" not found in framework (Question {$a->num})';
+$string['competencynotfoundsuggest'] = 'Competency code "{$a->code}" not found (Question {$a->num}). Did you mean: {$a->suggest}?';
+$string['excelpreview'] = 'Excel Import Preview';
+$string['validcompetencies'] = 'Valid competencies';
+$string['invalidcompetencies'] = 'Invalid competencies';
+$string['missingcompetencies'] = 'Missing competencies';
+$string['difficultydistribution'] = 'Difficulty distribution';
+$string['importfromexcel'] = 'Import from Excel';
+$string['excelimportsuccess'] = 'Excel import completed successfully';
+$string['questionsimported_count'] = '{$a} questions imported';
+$string['competenciesassigned_count'] = '{$a} competencies assigned';
+$string['preferxlsx'] = 'For best results, use .xlsx format instead of .xlsb';

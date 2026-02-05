@@ -1,3 +1,8 @@
+---
+name: moodle-security-scanner
+description: Scansione sicurezza codice Moodle OWASP
+---
+
 # AGENT: Moodle Security Scanner
 
 ## Metadata

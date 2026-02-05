@@ -1,3 +1,8 @@
+---
+name: coordinator
+description: Coordina tutti gli agenti di sviluppo
+---
+
 # COORDINATOR AGENT
 
 ## Ruolo

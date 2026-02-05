@@ -1,3 +1,8 @@
+---
+name: ftm-orchestrator
+description: Coordina sviluppo multi-agente FTM
+---
+
 # AGENT: FTM Orchestrator
 
 ## Metadata

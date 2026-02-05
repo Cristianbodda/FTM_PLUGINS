@@ -82,7 +82,7 @@ Plugin per integrare Azure OpenAI/Copilot con mascheramento dati sensibili:
 - **File hook:** `classes/hook_callbacks.php`, `db/hooks.php`
 - **Version:** 1.3.1 (2026012903)
 
-#### 5. Setup Universale Quiz (local_competencyxmlimport) - AGGIORNATO 29/01/2026
+#### 5. Setup Universale Quiz (local_competencyxmlimport) - AGGIORNATO 03/02/2026
 Sistema completo per import quiz e assegnazione competenze:
 - **Import XML/Word** con parsing automatico
 - **Estrazione codici competenza** con regex flessibile (supporta caratteri accentati)
@@ -90,12 +90,22 @@ Sistema completo per import quiz e assegnazione competenze:
 - **Aggiornamento livello difficoltà** per competenze già assegnate
 - **Debug integrato** per troubleshooting
 - **Riepilogo finale** con tabella quiz/domande/livello
-- **NUOVO: Quiz Export Tool** - Export domande, risposte e competenze in CSV/Excel
+- **Quiz Export Tool** - Export domande, risposte e competenze in CSV/Excel
   - Selezione multipla quiz per corso
   - Anteprima HTML con risposte corrette evidenziate
   - Export CSV con colonne: Quiz, #, Domanda, Risposte A-D, Corretta, Competenza, Difficoltà
   - Utile per analisi duplicati e pulizia question bank
   - **File:** `quiz_export.php`, `classes/quiz_exporter.php`, `classes/quiz_excel_exporter.php`
+- **NUOVO: Excel Quiz Import (03/02/2026)** - Import completo da file Excel
+  - **Formati supportati:** .xlsx, .xlsb (preferito .xlsx)
+  - **Struttura colonne:** #, Domanda, Risposte A-D, Corretta, Codice Competenza, Descrizione, Difficoltà
+  - **Validazione pre-import:** Verifica competenze contro framework selezionato
+  - **Difficoltà per-domanda:** Ogni domanda mantiene il proprio livello (1-3)
+  - **Risposte complete:** Importa tutte le 4 risposte con indicazione corretta
+  - **Anteprima visuale:** Statistiche, errori, avvisi prima dell'import
+  - **Fuzzy matching:** Suggerimenti per codici competenza simili
+  - **File:** `classes/excel_quiz_importer.php`
+  - **Version:** 1.4 (2026020301)
 
 #### 6. Coach Dashboard V2 (local_coachmanager) - AGGIORNATO 29/01/2026
 Dashboard avanzata per coach con interfaccia ottimizzata per utenti 50+:

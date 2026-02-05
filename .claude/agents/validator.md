@@ -1,3 +1,8 @@
+---
+name: validator
+description: Valida codice contro checklist sicurezza e best practices
+---
+
 # VALIDATOR AGENT
 
 ## Ruolo

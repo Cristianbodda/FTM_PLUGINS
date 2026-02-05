@@ -1,0 +1,10 @@
+{
+  "timestamp": "02/02/2026, 09:58:13",
+  "checks": [],
+  "summary": {
+    "ok": 0,
+    "warn": 0,
+    "error": 0
+  },
+  "error": "page.fill: Target crashed \nCall log:\n\u001b[2m  - waiting for locator('input[name=\"username\"]')\u001b[22m\n"
+}

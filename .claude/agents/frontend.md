@@ -1,3 +1,8 @@
+---
+name: frontend
+description: Sviluppa interfaccia utente HTML/CSS/JS
+---
+
 # FRONTEND AGENT
 
 ## Ruolo
