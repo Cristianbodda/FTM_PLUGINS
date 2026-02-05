@@ -43,21 +43,42 @@ try {
         case 'get_activity':
             $id = required_param('id', PARAM_INT);
             $activity = \local_ftm_scheduler\manager::get_activity($id);
-            
+
             if ($activity) {
                 $colors = local_ftm_scheduler_get_colors();
                 $color_info = $colors[$activity->group_color ?? 'giallo'] ?? $colors['giallo'];
-                
+
                 // Get enrollments
                 $enrollments = \local_ftm_scheduler\manager::get_activity_enrollments($id);
                 $enrolled_count = count($enrollments);
-                
+
+                // Get all unique groups from enrolled students
+                $enrolled_groups = [];
+                $enrolled_group_ids = [];
+                foreach ($enrollments as $enrollment) {
+                    if (!empty($enrollment->groupid) && !in_array($enrollment->groupid, $enrolled_group_ids)) {
+                        $enrolled_group_ids[] = $enrollment->groupid;
+                        $group = \local_ftm_scheduler\manager::get_group($enrollment->groupid);
+                        if ($group) {
+                            $enrolled_groups[] = $group;
+                        }
+                    }
+                }
+
+                // Also add the activity's main group if not already in list
+                if (!empty($activity->groupid) && !in_array($activity->groupid, $enrolled_group_ids)) {
+                    $main_group = \local_ftm_scheduler\manager::get_group($activity->groupid);
+                    if ($main_group) {
+                        array_unshift($enrolled_groups, $main_group);
+                    }
+                }
+
                 // Build title
                 $title = $color_info['emoji'] . ' ' . $activity->name;
                 if ($activity->group_name) {
                     $title .= ' - ' . $activity->group_name;
                 }
-                
+
                 // Build content HTML
                 $content = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">';
                 $content .= '<div>';
@@ -67,7 +88,26 @@ try {
                 $content .= '</div>';
                 $content .= '<div>';
                 $content .= '<p><strong>👤 Docente:</strong> Coach ' . ($activity->teacher_firstname ? substr($activity->teacher_firstname, 0, 1) . substr($activity->teacher_lastname, 0, 1) : 'GM') . '</p>';
-                $content .= '<p><strong>🎨 Gruppo:</strong> <span class="gruppo-badge gruppo-' . ($activity->group_color ?? 'giallo') . '">' . $color_info['emoji'] . ' ' . $color_info['name'] . '</span></p>';
+
+                // Show all groups participating
+                if (count($enrolled_groups) > 1) {
+                    $content .= '<p><strong>🎨 Gruppi partecipanti:</strong></p>';
+                    $content .= '<div style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px;">';
+                    foreach ($enrolled_groups as $eg) {
+                        $eg_color_info = $colors[$eg->color ?? 'giallo'] ?? $colors['giallo'];
+                        $eg_kw = $eg->calendar_week ? ' KW' . str_pad($eg->calendar_week, 2, '0', STR_PAD_LEFT) : '';
+                        $content .= '<span class="gruppo-badge gruppo-' . ($eg->color ?? 'giallo') . '" style="font-size: 12px;">' . $eg_color_info['emoji'] . ' ' . $eg_color_info['name'] . $eg_kw . '</span>';
+                    }
+                    $content .= '</div>';
+                } else {
+                    // Single group
+                    $single_kw = !empty($activity->groupid) ? '' : '';
+                    if (!empty($enrolled_groups)) {
+                        $single_kw = $enrolled_groups[0]->calendar_week ? ' KW' . str_pad($enrolled_groups[0]->calendar_week, 2, '0', STR_PAD_LEFT) : '';
+                    }
+                    $content .= '<p><strong>🎨 Gruppo:</strong> <span class="gruppo-badge gruppo-' . ($activity->group_color ?? 'giallo') . '">' . $color_info['emoji'] . ' ' . $color_info['name'] . $single_kw . '</span></p>';
+                }
+
                 $content .= '<p><strong>📊 Tipo:</strong> ' . ucfirst($activity->activity_type) . '</p>';
                 $content .= '</div>';
                 $content .= '</div>';

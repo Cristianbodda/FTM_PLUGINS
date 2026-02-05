@@ -43,9 +43,11 @@ global $CFG;
             <option value="">Tutti i gruppi</option>
             <?php foreach ($groups as $group):
                 $color_info = $colors[$group->color] ?? $colors['giallo'];
+                $group_kw = $group->calendar_week ?? '';
+                $kw_label = $group_kw ? ' - KW' . str_pad($group_kw, 2, '0', STR_PAD_LEFT) : '';
             ?>
                 <option value="<?php echo $group->id; ?>">
-                    <?php echo $color_info['emoji']; ?> <?php echo $color_info['name']; ?>
+                    <?php echo $color_info['emoji']; ?> <?php echo $color_info['name']; ?><?php echo $kw_label; ?>
                 </option>
             <?php endforeach; ?>
         </select>
@@ -171,15 +173,26 @@ function ftmChangeWeekYear(selectedYear) {
             foreach ($day_activities as $activity):
                 if (!empty($activity->is_external)):
             ?>
-                    <div class="activity-block external" style="cursor: pointer;" onclick="ftmViewExternal(<?php echo $activity->id; ?>)">
+                    <div class="activity-block external"
+                         style="cursor: pointer;"
+                         onclick="ftmViewExternal(<?php echo $activity->id; ?>)"
+                         data-groupid=""
+                         data-roomid="<?php echo $activity->room_id ?? ''; ?>"
+                         data-type="external">
                         <div class="activity-title"><?php echo $activity->project_name; ?></div>
                         <div class="activity-info"><?php echo $activity->room_shortname ?? 'AULA'; ?> - <?php echo $activity->responsible; ?></div>
                     </div>
                 <?php else:
                     $group_color = $activity->group_color ?? 'giallo';
                     $color_info = $colors[$group_color] ?? $colors['giallo'];
+                    $activity_type = !empty($activity->is_atelier) ? 'atelier' : 'week1';
                 ?>
-                    <div class="activity-block <?php echo $group_color; ?>" style="cursor: pointer;" onclick="ftmViewActivity(<?php echo $activity->id; ?>)">
+                    <div class="activity-block <?php echo $group_color; ?>"
+                         style="cursor: pointer;"
+                         onclick="ftmViewActivity(<?php echo $activity->id; ?>)"
+                         data-groupid="<?php echo $activity->groupid ?? ''; ?>"
+                         data-roomid="<?php echo $activity->room_id ?? ''; ?>"
+                         data-type="<?php echo $activity_type; ?>">
                         <div class="activity-title">
                             <span class="activity-gruppo-dot dot-<?php echo $group_color; ?>"></span>
                             <?php echo $activity->name; ?>
@@ -220,15 +233,26 @@ function ftmChangeWeekYear(selectedYear) {
             foreach ($day_activities as $activity):
                 if (!empty($activity->is_external)):
             ?>
-                    <div class="activity-block external" style="cursor: pointer;" onclick="ftmViewExternal(<?php echo $activity->id; ?>)">
+                    <div class="activity-block external"
+                         style="cursor: pointer;"
+                         onclick="ftmViewExternal(<?php echo $activity->id; ?>)"
+                         data-groupid=""
+                         data-roomid="<?php echo $activity->room_id ?? ''; ?>"
+                         data-type="external">
                         <div class="activity-title"><?php echo $activity->project_name; ?></div>
                         <div class="activity-info"><?php echo $activity->room_shortname ?? 'AULA'; ?> - <?php echo $activity->responsible; ?></div>
                     </div>
                 <?php else:
                     $group_color = $activity->group_color ?? 'giallo';
                     $color_info = $colors[$group_color] ?? $colors['giallo'];
+                    $activity_type = !empty($activity->is_atelier) ? 'atelier' : 'week1';
                 ?>
-                    <div class="activity-block <?php echo $group_color; ?>" style="cursor: pointer;" onclick="ftmViewActivity(<?php echo $activity->id; ?>)">
+                    <div class="activity-block <?php echo $group_color; ?>"
+                         style="cursor: pointer;"
+                         onclick="ftmViewActivity(<?php echo $activity->id; ?>)"
+                         data-groupid="<?php echo $activity->groupid ?? ''; ?>"
+                         data-roomid="<?php echo $activity->room_id ?? ''; ?>"
+                         data-type="<?php echo $activity_type; ?>">
                         <div class="activity-title">
                             <span class="activity-gruppo-dot dot-<?php echo $group_color; ?>"></span>
                             <?php echo $activity->name; ?>
@@ -383,3 +407,144 @@ function ftmGoToWeek(week, year) {
 </script>
 
 <?php endif; ?>
+
+<!-- Filter JavaScript -->
+<script>
+(function() {
+    'use strict';
+
+    // Filter elements
+    const filterGruppo = document.getElementById('filter-gruppo');
+    const filterAula = document.getElementById('filter-aula');
+    const filterTipo = document.getElementById('filter-tipo');
+
+    // Apply filters function
+    function applyFilters() {
+        const gruppoValue = filterGruppo ? filterGruppo.value : '';
+        const aulaValue = filterAula ? filterAula.value : '';
+        const tipoValue = filterTipo ? filterTipo.value : '';
+
+        // Get all activity blocks
+        const activityBlocks = document.querySelectorAll('.activity-block');
+        let visibleCount = 0;
+        let hiddenCount = 0;
+
+        activityBlocks.forEach(function(block) {
+            const blockGroupId = block.getAttribute('data-groupid') || '';
+            const blockRoomId = block.getAttribute('data-roomid') || '';
+            const blockType = block.getAttribute('data-type') || '';
+
+            let show = true;
+
+            // Filter by gruppo
+            if (gruppoValue && blockGroupId !== gruppoValue) {
+                show = false;
+            }
+
+            // Filter by aula
+            if (aulaValue && blockRoomId !== aulaValue) {
+                show = false;
+            }
+
+            // Filter by tipo
+            if (tipoValue && blockType !== tipoValue) {
+                show = false;
+            }
+
+            // Apply visibility
+            if (show) {
+                block.style.display = '';
+                visibleCount++;
+            } else {
+                block.style.display = 'none';
+                hiddenCount++;
+            }
+        });
+
+        // Also filter month view activities if present
+        const monthActivities = document.querySelectorAll('.month-activity-mini');
+        monthActivities.forEach(function(block) {
+            const blockType = block.classList.contains('external') ? 'external' :
+                              (block.classList.contains('atelier') ? 'atelier' : 'week1');
+
+            let show = true;
+
+            // Filter by tipo only for month view (no data attributes available)
+            if (tipoValue && blockType !== tipoValue) {
+                show = false;
+            }
+
+            if (show) {
+                block.style.display = '';
+            } else {
+                block.style.display = 'none';
+            }
+        });
+
+        // Update filter status indicator
+        updateFilterStatus(gruppoValue, aulaValue, tipoValue, visibleCount, hiddenCount);
+    }
+
+    // Show filter status
+    function updateFilterStatus(gruppo, aula, tipo, visible, hidden) {
+        let statusEl = document.getElementById('filter-status');
+
+        if (!statusEl) {
+            statusEl = document.createElement('div');
+            statusEl.id = 'filter-status';
+            statusEl.style.cssText = 'margin-left: 15px; font-size: 12px; color: #666; display: flex; align-items: center; gap: 10px;';
+
+            const filtersDiv = document.querySelector('.filters');
+            if (filtersDiv) {
+                // Insert before view toggle
+                const viewToggle = filtersDiv.querySelector('[style*="margin-left: auto"]');
+                if (viewToggle) {
+                    filtersDiv.insertBefore(statusEl, viewToggle);
+                } else {
+                    filtersDiv.appendChild(statusEl);
+                }
+            }
+        }
+
+        const hasFilters = gruppo || aula || tipo;
+
+        if (hasFilters) {
+            statusEl.innerHTML = '<span style="background: #DBEAFE; color: #1E40AF; padding: 4px 10px; border-radius: 15px; font-weight: 500;">' +
+                                 visible + ' attivita visibili</span>' +
+                                 (hidden > 0 ? '<span style="color: #999;">(' + hidden + ' nascoste)</span>' : '') +
+                                 '<button onclick="ftmResetFilters()" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 12px; text-decoration: underline;">Reset filtri</button>';
+        } else {
+            statusEl.innerHTML = '';
+        }
+    }
+
+    // Attach event listeners
+    if (filterGruppo) {
+        filterGruppo.addEventListener('change', applyFilters);
+    }
+    if (filterAula) {
+        filterAula.addEventListener('change', applyFilters);
+    }
+    if (filterTipo) {
+        filterTipo.addEventListener('change', applyFilters);
+    }
+
+    // Reset filters function (global)
+    window.ftmResetFilters = function() {
+        if (filterGruppo) filterGruppo.value = '';
+        if (filterAula) filterAula.value = '';
+        if (filterTipo) filterTipo.value = '';
+        applyFilters();
+    };
+
+    // Apply filters on page load if any are set (e.g., from URL or browser cache)
+    document.addEventListener('DOMContentLoaded', function() {
+        const hasPresetFilters = (filterGruppo && filterGruppo.value) ||
+                                  (filterAula && filterAula.value) ||
+                                  (filterTipo && filterTipo.value);
+        if (hasPresetFilters) {
+            applyFilters();
+        }
+    });
+})();
+</script>

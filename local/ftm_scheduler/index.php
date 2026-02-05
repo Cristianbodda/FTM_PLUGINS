@@ -1054,7 +1054,7 @@ echo $OUTPUT->header();
            class="ftm-tab">📋 Presenze</a>
         <?php endif; ?>
         <?php if (has_capability('local/ftm_scheduler:manage', $context)): ?>
-        <a href="<?php echo new moodle_url('/local/ftm_scheduler/room_occupancy.php'); ?>"
+        <a href="<?php echo new moodle_url('/local/ftm_scheduler/secretary_dashboard.php'); ?>"
            class="ftm-tab">🏢 Segreteria</a>
         <?php endif; ?>
     </div>
