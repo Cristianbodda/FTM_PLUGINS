@@ -1042,6 +1042,14 @@ echo $OUTPUT->header();
                         <a href="<?php echo new moodle_url('/local/ftm_cpurc/index.php'); ?>" class="quick-action-btn">
                             <span class="icon">👥</span> Gestione CPURC
                         </a>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 10px 0;">
+                        <!-- GESTIONE E GUIDA -->
+                        <a href="<?php echo new moodle_url('/local/ftm_scheduler/manage_coaches.php'); ?>" class="quick-action-btn">
+                            <span class="icon">👤</span> Gestione Coach
+                        </a>
+                        <a href="<?php echo new moodle_url('/local/ftm_scheduler/guida_segreteria.php'); ?>" class="quick-action-btn" style="background: #e8f4fc;">
+                            <span class="icon">📖</span> Guida Operativa
+                        </a>
                     </div>
                 </div>
 
@@ -1410,6 +1418,7 @@ echo $OUTPUT->header();
                         <select name="time_slot" id="activity-slot">
                             <option value="matt">Mattina (08:30-11:45)</option>
                             <option value="pom">Pomeriggio (13:15-16:30)</option>
+                            <option value="all">Tutto il giorno (08:30-16:30)</option>
                         </select>
                     </div>
                 </div>
@@ -1561,6 +1570,7 @@ echo $OUTPUT->header();
                         <select name="time_slot" id="edit-activity-slot">
                             <option value="matt">Mattina (08:30-11:45)</option>
                             <option value="pom">Pomeriggio (13:15-16:30)</option>
+                            <option value="all">Tutto il giorno (08:30-16:30)</option>
                         </select>
                     </div>
                 </div>

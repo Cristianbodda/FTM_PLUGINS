@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guida Segreteria - FTM Scheduler</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #333;
+            background: #f9f9f9;
+        }
+        .header {
+            background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        .version {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        h2 {
+            color: #0066cc;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+        h3 {
+            color: #333;
+            margin-top: 30px;
+        }
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .tip {
+            background: #e8f4fc;
+            border-left: 4px solid #0066cc;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .tip-title {
+            font-weight: bold;
+            color: #0066cc;
+            margin-bottom: 5px;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .warning-title {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 5px;
+        }
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .step {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            align-items: flex-start;
+        }
+        .step-number {
+            background: #0066cc;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .step-content {
+            flex: 1;
+        }
+        .step-content h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+        .step-content p {
+            margin: 0;
+            color: #666;
+        }
+        .button-demo {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin: 5px 5px 5px 0;
+        }
+        .btn-green {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        .btn-blue {
+            background: linear-gradient(135deg, #0066cc 0%, #00a3e0 100%);
+            color: white;
+        }
+        .btn-red {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-gray {
+            background: #6c757d;
+            color: white;
+        }
+        .color-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .color-badge {
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .badge-giallo { background: #FEF9C3; border-left: 4px solid #EAB308; }
+        .badge-grigio { background: #F3F4F6; border-left: 4px solid #6B7280; }
+        .badge-rosso { background: #FEE2E2; border-left: 4px solid #EF4444; }
+        .badge-marrone { background: #FED7AA; border-left: 4px solid #92400E; }
+        .badge-viola { background: #F3E8FF; border-left: 4px solid #7C3AED; }
+        .badge-esterno { background: #DBEAFE; border-left: 4px solid #2563EB; }
+        code {
+            background: #f1f1f1;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+        }
+        .toc {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .toc h3 {
+            margin-top: 0;
+        }
+        .toc ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .toc li {
+            margin: 8px 0;
+        }
+        .toc a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        .keyboard {
+            background: #eee;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-family: monospace;
+            font-size: 12px;
+            box-shadow: 0 2px 0 #999;
+        }
+        .screenshot-placeholder {
+            background: #f0f0f0;
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            color: #999;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 20px;
+            }
+            .section {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+            .header {
+                background: #0066cc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+        .quick-ref {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .quick-ref-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #0066cc;
+        }
+        .quick-ref-card h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+        }
+        .quick-ref-card p {
+            margin: 0;
+            font-size: 13px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>📅 Guida Segreteria FTM Scheduler</h1>
+    <p>Manuale operativo per la gestione del calendario e delle attività</p>
+    <div class="version">Versione 2.0 - Febbraio 2026</div>
+</div>
+
+<div class="toc">
+    <h3>📑 Indice</h3>
+    <ul>
+        <li><a href="#accesso">1. Accesso alla Dashboard</a></li>
+        <li><a href="#panoramica">2. Panoramica Dashboard</a></li>
+        <li><a href="#creare-attivita">3. Creare una Nuova Attività</a></li>
+        <li><a href="#prenotare-aula">4. Prenotare un'Aula (Progetto Esterno)</a></li>
+        <li><a href="#modificare">5. Modificare Attività e Prenotazioni</a></li>
+        <li><a href="#eliminare">6. Eliminare Attività e Prenotazioni</a></li>
+        <li><a href="#occupazione-aule">7. Visualizzare Occupazione Aule</a></li>
+        <li><a href="#carico-docenti">8. Monitorare Carico Docenti</a></li>
+        <li><a href="#conflitti">9. Gestire i Conflitti</a></li>
+        <li><a href="#filtri">10. Usare i Filtri nel Calendario</a></li>
+        <li><a href="#colori">11. Legenda Colori Gruppi</a></li>
+        <li><a href="#scorciatoie">12. Scorciatoie e Trucchi</a></li>
+        <li><a href="#problemi">13. Risoluzione Problemi</a></li>
+    </ul>
+</div>
+
+<!-- SEZIONE 1: ACCESSO -->
+<h2 id="accesso">1. Accesso alla Dashboard Segreteria</h2>
+<div class="section">
+    <p>La Dashboard Segreteria è il centro di controllo per tutte le operazioni di pianificazione.</p>
+
+    <h3>Come accedere</h3>
+    <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+            <h4>Effettua il login su Moodle</h4>
+            <p>Vai su <code>test-urc.hizuvala.myhostpoint.ch</code> e accedi con le tue credenziali</p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+            <h4>Apri la Dashboard Segreteria</h4>
+            <p>Vai al menu <strong>FTM Scheduler</strong> → <strong>Dashboard Segreteria</strong><br>
+            Oppure accedi direttamente a: <code>/local/ftm_scheduler/secretary_dashboard.php</code></p>
+        </div>
+    </div>
+
+    <div class="tip">
+        <div class="tip-title">💡 Suggerimento</div>
+        Salva la pagina nei preferiti del browser per accesso rapido!
+    </div>
+</div>
+
+<!-- SEZIONE 2: PANORAMICA -->
+<h2 id="panoramica">2. Panoramica Dashboard</h2>
+<div class="section">
+    <p>La dashboard è organizzata in <strong>5 tab</strong> (schede) principali:</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tab</th>
+                <th>Icona</th>
+                <th>Cosa contiene</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Panoramica</strong></td>
+                <td>📊</td>
+                <td>Vista rapida: attività di oggi, statistiche, conflitti, azioni rapide</td>
+            </tr>
+            <tr>
+                <td><strong>Occupazione Aule</strong></td>
+                <td>🏫</td>
+                <td>Matrice settimanale con tutti gli slot (mattina/pomeriggio) per ogni aula</td>
+            </tr>
+            <tr>
+                <td><strong>Carico Docenti</strong></td>
+                <td>👥</td>
+                <td>Ore lavorate da ogni coach, con indicatore di sovraccarico</td>
+            </tr>
+            <tr>
+                <td><strong>Conflitti</strong></td>
+                <td>⚠️</td>
+                <td>Lista di problemi da risolvere (stessa aula o stesso docente)</td>
+            </tr>
+            <tr>
+                <td><strong>Pianificazione</strong></td>
+                <td>📅</td>
+                <td>Creazione rapida attività e visualizzazione slot liberi</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Navigazione tra le settimane</h3>
+    <p>Usa le frecce <strong>← Settimana Precedente</strong> e <strong>Settimana Successiva →</strong> in alto per spostarti tra le settimane.</p>
+</div>
+
+<!-- SEZIONE 3: CREARE ATTIVITÀ -->
+<h2 id="creare-attivita">3. Creare una Nuova Attività</h2>
+<div class="section">
+    <p>Puoi creare attività in <strong>3 modi diversi</strong>:</p>
+
+    <h3>Metodo 1: Pulsante "Nuova Attività"</h3>
+    <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+            <h4>Clicca sul pulsante verde</h4>
+            <p><span class="button-demo btn-green">➕ Nuova Attività</span> nella sezione "Azioni Rapide"</p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+            <h4>Compila il modulo</h4>
+            <p>Inserisci: Nome, Tipo, Gruppo, Data, Fascia oraria, Aula, Coach</p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+            <h4>Salva</h4>
+            <p>Clicca <span class="button-demo btn-green">✅ Crea Attività</span></p>
+        </div>
+    </div>
+
+    <h3>Metodo 2: Click su slot vuoto</h3>
+    <p>Nella tab <strong>Occupazione Aule</strong>, clicca su uno slot con <span style="color: #28a745; font-size: 18px;">✓</span> verde. Ti verrà chiesto cosa vuoi creare.</p>
+
+    <h3>Metodo 3: Tab Pianificazione</h3>
+    <p>Vai alla tab <strong>Pianificazione</strong> e clicca su uno slot verde con l'orario disponibile.</p>
+
+    <h3>Campi del modulo</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Campo</th>
+                <th>Obbligatorio</th>
+                <th>Descrizione</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Nome Attività</strong></td>
+                <td>✅ Sì</td>
+                <td>Es: "Test Meccanica", "Lezione Elettricità"</td>
+            </tr>
+            <tr>
+                <td><strong>Tipo</strong></td>
+                <td>No</td>
+                <td>Attività Gruppo, Atelier, Test Sett. 2, Lab Sett. 2</td>
+            </tr>
+            <tr>
+                <td><strong>Gruppo</strong></td>
+                <td>No</td>
+                <td>Seleziona il gruppo colore (es: 🟡 Giallo - KW05)</td>
+            </tr>
+            <tr>
+                <td><strong>Data</strong></td>
+                <td>✅ Sì</td>
+                <td>Data dell'attività</td>
+            </tr>
+            <tr>
+                <td><strong>Fascia Oraria</strong></td>
+                <td>✅ Sì</td>
+                <td>Mattina (08:30-11:45) o Pomeriggio (13:15-16:30)</td>
+            </tr>
+            <tr>
+                <td><strong>Aula</strong></td>
+                <td>No</td>
+                <td>Seleziona l'aula dove si svolge</td>
+            </tr>
+            <tr>
+                <td><strong>Coach</strong></td>
+                <td>No</td>
+                <td>Docente responsabile</td>
+            </tr>
+            <tr>
+                <td><strong>Note</strong></td>
+                <td>No</td>
+                <td>Informazioni aggiuntive</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="success">
+        <strong>✅ Conferma</strong><br>
+        Dopo la creazione vedrai un messaggio verde "Attività creata con successo!" e la pagina si aggiornerà.
+    </div>
+</div>
+
+<!-- SEZIONE 4: PRENOTARE AULA -->
+<h2 id="prenotare-aula">4. Prenotare un'Aula (Progetto Esterno)</h2>
+<div class="section">
+    <p>Per riservare un'aula per progetti esterni (BIT URAR, BIT AI, Corsi LADI, ecc.):</p>
+
+    <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+            <h4>Clicca sul pulsante blu</h4>
+            <p><span class="button-demo btn-blue">🏢 Prenota Aula (Esterno)</span></p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+            <h4>Seleziona il progetto</h4>
+            <p>Scegli tra: BIT URAR, BIT AI, Corso Extra LADI, Altro</p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+            <h4>Compila i dettagli</h4>
+            <p>Aula, Data, Fascia oraria (puoi scegliere anche "Tutto il giorno"), Responsabile</p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+            <h4>Salva</h4>
+            <p>Clicca <span class="button-demo btn-blue">✅ Prenota Aula</span></p>
+        </div>
+    </div>
+
+    <div class="tip">
+        <div class="tip-title">💡 Progetti esterni</div>
+        Le prenotazioni esterne appaiono in <strong>colore viola/blu</strong> nel calendario per distinguerle dalle attività FTM.
+    </div>
+</div>
+
+<!-- SEZIONE 5: MODIFICARE -->
+<h2 id="modificare">5. Modificare Attività e Prenotazioni</h2>
+<div class="section">
+    <p>Per modificare un'attività esistente:</p>
+
+    <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+            <h4>Trova l'attività nella matrice</h4>
+            <p>Vai alla tab <strong>Occupazione Aule</strong> e individua l'attività colorata</p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+            <h4>Clicca sull'attività</h4>
+            <p>Clicca direttamente sul blocco colorato. Si aprirà il modulo di modifica.</p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+            <h4>Modifica i campi desiderati</h4>
+            <p>Cambia nome, data, aula, coach, gruppo... quello che serve</p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+            <h4>Salva le modifiche</h4>
+            <p>Clicca <span class="button-demo btn-blue">💾 Salva Modifiche</span></p>
+        </div>
+    </div>
+
+    <div class="warning">
+        <div class="warning-title">⚠️ Attenzione</div>
+        Modificando data o aula, verifica che non ci siano conflitti con altre attività!
+    </div>
+</div>
+
+<!-- SEZIONE 6: ELIMINARE -->
+<h2 id="eliminare">6. Eliminare Attività e Prenotazioni</h2>
+<div class="section">
+    <p>Per eliminare un'attività o prenotazione:</p>
+
+    <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+            <h4>Apri il modulo di modifica</h4>
+            <p>Clicca sull'attività da eliminare (vedi sezione precedente)</p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+            <h4>Clicca "Elimina"</h4>
+            <p>In basso a sinistra c'è il pulsante <span class="button-demo btn-red">🗑️ Elimina</span></p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+            <h4>Conferma l'eliminazione</h4>
+            <p>Apparirà un messaggio di conferma. Clicca "OK" per procedere.</p>
+        </div>
+    </div>
+
+    <div class="warning">
+        <div class="warning-title">⚠️ Attenzione</div>
+        L'eliminazione è <strong>irreversibile</strong>! Se ci sono studenti iscritti, anche le loro iscrizioni verranno rimosse.
+    </div>
+</div>
+
+<!-- SEZIONE 7: OCCUPAZIONE AULE -->
+<h2 id="occupazione-aule">7. Visualizzare Occupazione Aule</h2>
+<div class="section">
+    <p>La tab <strong>Occupazione Aule</strong> mostra una matrice settimanale con tutte le aule e i loro slot.</p>
+
+    <h3>Come leggere la matrice</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Simbolo</th>
+                <th>Significato</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span style="color: #28a745; font-size: 20px;">✓</span></td>
+                <td><strong>Slot libero</strong> - Clicca per creare un'attività</td>
+            </tr>
+            <tr>
+                <td><span style="background: #FEF9C3; padding: 3px 8px; border-radius: 4px;">Lezione</span></td>
+                <td><strong>Attività gruppo</strong> - Clicca per modificare</td>
+            </tr>
+            <tr>
+                <td><span style="background: #DBEAFE; padding: 3px 8px; border-radius: 4px;">BIT URAR</span></td>
+                <td><strong>Progetto esterno</strong> - Clicca per modificare</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Percentuale occupazione</h3>
+    <p>A destra di ogni riga c'è la percentuale di occupazione dell'aula nella settimana:</p>
+    <ul>
+        <li><strong style="color: #28a745;">0-40%</strong> - Bassa occupazione (verde)</li>
+        <li><strong style="color: #ffc107;">41-70%</strong> - Media occupazione (giallo)</li>
+        <li><strong style="color: #dc3545;">71-100%</strong> - Alta occupazione (rosso)</li>
+    </ul>
+</div>
+
+<!-- SEZIONE 8: CARICO DOCENTI -->
+<h2 id="carico-docenti">8. Monitorare Carico Docenti</h2>
+<div class="section">
+    <p>La tab <strong>Carico Docenti</strong> mostra le ore lavorate da ogni coach nella settimana.</p>
+
+    <h3>Informazioni visualizzate</h3>
+    <ul>
+        <li><strong>Nome e iniziali</strong> del coach (es: CB, FM, GM, RB)</li>
+        <li><strong>Ore totali</strong> della settimana</li>
+        <li><strong>Barra di carico</strong> visiva</li>
+        <li><strong>Dettaglio giornaliero</strong> (ore per ogni giorno)</li>
+        <li><strong>Numero attività</strong> assegnate</li>
+    </ul>
+
+    <h3>Indicatore sovraccarico</h3>
+    <p>Se un coach supera il limite settimanale (default: 25 ore), appare l'etichetta <span style="background: #dc3545; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px;">SOVRACCARICO</span></p>
+
+    <div class="tip">
+        <div class="tip-title">💡 Bilanciare il carico</div>
+        Usa questa vista per distribuire equamente le attività tra i coach disponibili.
+    </div>
+</div>
+
+<!-- SEZIONE 9: CONFLITTI -->
+<h2 id="conflitti">9. Gestire i Conflitti</h2>
+<div class="section">
+    <p>La tab <strong>Conflitti</strong> mostra problemi di sovrapposizione da risolvere.</p>
+
+    <h3>Tipi di conflitto</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Icona</th>
+                <th>Descrizione</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Conflitto Aula</strong></td>
+                <td>🏫</td>
+                <td>Due attività nella stessa aula, stesso orario</td>
+            </tr>
+            <tr>
+                <td><strong>Conflitto Docente</strong></td>
+                <td>👤</td>
+                <td>Stesso coach assegnato a due attività contemporanee</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Come risolvere un conflitto</h3>
+    <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+            <h4>Individua il conflitto</h4>
+            <p>Leggi il messaggio che descrive il problema</p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+            <h4>Clicca "Modifica 1" o "Modifica 2"</h4>
+            <p>Scegli quale delle due attività modificare</p>
+        </div>
+    </div>
+    <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+            <h4>Cambia data, orario o aula</h4>
+            <p>Sposta l'attività in uno slot libero</p>
+        </div>
+    </div>
+
+    <div class="success">
+        <strong>✅ Nessun conflitto</strong><br>
+        Se non ci sono conflitti, vedrai un messaggio verde con "Nessun conflitto rilevato per questa settimana".
+    </div>
+</div>
+
+<!-- SEZIONE 10: FILTRI -->
+<h2 id="filtri">10. Usare i Filtri nel Calendario</h2>
+<div class="section">
+    <p>Nel calendario principale (<code>/local/ftm_scheduler/index.php</code>) puoi filtrare le attività visualizzate.</p>
+
+    <h3>Filtri disponibili</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Filtro</th>
+                <th>Funzione</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Gruppo</strong></td>
+                <td>Mostra solo attività di un gruppo colore specifico (es: 🟡 Giallo - KW05)</td>
+            </tr>
+            <tr>
+                <td><strong>Aula</strong></td>
+                <td>Mostra solo attività in un'aula specifica</td>
+            </tr>
+            <tr>
+                <td><strong>Tipo</strong></td>
+                <td>Mostra solo un tipo di attività (Atelier, Test, Lab...)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Come usare i filtri</h3>
+    <ol>
+        <li>Seleziona un valore dal menu a tendina</li>
+        <li>Le attività vengono filtrate automaticamente</li>
+        <li>Seleziona "Tutti i gruppi" / "Tutte le aule" per rimuovere il filtro</li>
+    </ol>
+
+    <div class="tip">
+        <div class="tip-title">💡 Indicatore KW</div>
+        Ogni gruppo mostra la settimana calendario (KW = Kalenderwoche) per distinguere gruppi dello stesso colore in settimane diverse. Es: "🟡 Giallo - KW05" e "🟡 Giallo - KW07" sono due gruppi diversi.
+    </div>
+</div>
+
+<!-- SEZIONE 11: COLORI -->
+<h2 id="colori">11. Legenda Colori Gruppi</h2>
+<div class="section">
+    <p>I gruppi FTM sono identificati da colori. Ecco la legenda:</p>
+
+    <div class="color-legend">
+        <div class="color-badge badge-giallo">🟡 <strong>Giallo</strong></div>
+        <div class="color-badge badge-grigio">⚫ <strong>Grigio</strong></div>
+        <div class="color-badge badge-rosso">🔴 <strong>Rosso</strong></div>
+        <div class="color-badge badge-marrone">🟤 <strong>Marrone</strong></div>
+        <div class="color-badge badge-viola">🟣 <strong>Viola</strong></div>
+        <div class="color-badge badge-esterno">🏢 <strong>Progetto Esterno</strong></div>
+    </div>
+
+    <h3>Attività con più gruppi</h3>
+    <p>Alcune attività (come gli Atelier) possono avere studenti di gruppi diversi. Nel popup di dettaglio vedrai tutti i gruppi partecipanti con i rispettivi badge colorati.</p>
+</div>
+
+<!-- SEZIONE 12: SCORCIATOIE -->
+<h2 id="scorciatoie">12. Scorciatoie e Trucchi</h2>
+<div class="section">
+
+    <div class="quick-ref">
+        <div class="quick-ref-card">
+            <h4>🖱️ Click su slot vuoto</h4>
+            <p>Crea rapidamente attività o prenotazione</p>
+        </div>
+        <div class="quick-ref-card">
+            <h4>🖱️ Click su attività</h4>
+            <p>Apre modifica inline</p>
+        </div>
+        <div class="quick-ref-card">
+            <h4>❓ Pulsante "?"</h4>
+            <p>Guida rapida sempre disponibile</p>
+        </div>
+        <div class="quick-ref-card">
+            <h4><span class="keyboard">Esc</span></h4>
+            <p>Chiude qualsiasi finestra aperta</p>
+        </div>
+    </div>
+
+    <h3>Link utili</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Pagina</th>
+                <th>Percorso</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Dashboard Segreteria</td>
+                <td><code>/local/ftm_scheduler/secretary_dashboard.php</code></td>
+            </tr>
+            <tr>
+                <td>Calendario</td>
+                <td><code>/local/ftm_scheduler/index.php</code></td>
+            </tr>
+            <tr>
+                <td>Gestione Gruppi</td>
+                <td><code>/local/ftm_scheduler/index.php?tab=gruppi</code></td>
+            </tr>
+            <tr>
+                <td>Import Excel</td>
+                <td><code>/local/ftm_scheduler/import_calendar.php</code></td>
+            </tr>
+            <tr>
+                <td>Registro Presenze</td>
+                <td><code>/local/ftm_scheduler/attendance.php</code></td>
+            </tr>
+            <tr>
+                <td>Gestione CPURC</td>
+                <td><code>/local/ftm_cpurc/index.php</code></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- SEZIONE 13: PROBLEMI -->
+<h2 id="problemi">13. Risoluzione Problemi</h2>
+<div class="section">
+
+    <h3>❌ "Non riesco ad accedere alla dashboard"</h3>
+    <div class="tip">
+        <strong>Soluzione:</strong> Verifica di avere il ruolo "Segreteria FTM" assegnato. Contatta l'amministratore se necessario.
+    </div>
+
+    <h3>❌ "Il pulsante Salva non funziona"</h3>
+    <div class="tip">
+        <strong>Soluzione:</strong> Verifica che tutti i campi obbligatori (con *) siano compilati. Controlla che la data sia valida.
+    </div>
+
+    <h3>❌ "Errore di connessione"</h3>
+    <div class="tip">
+        <strong>Soluzione:</strong> Ricarica la pagina (<span class="keyboard">F5</span>) e riprova. Se persiste, verifica la connessione internet.
+    </div>
+
+    <h3>❌ "Non vedo le modifiche dopo aver salvato"</h3>
+    <div class="tip">
+        <strong>Soluzione:</strong> La pagina dovrebbe aggiornarsi automaticamente. Se non succede, ricarica manualmente con <span class="keyboard">F5</span>.
+    </div>
+
+    <h3>❌ "Ho eliminato un'attività per errore"</h3>
+    <div class="warning">
+        <div class="warning-title">⚠️ Attenzione</div>
+        L'eliminazione è irreversibile. Dovrai ricreare l'attività manualmente con tutti i dati.
+    </div>
+
+    <hr style="margin: 30px 0;">
+
+    <h3>📞 Supporto</h3>
+    <p>Per problemi tecnici non risolvibili, contatta:</p>
+    <ul>
+        <li><strong>Cristian Bodda</strong> - Sviluppatore FTM</li>
+    </ul>
+</div>
+
+<div style="text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 13px;">
+    <p>Guida Segreteria FTM Scheduler v2.0</p>
+    <p>Fondazione Terzo Millennio - Febbraio 2026</p>
+    <p><em>Documento generato automaticamente</em></p>
+</div>
+
+</body>
+</html>

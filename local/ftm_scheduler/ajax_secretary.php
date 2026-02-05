@@ -49,7 +49,15 @@ try {
                     'activity_type' => $activity->activity_type,
                     'groupid' => $activity->groupid,
                     'date_start' => date('Y-m-d', $activity->date_start),
-                    'time_slot' => (date('H', $activity->date_start) < 12) ? 'matt' : 'pom',
+                    'time_slot' => (function($start, $end) {
+                        $start_hour = (int)date('H', $start);
+                        $end_hour = (int)date('H', $end);
+                        // Se inizia la mattina e finisce dopo le 14, è tutto il giorno
+                        if ($start_hour < 12 && $end_hour >= 14) {
+                            return 'all';
+                        }
+                        return ($start_hour < 12) ? 'matt' : 'pom';
+                    })($activity->date_start, $activity->date_end),
                     'roomid' => $activity->roomid,
                     'teacherid' => $activity->teacherid,
                     'max_participants' => $activity->max_participants,
@@ -105,8 +113,11 @@ try {
             if ($time_slot === 'matt') {
                 $start_time = strtotime($date . ' 08:30:00');
                 $end_time = strtotime($date . ' 11:45:00');
-            } else {
+            } elseif ($time_slot === 'pom') {
                 $start_time = strtotime($date . ' 13:15:00');
+                $end_time = strtotime($date . ' 16:30:00');
+            } else { // all - tutto il giorno
+                $start_time = strtotime($date . ' 08:30:00');
                 $end_time = strtotime($date . ' 16:30:00');
             }
 
@@ -214,22 +225,18 @@ try {
             $date = optional_param('date', null, PARAM_TEXT);
             $time_slot = optional_param('time_slot', null, PARAM_ALPHA);
 
-            if ($date !== null) {
+            if ($date !== null || $time_slot !== null) {
+                $date_str = $date ?? date('Y-m-d', $activity->date_start);
                 $slot = $time_slot ?? ((date('H', $activity->date_start) < 12) ? 'matt' : 'pom');
+
                 if ($slot === 'matt') {
-                    $update->date_start = strtotime($date . ' 08:30:00');
-                    $update->date_end = strtotime($date . ' 11:45:00');
-                } else {
-                    $update->date_start = strtotime($date . ' 13:15:00');
-                    $update->date_end = strtotime($date . ' 16:30:00');
-                }
-            } elseif ($time_slot !== null) {
-                $date_str = date('Y-m-d', $activity->date_start);
-                if ($time_slot === 'matt') {
                     $update->date_start = strtotime($date_str . ' 08:30:00');
                     $update->date_end = strtotime($date_str . ' 11:45:00');
-                } else {
+                } elseif ($slot === 'pom') {
                     $update->date_start = strtotime($date_str . ' 13:15:00');
+                    $update->date_end = strtotime($date_str . ' 16:30:00');
+                } else { // all - tutto il giorno
+                    $update->date_start = strtotime($date_str . ' 08:30:00');
                     $update->date_end = strtotime($date_str . ' 16:30:00');
                 }
             }
