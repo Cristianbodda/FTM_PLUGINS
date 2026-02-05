@@ -550,6 +550,119 @@ $header_class = $is_new_design ? 'ftm-header' : 'ftm-header-classic';
         </div>
     </div>
 
+    <!-- Tool Import/Export Quiz -->
+    <div class="card">
+        <div class="card-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
+            <h3 style="color: white;">📥 Import/Export Quiz e Competenze</h3>
+        </div>
+        <div class="card-body">
+            <div class="action-grid">
+                <?php if ($selected_courseid > 0): ?>
+                <a href="../competencyxmlimport/setup_universale.php?courseid=<?php echo $selected_courseid; ?>" class="action-card" style="border: 3px solid #28a745;">
+                    <div class="icon">📥</div>
+                    <h4>Setup Universale Quiz</h4>
+                    <p>Import XML/Word/Excel con assegnazione competenze automatica (multi-quiz da Excel)</p>
+                    <span class="btn btn-success">Setup Universale</span>
+                </a>
+                <?php else: ?>
+                <div class="action-card" style="opacity: 0.6;">
+                    <div class="icon">📥</div>
+                    <h4>Setup Universale Quiz</h4>
+                    <p>⚠️ Seleziona un corso sopra per abilitare questo tool</p>
+                    <span class="btn" style="background: #ccc;">Seleziona Corso</span>
+                </div>
+                <?php endif; ?>
+
+                <a href="../competencyxmlimport/quiz_export.php<?php echo $selected_courseid > 0 ? '?courseid=' . $selected_courseid : ''; ?>" class="action-card" style="border: 3px solid #17a2b8;">
+                    <div class="icon">📤</div>
+                    <h4>Quiz Export Tool</h4>
+                    <p>Esporta domande, risposte e competenze in CSV/Excel per analisi</p>
+                    <span class="btn btn-info">Esporta Quiz</span>
+                </a>
+
+                <a href="../competencyxmlimport/diagnostics_v2.php" class="action-card">
+                    <div class="icon">🔍</div>
+                    <h4>Diagnostica Competenze</h4>
+                    <p>Analisi dettagliata mapping competenze-domande</p>
+                    <span class="btn" style="background: #6f42c1; color: white;">Diagnostica</span>
+                </a>
+
+                <a href="../competencyxmlimport/competenze_mancanti.php" class="action-card">
+                    <div class="icon">⚠️</div>
+                    <h4>Competenze Mancanti</h4>
+                    <p>Trova domande senza competenze assegnate per corso</p>
+                    <span class="btn btn-warning">Mancanti</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnostica Autovalutazione -->
+    <div class="card">
+        <div class="card-header" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white;">
+            <h3 style="color: white;">🩺 Diagnostica Autovalutazione</h3>
+        </div>
+        <div class="card-body">
+            <div class="action-grid">
+                <a href="../selfassessment/diagnose_user.php" class="action-card" style="border: 3px solid #dc3545;">
+                    <div class="icon">👤</div>
+                    <h4>Diagnosi Utente</h4>
+                    <p>Analizza settore, status, competenze assegnate e quiz completati per un utente specifico</p>
+                    <span class="btn btn-danger">Diagnosi Utente</span>
+                </a>
+
+                <a href="../selfassessment/fix_missing_assignments.php" class="action-card" style="border: 3px solid #28a745;">
+                    <div class="icon">🔧</div>
+                    <h4>Fix Assegnazioni Mancanti</h4>
+                    <p>Assegna competenze mancanti per quiz completati (batch fix per tutti gli utenti)</p>
+                    <span class="btn btn-success">Esegui Fix</span>
+                </a>
+
+                <a href="../selfassessment/check_observer.php" class="action-card" style="border: 3px solid #17a2b8;">
+                    <div class="icon">🔍</div>
+                    <h4>Verifica Observer</h4>
+                    <p>Controlla se l'observer selfassessment è registrato e funzionante</p>
+                    <span class="btn btn-info">Verifica Observer</span>
+                </a>
+
+                <a href="../selfassessment/debug_observer.php" class="action-card">
+                    <div class="icon">🐛</div>
+                    <h4>Debug Observer</h4>
+                    <p>Debug dettagliato del flusso observer quiz_attempt_submitted</p>
+                    <span class="btn" style="background: #6f42c1; color: white;">Debug</span>
+                </a>
+
+                <a href="../selfassessment/force_assign.php" class="action-card">
+                    <div class="icon">⚡</div>
+                    <h4>Forza Assegnazione</h4>
+                    <p>Assegna manualmente competenze a un utente specifico</p>
+                    <span class="btn btn-warning">Forza</span>
+                </a>
+
+                <a href="../selfassessment/catchup_assignments.php" class="action-card">
+                    <div class="icon">🔄</div>
+                    <h4>Catchup Assignments</h4>
+                    <p>Recupera assegnazioni mancanti per utenti test</p>
+                    <span class="btn" style="background: #fd7e14; color: white;">Catchup</span>
+                </a>
+
+                <a href="../selfassessment/index.php" class="action-card">
+                    <div class="icon">📋</div>
+                    <h4>Gestione Autovalutazione</h4>
+                    <p>Dashboard principale gestione autovalutazione</p>
+                    <span class="btn btn-primary">Gestione</span>
+                </a>
+
+                <a href="../selfassessment/analyze_all_prefixes.php" class="action-card">
+                    <div class="icon">🏷️</div>
+                    <h4>Analisi Prefissi</h4>
+                    <p>Analizza tutti i prefissi competenze per area mapping</p>
+                    <span class="btn" style="background: #20c997; color: white;">Prefissi</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Storico Test -->
     <?php if (!empty($history)): ?>
     <div class="card">
