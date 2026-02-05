@@ -45,6 +45,17 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
   - **Filtro Aula:** Filtra per aula specifica
   - **Filtro Tipo:** Atelier, Test, Lab, etc.
   - **Reset filtri:** Pulsante per rimuovere tutti i filtri
+- **NUOVO: Modal Nuova Attività (05/02/2026)**
+  - **Form completo:** Nome, tipo, gruppo, data, fascia oraria, aula, coach, note
+  - **Fascia oraria:** Mattina, Pomeriggio, Tutto il giorno
+  - **Coach dropdown:** Mostra tutti i coach configurati con iniziali
+- **NUOVO: Barra Gruppi Attivi Migliorata (05/02/2026)**
+  - **KW visibile:** Ogni gruppo mostra la settimana calendario (es. KW04)
+  - **Settimana percorso:** Mostra Sett. X/6 calcolata automaticamente
+- **NUOVO: Verifica Date Gruppi (05/02/2026)**
+  - **Tool:** `verify_groups.php` confronta date DB con date corrette
+  - **Fix automatico:** Corregge date_start e planned_end_date in un click
+  - **Tabella riferimento:** Tutte le KW con date inizio/fine
 - **Excel Calendar Import** - Import completo da file Excel planning mensile
   - **Struttura 3 Aule:** K-L (Aula 1), M-N (Aula 2), O-P (Aula 3)
   - **Rilevamento colore celle:** Determina gruppo da colore sfondo
@@ -84,10 +95,15 @@ Plugin per integrare Azure OpenAI/Copilot con mascheramento dati sensibili:
 - **Fallback deterministico:** Se AI non disponibile, usa template
 - **Stato:** STANDBY - Plugin completo, pronto per installazione
 
-#### 3. Test Suite (local_ftm_testsuite)
+#### 3. Test Suite (local_ftm_testsuite) - AGGIORNATO 05/02/2026
 - 5 Agenti di test: Security, Database, AJAX, Structure, Language
 - 58 test automatizzati totali
 - Interfaccia web: `agent_tests.php`
+- **NUOVO: Capabilities estese (05/02/2026)**
+  - `execute`: Manager + Editing Teacher
+  - `viewresults`: Manager + Editing Teacher + Teacher
+  - Segreteria può ora accedere alla Test Suite
+- **Version:** 1.1.0 (2026020501)
 
 #### 4. Self Assessment (local_selfassessment) - AGGIORNATO 29/01/2026
 - Popup bloccante per autovalutazione
@@ -456,6 +472,7 @@ Tabelle Condivise:
 - **Dashboard Segreteria:** /local/ftm_scheduler/secretary_dashboard.php
 - **Guida Segreteria:** /local/ftm_scheduler/guida_segreteria.php
 - **Gestione Coach:** /local/ftm_scheduler/manage_coaches.php
+- **Verifica Gruppi:** /local/ftm_scheduler/verify_groups.php
 - **CPURC Dashboard:** /local/ftm_cpurc/index.php
 - **CPURC Student Card:** /local/ftm_cpurc/student_card.php?id=X
 - **CPURC Report:** /local/ftm_cpurc/report.php?id=X

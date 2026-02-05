@@ -12,10 +12,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_ftm_testsuite';
-$plugin->version = 2026010201;
+$plugin->version = 2026020501;
 $plugin->requires = 2024042200; // Moodle 4.4+
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v1.0.0';
+$plugin->release = 'v1.1.0';
 $plugin->dependencies = [
     'local_competencymanager' => ANY_VERSION,
     'local_selfassessment' => ANY_VERSION,

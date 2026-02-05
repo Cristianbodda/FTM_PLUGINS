@@ -91,6 +91,45 @@ switch ($action) {
         $returnurl = new moodle_url('/local/ftm_scheduler/index.php', ['tab' => 'calendario']);
         break;
         
+    case 'create_activity':
+        require_capability('local/ftm_scheduler:manage', $context);
+
+        $data = new stdClass();
+        $data->name = required_param('name', PARAM_TEXT);
+        $data->activity_type = optional_param('activity_type', 'week1', PARAM_ALPHANUMEXT);
+        $data->groupid = optional_param('groupid', 0, PARAM_INT);
+        $date_str = required_param('date', PARAM_TEXT);
+        $time_slot = optional_param('time_slot', 'matt', PARAM_ALPHA);
+        $data->roomid = optional_param('roomid', 0, PARAM_INT);
+        $data->teacherid = optional_param('teacherid', 0, PARAM_INT);
+        $data->max_participants = optional_param('max_participants', 10, PARAM_INT);
+        $data->notes = optional_param('notes', '', PARAM_TEXT);
+
+        // Calculate start and end times based on slot
+        if ($time_slot === 'matt') {
+            $data->date_start = strtotime($date_str . ' 08:30:00');
+            $data->date_end = strtotime($date_str . ' 11:45:00');
+        } elseif ($time_slot === 'pom') {
+            $data->date_start = strtotime($date_str . ' 13:15:00');
+            $data->date_end = strtotime($date_str . ' 16:30:00');
+        } else { // all - tutto il giorno
+            $data->date_start = strtotime($date_str . ' 08:30:00');
+            $data->date_end = strtotime($date_str . ' 16:30:00');
+        }
+
+        // Null for empty values
+        $data->groupid = $data->groupid ?: null;
+        $data->roomid = $data->roomid ?: null;
+        $data->teacherid = $data->teacherid ?: null;
+
+        // Create the activity
+        \local_ftm_scheduler\manager::create_activity($data);
+
+        \core\notification::success('Attività creata con successo');
+
+        $returnurl = new moodle_url('/local/ftm_scheduler/index.php', ['tab' => 'calendario']);
+        break;
+
     case 'add_group_members':
         require_capability('local/ftm_scheduler:enrollstudents', $context);
 

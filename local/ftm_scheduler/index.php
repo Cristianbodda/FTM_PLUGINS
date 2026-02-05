@@ -142,16 +142,17 @@ echo $OUTPUT->header();
     text-decoration: none;
 }
 
-.ftm-btn-primary { background: #0066cc; color: white; }
-.ftm-btn-secondary { background: #6c757d; color: white; }
-.ftm-btn-danger { background: #dc3545; color: white; }
+.ftm-btn-primary { background: #0066cc; color: white !important; }
+.ftm-btn-secondary { background: #6c757d; color: white !important; }
+.ftm-btn-danger { background: #dc3545; color: white !important; }
 .ftm-btn-danger:hover { background: #c82333; }
 .activity-block { cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
 .activity-block:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-.ftm-btn-success { background: #28a745; color: white; }
+.ftm-btn-success { background: #28a745; color: white !important; }
 .ftm-btn-sm { padding: 6px 12px; font-size: 13px; }
 
-.ftm-btn:hover { opacity: 0.9; text-decoration: none; color: white; }
+.ftm-btn:hover { opacity: 0.9; text-decoration: none; color: white !important; }
+a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !important; text-decoration: none !important; }
 
 /* Colori Gruppi */
 .gruppo-giallo { background: #FFFF00 !important; color: #333 !important; }
@@ -985,12 +986,22 @@ echo $OUTPUT->header();
         <?php if (empty($active_groups)): ?>
             <span style="color: #999; font-size: 13px;">Nessun gruppo attivo</span>
         <?php else: ?>
-            <?php foreach ($active_groups as $group): 
+            <?php foreach ($active_groups as $group):
                 $color_info = $colors[$group->color] ?? $colors['giallo'];
+                $kw_label = $group->calendar_week ? 'KW' . str_pad($group->calendar_week, 2, '0', STR_PAD_LEFT) : '';
+                // Calcola settimana corrente del percorso (1-6)
+                $current_week_num = 1;
+                if ($group->entry_date) {
+                    $days_elapsed = floor((time() - $group->entry_date) / 86400);
+                    $current_week_num = min(6, max(1, ceil(($days_elapsed + 1) / 7)));
+                }
             ?>
                 <div class="gruppo-chip gruppo-<?php echo $group->color; ?>">
                     <?php echo $color_info['emoji']; ?> <?php echo $color_info['name']; ?>
-                    <span class="week">Sett. 1</span>
+                    <?php if ($kw_label): ?>
+                        <span class="week"><?php echo $kw_label; ?></span>
+                    <?php endif; ?>
+                    <span class="week" style="background: rgba(255,255,255,0.3);">Sett. <?php echo $current_week_num; ?>/6</span>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
@@ -1223,6 +1234,110 @@ echo $OUTPUT->header();
             <div class="ftm-modal-footer">
                 <button type="button" class="ftm-btn ftm-btn-secondary" onclick="ftmCloseModal('externalBooking')">Annulla</button>
                 <button type="submit" class="ftm-btn ftm-btn-primary">📅 Prenota Aula</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Nuova Attività -->
+<div class="ftm-modal-overlay" id="modal-newActivity">
+    <div class="ftm-modal">
+        <div class="ftm-modal-header">
+            <h3>📅 Crea Nuova Attività</h3>
+            <button class="ftm-modal-close" onclick="ftmCloseModal('newActivity')">×</button>
+        </div>
+        <form action="<?php echo new moodle_url('/local/ftm_scheduler/action.php'); ?>" method="post">
+            <input type="hidden" name="action" value="create_activity">
+            <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
+            <div class="ftm-modal-body">
+                <div class="form-group">
+                    <label>Nome Attività *</label>
+                    <input type="text" name="name" required placeholder="es. Settimana 1 - Teoria">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo Attività *</label>
+                        <select name="activity_type" required>
+                            <option value="week1">Settimana 1</option>
+                            <option value="week2_mon_tue">Settimana 2 (Lun-Mar)</option>
+                            <option value="week2_thu_fri">Settimana 2 (Gio-Ven)</option>
+                            <option value="week3_5">Settimane 3-5</option>
+                            <option value="week6">Settimana 6</option>
+                            <option value="atelier">Atelier</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Gruppo</label>
+                        <select name="groupid">
+                            <option value="">-- Nessun gruppo --</option>
+                            <?php foreach ($groups as $group):
+                                $color_info = $colors[$group->color] ?? $colors['giallo'];
+                                $kw = $group->calendar_week ? ' - KW' . str_pad($group->calendar_week, 2, '0', STR_PAD_LEFT) : '';
+                            ?>
+                                <option value="<?php echo $group->id; ?>">
+                                    <?php echo $color_info['emoji'] . ' ' . $color_info['name'] . $kw; ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Data *</label>
+                        <input type="date" name="date" value="<?php echo date('Y-m-d'); ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Fascia Oraria *</label>
+                        <select name="time_slot">
+                            <option value="matt">Mattina (08:30-11:45)</option>
+                            <option value="pom">Pomeriggio (13:15-16:30)</option>
+                            <option value="all">Tutto il giorno (08:30-16:30)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Aula</label>
+                        <select name="roomid">
+                            <option value="">-- Nessuna aula --</option>
+                            <?php foreach ($rooms as $room): ?>
+                                <option value="<?php echo $room->id; ?>">
+                                    <?php echo $room->name; ?> (<?php echo $room->capacity; ?> posti)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Coach/Docente</label>
+                        <select name="teacherid">
+                            <option value="">-- Nessun coach --</option>
+                            <?php
+                            $coaches = $manager::get_coaches();
+                            foreach ($coaches as $c): ?>
+                                <option value="<?php echo $c->userid; ?>">
+                                    <?php echo $c->initials . ' - ' . $c->firstname . ' ' . $c->lastname; ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Partecipanti Max</label>
+                    <input type="number" name="max_participants" value="10" min="1" max="50">
+                </div>
+
+                <div class="form-group">
+                    <label>Note</label>
+                    <textarea name="notes" rows="3" placeholder="Note opzionali..."></textarea>
+                </div>
+            </div>
+            <div class="ftm-modal-footer">
+                <button type="button" class="ftm-btn ftm-btn-secondary" onclick="ftmCloseModal('newActivity')">Annulla</button>
+                <button type="submit" class="ftm-btn ftm-btn-primary">📅 Crea Attività</button>
             </div>
         </form>
     </div>
