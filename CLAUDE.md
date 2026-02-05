@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida Completa per Claude
 
-**Ultimo aggiornamento:** 3 Febbraio 2026
+**Ultimo aggiornamento:** 5 Febbraio 2026
 
 ## Panoramica Progetto
 
@@ -12,27 +12,46 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (03/02/2026)
+## STATO ATTUALE SVILUPPO (05/02/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
-#### 1. FTM Scheduler (local_ftm_scheduler) - AGGIORNATO 03/02/2026
+#### 1. FTM Scheduler (local_ftm_scheduler) - AGGIORNATO 05/02/2026
 - Vista Calendario Settimanale e Mensile
 - Gestione Gruppi colore (Giallo, Grigio, Rosso, Marrone, Viola)
 - Gestione Aule e Atelier
 - Generazione automatica attivita
-- Tabella `local_ftm_coaches` per gestione coach (CB, FM, GM, RB)
-- **NUOVO: Excel Calendar Import** - Import completo da file Excel planning mensile
+- Tabella `local_ftm_coaches` per gestione coach (CB, FM, GM, RB, LP)
+- **NUOVO: Dashboard Segreteria (05/02/2026)** - Centro di controllo completo per segreteria
+  - **5 Tab:** Panoramica, Occupazione Aule, Carico Docenti, Conflitti, Pianificazione
+  - **CRUD Inline:** Creazione/modifica/eliminazione attività senza redirect
+  - **Modali:** Form popup per creazione e modifica rapida
+  - **Fasce orarie:** Mattina, Pomeriggio, Tutto il giorno (08:30-16:30)
+  - **Click su slot vuoto:** Crea attività o prenotazione direttamente
+  - **Click su attività:** Apre modifica inline
+  - **Risoluzione conflitti:** Modifica direttamente le attività in conflitto
+  - **Toast notifications:** Feedback visivo per ogni operazione
+  - **File:** `secretary_dashboard.php`, `ajax_secretary.php`
+- **NUOVO: Gestione Coach (05/02/2026)**
+  - **Setup automatico:** `setup_coaches.php` popola coach da utenti Moodle
+  - **Gestione manuale:** `manage_coaches.php` per aggiungere/rimuovere coach
+  - **Coach supportati:** CB, FM, GM, RB, LP
+- **NUOVO: Guida Segreteria (05/02/2026)**
+  - **In Moodle:** `guida_segreteria.php` accessibile dalla piattaforma
+  - **HTML offline:** `docs/Guida_Segreteria_FTM_Scheduler.html`
+  - **Contenuto:** 13 sezioni con istruzioni passo-passo
+- **NUOVO: Filtri Calendario (05/02/2026)**
+  - **Filtro Gruppo:** Con indicazione KW (settimana calendario)
+  - **Filtro Aula:** Filtra per aula specifica
+  - **Filtro Tipo:** Atelier, Test, Lab, etc.
+  - **Reset filtri:** Pulsante per rimuovere tutti i filtri
+- **Excel Calendar Import** - Import completo da file Excel planning mensile
   - **Struttura 3 Aule:** K-L (Aula 1), M-N (Aula 2), O-P (Aula 3)
-  - **Rilevamento colore celle:** Determina gruppo da colore sfondo (giallo, grigio, rosso, marrone, viola)
+  - **Rilevamento colore celle:** Determina gruppo da colore sfondo
   - **Celle nere = Esterni:** LADI, BIT AI, BIT URAR rilevati automaticamente
-  - **Lettura commenti/note:** Attività esterne lette dai commenti Excel
   - **Coach-Group inference:** Associa gruppi a coach per settimana
-  - **Preview prima import:** Anteprima completa con filtri
-  - **Edit Activity/External:** Pagine modifica attività e progetti esterni
-  - **File:** `import_calendar.php`, `classes/calendar_importer.php`, `edit_activity.php`, `edit_external.php`
-  - **Debug tools:** `debug_rooms.php`, `debug_parser.php`, `debug_external.php`
-- **Version:** 2026020324
+  - **File:** `import_calendar.php`, `classes/calendar_importer.php`
+- **Version:** 2026020501
 
 #### 2. Sector Manager + Student Report (local_competencymanager) - AGGIORNATO 28/01/2026
 - Sistema Multi-Settore per studenti
@@ -229,6 +248,7 @@ Sistema completo per gestione studenti CPURC con import CSV e report Word:
 | FM | Fabio Marinoni | Coach |
 | GM | Graziano Margonar | Coach |
 | RB | Roberto Bravo | Coach |
+| LP | LP | Coach |
 | SANDRA | Sandra | Segreteria |
 | ALE | Alessandra | Segreteria |
 
@@ -433,6 +453,9 @@ Tabelle Condivise:
 ## RISORSE
 
 - Server Test: https://test-urc.hizuvala.myhostpoint.ch
+- **Dashboard Segreteria:** /local/ftm_scheduler/secretary_dashboard.php
+- **Guida Segreteria:** /local/ftm_scheduler/guida_segreteria.php
+- **Gestione Coach:** /local/ftm_scheduler/manage_coaches.php
 - **CPURC Dashboard:** /local/ftm_cpurc/index.php
 - **CPURC Student Card:** /local/ftm_cpurc/student_card.php?id=X
 - **CPURC Report:** /local/ftm_cpurc/report.php?id=X
@@ -939,3 +962,105 @@ $stats = [
 - **Debug Parser:** `/local/ftm_scheduler/debug_parser.php`
 - **Modifica Attività:** `/local/ftm_scheduler/edit_activity.php?id=X`
 - **Modifica Esterno:** `/local/ftm_scheduler/edit_external.php?id=X`
+
+---
+
+## DASHBOARD SEGRETERIA - DETTAGLI TECNICI (05/02/2026)
+
+### Panoramica
+Centro di controllo completo per la segreteria con gestione inline di attività e prenotazioni.
+
+### File Principali
+```
+local/ftm_scheduler/
+├── secretary_dashboard.php    # Dashboard principale con 5 tab
+├── ajax_secretary.php         # Endpoint AJAX per CRUD
+├── manage_coaches.php         # Gestione coach
+├── setup_coaches.php          # Setup iniziale coach
+├── guida_segreteria.php       # Guida operativa in Moodle
+└── tabs/calendario.php        # Calendario con filtri
+```
+
+### Tab Dashboard
+
+| Tab | Contenuto |
+|-----|-----------|
+| **Panoramica** | Attività oggi, statistiche, conflitti, azioni rapide |
+| **Occupazione Aule** | Matrice settimanale slot/aule con % occupazione |
+| **Carico Docenti** | Ore per coach, barra carico, soglia sovraccarico |
+| **Conflitti** | Lista conflitti aula/docente con link modifica |
+| **Pianificazione** | Creazione rapida e visualizzazione slot liberi |
+
+### Endpoint AJAX (ajax_secretary.php)
+
+| Action | Metodo | Descrizione |
+|--------|--------|-------------|
+| `get_activity` | GET | Recupera dati attività per modifica |
+| `get_external` | GET | Recupera dati prenotazione esterna |
+| `create_activity` | POST | Crea nuova attività |
+| `create_external` | POST | Crea prenotazione esterna |
+| `update_activity` | POST | Aggiorna attività esistente |
+| `update_external` | POST | Aggiorna prenotazione esistente |
+| `delete_activity` | POST | Elimina attività e iscrizioni |
+| `delete_external` | POST | Elimina prenotazione esterna |
+| `get_options` | GET | Recupera gruppi, aule, coach per dropdown |
+
+### Fasce Orarie
+
+| Fascia | Orario |
+|--------|--------|
+| `matt` | 08:30 - 11:45 |
+| `pom` | 13:15 - 16:30 |
+| `all` | 08:30 - 16:30 (tutto il giorno) |
+
+### Funzioni JavaScript
+
+```javascript
+// Modali
+ftmOpenModal('createActivity')   // Apre modale creazione
+ftmCloseModal('editActivity')    // Chiude modale
+
+// CRUD
+ftmSubmitActivity(event)         // Crea attività
+ftmEditActivity(id)              // Apre modifica attività
+ftmUpdateActivity(event)         // Salva modifiche
+ftmDeleteActivity()              // Elimina con conferma
+
+ftmSubmitExternal(event)         // Crea prenotazione
+ftmEditExternal(id)              // Apre modifica prenotazione
+ftmUpdateExternal(event)         // Salva modifiche
+ftmDeleteExternal()              // Elimina con conferma
+
+// Quick actions
+ftmQuickCreate(cell)             // Crea da slot vuoto (scelta attività/esterno)
+ftmQuickActivity(roomId, date, slot)   // Crea attività precompilata
+ftmQuickBook(roomId, date, slot)       // Crea prenotazione precompilata
+
+// Feedback
+showToast(message, type)         // Toast notification (success/error)
+```
+
+### Capabilities Richieste
+
+| Pagina | Capability |
+|--------|------------|
+| secretary_dashboard.php | `local/ftm_scheduler:manage` |
+| ajax_secretary.php | `local/ftm_scheduler:manage` |
+| manage_coaches.php | `local/ftm_scheduler:manage` |
+| guida_segreteria.php | `local/ftm_scheduler:view` |
+
+### Ruolo Segreteria FTM
+
+Creato con `create_secretary_role.php`, include tutte le capability:
+- `local/ftm_scheduler:*` (tutte)
+- `local/ftm_cpurc:*` (tutte)
+- `local/competencymanager:view`, `managesectors`
+- `local/coachmanager:view`, `viewallnotes`
+- `local/selfassessment:view`, `manage`
+
+### URL Utili
+- **Dashboard:** `/local/ftm_scheduler/secretary_dashboard.php`
+- **Gestione Coach:** `/local/ftm_scheduler/manage_coaches.php`
+- **Setup Coach:** `/local/ftm_scheduler/setup_coaches.php`
+- **Guida:** `/local/ftm_scheduler/guida_segreteria.php`
+- **Crea Ruolo:** `/local/ftm_scheduler/create_secretary_role.php`
