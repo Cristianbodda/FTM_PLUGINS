@@ -106,10 +106,11 @@ echo $OUTPUT->header();
     gap: 8px;
 }
 
-.doc-toolbar-btn-primary { background: #3498db; color: white; }
-.doc-toolbar-btn-success { background: #27ae60; color: white; }
-.doc-toolbar-btn-secondary { background: #95a5a6; color: white; }
-.doc-toolbar-btn:hover { opacity: 0.9; }
+.doc-toolbar-btn-primary { background: #3498db; color: white !important; }
+.doc-toolbar-btn-success { background: #27ae60; color: white !important; }
+.doc-toolbar-btn-secondary { background: #95a5a6; color: white !important; }
+.doc-toolbar-btn:hover { opacity: 0.9; color: white !important; }
+a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: white !important; text-decoration: none !important; }
 
 /* Document page - wider padding */
 .doc-page {

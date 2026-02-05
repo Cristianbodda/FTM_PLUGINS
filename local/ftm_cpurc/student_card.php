@@ -109,10 +109,11 @@ echo $OUTPUT->header();
     text-decoration: none;
 }
 
-.cpurc-btn-primary { background: #0066cc; color: white; }
-.cpurc-btn-success { background: #28a745; color: white; }
-.cpurc-btn-secondary { background: #6c757d; color: white; }
-.cpurc-btn:hover { opacity: 0.9; text-decoration: none; color: white; }
+.cpurc-btn-primary { background: #0066cc; color: white !important; }
+.cpurc-btn-success { background: #28a745; color: white !important; }
+.cpurc-btn-secondary { background: #6c757d; color: white !important; }
+.cpurc-btn:hover { opacity: 0.9; text-decoration: none !important; color: white !important; }
+a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc-btn:focus { color: white !important; text-decoration: none !important; }
 
 /* Badges */
 .status-badge {
