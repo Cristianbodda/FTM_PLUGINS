@@ -48,12 +48,13 @@ class manager {
             $params['status'] = $status;
         }
         
-        $sql = "SELECT g.*, 
+        // Order by entry_date DESC to show most recent groups first (includes year in timestamp)
+        $sql = "SELECT g.*,
                        (SELECT COUNT(*) FROM {local_ftm_group_members} gm WHERE gm.groupid = g.id) as member_count
                 FROM {local_ftm_groups} g
                 $where
                 ORDER BY g.entry_date DESC, g.id DESC";
-        
+
         return $DB->get_records_sql($sql, $params);
     }
 

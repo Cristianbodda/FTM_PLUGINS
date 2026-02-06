@@ -528,11 +528,11 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
     align-items: center;
 }
 
-.gruppo-card-header.giallo { background: #FFFF00; color: #333; }
-.gruppo-card-header.grigio { background: #808080; color: white; }
-.gruppo-card-header.rosso { background: #FF0000; color: white; }
-.gruppo-card-header.marrone { background: #996633; color: white; }
-.gruppo-card-header.viola { background: #7030A0; color: white; }
+.gruppo-card-header.giallo { background: #FFFF00 !important; color: #333 !important; }
+.gruppo-card-header.grigio { background: #808080 !important; color: white !important; }
+.gruppo-card-header.rosso { background: #FF0000 !important; color: white !important; }
+.gruppo-card-header.marrone { background: #996633 !important; color: white !important; }
+.gruppo-card-header.viola { background: #7030A0 !important; color: white !important; }
 
 .gruppo-card-header h3 {
     font-size: 18px;
@@ -540,17 +540,32 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
     align-items: center;
     gap: 10px;
     margin: 0;
+    color: inherit !important;
 }
+
+.gruppo-card-header.giallo h3,
+.gruppo-card-header.giallo .gruppo-week-badge { color: #333 !important; }
+.gruppo-card-header.grigio h3,
+.gruppo-card-header.grigio .gruppo-week-badge,
+.gruppo-card-header.rosso h3,
+.gruppo-card-header.rosso .gruppo-week-badge,
+.gruppo-card-header.marrone h3,
+.gruppo-card-header.marrone .gruppo-week-badge,
+.gruppo-card-header.viola h3,
+.gruppo-card-header.viola .gruppo-week-badge { color: white !important; }
 
 .gruppo-week-badge {
     background: rgba(0,0,0,0.2);
     padding: 5px 12px;
     border-radius: 15px;
     font-size: 13px;
+    font-weight: 600;
+    color: inherit !important;
 }
 
 .gruppo-card-body {
     padding: 20px;
+    background: white;
 }
 
 .gruppo-detail {
@@ -559,7 +574,11 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
     padding: 8px 0;
     border-bottom: 1px solid #eee;
     font-size: 14px;
+    color: #333 !important;
 }
+
+.gruppo-detail span { color: #666 !important; }
+.gruppo-detail strong { color: #000 !important; font-weight: 600; }
 
 .gruppo-detail:last-child { border-bottom: none; }
 
