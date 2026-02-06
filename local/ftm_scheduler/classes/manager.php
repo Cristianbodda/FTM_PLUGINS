@@ -48,12 +48,23 @@ class manager {
             $params['status'] = $status;
         }
         
-        // Order by entry_date DESC to show most recent groups first (includes year in timestamp)
+        // Order by status priority (active first), then by entry_date ASC (chronological)
+        // This shows current/upcoming groups first, then future ones
+        $now = time();
         $sql = "SELECT g.*,
-                       (SELECT COUNT(*) FROM {local_ftm_group_members} gm WHERE gm.groupid = g.id) as member_count
+                       (SELECT COUNT(*) FROM {local_ftm_group_members} gm WHERE gm.groupid = g.id) as member_count,
+                       CASE
+                           WHEN g.entry_date <= :now1 AND g.planned_end_date >= :now2 THEN 1
+                           WHEN g.entry_date > :now3 THEN 2
+                           ELSE 3
+                       END as sort_priority
                 FROM {local_ftm_groups} g
                 $where
-                ORDER BY g.entry_date DESC, g.id DESC";
+                ORDER BY sort_priority ASC, g.entry_date ASC, g.id ASC";
+
+        $params['now1'] = $now;
+        $params['now2'] = $now;
+        $params['now3'] = $now;
 
         return $DB->get_records_sql($sql, $params);
     }
