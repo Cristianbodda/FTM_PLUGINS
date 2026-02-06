@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida Completa per Claude
 
-**Ultimo aggiornamento:** 5 Febbraio 2026
+**Ultimo aggiornamento:** 6 Febbraio 2026
 
 ## Panoramica Progetto
 
@@ -12,16 +12,25 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (05/02/2026)
+## STATO ATTUALE SVILUPPO (06/02/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
-#### 1. FTM Scheduler (local_ftm_scheduler) - AGGIORNATO 05/02/2026
+#### 1. FTM Scheduler (local_ftm_scheduler) - AGGIORNATO 06/02/2026
 - Vista Calendario Settimanale e Mensile
 - Gestione Gruppi colore (Giallo, Grigio, Rosso, Marrone, Viola)
 - Gestione Aule e Atelier
 - Generazione automatica attivita
 - Tabella `local_ftm_coaches` per gestione coach (CB, FM, GM, RB, LP)
+- **NUOVO: Programma Individuale Studente (06/02/2026)**
+  - **Calendario 6 settimane:** Visualizzazione calendario individuale per ogni studente
+  - **Settimana 1 fissa:** Attività standard non modificabili
+  - **Settimane 2-6 editabili:** Coach/segreteria possono personalizzare
+  - **Gestione Test (T01-T25):** Assegnazione test basati sul settore studente
+  - **Modal editing:** Modifica inline delle attività con tipologia (presenza/remoto)
+  - **Export Excel/PDF:** Genera report del programma individuale
+  - **Tabelle DB:** `local_ftm_student_program`, `local_ftm_student_tests`
+  - **File:** `student_program.php`, `ajax_student_program.php`, `export_student_program.php`
 - **NUOVO: Dashboard Segreteria (05/02/2026)** - Centro di controllo completo per segreteria
   - **5 Tab:** Panoramica, Occupazione Aule, Carico Docenti, Conflitti, Pianificazione
   - **CRUD Inline:** Creazione/modifica/eliminazione attività senza redirect
@@ -62,7 +71,7 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
   - **Celle nere = Esterni:** LADI, BIT AI, BIT URAR rilevati automaticamente
   - **Coach-Group inference:** Associa gruppi a coach per settimana
   - **File:** `import_calendar.php`, `classes/calendar_importer.php`
-- **Version:** 2026020501
+- **Version:** 2026020601
 
 #### 2. Sector Manager + Student Report (local_competencymanager) - AGGIORNATO 28/01/2026
 - Sistema Multi-Settore per studenti

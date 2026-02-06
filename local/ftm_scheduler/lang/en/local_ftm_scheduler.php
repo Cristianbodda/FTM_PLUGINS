@@ -258,3 +258,35 @@ $string['import_select_all'] = 'Select All';
 $string['import_deselect_all'] = 'Deselect All';
 $string['import_activities_found'] = '{$a} activities found';
 $string['import_back_to_calendar'] = 'Back to Calendar';
+
+// Student Individual Program
+$string['student_program'] = 'Individual Program';
+$string['student_program_title'] = 'Student Individual Program';
+$string['student_program_calendar'] = '6-Week Calendar';
+$string['student_program_tests'] = 'Assigned Tests';
+$string['student_program_edit'] = 'Edit Activity';
+$string['student_program_save'] = 'Save Changes';
+$string['student_program_export_excel'] = 'Export Excel';
+$string['student_program_export_pdf'] = 'Export PDF';
+$string['student_program_print'] = 'Print';
+$string['student_program_presence'] = 'In Presence';
+$string['student_program_remote'] = 'Remote';
+$string['student_program_week_fixed'] = 'Week 1 = Not editable';
+$string['student_program_week_editable'] = 'Weeks 2-6 = Editable by Coach/Secretary';
+$string['student_program_no_tests'] = 'No tests assigned.';
+$string['student_program_manage_tests'] = 'Manage Tests';
+$string['student_program_saved'] = 'Program saved successfully';
+$string['student_program_tests_saved'] = 'Tests updated successfully';
+$string['student_program_no_changes'] = 'No changes to save';
+$string['studentnotingroup'] = 'Student is not a member of this group';
+
+// Test catalog
+$string['test_catalog'] = 'Test Catalog';
+$string['test_code'] = 'Code';
+$string['test_name'] = 'Test Name';
+$string['test_type'] = 'Type';
+$string['test_type_theorico'] = 'Theory';
+$string['test_type_pratico'] = 'Practical';
+$string['test_pending'] = 'Pending';
+$string['test_completed'] = 'Completed';
+$string['test_completion_date'] = 'Completion Date';

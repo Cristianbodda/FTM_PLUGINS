@@ -249,6 +249,72 @@
       </INDEXES>
     </TABLE>
     
+    <!-- PROGRAMMA INDIVIDUALE STUDENTE -->
+    <TABLE NAME="local_ftm_student_program" COMMENT="Programma individuale calendario per ogni studente">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Studente"/>
+        <FIELD NAME="groupid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Gruppo di appartenenza"/>
+        <FIELD NAME="week_number" TYPE="int" LENGTH="2" NOTNULL="true" COMMENT="Settimana 1-6"/>
+        <FIELD NAME="day_of_week" TYPE="int" LENGTH="1" NOTNULL="true" COMMENT="1=Lun, 2=Mar, 3=Mer, 4=Gio, 5=Ven"/>
+        <FIELD NAME="time_slot" TYPE="char" LENGTH="10" NOTNULL="true" COMMENT="matt, pom"/>
+        <FIELD NAME="activity_type" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="presenza" COMMENT="presenza, remoto"/>
+        <FIELD NAME="activity_name" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Nome attività"/>
+        <FIELD NAME="activity_details" TYPE="text" NOTNULL="false" COMMENT="Dettagli (es. Call ore 10:00)"/>
+        <FIELD NAME="location" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="Aula o Remoto"/>
+        <FIELD NAME="coachid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Coach assegnato per questa attività"/>
+        <FIELD NAME="is_editable" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" COMMENT="0=fisso (sett.1), 1=modificabile"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" COMMENT="pending, completed, cancelled"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="assigned_by" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Chi ha assegnato/modificato"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="groupid" TYPE="foreign" FIELDS="groupid" REFTABLE="local_ftm_groups" REFFIELDS="id"/>
+        <KEY NAME="coachid" TYPE="foreign" FIELDS="coachid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="assigned_by" TYPE="foreign" FIELDS="assigned_by" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_groupid" UNIQUE="false" FIELDS="userid, groupid"/>
+        <INDEX NAME="week_day_slot" UNIQUE="false" FIELDS="userid, groupid, week_number, day_of_week, time_slot"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- TEST ASSEGNATI STUDENTE -->
+    <TABLE NAME="local_ftm_student_tests" COMMENT="Test assegnati individualmente a ogni studente">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Studente"/>
+        <FIELD NAME="groupid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Gruppo"/>
+        <FIELD NAME="test_code" TYPE="char" LENGTH="10" NOTNULL="true" COMMENT="T01, T02, etc."/>
+        <FIELD NAME="test_name" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Nome test"/>
+        <FIELD NAME="test_type" TYPE="char" LENGTH="20" NOTNULL="true" COMMENT="teorico, pratico"/>
+        <FIELD NAME="sector" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="Settore di riferimento"/>
+        <FIELD NAME="assigned_by" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Coach/segreteria che ha assegnato"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" COMMENT="pending, completed, skipped"/>
+        <FIELD NAME="completed_date" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Data completamento"/>
+        <FIELD NAME="score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" COMMENT="Punteggio se applicabile"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="groupid" TYPE="foreign" FIELDS="groupid" REFTABLE="local_ftm_groups" REFFIELDS="id"/>
+        <KEY NAME="assigned_by" TYPE="foreign" FIELDS="assigned_by" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_groupid" UNIQUE="false" FIELDS="userid, groupid"/>
+        <INDEX NAME="userid_test" UNIQUE="true" FIELDS="userid, groupid, test_code"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+
     <!-- COACH (mapping iniziali -> utente) -->
     <TABLE NAME="local_ftm_coaches" COMMENT="Mapping coach iniziali e ruoli">
       <FIELDS>

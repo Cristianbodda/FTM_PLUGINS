@@ -192,6 +192,42 @@ echo $OUTPUT->header();
     display: flex;
     align-items: center;
     gap: 12px;
+    position: relative;
+}
+
+.member-actions {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.member-btn {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: opacity 0.2s;
+}
+
+.member-btn:hover {
+    opacity: 0.85;
+    text-decoration: none !important;
+}
+
+.member-btn-program {
+    background: #0066cc;
+    color: white !important;
+}
+
+.member-btn-report {
+    background: #28a745;
+    color: white !important;
 }
 
 .member-avatar {
@@ -394,6 +430,8 @@ echo $OUTPUT->header();
             <div class="members-grid">
                 <?php foreach ($members as $member):
                     $initials = strtoupper(substr($member->firstname, 0, 1) . substr($member->lastname, 0, 1));
+                    $canManageOrCoach = has_capability('local/ftm_scheduler:manage', $context) ||
+                                        has_capability('local/ftm_scheduler:markattendance', $context);
                 ?>
                 <div class="member-card">
                     <div class="member-avatar"><?php echo $initials; ?></div>
@@ -401,6 +439,16 @@ echo $OUTPUT->header();
                         <div class="member-name"><?php echo s($member->firstname . ' ' . $member->lastname); ?></div>
                         <div class="member-email"><?php echo s($member->email); ?></div>
                     </div>
+                    <?php if ($canManageOrCoach): ?>
+                    <div class="member-actions">
+                        <a href="<?php echo new moodle_url('/local/ftm_scheduler/student_program.php', [
+                            'userid' => $member->id,
+                            'groupid' => $id
+                        ]); ?>" class="member-btn member-btn-program" title="Programma Individuale">
+                            📋 Programma
+                        </a>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <?php endforeach; ?>
             </div>
