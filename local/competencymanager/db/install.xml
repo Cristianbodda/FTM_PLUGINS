@@ -157,7 +157,6 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="evaluationid_time_idx" UNIQUE="false" FIELDS="evaluationid, timecreated"/>
-        <INDEX NAME="userid_idx" UNIQUE="false" FIELDS="userid"/>
       </INDEXES>
     </TABLE>
   </TABLES>

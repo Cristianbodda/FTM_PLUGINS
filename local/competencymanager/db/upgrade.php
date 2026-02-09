@@ -180,7 +180,6 @@ function xmldb_local_competencymanager_upgrade($oldversion) {
         $table3->add_key('userid_fk', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
 
         $table3->add_index('evaluationid_time_idx', XMLDB_INDEX_NOTUNIQUE, ['evaluationid', 'timecreated']);
-        $table3->add_index('userid_idx', XMLDB_INDEX_NOTUNIQUE, ['userid']);
 
         if (!$dbman->table_exists($table3)) {
             $dbman->create_table($table3);
