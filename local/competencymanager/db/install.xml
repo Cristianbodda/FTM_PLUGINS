@@ -116,7 +116,6 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="studentid_sector_idx" UNIQUE="false" FIELDS="studentid, sector"/>
-        <INDEX NAME="coachid_idx" UNIQUE="false" FIELDS="coachid"/>
         <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
       </INDEXES>
     </TABLE>

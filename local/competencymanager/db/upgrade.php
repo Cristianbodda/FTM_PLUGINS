@@ -135,7 +135,6 @@ function xmldb_local_competencymanager_upgrade($oldversion) {
         $table->add_key('coachid_fk', XMLDB_KEY_FOREIGN, ['coachid'], 'user', ['id']);
 
         $table->add_index('studentid_sector_idx', XMLDB_INDEX_NOTUNIQUE, ['studentid', 'sector']);
-        $table->add_index('coachid_idx', XMLDB_INDEX_NOTUNIQUE, ['coachid']);
         $table->add_index('status_idx', XMLDB_INDEX_NOTUNIQUE, ['status']);
 
         if (!$dbman->table_exists($table)) {
