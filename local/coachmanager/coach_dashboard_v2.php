@@ -1091,6 +1091,56 @@ echo $OUTPUT->header();
     margin: 0;
 }
 
+/* Quick Actions - Sempre visibili */
+.quick-actions {
+    display: flex;
+    gap: 8px;
+    padding: 12px 0;
+    margin-top: 12px;
+    border-top: 1px dashed #e0e0e0;
+    flex-wrap: wrap;
+}
+
+.quick-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.quick-btn.report {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.quick-btn.eval {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+
+.quick-btn.profile {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.quick-btn.word {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.quick-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    text-decoration: none;
+    color: white;
+}
+
 /* Card Footer */
 .view-standard .student-card-footer {
     padding: 18px 22px;
@@ -2255,6 +2305,11 @@ function render_view_compatta($students, $dashboard) {
                             title="Report Dettagliato">
                         &#128202;
                     </button>
+                    <button class="btn btn-success btn-sm"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/coach_evaluation.php?studentid=<?php echo $student->id; ?>&sector=<?php echo urlencode($student->sector ?? 'MECCANICA'); ?>'"
+                            title="Valutazione Formatore">
+                        &#128100;
+                    </button>
                     <button class="btn btn-primary btn-sm"
                             onclick="location.href='reports_v2.php?studentid=<?php echo $student->id; ?>'"
                             title="Colloquio">
@@ -2396,6 +2451,28 @@ function render_view_standard($students, $dashboard) {
 
                             <?php if ($is_end6): ?>
                             <span class="status-badge end-path">&#127937; Fine Percorso</span>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Quick Actions - Sempre visibili -->
+                        <div class="quick-actions">
+                            <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>"
+                               class="quick-btn report" title="Report Competenze">
+                                &#128202; Report
+                            </a>
+                            <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/coach_evaluation.php?studentid=<?php echo $student->id; ?>&sector=<?php echo urlencode($student->sector ?? 'MECCANICA'); ?>"
+                               class="quick-btn eval" title="Valutazione Formatore">
+                                &#128100; Valutazione
+                            </a>
+                            <a href="<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_student_view.php?studentid=<?php echo $student->id; ?>"
+                               class="quick-btn profile" title="Profilo Studente">
+                                &#128203; Profilo
+                            </a>
+                            <?php if ($is_end6): ?>
+                            <a href="#" onclick="exportWord(<?php echo $student->id; ?>); return false;"
+                               class="quick-btn word" title="Esporta Word">
+                                &#128196; Word
+                            </a>
                             <?php endif; ?>
                         </div>
 
@@ -2604,20 +2681,24 @@ function render_view_standard($students, $dashboard) {
                     <div class="student-card-footer">
                         <button class="btn btn-info btn-sm"
                                 onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_student_view.php?studentid=<?php echo $student->id; ?>'">
-                            &#128203; Profilo Semplice
+                            &#128203; Profilo
                         </button>
                         <button class="btn btn-secondary btn-sm"
                                 onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>'">
-                            &#128202; Report Avanzato
+                            &#128202; Report
+                        </button>
+                        <button class="btn btn-success btn-sm"
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/coach_evaluation.php?studentid=<?php echo $student->id; ?>&sector=<?php echo urlencode($student->sector ?? 'MECCANICA'); ?>'">
+                            &#128100; Valutazione
                         </button>
                         <?php if ($is_end6): ?>
                         <button class="btn btn-warning btn-sm"
                                 onclick="exportWord(<?php echo $student->id; ?>)">
-                            &#128196; Esporta Word
+                            &#128196; Word
                         </button>
                         <?php elseif (!($student->autoval_done ?? false)): ?>
                         <button class="btn btn-warning btn-sm" onclick="sendReminder(<?php echo $student->id; ?>, 'autoval')">
-                            &#128232; Sollecita Autoval
+                            &#128232; Sollecita
                         </button>
                         <?php endif; ?>
                         <button class="btn btn-primary btn-sm"
@@ -2626,7 +2707,7 @@ function render_view_standard($students, $dashboard) {
                         </button>
                         <?php if ($student->needs_choices ?? false): ?>
                         <button class="btn btn-success btn-sm" onclick="saveChoices(<?php echo $student->id; ?>)">
-                            &#10004; Salva Scelte
+                            &#10004; Salva
                         </button>
                         <?php endif; ?>
                     </div>
@@ -2815,6 +2896,10 @@ function render_view_dettagliata($students, $dashboard) {
                     <button class="btn btn-secondary"
                             onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>'">
                         &#128202; Report Avanzato
+                    </button>
+                    <button class="btn btn-success"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/coach_evaluation.php?studentid=<?php echo $student->id; ?>&sector=<?php echo urlencode($student->sector ?? 'MECCANICA'); ?>'">
+                        &#128100; Valutazione Formatore
                     </button>
                     <button class="btn btn-primary"
                             onclick="location.href='reports_v2.php?studentid=<?php echo $student->id; ?>'">
