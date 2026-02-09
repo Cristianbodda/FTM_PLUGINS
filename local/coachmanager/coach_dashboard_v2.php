@@ -635,7 +635,7 @@ echo $OUTPUT->header();
     background: white;
     border-radius: 16px;
     border: 2px solid #e0e0e0;
-    overflow: hidden;
+    overflow: visible;
     transition: all 0.3s;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
@@ -794,8 +794,8 @@ echo $OUTPUT->header();
 
 /* Collapsible Content */
 .view-standard .student-card-collapsible {
-    max-height: 1200px;
-    overflow: hidden;
+    max-height: 2500px;
+    overflow: visible;
     transition: max-height 0.35s ease-out, opacity 0.25s ease;
     opacity: 1;
 }
@@ -1095,10 +1095,11 @@ echo $OUTPUT->header();
 .quick-actions {
     display: flex;
     gap: 8px;
-    padding: 12px 0;
-    margin-top: 12px;
-    border-top: 1px dashed #e0e0e0;
+    padding: 10px 15px;
+    background: linear-gradient(to right, #f8f9fa, #fff);
+    border-bottom: 1px solid #e0e0e0;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .quick-btn {
@@ -1108,47 +1109,60 @@ echo $OUTPUT->header();
     padding: 8px 14px;
     border-radius: 20px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     text-decoration: none;
     transition: all 0.2s;
     cursor: pointer;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    border: 1px solid rgba(0,0,0,0.1);
 }
 
 .quick-btn.report {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    color: #fff;
 }
 
 .quick-btn.eval {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    color: white;
+    background: linear-gradient(135deg, #0d8b7d 0%, #059669 100%);
+    color: #fff;
 }
 
 .quick-btn.profile {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: white;
+    background: linear-gradient(135deg, #3b82f6 0%, #0284c7 100%);
+    color: #fff;
 }
 
 .quick-btn.word {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
+    background: linear-gradient(135deg, #db2777 0%, #dc2626 100%);
+    color: #fff;
+}
+
+.quick-btn.colloquio {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    color: #fff;
+}
+
+.quick-btn.sollecita {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #fff;
+}
+
+.quick-btn.salva {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
 }
 
 .quick-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     text-decoration: none;
-    color: white;
+    color: #fff;
+    filter: brightness(1.1);
 }
 
 /* Card Footer */
 .view-standard .student-card-footer {
-    padding: 18px 22px;
-    background: #f8f9fa;
-    display: flex;
-    gap: 12px;
-    border-top: 1px solid #e0e0e0;
-    flex-wrap: wrap;
+    display: none; /* Nascosto - bottoni ora nei Quick Actions */
 }
 
 .view-standard .student-card-footer .btn {
@@ -2395,6 +2409,43 @@ function render_view_standard($students, $dashboard) {
                     </div>
                 </div>
 
+                <!-- Quick Actions - SEMPRE visibili (fuori dal collapsible) -->
+                <div class="quick-actions">
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>"
+                       class="quick-btn report" title="Report Competenze">
+                        &#128202; Report
+                    </a>
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/coach_evaluation.php?studentid=<?php echo $student->id; ?>&sector=<?php echo urlencode($student->sector ?? 'MECCANICA'); ?>"
+                       class="quick-btn eval" title="Valutazione Formatore">
+                        &#128100; Valutazione
+                    </a>
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_student_view.php?studentid=<?php echo $student->id; ?>"
+                       class="quick-btn profile" title="Profilo Studente">
+                        &#128203; Profilo
+                    </a>
+                    <a href="reports_v2.php?studentid=<?php echo $student->id; ?>"
+                       class="quick-btn colloquio" title="Note Colloquio">
+                        &#128172; Colloquio
+                    </a>
+                    <?php if ($is_end6): ?>
+                    <a href="#" onclick="exportWord(<?php echo $student->id; ?>); return false;"
+                       class="quick-btn word" title="Esporta Word">
+                        &#128196; Word
+                    </a>
+                    <?php elseif (!($student->autoval_done ?? false)): ?>
+                    <a href="#" onclick="sendReminder(<?php echo $student->id; ?>, 'autoval'); return false;"
+                       class="quick-btn sollecita" title="Sollecita Autovalutazione">
+                        &#128232; Sollecita
+                    </a>
+                    <?php endif; ?>
+                    <?php if ($student->needs_choices ?? false): ?>
+                    <a href="#" onclick="saveChoices(<?php echo $student->id; ?>); return false;"
+                       class="quick-btn salva" title="Salva Scelte">
+                        &#10004; Salva
+                    </a>
+                    <?php endif; ?>
+                </div>
+
                 <!-- Collapsible Content -->
                 <div class="student-card-collapsible">
                     <div class="student-card-body">
@@ -2451,28 +2502,6 @@ function render_view_standard($students, $dashboard) {
 
                             <?php if ($is_end6): ?>
                             <span class="status-badge end-path">&#127937; Fine Percorso</span>
-                            <?php endif; ?>
-                        </div>
-
-                        <!-- Quick Actions - Sempre visibili -->
-                        <div class="quick-actions">
-                            <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>"
-                               class="quick-btn report" title="Report Competenze">
-                                &#128202; Report
-                            </a>
-                            <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/coach_evaluation.php?studentid=<?php echo $student->id; ?>&sector=<?php echo urlencode($student->sector ?? 'MECCANICA'); ?>"
-                               class="quick-btn eval" title="Valutazione Formatore">
-                                &#128100; Valutazione
-                            </a>
-                            <a href="<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_student_view.php?studentid=<?php echo $student->id; ?>"
-                               class="quick-btn profile" title="Profilo Studente">
-                                &#128203; Profilo
-                            </a>
-                            <?php if ($is_end6): ?>
-                            <a href="#" onclick="exportWord(<?php echo $student->id; ?>); return false;"
-                               class="quick-btn word" title="Esporta Word">
-                                &#128196; Word
-                            </a>
                             <?php endif; ?>
                         </div>
 

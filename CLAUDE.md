@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida Completa per Claude
 
-**Ultimo aggiornamento:** 6 Febbraio 2026
+**Ultimo aggiornamento:** 9 Febbraio 2026
 
 ## Panoramica Progetto
 
@@ -73,12 +73,22 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
   - **File:** `import_calendar.php`, `classes/calendar_importer.php`
 - **Version:** 2026020601
 
-#### 2. Sector Manager + Student Report (local_competencymanager) - AGGIORNATO 28/01/2026
+#### 2. Sector Manager + Student Report (local_competencymanager) - AGGIORNATO 09/02/2026
 - Sistema Multi-Settore per studenti
 - Interfaccia segreteria: `sector_admin.php`
 - Rilevamento automatico settori da quiz
 - Capability `managesectors` per coach/segreteria
 - **Gap Comments System (NUOVO 28/01/2026):** Suggerimenti automatici basati su gap analysis
+- **NUOVO: Grafico Overlay Multi-Fonte (09/02/2026):**
+  - Radar sovrapposto con 4 fonti: Quiz, Autovalutazione, LabEval, Formatore
+  - Normalizzazione a percentuale (Bloom 1-6 → valore/6×100)
+  - Toggle checkbox per mostrare/nascondere ogni fonte
+  - Tabella comparativa con Media e Gap Max per area
+  - Colori distintivi: Verde (Quiz), Viola (Auto), Arancione (Lab), Teal (Coach)
+- **NUOVO: Quiz Diagnostics Panel (09/02/2026):**
+  - Ultimi 7 giorni di quiz attempts
+  - Link Review per vedere domande e risposte
+  - Fix query Moodle 4.x (question_references chain)
 - **Student Report Print v2** con:
   - Radar 360px compatto per far stare grafico + tabella nella stessa pagina
   - Rettangoli colorati pieni per TUTTE le aree DETTAGLIO (A-G)
@@ -96,7 +106,17 @@ Sistema automatico di suggerimenti basati su gap analysis:
 - **Due toni:** Formale (report) e Colloquiale (spunti colloquio)
 - **File:** `gap_comments_mapping.php`
 
-#### 2c. FTM AI Integration (IN STANDBY - local_ftm_ai)
+#### 2c. Coach Evaluation System (NUOVO 09/02/2026)
+Sistema di valutazione formatore per competenze studente:
+- **Valutazione Bloom (0-6):** 0=N/O, 1-6=Scala Bloom
+- **Organizzazione per Area:** Competenze raggruppate per area (A, B, C, ...)
+- **Nomi aree italiane:** Descrizioni complete per ogni settore
+- **UI migliorata:** Bottoni rating visibili, descrizioni competenze
+- **Integrazione Student Report:** Dati visibili nel grafico overlay
+- **File:** `coach_evaluation.php`, `classes/coach_evaluation_manager.php`
+- **Tabelle DB:** `local_coach_evaluations`, `local_coach_eval_ratings`, `local_coach_eval_history`
+
+#### 2d. FTM AI Integration (IN STANDBY - local_ftm_ai)
 Plugin per integrare Azure OpenAI/Copilot con mascheramento dati sensibili:
 - **Anonimizzazione automatica:** Rimuove nome, cognome, AVS, email, telefono prima di inviare
 - **Varianti linguistiche:** Evita ripetizioni nei testi generati

@@ -75,6 +75,12 @@ $showCoachEvaluation = optional_param('show_coach_eval', 0, PARAM_INT);
 $printCoachEvaluation = optional_param('print_coach_eval', 0, PARAM_INT);
 
 // ============================================
+// PARAMETRI GRAFICO SOVRAPPOSIZIONE (Overlay Radar)
+// ============================================
+$showOverlayRadar = optional_param('show_overlay', 0, PARAM_INT);
+$printOverlayRadar = optional_param('print_overlay', 0, PARAM_INT);
+
+// ============================================
 // PARAMETRI SUGGERIMENTI RAPPORTO (Commenti Automatici Gap)
 // ============================================
 $showSuggerimentiRapporto = optional_param('show_suggerimenti', 0, PARAM_INT);
@@ -141,6 +147,11 @@ $selectedQuizzes = optional_param_array('quizids', [], PARAM_INT);
 $singleQuizId = optional_param('quizid', 0, PARAM_INT);
 if ($singleQuizId && empty($selectedQuizzes)) {
     $selectedQuizzes = [$singleQuizId];
+}
+// Filtro tentativi: 'all' (tutti), 'first' (solo primo), 'last' (solo ultimo)
+$attemptFilter = optional_param('attempt_filter', 'all', PARAM_ALPHA);
+if (!in_array($attemptFilter, ['all', 'first', 'last'])) {
+    $attemptFilter = 'all';
 }
 
 // ============================================
@@ -746,13 +757,70 @@ function generate_svg_bar_chart($data, $title = '', $width = 300) {
 $availableQuizzes = \local_competencymanager\report_generator::get_available_quizzes($userid, $courseid);
 $quizIdsForQuery = !empty($selectedQuizzes) ? $selectedQuizzes : null;
 
-$radardata = \local_competencymanager\report_generator::get_radar_chart_data($userid, $courseid, $quizIdsForQuery, $area ?: null);
-$summary = \local_competencymanager\report_generator::get_student_summary($userid, $courseid, $quizIdsForQuery, $area ?: null);
+// Passa attemptFilter per filtrare tentativi (tutti/primo/ultimo)
+$radardata = \local_competencymanager\report_generator::get_radar_chart_data($userid, $courseid, $quizIdsForQuery, $area ?: null, $attemptFilter);
+$summary = \local_competencymanager\report_generator::get_student_summary($userid, $courseid, $quizIdsForQuery, $area ?: null, $attemptFilter);
 $competencies = $radardata['competencies'];
 
 $availableAreas = \local_competencymanager\report_generator::get_available_areas($userid, $courseid);
 $quizComparison = \local_competencymanager\report_generator::get_quiz_comparison($userid, $courseid);
 $progressData = \local_competencymanager\report_generator::get_progress_over_time($userid, $courseid);
+
+// ============================================
+// DEBUG: Informazioni per diagnostica
+// ============================================
+$debugMode = optional_param('debug', 0, PARAM_INT);
+if ($debugMode) {
+    echo '<div class="alert alert-info mt-2" style="font-size: 12px; font-family: monospace;">';
+    echo '<strong>🔍 DEBUG INFO:</strong><br>';
+    echo 'Selected Quiz IDs: ' . ($quizIdsForQuery ? implode(', ', $quizIdsForQuery) : 'TUTTI') . '<br>';
+    echo 'Attempt Filter: ' . $attemptFilter . '<br>';
+    echo 'Competencies found: ' . count($competencies) . '<br>';
+    echo 'Quiz in comparison: ' . count($quizComparison) . '<br>';
+
+    // Mostra tutti i tentativi quiz dallo studente (inclusi quelli non finished)
+    global $DB;
+    $allAttemptsDebug = $DB->get_records_sql(
+        "SELECT qa.id, qa.quiz, qa.state, qa.timefinish, q.name
+         FROM {quiz_attempts} qa
+         JOIN {quiz} q ON q.id = qa.quiz
+         WHERE qa.userid = :userid
+         ORDER BY qa.timefinish DESC
+         LIMIT 10",
+        ['userid' => $userid]
+    );
+    echo '<br><strong>Ultimi 10 tentativi quiz (tutti gli stati):</strong><br>';
+    foreach ($allAttemptsDebug as $att) {
+        $date = $att->timefinish ? date('d/m/Y H:i', $att->timefinish) : 'N/A';
+        $stateClass = $att->state === 'finished' ? 'text-success' : 'text-warning';
+        echo "<span class='$stateClass'>ID:{$att->id} | {$att->name} | Stato: {$att->state} | Data: {$date}</span><br>";
+    }
+
+    // Mostra competenze per quiz selezionato
+    // Query compatibile con Moodle 4.x (usa question_references invece di questionid diretto)
+    if (!empty($quizIdsForQuery)) {
+        echo '<br><strong>Competenze nei quiz selezionati:</strong><br>';
+        foreach ($quizIdsForQuery as $qid) {
+            $quizCompetencies = $DB->get_records_sql(
+                "SELECT DISTINCT comp.idnumber, comp.shortname
+                 FROM {quiz_slots} qs
+                 JOIN {question_references} qr ON qr.component = 'mod_quiz'
+                      AND qr.questionarea = 'slot' AND qr.itemid = qs.id
+                 JOIN {question_bank_entries} qbe ON qbe.id = qr.questionbankentryid
+                 JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
+                 JOIN {qbank_competenciesbyquestion} qcbq ON qcbq.questionid = qv.questionid
+                 JOIN {competency} comp ON comp.id = qcbq.competencyid
+                 WHERE qs.quizid = :quizid",
+                ['quizid' => $qid]
+            );
+            echo "Quiz ID $qid: " . count($quizCompetencies) . " competenze<br>";
+            if (count($quizCompetencies) === 0) {
+                echo "<span class='text-danger'>⚠️ Questo quiz NON ha competenze assegnate alle domande!</span><br>";
+            }
+        }
+    }
+    echo '</div>';
+}
 
 // CARICAMENTO DESCRIZIONI DINAMICHE DAL DATABASE
 // Rileva TUTTI i settori presenti nelle competenze (non solo il maggioritario)
@@ -825,9 +893,10 @@ $gapAnalysisData = null;
 $colloquioHints = null;
 $autovalutazioneAreas = null;
 
-// Carica solo se almeno una opzione è attivata
+// Carica solo se almeno una opzione è attivata (incluso overlay)
 if ($showDualRadar || $showGapAnalysis || $showSpuntiColloquio || $showSuggerimentiRapporto ||
-    $printDualRadar || $printGapAnalysis || $printSpuntiColloquio || $printSuggerimentiRapporto) {
+    $printDualRadar || $printGapAnalysis || $printSpuntiColloquio || $printSuggerimentiRapporto ||
+    $showOverlayRadar || $printOverlayRadar) {
     
     $autovalutazioneResult = get_student_self_assessment($userid, $courseid, $courseSector);
     
@@ -846,8 +915,8 @@ if ($showDualRadar || $showGapAnalysis || $showSpuntiColloquio || $showSuggerime
             $colloquioHints = generate_colloquio_hints($gapAnalysisData, $competencyDescriptions, $sogliaCritico);
         }
         
-        // Aggrega autovalutazione per area
-        if ($showDualRadar || $printDualRadar) {
+        // Aggrega autovalutazione per area (anche per overlay)
+        if ($showDualRadar || $printDualRadar || $showOverlayRadar || $printOverlayRadar) {
             // FILTRA AUTOVALUTAZIONE PER SETTORE (se filtro attivo)
             $autovalutazione_for_areas = $autovalutazioneData;
             if ($cm_sector_filter !== 'all') {
@@ -892,9 +961,56 @@ if (!empty($currentSector)) {
     if ($hasCoachEvaluation) {
         // Prendi la valutazione più recente
         $coachEvaluationData = reset($coachEvaluations);
-        // Pre-carica dati radar se necessario
-        if ($showCoachEvaluation || $printCoachEvaluation) {
+        // Pre-carica dati radar se necessario (anche per overlay)
+        if ($showCoachEvaluation || $printCoachEvaluation || $showOverlayRadar || $printOverlayRadar) {
             $coachRadarData = coach_evaluation_manager::get_radar_data($userid, $currentSector);
+        }
+    }
+}
+// ============================================
+
+// ============================================
+// CARICAMENTO DATI LABEVAL (Valutazione Laboratorio)
+// ============================================
+$hasLabEval = false;
+$labEvalData = [];
+$labEvalByArea = [];
+
+// Verifica se il plugin labeval esiste e carica i dati
+if (file_exists(__DIR__ . '/../labeval/classes/api.php')) {
+    require_once(__DIR__ . '/../labeval/classes/api.php');
+
+    // Determina il settore per labeval
+    $labEvalSector = strtoupper($currentSector ?: $sector);
+    // Normalizza il settore per labeval
+    if ($labEvalSector === 'ELETTRICITA' || $labEvalSector === 'ELETTRICITÀ') {
+        $labEvalSector = 'ELETTRICITA';
+    }
+
+    if (!empty($labEvalSector)) {
+        $labEvalData = \local_labeval\api::get_student_competency_scores($userid, $labEvalSector);
+        $hasLabEval = !empty($labEvalData);
+
+        // Aggrega per area
+        if ($hasLabEval) {
+            foreach ($labEvalData as $code => $data) {
+                $areaInfo = get_area_info($code);
+                $areaCode = $areaInfo['code'];
+                if (!isset($labEvalByArea[$areaCode])) {
+                    $labEvalByArea[$areaCode] = [
+                        'code' => $areaCode,
+                        'name' => $areaInfo['name'],
+                        'total_percentage' => 0,
+                        'count' => 0
+                    ];
+                }
+                $labEvalByArea[$areaCode]['total_percentage'] += $data['percentage'];
+                $labEvalByArea[$areaCode]['count']++;
+            }
+            // Calcola media per area
+            foreach ($labEvalByArea as $code => &$area) {
+                $area['percentage'] = round($area['total_percentage'] / $area['count'], 1);
+            }
         }
     }
 }
@@ -1649,24 +1765,345 @@ echo '<div class="col-auto"><div style="font-size: 3rem;">' . $evaluation['icon'
 echo '<div class="col"><h4 class="mb-1" style="color: ' . $evaluation['color'] . ';">VALUTAZIONE: ' . $evaluation['label'] . '</h4><p class="mb-1">' . $evaluation['description'] . '</p><p class="mb-0"><strong>💡 Azione:</strong> ' . $evaluation['action'] . '</p></div>';
 echo '<div class="col-auto text-center p-3 rounded" style="background: ' . $evaluation['bgColor'] . ';"><div style="font-size: 2rem; font-weight: bold; color: ' . $evaluation['color'] . ';">' . ($summary['correct_total'] ?? $summary['correct_questions']) . '/' . ($summary['questions_total'] ?? $summary['total_questions']) . '</div><small>risposte corrette</small></div></div></div></div>';
 
-// Pannello quiz
-if (!empty($availableQuizzes)) {
-    echo '<div class="card mb-4"><div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;"><h5 class="mb-0">📝 Seleziona Quiz</h5></div><div class="card-body">';
-    echo '<form method="get" id="quizFilterForm"><input type="hidden" name="userid" value="' . $userid . '"><input type="hidden" name="courseid" value="' . $courseid . '"><input type="hidden" name="tab" value="' . $tab . '">';
-    if ($selectedArea) echo '<input type="hidden" name="selectedarea" value="' . $selectedArea . '">';
-    // Mantieni le opzioni additive attive
-    if ($showDualRadar) echo '<input type="hidden" name="show_dual_radar" value="1">';
-    if ($showGapAnalysis) echo '<input type="hidden" name="show_gap" value="1">';
-    if ($showSpuntiColloquio) echo '<input type="hidden" name="show_spunti" value="1">';
-    echo '<div class="row">';
-    foreach ($availableQuizzes as $quiz) {
-        $isSelected = empty($selectedQuizzes) || in_array($quiz->id, $selectedQuizzes);
-        echo '<div class="col-md-4 mb-2"><div class="p-2 border rounded" style="' . ($isSelected ? 'background:#e8f5e9;' : '') . '"><div class="form-check">';
-        echo '<input type="checkbox" class="form-check-input quiz-checkbox" name="quizids[]" value="' . $quiz->id . '" id="quiz_' . $quiz->id . '" ' . ($isSelected ? 'checked' : '') . '>';
-        echo '<label class="form-check-label" for="quiz_' . $quiz->id . '"><strong>' . format_string($quiz->name) . '</strong><br><small class="text-muted">' . $quiz->attempts . ' tentativo/i</small></label>';
-        echo '</div></div></div>';
+// ============================================
+// PANNELLO DIAGNOSTICA: Quiz ultimi 7 giorni (TUTTI gli stati, TUTTI i corsi)
+// ============================================
+$sevenDaysAgo = time() - (7 * 24 * 60 * 60);
+$recentAllAttempts = $DB->get_records_sql(
+    "SELECT qa.id, qa.quiz, qa.state, qa.timestart, qa.timefinish,
+            q.name as quizname, q.course as quizcourse, c.shortname as coursename
+     FROM {quiz_attempts} qa
+     JOIN {quiz} q ON q.id = qa.quiz
+     JOIN {course} c ON c.id = q.course
+     WHERE qa.userid = :userid
+     AND qa.timestart > :sevendays
+     ORDER BY qa.timestart DESC",
+    ['userid' => $userid, 'sevendays' => $sevenDaysAgo]
+);
+
+if (!empty($recentAllAttempts)) {
+    echo '<div class="card mb-4 border-primary">';
+    echo '<div class="card-header bg-primary text-white"><h6 class="mb-0">📋 Quiz ultimi 7 giorni (tutti i corsi e stati) - Clicca per vedere risposte</h6></div>';
+    echo '<div class="card-body p-2">';
+    echo '<table class="table table-sm table-striped mb-0" style="font-size: 12px;">';
+    echo '<thead><tr><th>Data</th><th>Quiz</th><th>Corso</th><th>Stato</th><th>Azioni</th></tr></thead><tbody>';
+    foreach ($recentAllAttempts as $att) {
+        $startDate = date('d/m/Y H:i', $att->timestart);
+        $isCurrentCourse = ($att->quizcourse == $courseid);
+        $rowClass = $isCurrentCourse ? '' : 'table-warning';
+        $stateLabels = [
+            'finished' => '<span class="badge badge-success">✅ Completato</span>',
+            'inprogress' => '<span class="badge badge-info">⏳ In corso</span>',
+            'overdue' => '<span class="badge badge-warning">⏱️ Scaduto</span>',
+            'abandoned' => '<span class="badge badge-danger">❌ Abbandonato</span>'
+        ];
+        $stateLabel = $stateLabels[$att->state] ?? $att->state;
+        $courseNote = $isCurrentCourse ? '' : ' <small class="text-danger">(altro corso!)</small>';
+
+        // Link al review del quiz (solo per quiz completati)
+        $reviewUrl = $CFG->wwwroot . '/mod/quiz/review.php?attempt=' . $att->id;
+        $quizLink = '<a href="' . $reviewUrl . '" target="_blank" title="Apri review quiz">' . s($att->quizname) . '</a>';
+
+        // Pulsante azione
+        if ($att->state === 'finished') {
+            $actionBtn = '<a href="' . $reviewUrl . '" target="_blank" class="btn btn-sm btn-outline-primary" title="Vedi domande e risposte">👁️ Review</a>';
+        } else {
+            $actionBtn = '<span class="text-muted">-</span>';
+        }
+
+        echo "<tr class='$rowClass'>";
+        echo "<td>$startDate</td>";
+        echo "<td>$quizLink</td>";
+        echo "<td>" . s($att->coursename) . "$courseNote</td>";
+        echo "<td>$stateLabel</td>";
+        echo "<td>$actionBtn</td>";
+        echo "</tr>";
     }
-    echo '</div><div class="mt-3 d-flex justify-content-between"><div><button type="button" class="btn btn-outline-primary btn-sm mr-2" onclick="document.querySelectorAll(\'.quiz-checkbox\').forEach(c=>c.checked=true)">✅ Tutti</button><button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.querySelectorAll(\'.quiz-checkbox\').forEach(c=>c.checked=false)">☐ Nessuno</button></div><button type="submit" class="btn btn-success">🔄 Aggiorna</button></div></form></div></div>';
+    echo '</tbody></table>';
+    echo '<small class="text-muted">Righe gialle = quiz in altri corsi • Clicca sul nome quiz o "Review" per vedere domande e risposte</small>';
+    echo '</div></div>';
+}
+
+// ============================================
+// AVVISO: Quiz in corso (non ancora terminati) - SOLO CORSO CORRENTE
+// ============================================
+$inProgressAttempts = $DB->get_records_sql(
+    "SELECT qa.id, qa.quiz, qa.state, qa.timestart, q.name as quizname
+     FROM {quiz_attempts} qa
+     JOIN {quiz} q ON q.id = qa.quiz
+     WHERE qa.userid = :userid
+     AND qa.state IN ('inprogress', 'overdue', 'abandoned')
+     AND q.course = :courseid
+     ORDER BY qa.timestart DESC",
+    ['userid' => $userid, 'courseid' => $courseid]
+);
+
+if (!empty($inProgressAttempts)) {
+    echo '<div class="alert alert-warning mb-4">';
+    echo '<h5 class="alert-heading">⚠️ Quiz non terminati in questo corso</h5>';
+    echo '<p class="mb-2">Questi quiz <strong>non appariranno nel radar</strong> finché non vengono completati:</p>';
+    echo '<ul class="mb-0">';
+    foreach ($inProgressAttempts as $att) {
+        $startDate = date('d/m/Y H:i', $att->timestart);
+        $stateLabel = [
+            'inprogress' => '⏳ In corso',
+            'overdue' => '⏱️ Scaduto',
+            'abandoned' => '❌ Abbandonato'
+        ][$att->state] ?? $att->state;
+        echo '<li><strong>' . s($att->quizname) . '</strong> - ' . $stateLabel . ' (iniziato: ' . $startDate . ')</li>';
+    }
+    echo '</ul>';
+    echo '</div>';
+}
+
+// ============================================
+// PANNELLO FILTRO QUIZ AVANZATO
+// ============================================
+if (!empty($quizComparison)) {
+    // Raggruppa quiz per settore (estrai dal nome)
+    $quizBySector = [];
+    foreach ($quizComparison as $quizId => $quiz) {
+        $quizName = $quiz['name'];
+        // Estrai settore dal nome (es. "ELETTRICITÀ - ELETTRICITA_APPR01_..." -> ELETTRICITÀ)
+        $sector = 'ALTRO';
+        if (preg_match('/^(ELETTRICITÀ|ELETTRICITA|AUTOMOBILE|AUTOVEICOLO|MECCANICA|GEN|GENERICO|CHIMFARM|LOGISTICA|AUTOMAZIONE|METALCOSTRUZIONE)\s*[-–]/i', $quizName, $matches)) {
+            $sector = strtoupper(trim($matches[1]));
+            // Normalizza
+            if ($sector === 'ELETTRICITA') $sector = 'ELETTRICITÀ';
+            if ($sector === 'AUTOVEICOLO') $sector = 'AUTOMOBILE';
+            if ($sector === 'GENERICO') $sector = 'GEN';
+        } elseif (preg_match('/^(ELETTRICITÀ|ELETTRICITA|AUTOMOBILE|AUTOVEICOLO|MECCANICA|GEN|GENERICO|CHIMFARM|LOGISTICA|AUTOMAZIONE|METALCOSTRUZIONE)_/i', $quizName, $matches)) {
+            $sector = strtoupper(trim($matches[1]));
+            if ($sector === 'ELETTRICITA') $sector = 'ELETTRICITÀ';
+            if ($sector === 'AUTOVEICOLO') $sector = 'AUTOMOBILE';
+            if ($sector === 'GENERICO') $sector = 'GEN';
+        }
+
+        if (!isset($quizBySector[$sector])) {
+            $quizBySector[$sector] = [];
+        }
+        $quiz['sector'] = $sector;
+        $quizBySector[$sector][$quizId] = $quiz;
+    }
+    ksort($quizBySector);
+
+    // Icone settori
+    $sectorIcons = [
+        'ELETTRICITÀ' => '⚡', 'AUTOMOBILE' => '🚗', 'MECCANICA' => '⚙️',
+        'GEN' => '📋', 'CHIMFARM' => '🧪', 'LOGISTICA' => '📦',
+        'AUTOMAZIONE' => '🤖', 'METALCOSTRUZIONE' => '🔩', 'ALTRO' => '📁'
+    ];
+
+    // Parametro filtro tentativi
+    $attemptFilter = optional_param('attempt_filter', 'all', PARAM_ALPHA);
+    ?>
+    <div class="card mb-4">
+        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer;"
+             onclick="document.getElementById('quizFilterPanel').classList.toggle('d-none'); this.querySelector('.toggle-icon').textContent = document.getElementById('quizFilterPanel').classList.contains('d-none') ? '▶' : '▼';">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">🔍 Filtra Quiz per Analisi Radar</h5>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <small class="d-block mt-1 opacity-75">Clicca per espandere/comprimere • Seleziona i quiz da includere nel grafico</small>
+        </div>
+        <div class="card-body" id="quizFilterPanel">
+            <form method="get" id="quizFilterForm">
+                <input type="hidden" name="userid" value="<?php echo $userid; ?>">
+                <input type="hidden" name="courseid" value="<?php echo $courseid; ?>">
+                <input type="hidden" name="tab" value="<?php echo $tab; ?>">
+                <?php if ($selectedArea): ?><input type="hidden" name="selectedarea" value="<?php echo $selectedArea; ?>"><?php endif; ?>
+                <?php if ($showDualRadar): ?><input type="hidden" name="show_dual_radar" value="1"><?php endif; ?>
+                <?php if ($showGapAnalysis): ?><input type="hidden" name="show_gap" value="1"><?php endif; ?>
+                <?php if ($showSpuntiColloquio): ?><input type="hidden" name="show_spunti" value="1"><?php endif; ?>
+                <?php if ($showCoachEvaluation): ?><input type="hidden" name="show_coach_eval" value="1"><?php endif; ?>
+                <?php if (!empty($currentSector)): ?><input type="hidden" name="cm_sector" value="<?php echo $currentSector; ?>"><?php endif; ?>
+
+                <!-- Filtro tentativi -->
+                <div class="alert alert-light border mb-3">
+                    <div class="d-flex align-items-center flex-wrap">
+                        <strong class="mr-3">📊 Tentativi da includere:</strong>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline-primary btn-sm <?php echo $attemptFilter === 'all' ? 'active' : ''; ?>">
+                                <input type="radio" name="attempt_filter" value="all" <?php echo $attemptFilter === 'all' ? 'checked' : ''; ?>> Tutti
+                            </label>
+                            <label class="btn btn-outline-primary btn-sm <?php echo $attemptFilter === 'last' ? 'active' : ''; ?>">
+                                <input type="radio" name="attempt_filter" value="last" <?php echo $attemptFilter === 'last' ? 'checked' : ''; ?>> Solo ultimo
+                            </label>
+                            <label class="btn btn-outline-primary btn-sm <?php echo $attemptFilter === 'first' ? 'active' : ''; ?>">
+                                <input type="radio" name="attempt_filter" value="first" <?php echo $attemptFilter === 'first' ? 'checked' : ''; ?>> Solo primo
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quiz raggruppati per settore -->
+                <?php foreach ($quizBySector as $sector => $quizzes): ?>
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <span style="font-size: 1.5rem;" class="mr-2"><?php echo $sectorIcons[$sector] ?? '📁'; ?></span>
+                        <h6 class="mb-0 mr-3"><?php echo $sector; ?></h6>
+                        <button type="button" class="btn btn-outline-success btn-sm py-0 mr-1"
+                                onclick="document.querySelectorAll('.quiz-check-<?php echo strtolower(preg_replace('/[^a-z]/i', '', $sector)); ?>').forEach(c=>c.checked=true)">
+                            ✓ Tutti
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-0"
+                                onclick="document.querySelectorAll('.quiz-check-<?php echo strtolower(preg_replace('/[^a-z]/i', '', $sector)); ?>').forEach(c=>c.checked=false)">
+                            ✗ Nessuno
+                        </button>
+                    </div>
+                    <div class="row">
+                        <?php foreach ($quizzes as $quizId => $quiz):
+                            $isSelected = empty($selectedQuizzes) || in_array($quizId, $selectedQuizzes);
+                            $attempts = $quiz['attempts'];
+                            $lastAttempt = end($attempts);
+                            $firstAttempt = reset($attempts);
+                            $bestScore = max(array_column($attempts, 'percentage'));
+                            $worstScore = min(array_column($attempts, 'percentage'));
+
+                            // Estrai nome breve dal quiz (rimuovi prefisso settore e timestamp)
+                            $shortName = $quiz['name'];
+                            $shortName = preg_replace('/^[A-ZÀÈÉÌÒÙ]+\s*[-–]\s*/i', '', $shortName);
+                            $shortName = preg_replace('/^[A-Z]+_[A-Z]+_([A-Z]+\d+)_/i', '$1 - ', $shortName);
+                            $shortName = preg_replace('/_\d{8}_\d+$/', '', $shortName);
+                            $shortName = str_replace('_', ' ', $shortName);
+                            if (strlen($shortName) > 50) $shortName = substr($shortName, 0, 47) . '...';
+
+                            $sectorClass = strtolower(preg_replace('/[^a-z]/i', '', $sector));
+                        ?>
+                        <div class="col-md-6 col-lg-4 mb-2">
+                            <div class="p-2 border rounded <?php echo $isSelected ? 'border-success' : ''; ?>"
+                                 style="<?php echo $isSelected ? 'background: #e8f5e9;' : 'background: #f8f9fa;'; ?>">
+                                <div class="form-check mb-1">
+                                    <input type="checkbox" class="form-check-input quiz-checkbox quiz-check-<?php echo $sectorClass; ?>"
+                                           name="quizids[]" value="<?php echo $quizId; ?>"
+                                           id="quiz_<?php echo $quizId; ?>" <?php echo $isSelected ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="quiz_<?php echo $quizId; ?>">
+                                        <strong><?php echo s($shortName); ?></strong>
+                                    </label>
+                                </div>
+                                <div class="small mb-1" style="color: #495057;">
+                                    <?php echo count($attempts); ?> tentativo/i •
+                                    <?php if (count($attempts) > 1): ?>
+                                        <?php echo $worstScore; ?>% → <?php echo $bestScore; ?>%
+                                    <?php else: ?>
+                                        <?php echo $lastAttempt['percentage']; ?>%
+                                    <?php endif; ?>
+                                    • <strong>Ultimo:</strong> <?php echo date('d/m/Y', $lastAttempt['timefinish']); ?>
+                                </div>
+                                <!-- Link ai tentativi con contrasto migliorato -->
+                                <div class="d-flex flex-wrap" style="gap: 4px;">
+                                    <?php foreach ($attempts as $attempt):
+                                        // Colori ad alto contrasto per i badge
+                                        if ($attempt['percentage'] >= 60) {
+                                            $bgColor = '#155724'; // Verde scuro
+                                            $textColor = '#fff';
+                                        } elseif ($attempt['percentage'] >= 40) {
+                                            $bgColor = '#856404'; // Giallo scuro
+                                            $textColor = '#fff';
+                                        } else {
+                                            $bgColor = '#721c24'; // Rosso scuro
+                                            $textColor = '#fff';
+                                        }
+                                    ?>
+                                    <a href="<?php echo $CFG->wwwroot; ?>/mod/quiz/review.php?attempt=<?php echo $attempt['attemptid']; ?>"
+                                       target="_blank"
+                                       style="cursor: pointer; text-decoration: none; background: <?php echo $bgColor; ?>; color: <?php echo $textColor; ?>; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;"
+                                       title="Clicca per vedere domande e risposte del tentativo #<?php echo $attempt['attempt_number']; ?>">
+                                        #<?php echo $attempt['attempt_number']; ?> <?php echo $attempt['percentage']; ?>%
+                                        (<?php echo date('d/m', $attempt['timefinish']); ?>)
+                                    </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+
+                <!-- Barra azioni -->
+                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                    <div>
+                        <button type="button" class="btn btn-outline-primary btn-sm mr-2"
+                                onclick="document.querySelectorAll('.quiz-checkbox').forEach(c=>c.checked=true)">
+                            ✅ Seleziona Tutti
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm"
+                                onclick="document.querySelectorAll('.quiz-checkbox').forEach(c=>c.checked=false)">
+                            ☐ Deseleziona Tutti
+                        </button>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="text-muted mr-3" id="quizSelectionCount">
+                            <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    function updateCount() {
+                                        var checked = document.querySelectorAll('.quiz-checkbox:checked').length;
+                                        var total = document.querySelectorAll('.quiz-checkbox').length;
+                                        document.getElementById('quizSelectionCount').innerHTML =
+                                            '<strong>' + checked + '</strong>/' + total + ' quiz selezionati';
+                                    }
+                                    updateCount();
+                                    document.querySelectorAll('.quiz-checkbox').forEach(function(cb) {
+                                        cb.addEventListener('change', updateCount);
+                                    });
+                                });
+                            </script>
+                        </span>
+                        <button type="submit" class="btn btn-success">
+                            🔄 Aggiorna Grafici
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php
+}
+
+// ============================================
+// AVVISO: Quiz selezionati senza competenze
+// ============================================
+if (!empty($selectedQuizzes) && empty($competencies)) {
+    // Verifica quali quiz hanno competenze (query compatibile Moodle 4.x)
+    $quizzesWithoutComp = [];
+    foreach ($selectedQuizzes as $qid) {
+        $compCount = $DB->count_records_sql(
+            "SELECT COUNT(DISTINCT qcbq.competencyid)
+             FROM {quiz_slots} qs
+             JOIN {question_references} qr ON qr.component = 'mod_quiz'
+                  AND qr.questionarea = 'slot' AND qr.itemid = qs.id
+             JOIN {question_bank_entries} qbe ON qbe.id = qr.questionbankentryid
+             JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
+             JOIN {qbank_competenciesbyquestion} qcbq ON qcbq.questionid = qv.questionid
+             WHERE qs.quizid = :quizid",
+            ['quizid' => $qid]
+        );
+        if ($compCount == 0) {
+            $quizName = $DB->get_field('quiz', 'name', ['id' => $qid]);
+            $quizzesWithoutComp[] = $quizName ?: "Quiz ID $qid";
+        }
+    }
+
+    if (!empty($quizzesWithoutComp)) {
+        ?>
+        <div class="alert alert-warning mb-4">
+            <h5 class="alert-heading">⚠️ Nessun radar disponibile per i quiz selezionati</h5>
+            <p class="mb-2">I seguenti quiz <strong>non hanno competenze assegnate</strong> alle loro domande:</p>
+            <ul class="mb-2">
+                <?php foreach ($quizzesWithoutComp as $qn): ?>
+                <li><?php echo s($qn); ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <hr>
+            <p class="mb-0">
+                <strong>💡 Suggerimento:</strong> Per visualizzare il radar, è necessario che le domande del quiz abbiano
+                competenze assegnate tramite il plugin "Competenze per Domanda" (qbank_competenciesbyquestion).
+                <br>Vai su <strong>Amministrazione del sito → Domande → Banca delle domande</strong> per assegnare le competenze.
+            </p>
+        </div>
+        <?php
+    }
 }
 
 // ============================================
@@ -1786,6 +2223,15 @@ if (!empty($availableQuizzes)) {
                                <?php echo !$hasCoachEvaluation ? 'disabled' : ''; ?>>
                         <label class="custom-control-label" for="show_coach_eval">
                             👨‍🏫 <strong>Valutazione Formatore</strong> (Valutazione coach Bloom)
+                        </label>
+                    </div>
+
+                    <div class="custom-control custom-switch mb-2">
+                        <input type="checkbox" class="custom-control-input" id="show_overlay"
+                               name="show_overlay" value="1" <?php echo $showOverlayRadar ? 'checked' : ''; ?>
+                               onchange="this.form.submit()">
+                        <label class="custom-control-label" for="show_overlay">
+                            🔀 <strong>Grafico Sovrapposizione</strong> (Quiz + Auto + Formatore + Lab)
                         </label>
                     </div>
 
@@ -2445,7 +2891,604 @@ if ($tab === 'overview') {
         </div>
     </div>
     <?php endif; ?>
-    
+
+    <?php
+    // ============================================
+    // CONFRONTO 4 FONTI (spostato qui - subito dopo Radar)
+    // ============================================
+    if ($showCoachEvaluation && !empty($coachEvaluationData)):
+        $coachEvalRatings = coach_evaluation_manager::get_evaluation_ratings($coachEvaluationData->id);
+        $coachEvalByArea = coach_evaluation_manager::get_ratings_by_area($coachEvaluationData->id);
+        $coachEvalStats = coach_evaluation_manager::get_rating_stats($coachEvaluationData->id);
+        $coachEvalAvg = coach_evaluation_manager::calculate_average($coachEvaluationData->id);
+        $bloomScale = coach_evaluation_manager::get_bloom_scale();
+        $coachRadarData = coach_evaluation_manager::get_radar_data($userid, $currentSector);
+    ?>
+    <div class="card mt-4">
+        <div class="card-header" style="background: linear-gradient(135deg, #5f2c82 0%, #49a09d 100%); color: white;">
+            <h5 class="mb-0">📊 Confronto 4 Fonti: Quiz, Autovalutazione, LabEval, Formatore</h5>
+            <small class="d-block mt-1 opacity-75">Visualizzazione comparativa di tutte le valutazioni disponibili</small>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr style="background: #34495e; color: white;">
+                            <th>Area</th>
+                            <th class="text-center" style="width: 100px; background: #28a745;">📊 Quiz<br><small>%</small></th>
+                            <th class="text-center" style="width: 100px; background: #667eea;">🧑 Auto<br><small>Bloom</small></th>
+                            <th class="text-center" style="width: 100px; background: #fd7e14;">🔧 LabEval<br><small>%</small></th>
+                            <th class="text-center" style="width: 100px; background: #11998e;">👨‍🏫 Coach<br><small>Bloom</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $allAreas4Fonti = [];
+                        if (!empty($areasData)) {
+                            foreach ($areasData as $areaData) {
+                                $code = $areaData['code'];
+                                if (!isset($allAreas4Fonti[$code])) {
+                                    $allAreas4Fonti[$code] = ['name' => $areaData['name'], 'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null];
+                                }
+                                $allAreas4Fonti[$code]['quiz'] = round($areaData['percentage']);
+                            }
+                        }
+                        if (!empty($autovalutazioneAreas)) {
+                            foreach ($autovalutazioneAreas as $areaData) {
+                                $code = $areaData['code'];
+                                if (!isset($allAreas4Fonti[$code])) {
+                                    $allAreas4Fonti[$code] = ['name' => $areaData['name'], 'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null];
+                                }
+                                $allAreas4Fonti[$code]['auto'] = round(($areaData['percentage'] / 100) * 6, 1);
+                            }
+                        }
+                        if (!empty($coachRadarData)) {
+                            foreach ($coachRadarData as $areaData) {
+                                $code = $areaData['area'];
+                                if (!isset($allAreas4Fonti[$code])) {
+                                    $allAreas4Fonti[$code] = ['name' => "Area $code", 'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null];
+                                }
+                                $allAreas4Fonti[$code]['coach'] = $areaData['bloom_avg'];
+                            }
+                        }
+                        ksort($allAreas4Fonti);
+                        foreach ($allAreas4Fonti as $code => $data):
+                        ?>
+                        <tr>
+                            <td><strong><?php echo s($data['name']); ?></strong> <small class="text-muted">(<?php echo $code; ?>)</small></td>
+                            <td class="text-center">
+                                <?php if ($data['quiz'] !== null): ?>
+                                    <span class="badge badge-<?php echo $data['quiz'] >= 60 ? 'success' : ($data['quiz'] >= 40 ? 'warning' : 'danger'); ?>">
+                                        <?php echo $data['quiz']; ?>%
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-center">
+                                <?php if ($data['auto'] !== null): ?>
+                                    <span class="badge badge-primary"><?php echo $data['auto']; ?></span>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-center">
+                                <?php if ($data['labeval'] !== null): ?>
+                                    <span class="badge badge-warning"><?php echo $data['labeval']; ?>%</span>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-center">
+                                <?php if ($data['coach'] !== null): ?>
+                                    <span class="badge badge-info"><?php echo $data['coach']; ?></span>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    📊 Quiz: Percentuale risposte corrette |
+                    🧑 Auto: Scala Bloom (1-6) |
+                    🔧 LabEval: Percentuale valutazione pratica |
+                    👨‍🏫 Coach: Scala Bloom (1-6)
+                </small>
+            </div>
+        </div>
+    </div>
+    <?php endif; // Fine Confronto 4 Fonti ?>
+
+    <?php
+    // ============================================
+    // GRAFICO RADAR SOVRAPPOSIZIONE (Overlay)
+    // ============================================
+    if ($showOverlayRadar || $printOverlayRadar):
+        // Prepara dati normalizzati a percentuale per tutte le fonti
+        $overlayAreas = [];
+
+        // 1. Quiz (già in percentuale)
+        if (!empty($areasData)) {
+            foreach ($areasData as $areaData) {
+                $code = $areaData['code'];
+                if (!isset($overlayAreas[$code])) {
+                    $overlayAreas[$code] = [
+                        'code' => $code,
+                        'name' => $areaData['name'],
+                        'quiz' => null,
+                        'auto' => null,
+                        'labeval' => null,
+                        'coach' => null
+                    ];
+                }
+                $overlayAreas[$code]['quiz'] = round($areaData['percentage'], 1);
+            }
+        }
+
+        // 2. Autovalutazione (Bloom 1-6 → percentuale: valore/6*100)
+        if (!empty($autovalutazioneAreas)) {
+            foreach ($autovalutazioneAreas as $areaData) {
+                $code = $areaData['code'];
+                if (!isset($overlayAreas[$code])) {
+                    $overlayAreas[$code] = [
+                        'code' => $code,
+                        'name' => $areaData['name'],
+                        'quiz' => null,
+                        'auto' => null,
+                        'labeval' => null,
+                        'coach' => null
+                    ];
+                }
+                // Autovalutazione è già in percentuale (1-6 scala, dove percentage è 0-100)
+                $overlayAreas[$code]['auto'] = round($areaData['percentage'], 1);
+            }
+        }
+
+        // 3. LabEval (già in percentuale)
+        if (!empty($labEvalByArea)) {
+            foreach ($labEvalByArea as $areaCode => $areaData) {
+                if (!isset($overlayAreas[$areaCode])) {
+                    $overlayAreas[$areaCode] = [
+                        'code' => $areaCode,
+                        'name' => $areaData['name'],
+                        'quiz' => null,
+                        'auto' => null,
+                        'labeval' => null,
+                        'coach' => null
+                    ];
+                }
+                $overlayAreas[$areaCode]['labeval'] = round($areaData['percentage'], 1);
+            }
+        }
+
+        // 4. Coach Evaluation (Bloom 0-6 → percentuale: valore/6*100, 0=0%)
+        if (!empty($coachRadarData)) {
+            foreach ($coachRadarData as $areaData) {
+                $code = $areaData['area'];
+                if (!isset($overlayAreas[$code])) {
+                    $overlayAreas[$code] = [
+                        'code' => $code,
+                        'name' => "Area $code",
+                        'quiz' => null,
+                        'auto' => null,
+                        'labeval' => null,
+                        'coach' => null
+                    ];
+                }
+                // Bloom 0-6 → percentuale (0=0%, 6=100%)
+                $bloomValue = $areaData['bloom_avg'] ?? 0;
+                $overlayAreas[$code]['coach'] = round(($bloomValue / 6) * 100, 1);
+            }
+        }
+
+        ksort($overlayAreas);
+
+        // Prepara dati per Chart.js
+        $overlayLabels = [];
+        $overlayQuiz = [];
+        $overlayAuto = [];
+        $overlayLabeval = [];
+        $overlayCoach = [];
+
+        foreach ($overlayAreas as $code => $data) {
+            $overlayLabels[] = $data['name'] ?: "Area $code";
+            $overlayQuiz[] = $data['quiz'];
+            $overlayAuto[] = $data['auto'];
+            $overlayLabeval[] = $data['labeval'];
+            $overlayCoach[] = $data['coach'];
+        }
+
+        // Verifica se ci sono dati da visualizzare
+        $hasOverlayData = !empty($overlayAreas);
+        $sourceCount = 0;
+        if (!empty($areasData)) $sourceCount++;
+        if (!empty($autovalutazioneAreas)) $sourceCount++;
+        if (!empty($labEvalByArea)) $sourceCount++;
+        if (!empty($coachRadarData)) $sourceCount++;
+    ?>
+    <div class="card mt-4" id="overlay-radar-section">
+        <div class="card-header" style="background: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%); color: white;">
+            <h5 class="mb-0">🔀 Grafico Sovrapposizione: Confronto Multi-Fonte</h5>
+            <small class="d-block mt-1 opacity-75">
+                Visualizza e confronta tutte le valutazioni sovrapposte (normalizzate a percentuale)
+                | Fonti: <?php echo $sourceCount; ?> disponibili
+                (<?php echo !empty($areasData) ? '✅Quiz ' : '❌Quiz '; ?>
+                 <?php echo !empty($autovalutazioneAreas) ? '✅Auto ' : '❌Auto '; ?>
+                 <?php echo !empty($labEvalByArea) ? '✅Lab ' : '❌Lab '; ?>
+                 <?php echo !empty($coachRadarData) ? '✅Coach' : '❌Coach'; ?>)
+            </small>
+        </div>
+        <div class="card-body">
+            <!-- Debug info (rimuovere in produzione) -->
+            <div class="alert alert-secondary mb-3 small">
+                <strong>🔧 Debug Info:</strong>
+                hasOverlayData=<?php echo $hasOverlayData ? 'true' : 'false'; ?> |
+                sourceCount=<?php echo $sourceCount; ?> |
+                areasData=<?php echo count($areasData ?? []); ?> aree |
+                autovalutazioneAreas=<?php echo count($autovalutazioneAreas ?? []); ?> aree |
+                labEvalByArea=<?php echo count($labEvalByArea ?? []); ?> aree |
+                coachRadarData=<?php echo count($coachRadarData ?? []); ?> aree |
+                overlayAreas=<?php echo count($overlayAreas ?? []); ?> aree
+            </div>
+            <?php if (!$hasOverlayData): ?>
+            <!-- Nessun dato disponibile -->
+            <div class="alert alert-warning text-center">
+                <h5>⚠️ Nessun dato disponibile per il grafico sovrapposizione</h5>
+                <p class="mb-2">Per visualizzare questo grafico, lo studente deve avere almeno una delle seguenti valutazioni:</p>
+                <ul class="list-unstyled mb-0">
+                    <li>📊 Quiz completati con competenze assegnate</li>
+                    <li>🧑 Autovalutazione completata</li>
+                    <li>🔧 Valutazioni LabEval</li>
+                    <li>👨‍🏫 Valutazione Formatore</li>
+                </ul>
+            </div>
+            <?php elseif ($sourceCount < 2): ?>
+            <!-- Solo una fonte disponibile -->
+            <div class="alert alert-info mb-3">
+                <strong>ℹ️ Nota:</strong> È disponibile solo <?php echo $sourceCount; ?> fonte di dati.
+                Il grafico di sovrapposizione è più utile quando sono disponibili almeno 2 fonti per confrontarle.
+            </div>
+            <?php endif; ?>
+
+            <?php if ($hasOverlayData): ?>
+            <!-- Controlli Toggle -->
+            <div class="alert alert-light border mb-4">
+                <div class="d-flex flex-wrap align-items-center justify-content-center" style="gap: 20px;">
+                    <span class="font-weight-bold">Mostra:</span>
+                    <label class="mb-0 d-flex align-items-center" style="cursor: pointer;">
+                        <input type="checkbox" id="overlay-toggle-quiz" checked class="mr-2">
+                        <span class="badge" style="background: #28a745; color: white; padding: 8px 12px;">📊 Quiz</span>
+                    </label>
+                    <label class="mb-0 d-flex align-items-center" style="cursor: pointer;">
+                        <input type="checkbox" id="overlay-toggle-auto" checked class="mr-2">
+                        <span class="badge" style="background: #667eea; color: white; padding: 8px 12px;">🧑 Autovalutazione</span>
+                    </label>
+                    <label class="mb-0 d-flex align-items-center" style="cursor: pointer;">
+                        <input type="checkbox" id="overlay-toggle-labeval" checked class="mr-2">
+                        <span class="badge" style="background: #fd7e14; color: white; padding: 8px 12px;">🔧 LabEval</span>
+                    </label>
+                    <label class="mb-0 d-flex align-items-center" style="cursor: pointer;">
+                        <input type="checkbox" id="overlay-toggle-coach" checked class="mr-2">
+                        <span class="badge" style="background: #11998e; color: white; padding: 8px 12px;">👨‍🏫 Formatore</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Grafico Radar -->
+            <div class="text-center mb-4">
+                <canvas id="overlayRadarChart" style="height: 550px; max-height: 600px;"></canvas>
+            </div>
+
+            <!-- Tabella Comparativa -->
+            <h6 class="mt-4 mb-3">📋 Tabella Comparativa Dettagliata</h6>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm" id="overlay-comparison-table">
+                    <thead>
+                        <tr style="background: #34495e; color: white;">
+                            <th style="min-width: 200px;">Area</th>
+                            <th class="text-center" style="background: #28a745; color: white; width: 80px;">📊 Quiz</th>
+                            <th class="text-center" style="background: #667eea; color: white; width: 80px;">🧑 Auto</th>
+                            <th class="text-center" style="background: #fd7e14; color: white; width: 80px;">🔧 Lab</th>
+                            <th class="text-center" style="background: #11998e; color: white; width: 80px;">👨‍🏫 Coach</th>
+                            <th class="text-center" style="background: #6c757d; color: white; width: 80px;">📈 Media</th>
+                            <th class="text-center" style="background: #6c757d; color: white; width: 80px;">📊 Gap Max</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        foreach ($overlayAreas as $code => $data):
+                            $values = array_filter([$data['quiz'], $data['auto'], $data['labeval'], $data['coach']], function($v) { return $v !== null; });
+                            $avg = count($values) > 0 ? round(array_sum($values) / count($values), 1) : null;
+                            $gapMax = count($values) > 1 ? round(max($values) - min($values), 1) : null;
+                            $gapClass = $gapMax !== null ? ($gapMax > 30 ? 'text-danger font-weight-bold' : ($gapMax > 15 ? 'text-warning' : 'text-success')) : '';
+                        ?>
+                        <tr>
+                            <td><strong><?php echo s($data['name']); ?></strong> <small class="text-muted">(<?php echo $code; ?>)</small></td>
+                            <td class="text-center"><?php echo $data['quiz'] !== null ? "<span class='badge badge-success'>{$data['quiz']}%</span>" : '<span class="text-muted">-</span>'; ?></td>
+                            <td class="text-center"><?php echo $data['auto'] !== null ? "<span class='badge badge-primary'>{$data['auto']}%</span>" : '<span class="text-muted">-</span>'; ?></td>
+                            <td class="text-center"><?php echo $data['labeval'] !== null ? "<span class='badge badge-warning text-dark'>{$data['labeval']}%</span>" : '<span class="text-muted">-</span>'; ?></td>
+                            <td class="text-center"><?php echo $data['coach'] !== null ? "<span class='badge badge-info'>{$data['coach']}%</span>" : '<span class="text-muted">-</span>'; ?></td>
+                            <td class="text-center"><?php echo $avg !== null ? "<strong>{$avg}%</strong>" : '-'; ?></td>
+                            <td class="text-center <?php echo $gapClass; ?>"><?php echo $gapMax !== null ? "{$gapMax}%" : '-'; ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    <strong>Normalizzazione:</strong> Tutti i valori sono convertiti in percentuale (0-100%).
+                    Bloom 1-6 → (valore/6)×100 | N/O = 0%
+                    <br><strong>Gap Max:</strong> Differenza tra valore massimo e minimo tra le fonti disponibili.
+                    <span class="text-danger">Rosso > 30%</span> |
+                    <span class="text-warning">Arancione > 15%</span> |
+                    <span class="text-success">Verde ≤ 15%</span>
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Aspetta il caricamento di Chart.js (che viene caricato alla fine della pagina)
+    window.addEventListener('load', function() {
+        // Verifica che Chart.js sia disponibile
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js non caricato');
+            document.getElementById('overlayRadarChart').parentElement.innerHTML =
+                '<div class="alert alert-danger">Errore: Chart.js non disponibile</div>';
+            return;
+        }
+
+        const overlayLabels = <?php echo json_encode($overlayLabels); ?>;
+        const overlayData = {
+            quiz: <?php echo json_encode($overlayQuiz); ?>,
+            auto: <?php echo json_encode($overlayAuto); ?>,
+            labeval: <?php echo json_encode($overlayLabeval); ?>,
+            coach: <?php echo json_encode($overlayCoach); ?>
+        };
+
+        const ctx = document.getElementById('overlayRadarChart');
+        if (!ctx) {
+            console.error('Canvas overlayRadarChart non trovato');
+            return;
+        }
+
+        const overlayChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: overlayLabels,
+                datasets: [
+                    {
+                        label: '📊 Quiz',
+                        data: overlayData.quiz,
+                        backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(40, 167, 69, 1)',
+                        pointRadius: 4
+                    },
+                    {
+                        label: '🧑 Autovalutazione',
+                        data: overlayData.auto,
+                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                        pointRadius: 4
+                    },
+                    {
+                        label: '🔧 LabEval',
+                        data: overlayData.labeval,
+                        backgroundColor: 'rgba(253, 126, 20, 0.2)',
+                        borderColor: 'rgba(253, 126, 20, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(253, 126, 20, 1)',
+                        pointRadius: 4
+                    },
+                    {
+                        label: '👨‍🏫 Formatore',
+                        data: overlayData.coach,
+                        backgroundColor: 'rgba(17, 153, 142, 0.2)',
+                        borderColor: 'rgba(17, 153, 142, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(17, 153, 142, 1)',
+                        pointRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            stepSize: 20,
+                            callback: function(value) { return value + '%'; }
+                        },
+                        pointLabels: {
+                            font: { size: 11 }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { size: 12 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let value = context.parsed.r;
+                                return context.dataset.label + ': ' + (value !== null ? value + '%' : 'N/D');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Toggle handlers
+        document.getElementById('overlay-toggle-quiz')?.addEventListener('change', function() {
+            overlayChart.data.datasets[0].hidden = !this.checked;
+            overlayChart.update();
+        });
+        document.getElementById('overlay-toggle-auto')?.addEventListener('change', function() {
+            overlayChart.data.datasets[1].hidden = !this.checked;
+            overlayChart.update();
+        });
+        document.getElementById('overlay-toggle-labeval')?.addEventListener('change', function() {
+            overlayChart.data.datasets[2].hidden = !this.checked;
+            overlayChart.update();
+        });
+        document.getElementById('overlay-toggle-coach')?.addEventListener('change', function() {
+            overlayChart.data.datasets[3].hidden = !this.checked;
+            overlayChart.update();
+        });
+
+        console.log('Overlay Radar Chart inizializzato con successo');
+    });
+    </script>
+    <?php endif; // Fine hasOverlayData ?>
+    <?php endif; // Fine Overlay Radar ?>
+
+    <?php if ($showCoachEvaluation && !empty($coachEvaluationData)): ?>
+    <!-- VALUTAZIONE FORMATORE (subito dopo Confronto 4 Fonti) -->
+    <div class="card mt-4">
+        <div class="card-header" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">👨‍🏫 Valutazione Formatore</h5>
+                    <small class="d-block mt-1 opacity-75">
+                        Valutato da: <?php echo fullname($DB->get_record('user', ['id' => $coachEvaluationData->coachid])); ?>
+                        | Data: <?php echo userdate($coachEvaluationData->evaluation_date ?: $coachEvaluationData->timemodified); ?>
+                        | Stato: <?php echo ucfirst($coachEvaluationData->status); ?>
+                    </small>
+                </div>
+                <a href="<?php echo new moodle_url('/local/competencymanager/coach_evaluation.php', [
+                    'studentid' => $userid,
+                    'sector' => $currentSector,
+                    'evaluationid' => $coachEvaluationData->id,
+                    'courseid' => $courseid
+                ]); ?>" class="btn btn-sm btn-light">
+                    ✏️ Modifica Valutazione
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="text-center p-3 rounded" style="background: #e8f5e9;">
+                        <h3 class="text-success mb-0"><?php echo $coachEvalStats['rated']; ?>/<?php echo $coachEvalStats['total']; ?></h3>
+                        <small>Competenze Valutate</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 rounded" style="background: #e3f2fd;">
+                        <h3 class="text-primary mb-0"><?php echo $coachEvalAvg ?: '-'; ?></h3>
+                        <small>Media Bloom (1-6)</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 rounded" style="background: #fce4ec;">
+                        <h3 class="text-danger mb-0"><?php echo $coachEvalStats['not_observed']; ?></h3>
+                        <small>Non Osservate (N/O)</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 rounded" style="background: #fff3e0;">
+                        <h3 class="text-warning mb-0"><?php echo count($coachEvalByArea); ?></h3>
+                        <small>Aree Valutate</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coach Evaluation by Area (accordion) -->
+            <?php foreach ($coachEvalByArea as $area => $areaRatings): ?>
+                <?php
+                $areaAvg = 0;
+                $areaCount = 0;
+                foreach ($areaRatings as $r) {
+                    if ($r->rating > 0) {
+                        $areaAvg += $r->rating;
+                        $areaCount++;
+                    }
+                }
+                $areaAvg = $areaCount > 0 ? round($areaAvg / $areaCount, 1) : 0;
+                ?>
+                <div class="card mb-2">
+                    <div class="card-header py-2" style="background: #f8f9fa; cursor: pointer;"
+                         onclick="this.nextElementSibling.classList.toggle('d-none')">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong>📁 Area <?php echo s($area); ?></strong>
+                            <div>
+                                <span class="badge badge-info"><?php echo count($areaRatings); ?> comp.</span>
+                                <?php if ($areaAvg > 0): ?>
+                                    <span class="badge badge-success">Media: <?php echo $areaAvg; ?></span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0 d-none">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr style="background: #e9ecef;">
+                                    <th>Competenza</th>
+                                    <th class="text-center" style="width: 120px;">Bloom (1-6)</th>
+                                    <th>Note Coach</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($areaRatings as $rating): ?>
+                                    <?php
+                                    $ratingDisplay = $rating->rating == 0 ? 'N/O' : $rating->rating;
+                                    $ratingClass = $rating->rating == 0 ? 'secondary' :
+                                                  ($rating->rating >= 5 ? 'success' :
+                                                  ($rating->rating >= 3 ? 'warning' : 'danger'));
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <strong><?php echo format_string($rating->shortname); ?></strong><br>
+                                            <small class="text-muted"><?php echo s($rating->idnumber); ?></small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge badge-<?php echo $ratingClass; ?>" style="font-size: 1.1rem;">
+                                                <?php echo $ratingDisplay; ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <?php if (!empty($rating->notes)): ?>
+                                                <small class="text-muted"><?php echo s($rating->notes); ?></small>
+                                            <?php else: ?>
+                                                <small class="text-muted">-</small>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+
+            <!-- General Notes -->
+            <?php if (!empty($coachEvaluationData->notes)): ?>
+                <div class="alert alert-info mt-3">
+                    <h6 class="mb-2">📝 Note Generali del Coach:</h6>
+                    <?php echo nl2br(s($coachEvaluationData->notes)); ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <?php
     // GAP ANALYSIS
     if ($showGapAnalysis && !empty($gapAnalysisData)):
@@ -2599,262 +3642,6 @@ if ($tab === 'overview') {
 
     <?php
     // ============================================
-    // VALUTAZIONE FORMATORE (Coach Evaluation)
-    // ============================================
-    if ($showCoachEvaluation && !empty($coachEvaluationData)):
-        $coachEvalRatings = coach_evaluation_manager::get_evaluation_ratings($coachEvaluationData->id);
-        $coachEvalByArea = coach_evaluation_manager::get_ratings_by_area($coachEvaluationData->id);
-        $coachEvalStats = coach_evaluation_manager::get_rating_stats($coachEvaluationData->id);
-        $coachEvalAvg = coach_evaluation_manager::calculate_average($coachEvaluationData->id);
-        $bloomScale = coach_evaluation_manager::get_bloom_scale();
-
-        // Prepare radar data for coach evaluation
-        $coachRadarData = coach_evaluation_manager::get_radar_data($userid, $currentSector);
-    ?>
-    <div class="card mt-4">
-        <div class="card-header" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="mb-0">👨‍🏫 Valutazione Formatore</h5>
-                    <small class="d-block mt-1 opacity-75">
-                        Valutato da: <?php echo fullname($DB->get_record('user', ['id' => $coachEvaluationData->coachid])); ?>
-                        | Data: <?php echo userdate($coachEvaluationData->evaluation_date ?: $coachEvaluationData->timemodified); ?>
-                        | Stato: <?php echo ucfirst($coachEvaluationData->status); ?>
-                    </small>
-                </div>
-                <a href="<?php echo new moodle_url('/local/competencymanager/coach_evaluation.php', [
-                    'studentid' => $userid,
-                    'sector' => $currentSector,
-                    'evaluationid' => $coachEvaluationData->id,
-                    'courseid' => $courseid
-                ]); ?>" class="btn btn-sm btn-light">
-                    ✏️ Modifica Valutazione
-                </a>
-            </div>
-        </div>
-        <div class="card-body">
-            <!-- Statistics -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="text-center p-3 rounded" style="background: #e8f5e9;">
-                        <h3 class="text-success mb-0"><?php echo $coachEvalStats['rated']; ?>/<?php echo $coachEvalStats['total']; ?></h3>
-                        <small>Competenze Valutate</small>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="text-center p-3 rounded" style="background: #e3f2fd;">
-                        <h3 class="text-primary mb-0"><?php echo $coachEvalAvg ?: '-'; ?></h3>
-                        <small>Media Bloom (1-6)</small>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="text-center p-3 rounded" style="background: #fce4ec;">
-                        <h3 class="text-danger mb-0"><?php echo $coachEvalStats['not_observed']; ?></h3>
-                        <small>Non Osservate (N/O)</small>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="text-center p-3 rounded" style="background: #fff3e0;">
-                        <h3 class="text-warning mb-0"><?php echo count($coachEvalByArea); ?></h3>
-                        <small>Aree Valutate</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Coach Evaluation by Area (accordion) -->
-            <?php foreach ($coachEvalByArea as $area => $areaRatings): ?>
-                <?php
-                $areaAvg = 0;
-                $areaCount = 0;
-                foreach ($areaRatings as $r) {
-                    if ($r->rating > 0) {
-                        $areaAvg += $r->rating;
-                        $areaCount++;
-                    }
-                }
-                $areaAvg = $areaCount > 0 ? round($areaAvg / $areaCount, 1) : 0;
-                ?>
-                <div class="card mb-2">
-                    <div class="card-header py-2" style="background: #f8f9fa; cursor: pointer;"
-                         onclick="this.nextElementSibling.classList.toggle('d-none')">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <strong>📁 Area <?php echo s($area); ?></strong>
-                            <div>
-                                <span class="badge badge-info"><?php echo count($areaRatings); ?> comp.</span>
-                                <?php if ($areaAvg > 0): ?>
-                                    <span class="badge badge-success">Media: <?php echo $areaAvg; ?></span>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-0 d-none">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead>
-                                <tr style="background: #e9ecef;">
-                                    <th>Competenza</th>
-                                    <th class="text-center" style="width: 120px;">Bloom (1-6)</th>
-                                    <th>Note Coach</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($areaRatings as $rating): ?>
-                                    <?php
-                                    $ratingDisplay = $rating->rating == 0 ? 'N/O' : $rating->rating;
-                                    $ratingClass = $rating->rating == 0 ? 'secondary' :
-                                                  ($rating->rating >= 5 ? 'success' :
-                                                  ($rating->rating >= 3 ? 'warning' : 'danger'));
-                                    ?>
-                                    <tr>
-                                        <td>
-                                            <strong><?php echo format_string($rating->shortname); ?></strong><br>
-                                            <small class="text-muted"><?php echo s($rating->idnumber); ?></small>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge badge-<?php echo $ratingClass; ?>" style="font-size: 1.1rem;">
-                                                <?php echo $ratingDisplay; ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <?php if (!empty($rating->notes)): ?>
-                                                <small class="text-muted"><?php echo s($rating->notes); ?></small>
-                                            <?php else: ?>
-                                                <small class="text-muted">-</small>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-
-            <!-- General Notes -->
-            <?php if (!empty($coachEvaluationData->notes)): ?>
-                <div class="alert alert-info mt-3">
-                    <h6 class="mb-2">📝 Note Generali del Coach:</h6>
-                    <?php echo nl2br(s($coachEvaluationData->notes)); ?>
-                </div>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <?php
-    // ============================================
-    // TABELLA COMPARATIVA 4 FONTI
-    // ============================================
-    ?>
-    <div class="card mt-4">
-        <div class="card-header" style="background: linear-gradient(135deg, #5f2c82 0%, #49a09d 100%); color: white;">
-            <h5 class="mb-0">📊 Confronto 4 Fonti: Quiz, Autovalutazione, LabEval, Formatore</h5>
-            <small class="d-block mt-1 opacity-75">Visualizzazione comparativa di tutte le valutazioni disponibili</small>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover">
-                    <thead>
-                        <tr style="background: #34495e; color: white;">
-                            <th>Area</th>
-                            <th class="text-center" style="width: 100px; background: #28a745;">📊 Quiz<br><small>%</small></th>
-                            <th class="text-center" style="width: 100px; background: #667eea;">🧑 Auto<br><small>Bloom</small></th>
-                            <th class="text-center" style="width: 100px; background: #fd7e14;">🔧 LabEval<br><small>%</small></th>
-                            <th class="text-center" style="width: 100px; background: #11998e;">👨‍🏫 Coach<br><small>Bloom</small></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        // Collect all areas from various sources
-                        $allAreas = [];
-
-                        // From quiz data (areas from radar)
-                        if (!empty($areasData)) {
-                            foreach ($areasData as $areaData) {
-                                $code = $areaData['code'];
-                                if (!isset($allAreas[$code])) {
-                                    $allAreas[$code] = ['name' => $areaData['name'], 'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null];
-                                }
-                                $allAreas[$code]['quiz'] = round($areaData['percentage']);
-                            }
-                        }
-
-                        // From autovalutazione
-                        if (!empty($autovalutazioneAreas)) {
-                            foreach ($autovalutazioneAreas as $areaData) {
-                                $code = $areaData['code'];
-                                if (!isset($allAreas[$code])) {
-                                    $allAreas[$code] = ['name' => $areaData['name'], 'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null];
-                                }
-                                // Convert percentage to Bloom (1-6)
-                                $allAreas[$code]['auto'] = round(($areaData['percentage'] / 100) * 6, 1);
-                            }
-                        }
-
-                        // From coach evaluation
-                        if (!empty($coachRadarData)) {
-                            foreach ($coachRadarData as $areaData) {
-                                $code = $areaData['area'];
-                                if (!isset($allAreas[$code])) {
-                                    $allAreas[$code] = ['name' => "Area $code", 'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null];
-                                }
-                                $allAreas[$code]['coach'] = $areaData['bloom_avg'];
-                            }
-                        }
-
-                        ksort($allAreas);
-
-                        foreach ($allAreas as $code => $data):
-                        ?>
-                        <tr>
-                            <td><strong><?php echo s($data['name']); ?></strong> <small class="text-muted">(<?php echo $code; ?>)</small></td>
-                            <td class="text-center">
-                                <?php if ($data['quiz'] !== null): ?>
-                                    <span class="badge badge-<?php echo $data['quiz'] >= 60 ? 'success' : ($data['quiz'] >= 40 ? 'warning' : 'danger'); ?>">
-                                        <?php echo $data['quiz']; ?>%
-                                    </span>
-                                <?php else: ?>
-                                    <span class="text-muted">-</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-center">
-                                <?php if ($data['auto'] !== null): ?>
-                                    <span class="badge badge-primary"><?php echo $data['auto']; ?></span>
-                                <?php else: ?>
-                                    <span class="text-muted">-</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-center">
-                                <?php if ($data['labeval'] !== null): ?>
-                                    <span class="badge badge-warning"><?php echo $data['labeval']; ?>%</span>
-                                <?php else: ?>
-                                    <span class="text-muted">-</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-center">
-                                <?php if ($data['coach'] !== null): ?>
-                                    <span class="badge badge-info"><?php echo $data['coach']; ?></span>
-                                <?php else: ?>
-                                    <span class="text-muted">-</span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <div class="text-center mt-3">
-                <small class="text-muted">
-                    📊 Quiz: Percentuale risposte corrette |
-                    🧑 Auto: Scala Bloom (1-6) |
-                    🔧 LabEval: Percentuale valutazione pratica |
-                    👨‍🏫 Coach: Scala Bloom (1-6)
-                </small>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
-
-    <?php
-    // ============================================
 }
 
 // ========================================
@@ -2887,16 +3674,32 @@ else if ($tab === 'action') {
 // TAB QUIZ
 // ========================================
 else if ($tab === 'quiz') {
-    echo '<div class="card"><div class="card-header bg-secondary text-white"><h5 class="mb-0">📝 Confronto per Quiz</h5></div><div class="card-body p-0"><table class="table table-hover mb-0"><thead><tr><th>Quiz</th><th>Tentativo</th><th>Data</th><th>Punteggio</th><th>Competenze</th></tr></thead><tbody>';
+    echo '<div class="card">';
+    echo '<div class="card-header bg-secondary text-white">';
+    echo '<h5 class="mb-0">📝 Confronto per Quiz</h5>';
+    echo '<small class="d-block mt-1 opacity-75">Clicca sul nome del quiz per vedere domande e risposte dello studente</small>';
+    echo '</div>';
+    echo '<div class="card-body p-0">';
+    echo '<table class="table table-hover mb-0">';
+    echo '<thead><tr><th>Quiz</th><th>Tentativo</th><th>Data</th><th>Punteggio</th><th>Competenze</th><th>Azione</th></tr></thead>';
+    echo '<tbody>';
     if (!empty($quizComparison)) {
         foreach ($quizComparison as $quiz) {
             foreach ($quiz['attempts'] as $attempt) {
                 $badgeClass = $attempt['percentage'] >= 60 ? 'success' : ($attempt['percentage'] >= 40 ? 'warning' : 'danger');
-                echo '<tr><td>' . format_string($quiz['name']) . '</td><td>#' . $attempt['attempt_number'] . '</td><td>' . date('d/m/Y H:i', $attempt['timefinish']) . '</td><td><span class="badge badge-' . $badgeClass . '">' . $attempt['percentage'] . '%</span></td><td>' . $attempt['competencies'] . '</td></tr>';
+                $reviewUrl = $CFG->wwwroot . '/mod/quiz/review.php?attempt=' . $attempt['attemptid'];
+                echo '<tr>';
+                echo '<td><a href="' . $reviewUrl . '" target="_blank" title="Clicca per vedere domande e risposte" style="color: #333; text-decoration: none;"><strong>' . format_string($quiz['name']) . '</strong> <small class="text-primary">🔗</small></a></td>';
+                echo '<td>#' . $attempt['attempt_number'] . '</td>';
+                echo '<td>' . date('d/m/Y H:i', $attempt['timefinish']) . '</td>';
+                echo '<td><span class="badge badge-' . $badgeClass . '">' . $attempt['percentage'] . '%</span></td>';
+                echo '<td>' . $attempt['competencies'] . '</td>';
+                echo '<td><a href="' . $reviewUrl . '" target="_blank" class="btn btn-sm btn-outline-primary" title="Vedi domande e risposte">👁️ Review</a></td>';
+                echo '</tr>';
             }
         }
     } else {
-        echo '<tr><td colspan="5" class="text-center text-muted">Nessun tentativo quiz completato</td></tr>';
+        echo '<tr><td colspan="6" class="text-center text-muted">Nessun tentativo quiz completato</td></tr>';
     }
     echo '</tbody></table></div></div>';
 }

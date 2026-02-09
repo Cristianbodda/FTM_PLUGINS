@@ -131,14 +131,21 @@ if (empty($competencies) && $sector === 'ELETTRICITÀ') {
     );
 }
 
-// Group competencies by area
+// Group competencies by area con nome completo
 $competenciesByArea = [];
+$areaFullNames = []; // Mappa codice area -> nome completo
+
 foreach ($competencies as $comp) {
-    $area = coach_evaluation_manager::extract_area_from_idnumber($comp->idnumber);
-    if (!isset($competenciesByArea[$area])) {
-        $competenciesByArea[$area] = [];
+    // Usa get_area_info() per ottenere codice e nome completo
+    $areaInfo = get_area_info($comp->idnumber);
+    $areaCode = $areaInfo['code'];
+    $areaFullName = $areaInfo['name'];
+
+    if (!isset($competenciesByArea[$areaCode])) {
+        $competenciesByArea[$areaCode] = [];
+        $areaFullNames[$areaCode] = $areaFullName;
     }
-    $competenciesByArea[$area][] = $comp;
+    $competenciesByArea[$areaCode][] = $comp;
 }
 ksort($competenciesByArea);
 
@@ -198,26 +205,28 @@ switch ($evaluation->status) {
 .stat-label { color: #666; font-size: 0.875rem; }
 
 .area-accordion { margin-bottom: 10px; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; }
-.area-header { background: #f8f9fa; padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
-.area-header:hover { background: #e9ecef; }
-.area-header h3 { margin: 0; font-size: 1.1rem; color: #333; }
-.area-header .area-stats { font-size: 0.875rem; color: #666; }
-.area-header .toggle-icon { transition: transform 0.3s; }
+.area-header { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; gap: 15px; }
+.area-header:hover { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); }
+.area-header h3 { margin: 0; font-size: 1rem; color: #333; font-weight: 600; flex: 1; }
+.area-header .area-stats { font-size: 0.875rem; color: #666; background: #fff; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
+.area-header .toggle-icon { transition: transform 0.3s; font-size: 0.8rem; }
 .area-header.collapsed .toggle-icon { transform: rotate(-90deg); }
 
 .area-content { padding: 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s; }
 .area-content.expanded { max-height: 2000px; padding: 15px 20px; }
 
-.competency-row { display: grid; grid-template-columns: 1fr 200px 1fr; gap: 15px; padding: 12px 0; border-bottom: 1px solid #eee; align-items: start; }
+.competency-row { display: grid; grid-template-columns: 1.5fr 200px 1fr; gap: 15px; padding: 12px 0; border-bottom: 1px solid #eee; align-items: start; }
 .competency-row:last-child { border-bottom: none; }
-.comp-name { font-weight: 500; }
-.comp-code { font-size: 0.75rem; color: #888; font-family: monospace; }
+.comp-info { display: flex; flex-direction: column; gap: 4px; }
+.comp-code { font-size: 0.7rem; color: #667eea; font-family: monospace; font-weight: 600; background: #f0f0ff; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+.comp-name { font-weight: 600; color: #333; font-size: 0.95rem; margin-top: 4px; }
+.comp-desc { font-size: 0.85rem; color: #555; line-height: 1.4; margin-top: 2px; }
 
 .rating-buttons { display: flex; gap: 4px; flex-wrap: wrap; }
-.rating-btn { width: 36px; height: 36px; border: 2px solid #dee2e6; background: white; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
-.rating-btn:hover:not(:disabled) { border-color: #667eea; background: #f0f0ff; }
+.rating-btn { width: 36px; height: 36px; border: 2px solid #495057; background: #f8f9fa; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; color: #212529; font-size: 14px; }
+.rating-btn:hover:not(:disabled) { border-color: #667eea; background: #e0e0ff; color: #333; }
 .rating-btn.selected { background: #667eea; color: white; border-color: #667eea; }
-.rating-btn.no { font-size: 0.7rem; }
+.rating-btn.no { font-size: 0.65rem; background: #e9ecef; }
 .rating-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .notes-input { width: 100%; padding: 8px 12px; border: 1px solid #dee2e6; border-radius: 6px; font-size: 0.875rem; resize: vertical; min-height: 36px; }
@@ -323,10 +332,12 @@ switch ($evaluation->status) {
                     $areaRated++;
                 }
             }
+            // Nome completo dell'area (es. "A. Accoglienza, diagnosi...")
+            $areaDisplayName = $areaFullNames[$area] ?? "Area $area";
             ?>
             <div class="area-accordion">
                 <div class="area-header" onclick="toggleArea(this)">
-                    <h3><?php echo get_string('competency_area', 'local_competencymanager', $area); ?></h3>
+                    <h3><?php echo s($areaDisplayName); ?></h3>
                     <div>
                         <span class="area-stats"><?php echo $areaRated; ?>/<?php echo count($comps); ?></span>
                         <span class="toggle-icon">▼</span>
@@ -338,10 +349,21 @@ switch ($evaluation->status) {
                         $currentRating = isset($existingRatings[$comp->id]) ? $existingRatings[$comp->id]->rating : -1;
                         $currentNotes = isset($existingRatings[$comp->id]) ? $existingRatings[$comp->id]->notes : '';
                         ?>
+                        <?php
+                        // Estrai descrizione pulita
+                        $cleanDesc = strip_tags($comp->description ?? '');
+                        $cleanDesc = html_entity_decode($cleanDesc, ENT_QUOTES, 'UTF-8');
+                        $cleanDesc = trim($cleanDesc);
+                        // Se la descrizione è uguale allo shortname o vuota, non mostrarla
+                        $showDesc = !empty($cleanDesc) && $cleanDesc !== $comp->shortname;
+                        ?>
                         <div class="competency-row" data-compid="<?php echo $comp->id; ?>">
-                            <div>
-                                <div class="comp-name"><?php echo format_string($comp->shortname); ?></div>
+                            <div class="comp-info">
                                 <div class="comp-code"><?php echo s($comp->idnumber); ?></div>
+                                <div class="comp-name"><?php echo format_string($comp->shortname); ?></div>
+                                <?php if ($showDesc): ?>
+                                <div class="comp-desc"><?php echo s($cleanDesc); ?></div>
+                                <?php endif; ?>
                             </div>
                             <div class="rating-buttons">
                                 <?php for ($i = 0; $i <= 6; $i++): ?>

@@ -261,16 +261,67 @@ class coach_evaluation_manager {
 
     /**
      * Estrae l'area (A, B, C, ...) dall'idnumber della competenza
+     * Usa la stessa logica di get_area_info() in area_mapping.php
      *
-     * @param string $idnumber Es: MECCANICA_A_01, AUTOMOBILE_B_03
-     * @return string Area (A, B, C, ...) o 'OTHER'
+     * @param string $idnumber Es: AUTOMOBILE_AU_A01, MECCANICA_CNC_01
+     * @return string Area (A, B, C, CNC, LMB, ...) o 'OTHER'
      */
     public static function extract_area_from_idnumber(string $idnumber): string {
-        // Pattern: SETTORE_AREA_NUMERO (es. MECCANICA_A_01)
-        if (preg_match('/^[A-Z]+_([A-Z]{1,2})_\d+$/i', $idnumber, $matches)) {
-            return strtoupper($matches[1]);
+        // Include area_mapping.php se non già caricato
+        static $mappingLoaded = false;
+        if (!$mappingLoaded) {
+            $mappingFile = __DIR__ . '/../area_mapping.php';
+            if (file_exists($mappingFile)) {
+                require_once($mappingFile);
+            }
+            $mappingLoaded = true;
         }
-        return 'OTHER';
+
+        // Usa get_area_info() se disponibile (definita in area_mapping.php)
+        if (function_exists('get_area_info')) {
+            $areaInfo = get_area_info($idnumber);
+            return $areaInfo['code'] ?? 'OTHER';
+        }
+
+        // Fallback: logica semplificata
+        // Rimuovi prefisso OLD_ se presente
+        if (strpos($idnumber, 'OLD_') === 0) {
+            $idnumber = substr($idnumber, 4);
+        }
+
+        $parts = explode('_', $idnumber);
+        if (count($parts) < 2) {
+            return 'OTHER';
+        }
+
+        $sector = strtoupper($parts[0]);
+
+        // Settori letter-based (AUTOMOBILE, LOGISTICA, ELETTRICITÀ)
+        // Format: SETTORE_XX_A01 -> area = A
+        $letterBasedSectors = ['AUTOMOBILE', 'LOGISTICA', 'ELETTRICITÀ', 'ELETTRICITA'];
+        if (in_array($sector, $letterBasedSectors) && count($parts) >= 3) {
+            if (preg_match('/^([A-Z])/i', $parts[2], $matches)) {
+                return strtoupper($matches[1]);
+            }
+        }
+
+        // Settori code-based (MECCANICA, CHIMFARM, METALCOSTRUZIONE)
+        // Format: SETTORE_CODE_01 -> area = CODE
+        $codeBasedSectors = ['MECCANICA', 'CHIMFARM', 'METALCOSTRUZIONE', 'AUTOMAZIONE'];
+        if (in_array($sector, $codeBasedSectors) && count($parts) >= 2) {
+            return strtoupper($parts[1]);
+        }
+
+        // GEN format: GEN_A_01 -> area = A
+        if ($sector === 'GEN' && count($parts) >= 2) {
+            $letter = strtoupper($parts[1]);
+            if (preg_match('/^[A-Z]$/', $letter)) {
+                return $letter;
+            }
+        }
+
+        // Fallback: seconda parte
+        return strtoupper($parts[1] ?? 'OTHER');
     }
 
     /**

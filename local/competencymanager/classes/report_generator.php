@@ -332,18 +332,34 @@ class report_generator {
         return key($sectorCounts);
     }
     
-    public static function get_student_quiz_attempts($userid, $courseid = null) {
+    /**
+     * Get student quiz attempts with optional filtering
+     *
+     * @param int $userid User ID
+     * @param int|null $courseid Course ID (optional)
+     * @param string $attemptFilter Filter: 'all', 'first', 'last' (default: 'all')
+     * @param array|null $quizIds Filter by specific quiz IDs (optional)
+     * @return array Quiz attempts
+     */
+    public static function get_student_quiz_attempts($userid, $courseid = null, $attemptFilter = 'all', $quizIds = null) {
         global $DB;
-        
+
         $params = ['userid' => $userid];
         $coursecondition = '';
-        
+        $quizcondition = '';
+
         if ($courseid) {
             $coursecondition = 'AND q.course = :courseid';
             $params['courseid'] = $courseid;
         }
-        
-        $sql = "SELECT DISTINCT 
+
+        if (!empty($quizIds)) {
+            list($inSql, $inParams) = $DB->get_in_or_equal($quizIds, SQL_PARAMS_NAMED, 'quiz');
+            $quizcondition = "AND q.id $inSql";
+            $params = array_merge($params, $inParams);
+        }
+
+        $sql = "SELECT DISTINCT
                     qa.id as attemptid,
                     qa.quiz,
                     qa.userid,
@@ -361,9 +377,41 @@ class report_generator {
                 WHERE qa.userid = :userid
                 AND qa.state = 'finished'
                 {$coursecondition}
+                {$quizcondition}
                 ORDER BY qa.timefinish DESC";
-        
-        return $DB->get_records_sql($sql, $params);
+
+        $allAttempts = $DB->get_records_sql($sql, $params);
+
+        // Se filtro 'all', ritorna tutto
+        if ($attemptFilter === 'all' || empty($attemptFilter)) {
+            return $allAttempts;
+        }
+
+        // Raggruppa per quiz per applicare filtro first/last
+        $attemptsByQuiz = [];
+        foreach ($allAttempts as $attempt) {
+            if (!isset($attemptsByQuiz[$attempt->quiz])) {
+                $attemptsByQuiz[$attempt->quiz] = [];
+            }
+            $attemptsByQuiz[$attempt->quiz][] = $attempt;
+        }
+
+        // Filtra per primo/ultimo tentativo
+        $filteredAttempts = [];
+        foreach ($attemptsByQuiz as $quizId => $attempts) {
+            // Ordina per data (timefinish)
+            usort($attempts, fn($a, $b) => $a->timefinish <=> $b->timefinish);
+
+            if ($attemptFilter === 'first') {
+                // Primo tentativo (più vecchio)
+                $filteredAttempts[$attempts[0]->attemptid] = $attempts[0];
+            } elseif ($attemptFilter === 'last') {
+                // Ultimo tentativo (più recente)
+                $filteredAttempts[end($attempts)->attemptid] = end($attempts);
+            }
+        }
+
+        return $filteredAttempts;
     }
     
     public static function get_available_quizzes($userid, $courseid) {
@@ -451,12 +499,14 @@ class report_generator {
         return $DB->get_records_sql($sql, ['attemptid' => $attemptid]);
     }
     
-    public static function get_student_competency_scores($userid, $courseid = null, $quizids = null, $area = null) {
+    public static function get_student_competency_scores($userid, $courseid = null, $quizids = null, $area = null, $attemptFilter = 'all') {
         global $DB;
-        
-        $attempts = self::get_student_quiz_attempts($userid, $courseid);
-        
-        if ($quizids) {
+
+        // Passa il filtro tentativi direttamente a get_student_quiz_attempts
+        $attempts = self::get_student_quiz_attempts($userid, $courseid, $attemptFilter, $quizids);
+
+        // Il filtro per quizids è ora gestito in get_student_quiz_attempts, ma manteniamo per retrocompatibilità
+        if ($quizids && !empty($attempts)) {
             if (!is_array($quizids)) {
                 $quizids = [$quizids];
             }
@@ -545,8 +595,8 @@ class report_generator {
         return $competencies;
     }
     
-    public static function get_radar_chart_data($userid, $courseid = null, $quizids = null, $area = null) {
-        $competencies = self::get_student_competency_scores($userid, $courseid, $quizids, $area);
+    public static function get_radar_chart_data($userid, $courseid = null, $quizids = null, $area = null, $attemptFilter = 'all') {
+        $competencies = self::get_student_competency_scores($userid, $courseid, $quizids, $area, $attemptFilter);
         
         $labels = [];
         $data = [];
@@ -583,8 +633,8 @@ class report_generator {
         ];
     }
     
-    public static function get_student_summary($userid, $courseid = null, $quizids = null, $area = null) {
-        $competencies = self::get_student_competency_scores($userid, $courseid, $quizids, $area);
+    public static function get_student_summary($userid, $courseid = null, $quizids = null, $area = null, $attemptFilter = 'all') {
+        $competencies = self::get_student_competency_scores($userid, $courseid, $quizids, $area, $attemptFilter);
         
         $summary = [
             'total_competencies' => count($competencies),

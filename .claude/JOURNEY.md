@@ -1,5 +1,37 @@
 # FTM Plugins - Development Journey
 
+## 9 Febbraio 2026
+
+### Student Report - Grafico Overlay Multi-Fonte
+- **Funzionalità:** Nuovo grafico radar sovrapposto con 4 fonti dati
+- **Fonti visualizzate:**
+  - 📊 Quiz (verde) - Percentuale risposte corrette
+  - 🧑 Autovalutazione (viola) - Scala Bloom normalizzata
+  - 🔧 LabEval (arancione) - Valutazione laboratorio
+  - 👨‍🏫 Formatore (teal) - Valutazione coach Bloom
+- **Caratteristiche:**
+  - Normalizzazione a percentuale (Bloom 1-6 → valore/6×100)
+  - Toggle checkbox per mostrare/nascondere ogni fonte
+  - Tabella comparativa con Media e Gap Max per area
+  - N/O mostrato come 0%
+  - Stesse dimensioni degli altri radar (550px height)
+- **Fix tecnico:** Script Chart.js spostato in `window.load` per attendere caricamento libreria
+- **File:** `student_report.php`
+
+### Coach Evaluation - Miglioramenti UI
+- **Fix visibility:** Numeri bottoni rating ora visibili (CSS contrast fix)
+- **Competency descriptions:** Aggiunta descrizione completa competenze (non solo codice)
+- **Area names italiane:** Nomi completi aree per ogni settore (es. "A. Accoglienza, diagnosi...")
+- **File:** `coach_evaluation.php`, `coach_evaluation_manager.php`
+
+### Student Report - Quiz Diagnostics
+- **Pannello diagnostico:** Ultimi 7 giorni di quiz attempts
+- **Link Review:** Click sul quiz apre la review con domande e risposte
+- **Stati gestiti:** finished, inprogress, overdue, abandoned
+- **Fix Moodle 4.x:** Query aggiornate per nuova struttura `question_references` → `question_bank_entries` → `question_versions`
+
+---
+
 ## 29 Gennaio 2026
 
 ### Selfassessment - Hook System Migration
@@ -103,19 +135,24 @@
 
 ## TODO per prossime sessioni
 
-1. **Selfassessment:**
+1. **Student Report:**
+   - ✅ Grafico Overlay Multi-Fonte completato
+   - Testare stampa PDF con overlay
+   - Rimuovere pannello debug in produzione
+
+2. **Coach Evaluation:**
+   - ✅ Fix UI completato
+   - Testare con tutti i settori
+
+3. **Selfassessment:**
    - Verificare funzionamento hook su produzione
    - Testare con tutti gli utenti di test
 
-2. **Quiz Analysis:**
+4. **Quiz Analysis:**
    - Pulire domande duplicate Chimica 23
    - Rimuovere "AREA F2" dalle risposte
    - Verificare altri corsi per problemi simili
 
-3. **Coach Manager:**
-   - Completare coach_student_view.php
-   - Testare sistema inviti
-
-4. **FTM AI:**
+5. **FTM AI:**
    - Ancora in STANDBY
    - Pronto per integrazione quando Azure disponibile
