@@ -17,8 +17,11 @@
 
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/classes/report_generator.php');
+require_once(__DIR__ . '/classes/coach_evaluation_manager.php');
 require_once(__DIR__ . '/area_mapping.php');
 require_once(__DIR__ . '/gap_comments_mapping.php');
+
+use local_competencymanager\coach_evaluation_manager;
 
 require_login();
 
@@ -66,6 +69,12 @@ $printSpuntiColloquio = optional_param('print_spunti', 0, PARAM_INT);
 $printSectorFilter = optional_param('print_sector', 'all', PARAM_ALPHANUMEXT);
 
 // ============================================
+// PARAMETRI VALUTAZIONE FORMATORE (Coach Evaluation)
+// ============================================
+$showCoachEvaluation = optional_param('show_coach_eval', 0, PARAM_INT);
+$printCoachEvaluation = optional_param('print_coach_eval', 0, PARAM_INT);
+
+// ============================================
 // PARAMETRI SUGGERIMENTI RAPPORTO (Commenti Automatici Gap)
 // ============================================
 $showSuggerimentiRapporto = optional_param('show_suggerimenti', 0, PARAM_INT);
@@ -90,6 +99,7 @@ $sectionOrder = [
     'gap_analysis'   => optional_param('order_gap', 8, PARAM_INT),
     'spunti'         => optional_param('order_spunti', 9, PARAM_INT),
     'suggerimenti'   => optional_param('order_suggerimenti', 10, PARAM_INT),
+    'coach_eval'     => optional_param('order_coach_eval', 11, PARAM_INT),
 ];
 // Ordina per valore (ordine di stampa)
 asort($sectionOrder);
@@ -864,6 +874,29 @@ $checkAutovalutazione = get_student_self_assessment($userid, $courseid, $courseS
 $hasAutovalutazione = !empty($checkAutovalutazione);
 if ($hasAutovalutazione && !$autovalutazioneTimestamp) {
     $autovalutazioneTimestamp = $checkAutovalutazione['timestamp'];
+}
+
+// ============================================
+// CARICAMENTO VALUTAZIONE FORMATORE (Coach Evaluation)
+// ============================================
+$hasCoachEvaluation = false;
+$coachEvaluationData = null;
+$coachRadarData = [];
+
+// Determina il settore corrente per il filtro coach evaluation
+$currentSector = ($cm_sector_filter !== 'all') ? $cm_sector_filter : ($studentPrimarySector ?: $sector);
+
+if (!empty($currentSector)) {
+    $coachEvaluations = coach_evaluation_manager::get_student_evaluations($userid, $currentSector);
+    $hasCoachEvaluation = !empty($coachEvaluations);
+    if ($hasCoachEvaluation) {
+        // Prendi la valutazione più recente
+        $coachEvaluationData = reset($coachEvaluations);
+        // Pre-carica dati radar se necessario
+        if ($showCoachEvaluation || $printCoachEvaluation) {
+            $coachRadarData = coach_evaluation_manager::get_radar_data($userid, $currentSector);
+        }
+    }
 }
 // ============================================
 
@@ -1739,14 +1772,23 @@ if (!empty($availableQuizzes)) {
                     </div>
                     
                     <div class="custom-control custom-switch mb-2">
-                        <input type="checkbox" class="custom-control-input" id="show_spunti" 
+                        <input type="checkbox" class="custom-control-input" id="show_spunti"
                                name="show_spunti" value="1" <?php echo $showSpuntiColloquio ? 'checked' : ''; ?>
                                <?php echo !$hasAutovalutazione ? 'disabled' : ''; ?>>
                         <label class="custom-control-label" for="show_spunti">
                             💬 <strong>Spunti Colloquio</strong> (Domande suggerite)
                         </label>
                     </div>
-                    
+
+                    <div class="custom-control custom-switch mb-2">
+                        <input type="checkbox" class="custom-control-input" id="show_coach_eval"
+                               name="show_coach_eval" value="1" <?php echo $showCoachEvaluation ? 'checked' : ''; ?>
+                               <?php echo !$hasCoachEvaluation ? 'disabled' : ''; ?>>
+                        <label class="custom-control-label" for="show_coach_eval">
+                            👨‍🏫 <strong>Valutazione Formatore</strong> (Valutazione coach Bloom)
+                        </label>
+                    </div>
+
                     <!-- SOGLIE CONFIGURABILI -->
                     <hr class="my-3">
                     <h6>⚙️ Configurazione Soglie:</h6>
@@ -1790,16 +1832,48 @@ if (!empty($availableQuizzes)) {
                 
                 <div class="col-md-5">
                     <?php if (!$hasAutovalutazione): ?>
-                    <div class="alert alert-info mb-0">
+                    <div class="alert alert-info mb-2">
                         <h6 class="mb-1">ℹ️ Autovalutazione non disponibile</h6>
                         <p class="mb-0 small">Lo studente non ha ancora completato un'autovalutazione nel CoachManager.</p>
                     </div>
                     <?php else: ?>
-                    <div class="alert alert-success mb-0">
+                    <div class="alert alert-success mb-2">
                         <h6 class="mb-1">✅ Autovalutazione disponibile</h6>
                         <p class="mb-0 small">
                             <strong>Data:</strong> <?php echo userdate($autovalutazioneTimestamp); ?><br>
                             <strong>Competenze:</strong> <?php echo count($checkAutovalutazione['data']); ?>
+                        </p>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if (!$hasCoachEvaluation): ?>
+                    <div class="alert alert-secondary mb-0">
+                        <h6 class="mb-1">👨‍🏫 Valutazione Formatore non disponibile</h6>
+                        <p class="mb-0 small">
+                            <?php if (!empty($currentSector)): ?>
+                                Nessuna valutazione coach per il settore <?php echo s($currentSector); ?>.
+                                <a href="<?php echo new moodle_url('/local/competencymanager/coach_evaluation.php', [
+                                    'studentid' => $userid,
+                                    'sector' => $currentSector,
+                                    'courseid' => $courseid
+                                ]); ?>" class="alert-link">➕ Crea valutazione</a>
+                            <?php else: ?>
+                                Seleziona un settore per creare una valutazione.
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                    <?php else: ?>
+                    <div class="alert alert-success mb-0">
+                        <h6 class="mb-1">👨‍🏫 Valutazione Formatore disponibile</h6>
+                        <p class="mb-0 small">
+                            <strong>Coach:</strong> <?php echo fullname($DB->get_record('user', ['id' => $coachEvaluationData->coachid])); ?><br>
+                            <strong>Stato:</strong> <?php echo ucfirst($coachEvaluationData->status); ?>
+                            <a href="<?php echo new moodle_url('/local/competencymanager/coach_evaluation.php', [
+                                'studentid' => $userid,
+                                'sector' => $currentSector,
+                                'evaluationid' => $coachEvaluationData->id,
+                                'courseid' => $courseid
+                            ]); ?>" class="alert-link ml-2">✏️ Modifica</a>
                         </p>
                     </div>
                     <?php endif; ?>
@@ -2522,7 +2596,263 @@ if ($tab === 'overview') {
         </div>
     </div>
     <?php endif; ?>
-    
+
+    <?php
+    // ============================================
+    // VALUTAZIONE FORMATORE (Coach Evaluation)
+    // ============================================
+    if ($showCoachEvaluation && !empty($coachEvaluationData)):
+        $coachEvalRatings = coach_evaluation_manager::get_evaluation_ratings($coachEvaluationData->id);
+        $coachEvalByArea = coach_evaluation_manager::get_ratings_by_area($coachEvaluationData->id);
+        $coachEvalStats = coach_evaluation_manager::get_rating_stats($coachEvaluationData->id);
+        $coachEvalAvg = coach_evaluation_manager::calculate_average($coachEvaluationData->id);
+        $bloomScale = coach_evaluation_manager::get_bloom_scale();
+
+        // Prepare radar data for coach evaluation
+        $coachRadarData = coach_evaluation_manager::get_radar_data($userid, $currentSector);
+    ?>
+    <div class="card mt-4">
+        <div class="card-header" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">👨‍🏫 Valutazione Formatore</h5>
+                    <small class="d-block mt-1 opacity-75">
+                        Valutato da: <?php echo fullname($DB->get_record('user', ['id' => $coachEvaluationData->coachid])); ?>
+                        | Data: <?php echo userdate($coachEvaluationData->evaluation_date ?: $coachEvaluationData->timemodified); ?>
+                        | Stato: <?php echo ucfirst($coachEvaluationData->status); ?>
+                    </small>
+                </div>
+                <a href="<?php echo new moodle_url('/local/competencymanager/coach_evaluation.php', [
+                    'studentid' => $userid,
+                    'sector' => $currentSector,
+                    'evaluationid' => $coachEvaluationData->id,
+                    'courseid' => $courseid
+                ]); ?>" class="btn btn-sm btn-light">
+                    ✏️ Modifica Valutazione
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="text-center p-3 rounded" style="background: #e8f5e9;">
+                        <h3 class="text-success mb-0"><?php echo $coachEvalStats['rated']; ?>/<?php echo $coachEvalStats['total']; ?></h3>
+                        <small>Competenze Valutate</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 rounded" style="background: #e3f2fd;">
+                        <h3 class="text-primary mb-0"><?php echo $coachEvalAvg ?: '-'; ?></h3>
+                        <small>Media Bloom (1-6)</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 rounded" style="background: #fce4ec;">
+                        <h3 class="text-danger mb-0"><?php echo $coachEvalStats['not_observed']; ?></h3>
+                        <small>Non Osservate (N/O)</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 rounded" style="background: #fff3e0;">
+                        <h3 class="text-warning mb-0"><?php echo count($coachEvalByArea); ?></h3>
+                        <small>Aree Valutate</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coach Evaluation by Area (accordion) -->
+            <?php foreach ($coachEvalByArea as $area => $areaRatings): ?>
+                <?php
+                $areaAvg = 0;
+                $areaCount = 0;
+                foreach ($areaRatings as $r) {
+                    if ($r->rating > 0) {
+                        $areaAvg += $r->rating;
+                        $areaCount++;
+                    }
+                }
+                $areaAvg = $areaCount > 0 ? round($areaAvg / $areaCount, 1) : 0;
+                ?>
+                <div class="card mb-2">
+                    <div class="card-header py-2" style="background: #f8f9fa; cursor: pointer;"
+                         onclick="this.nextElementSibling.classList.toggle('d-none')">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong>📁 Area <?php echo s($area); ?></strong>
+                            <div>
+                                <span class="badge badge-info"><?php echo count($areaRatings); ?> comp.</span>
+                                <?php if ($areaAvg > 0): ?>
+                                    <span class="badge badge-success">Media: <?php echo $areaAvg; ?></span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0 d-none">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr style="background: #e9ecef;">
+                                    <th>Competenza</th>
+                                    <th class="text-center" style="width: 120px;">Bloom (1-6)</th>
+                                    <th>Note Coach</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($areaRatings as $rating): ?>
+                                    <?php
+                                    $ratingDisplay = $rating->rating == 0 ? 'N/O' : $rating->rating;
+                                    $ratingClass = $rating->rating == 0 ? 'secondary' :
+                                                  ($rating->rating >= 5 ? 'success' :
+                                                  ($rating->rating >= 3 ? 'warning' : 'danger'));
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <strong><?php echo format_string($rating->shortname); ?></strong><br>
+                                            <small class="text-muted"><?php echo s($rating->idnumber); ?></small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge badge-<?php echo $ratingClass; ?>" style="font-size: 1.1rem;">
+                                                <?php echo $ratingDisplay; ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <?php if (!empty($rating->notes)): ?>
+                                                <small class="text-muted"><?php echo s($rating->notes); ?></small>
+                                            <?php else: ?>
+                                                <small class="text-muted">-</small>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+
+            <!-- General Notes -->
+            <?php if (!empty($coachEvaluationData->notes)): ?>
+                <div class="alert alert-info mt-3">
+                    <h6 class="mb-2">📝 Note Generali del Coach:</h6>
+                    <?php echo nl2br(s($coachEvaluationData->notes)); ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?php
+    // ============================================
+    // TABELLA COMPARATIVA 4 FONTI
+    // ============================================
+    ?>
+    <div class="card mt-4">
+        <div class="card-header" style="background: linear-gradient(135deg, #5f2c82 0%, #49a09d 100%); color: white;">
+            <h5 class="mb-0">📊 Confronto 4 Fonti: Quiz, Autovalutazione, LabEval, Formatore</h5>
+            <small class="d-block mt-1 opacity-75">Visualizzazione comparativa di tutte le valutazioni disponibili</small>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr style="background: #34495e; color: white;">
+                            <th>Area</th>
+                            <th class="text-center" style="width: 100px; background: #28a745;">📊 Quiz<br><small>%</small></th>
+                            <th class="text-center" style="width: 100px; background: #667eea;">🧑 Auto<br><small>Bloom</small></th>
+                            <th class="text-center" style="width: 100px; background: #fd7e14;">🔧 LabEval<br><small>%</small></th>
+                            <th class="text-center" style="width: 100px; background: #11998e;">👨‍🏫 Coach<br><small>Bloom</small></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        // Collect all areas from various sources
+                        $allAreas = [];
+
+                        // From quiz data (areas from radar)
+                        if (!empty($areasData)) {
+                            foreach ($areasData as $areaData) {
+                                $code = $areaData['code'];
+                                if (!isset($allAreas[$code])) {
+                                    $allAreas[$code] = ['name' => $areaData['name'], 'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null];
+                                }
+                                $allAreas[$code]['quiz'] = round($areaData['percentage']);
+                            }
+                        }
+
+                        // From autovalutazione
+                        if (!empty($autovalutazioneAreas)) {
+                            foreach ($autovalutazioneAreas as $areaData) {
+                                $code = $areaData['code'];
+                                if (!isset($allAreas[$code])) {
+                                    $allAreas[$code] = ['name' => $areaData['name'], 'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null];
+                                }
+                                // Convert percentage to Bloom (1-6)
+                                $allAreas[$code]['auto'] = round(($areaData['percentage'] / 100) * 6, 1);
+                            }
+                        }
+
+                        // From coach evaluation
+                        if (!empty($coachRadarData)) {
+                            foreach ($coachRadarData as $areaData) {
+                                $code = $areaData['area'];
+                                if (!isset($allAreas[$code])) {
+                                    $allAreas[$code] = ['name' => "Area $code", 'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null];
+                                }
+                                $allAreas[$code]['coach'] = $areaData['bloom_avg'];
+                            }
+                        }
+
+                        ksort($allAreas);
+
+                        foreach ($allAreas as $code => $data):
+                        ?>
+                        <tr>
+                            <td><strong><?php echo s($data['name']); ?></strong> <small class="text-muted">(<?php echo $code; ?>)</small></td>
+                            <td class="text-center">
+                                <?php if ($data['quiz'] !== null): ?>
+                                    <span class="badge badge-<?php echo $data['quiz'] >= 60 ? 'success' : ($data['quiz'] >= 40 ? 'warning' : 'danger'); ?>">
+                                        <?php echo $data['quiz']; ?>%
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-center">
+                                <?php if ($data['auto'] !== null): ?>
+                                    <span class="badge badge-primary"><?php echo $data['auto']; ?></span>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-center">
+                                <?php if ($data['labeval'] !== null): ?>
+                                    <span class="badge badge-warning"><?php echo $data['labeval']; ?>%</span>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-center">
+                                <?php if ($data['coach'] !== null): ?>
+                                    <span class="badge badge-info"><?php echo $data['coach']; ?></span>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    📊 Quiz: Percentuale risposte corrette |
+                    🧑 Auto: Scala Bloom (1-6) |
+                    🔧 LabEval: Percentuale valutazione pratica |
+                    👨‍🏫 Coach: Scala Bloom (1-6)
+                </small>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <?php
     // ============================================
 }

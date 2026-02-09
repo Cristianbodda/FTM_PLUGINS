@@ -111,5 +111,84 @@ function xmldb_local_competencymanager_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026011501, 'local', 'competencymanager');
     }
 
+    // Valutazione Formatore - 3 nuove tabelle
+    if ($oldversion < 2026020901) {
+
+        // Tabella 1: local_coach_evaluations (header valutazioni)
+        $table = new xmldb_table('local_coach_evaluations');
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('studentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('coachid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('sector', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'draft');
+        $table->add_field('is_final_week', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('evaluation_date', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('notes', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('student_can_view', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('studentid_fk', XMLDB_KEY_FOREIGN, ['studentid'], 'user', ['id']);
+        $table->add_key('coachid_fk', XMLDB_KEY_FOREIGN, ['coachid'], 'user', ['id']);
+
+        $table->add_index('studentid_sector_idx', XMLDB_INDEX_NOTUNIQUE, ['studentid', 'sector']);
+        $table->add_index('coachid_idx', XMLDB_INDEX_NOTUNIQUE, ['coachid']);
+        $table->add_index('status_idx', XMLDB_INDEX_NOTUNIQUE, ['status']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Tabella 2: local_coach_eval_ratings (voti per competenza)
+        $table2 = new xmldb_table('local_coach_eval_ratings');
+
+        $table2->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table2->add_field('evaluationid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table2->add_field('competencyid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table2->add_field('rating', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table2->add_field('notes', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table2->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table2->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        $table2->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table2->add_key('evaluationid_fk', XMLDB_KEY_FOREIGN, ['evaluationid'], 'local_coach_evaluations', ['id']);
+        $table2->add_key('competencyid_fk', XMLDB_KEY_FOREIGN, ['competencyid'], 'competency', ['id']);
+
+        $table2->add_index('evaluationid_competencyid_idx', XMLDB_INDEX_UNIQUE, ['evaluationid', 'competencyid']);
+
+        if (!$dbman->table_exists($table2)) {
+            $dbman->create_table($table2);
+        }
+
+        // Tabella 3: local_coach_eval_history (audit trail)
+        $table3 = new xmldb_table('local_coach_eval_history');
+
+        $table3->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table3->add_field('evaluationid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table3->add_field('ratingid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table3->add_field('action', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+        $table3->add_field('field_changed', XMLDB_TYPE_CHAR, '50', null, null, null, null);
+        $table3->add_field('old_value', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table3->add_field('new_value', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table3->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table3->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        $table3->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table3->add_key('evaluationid_fk', XMLDB_KEY_FOREIGN, ['evaluationid'], 'local_coach_evaluations', ['id']);
+        $table3->add_key('userid_fk', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+
+        $table3->add_index('evaluationid_time_idx', XMLDB_INDEX_NOTUNIQUE, ['evaluationid', 'timecreated']);
+        $table3->add_index('userid_idx', XMLDB_INDEX_NOTUNIQUE, ['userid']);
+
+        if (!$dbman->table_exists($table3)) {
+            $dbman->create_table($table3);
+        }
+
+        upgrade_plugin_savepoint(true, 2026020901, 'local', 'competencymanager');
+    }
+
     return true;
 }

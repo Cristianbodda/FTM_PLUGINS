@@ -74,4 +74,54 @@ $capabilities = [
         ],
     ],
 
+    // =========================================================================
+    // VALUTAZIONE FORMATORE: Creare e modificare proprie valutazioni
+    // Permette al coach di inserire valutazioni sui propri studenti
+    // =========================================================================
+    'local/competencymanager:evaluate' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,  // Coach
+            'manager' => CAP_ALLOW,          // Segreteria
+        ],
+    ],
+
+    // =========================================================================
+    // VALUTAZIONE FORMATORE: Visualizzare tutte le valutazioni
+    // Permette di vedere le valutazioni di altri coach
+    // =========================================================================
+    'local/competencymanager:viewallevaluations' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,  // Altri coach possono vedere
+            'manager' => CAP_ALLOW,          // Segreteria
+        ],
+    ],
+
+    // =========================================================================
+    // VALUTAZIONE FORMATORE: Modificare tutte le valutazioni (con tracking)
+    // Solo segreteria può modificare valutazioni di altri (viene tracciato)
+    // =========================================================================
+    'local/competencymanager:editallevaluations' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,  // Solo segreteria/admin
+        ],
+    ],
+
+    // =========================================================================
+    // VALUTAZIONE FORMATORE: Autorizzare studente a vedere la valutazione
+    // =========================================================================
+    'local/competencymanager:authorizestudentview' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,  // Coach
+            'manager' => CAP_ALLOW,          // Segreteria
+        ],
+    ],
+
 ];

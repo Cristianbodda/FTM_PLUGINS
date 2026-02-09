@@ -94,5 +94,72 @@
         <INDEX NAME="source_idx" UNIQUE="false" FIELDS="source"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="local_coach_evaluations" COMMENT="Valutazioni formatore - header per ogni sessione di valutazione">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID dello studente valutato"/>
+        <FIELD NAME="coachid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID del coach che valuta"/>
+        <FIELD NAME="sector" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="Settore valutato: AUTOMOBILE, MECCANICA, ecc."/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="ID corso di contesto"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="draft" SEQUENCE="false" COMMENT="Stato: draft, completed, signed"/>
+        <FIELD NAME="is_final_week" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = valutazione obbligatoria fine percorso"/>
+        <FIELD NAME="evaluation_date" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Data completamento valutazione"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Note generali del coach"/>
+        <FIELD NAME="student_can_view" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = studente autorizzato a vedere"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="studentid_fk" TYPE="foreign" FIELDS="studentid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="coachid_fk" TYPE="foreign" FIELDS="coachid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="studentid_sector_idx" UNIQUE="false" FIELDS="studentid, sector"/>
+        <INDEX NAME="coachid_idx" UNIQUE="false" FIELDS="coachid"/>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_coach_eval_ratings" COMMENT="Valutazioni singole per competenza (scala Bloom 0=N/O, 1-6)">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="evaluationid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK a local_coach_evaluations"/>
+        <FIELD NAME="competencyid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK a competency"/>
+        <FIELD NAME="rating" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=N/O, 1-6=Bloom"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Note per questa competenza"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="evaluationid_fk" TYPE="foreign" FIELDS="evaluationid" REFTABLE="local_coach_evaluations" REFFIELDS="id"/>
+        <KEY NAME="competencyid_fk" TYPE="foreign" FIELDS="competencyid" REFTABLE="competency" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="evaluationid_competencyid_idx" UNIQUE="true" FIELDS="evaluationid, competencyid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_coach_eval_history" COMMENT="Storico modifiche valutazioni per audit trail">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="evaluationid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK a local_coach_evaluations"/>
+        <FIELD NAME="ratingid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK a local_coach_eval_ratings (nullable)"/>
+        <FIELD NAME="action" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Azione: created, updated, deleted"/>
+        <FIELD NAME="field_changed" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Campo modificato"/>
+        <FIELD NAME="old_value" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Valore precedente"/>
+        <FIELD NAME="new_value" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Nuovo valore"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Chi ha fatto la modifica"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="evaluationid_fk" TYPE="foreign" FIELDS="evaluationid" REFTABLE="local_coach_evaluations" REFFIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="evaluationid_time_idx" UNIQUE="false" FIELDS="evaluationid, timecreated"/>
+        <INDEX NAME="userid_idx" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>

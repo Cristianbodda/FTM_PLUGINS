@@ -1,0 +1,114 @@
+/**
+ * Coach Evaluation Styles
+ *
+ * @package    local_competencymanager
+ * @copyright  2026 FTM
+ */
+
+/* Additional styles for coach evaluation page */
+
+.eval-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .competency-row {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    .rating-buttons {
+        justify-content: flex-start;
+    }
+
+    .action-bar {
+        flex-direction: column;
+    }
+
+    .action-group {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .stats-bar {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .bloom-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Print styles */
+@media print {
+    .action-bar,
+    .saving-indicator,
+    .bloom-legend summary {
+        display: none !important;
+    }
+
+    .area-content {
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 15px 20px !important;
+    }
+
+    .area-accordion {
+        break-inside: avoid;
+    }
+
+    .eval-header {
+        background: #333 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
+/* Accessibility improvements */
+.rating-btn:focus {
+    outline: 3px solid #667eea;
+    outline-offset: 2px;
+}
+
+.notes-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+/* Animation for auto-save indicator */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.saving-indicator.saving {
+    animation: pulse 1s infinite;
+}
+
+/* Status colors */
+.status-draft { color: #856404; }
+.status-completed { color: #155724; }
+.status-signed { color: #383d41; }
+
+/* Rating button hover states */
+.rating-btn:hover:not(:disabled):not(.selected) {
+    transform: scale(1.1);
+}
+
+.rating-btn.selected {
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.4);
+}
+
+/* Area accordion animation */
+.area-content {
+    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+}
+
+.toggle-icon {
+    transition: transform 0.3s ease;
+}
