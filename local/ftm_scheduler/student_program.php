@@ -36,7 +36,7 @@ if (!$membership) {
 
 // Get student's primary sector
 $primary_sector = '';
-$sector_record = $DB->get_record('local_student_sectors', ['userid' => $userid, 'priority' => 'primary']);
+$sector_record = $DB->get_record('local_student_sectors', ['userid' => $userid, 'is_primary' => 1]);
 if ($sector_record) {
     $primary_sector = $sector_record->sector;
 }
@@ -370,83 +370,112 @@ echo $OUTPUT->header();
     flex-wrap: wrap;
 }
 
-/* Modal */
-.modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 10000;
-    align-items: center;
-    justify-content: center;
+/* Modal - Override Moodle theme */
+.ftm-modal-overlay {
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0,0,0,0.6) !important;
+    z-index: 99999 !important;
+    overflow: auto !important;
 }
 
-.modal-overlay.active {
-    display: flex;
+.ftm-modal-overlay.active {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
-.modal {
-    background: white;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
+.ftm-modal {
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    width: 90% !important;
+    max-width: 500px !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+    margin: 20px !important;
+    box-shadow: 0 10px 50px rgba(0,0,0,0.3) !important;
+    position: relative !important;
 }
 
-.modal-header {
-    padding: 20px;
-    border-bottom: 1px solid #dee2e6;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.ftm-modal-header {
+    padding: 20px !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    background: #f8f9fa !important;
+    border-radius: 12px 12px 0 0 !important;
 }
 
-.modal-header h4 {
-    margin: 0;
+.ftm-modal-header h4 {
+    margin: 0 !important;
+    font-size: 18px !important;
+    color: #333 !important;
 }
 
-.modal-close {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #666;
+.ftm-modal-close {
+    background: none !important;
+    border: none !important;
+    font-size: 28px !important;
+    cursor: pointer !important;
+    color: #666 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
 }
 
-.modal-body {
-    padding: 20px;
+.ftm-modal-close:hover {
+    color: #333 !important;
 }
 
-.modal-footer {
-    padding: 20px;
-    border-top: 1px solid #dee2e6;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+.ftm-modal-body {
+    padding: 20px !important;
+    background: #fff !important;
 }
 
-.form-group {
-    margin-bottom: 15px;
+.ftm-modal-footer {
+    padding: 15px 20px !important;
+    border-top: 1px solid #dee2e6 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    background: #f8f9fa !important;
+    border-radius: 0 0 12px 12px !important;
 }
 
-.form-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 5px;
+.ftm-form-group {
+    margin-bottom: 15px !important;
 }
 
-.form-group select,
-.form-group input,
-.form-group textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    font-size: 14px;
+.ftm-form-group label {
+    display: block !important;
+    font-weight: 600 !important;
+    margin-bottom: 5px !important;
+    color: #333 !important;
+}
+
+.ftm-form-group select,
+.ftm-form-group input,
+.ftm-form-group textarea {
+    width: 100% !important;
+    padding: 10px !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    background: #fff !important;
+    color: #333 !important;
+    box-sizing: border-box !important;
+}
+
+.ftm-form-group select:focus,
+.ftm-form-group input:focus,
+.ftm-form-group textarea:focus {
+    border-color: #0066cc !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(0,102,204,0.1) !important;
 }
 
 /* Legend */
@@ -650,18 +679,18 @@ echo $OUTPUT->header();
 </div>
 
 <!-- Modal: Edit Slot -->
-<div class="modal-overlay" id="modal-edit-slot">
-    <div class="modal">
-        <div class="modal-header">
+<div class="ftm-modal-overlay" id="modal-edit-slot">
+    <div class="ftm-modal">
+        <div class="ftm-modal-header">
             <h4>✏️ Modifica Attività</h4>
-            <button class="modal-close" onclick="closeModal('edit-slot')">×</button>
+            <button type="button" class="ftm-modal-close" onclick="closeModal('edit-slot')">×</button>
         </div>
-        <div class="modal-body">
+        <div class="ftm-modal-body">
             <input type="hidden" id="edit-week">
             <input type="hidden" id="edit-day">
             <input type="hidden" id="edit-slot">
 
-            <div class="form-group">
+            <div class="ftm-form-group">
                 <label>Tipo</label>
                 <select id="edit-type">
                     <option value="presenza">In Presenza</option>
@@ -669,7 +698,7 @@ echo $OUTPUT->header();
                 </select>
             </div>
 
-            <div class="form-group">
+            <div class="ftm-form-group">
                 <label>Attività</label>
                 <select id="edit-activity-select">
                     <option value="">-- Seleziona o scrivi manualmente --</option>
@@ -680,22 +709,23 @@ echo $OUTPUT->header();
                     <option value="Call con coach">Call con coach</option>
                     <option value="Redazione lettere">Redazione lettere</option>
                     <option value="Ricerca lavoro">Ricerca lavoro</option>
+                    <option value="REMOTO">REMOTO</option>
                     <option value="custom">Altro (personalizzato)</option>
                 </select>
                 <input type="text" id="edit-activity-custom" placeholder="Inserisci attività personalizzata" style="display: none; margin-top: 10px;">
             </div>
 
-            <div class="form-group">
+            <div class="ftm-form-group">
                 <label>Dettagli (orario call, note...)</label>
                 <textarea id="edit-details" rows="2" placeholder="Es: Call ore 10:00, Aula 2..."></textarea>
             </div>
 
-            <div class="form-group">
+            <div class="ftm-form-group">
                 <label>Luogo</label>
                 <input type="text" id="edit-location" placeholder="Es: Aula 1, Remoto, Teams...">
             </div>
         </div>
-        <div class="modal-footer">
+        <div class="ftm-modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeModal('edit-slot')">Annulla</button>
             <button type="button" class="btn btn-primary" onclick="saveSlot()">💾 Salva</button>
         </div>
@@ -703,13 +733,13 @@ echo $OUTPUT->header();
 </div>
 
 <!-- Modal: Manage Tests -->
-<div class="modal-overlay" id="modal-tests">
-    <div class="modal" style="max-width: 700px;">
-        <div class="modal-header">
+<div class="ftm-modal-overlay" id="modal-tests">
+    <div class="ftm-modal" style="max-width: 700px;">
+        <div class="ftm-modal-header">
             <h4>📝 Gestisci Test Assegnati</h4>
-            <button class="modal-close" onclick="closeModal('tests')">×</button>
+            <button type="button" class="ftm-modal-close" onclick="closeModal('tests')">×</button>
         </div>
-        <div class="modal-body">
+        <div class="ftm-modal-body">
             <p>Seleziona i test da assegnare allo studente. I test suggeriti sono basati sul settore: <strong><?php echo $primary_sector ?: 'Non definito'; ?></strong></p>
             <div class="tests-grid" id="test-catalog">
                 <?php foreach ($test_catalog as $test):
@@ -726,7 +756,7 @@ echo $OUTPUT->header();
                 <?php endforeach; ?>
             </div>
         </div>
-        <div class="modal-footer">
+        <div class="ftm-modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeModal('tests')">Annulla</button>
             <button type="button" class="btn btn-primary" onclick="saveTests()">💾 Salva Test</button>
         </div>
@@ -742,57 +772,117 @@ const wwwroot = '<?php echo $CFG->wwwroot; ?>';
 // Store program data for saving
 let programChanges = {};
 
+// Debug mode
+const DEBUG = true;
+function log(...args) {
+    if (DEBUG) console.log('[FTM Program]', ...args);
+}
+
 function openModal(id) {
-    document.getElementById('modal-' + id).classList.add('active');
+    log('Opening modal:', id);
+    const modal = document.getElementById('modal-' + id);
+    if (!modal) {
+        console.error('Modal not found:', 'modal-' + id);
+        return;
+    }
+    log('Modal element found:', modal);
+    modal.classList.add('active');
+    log('Active class added. Classes now:', modal.className);
+
+    // Force display
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    log('Forced display:flex');
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
 }
 
 function closeModal(id) {
-    document.getElementById('modal-' + id).classList.remove('active');
+    log('Closing modal:', id);
+    const modal = document.getElementById('modal-' + id);
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
 }
 
 function editSlot(week, day, slot) {
-    // Store current slot being edited
-    document.getElementById('edit-week').value = week;
-    document.getElementById('edit-day').value = day;
-    document.getElementById('edit-slot').value = slot;
+    log('editSlot called:', week, day, slot);
 
-    // Find current values
-    const cell = document.querySelector(`[data-week="${week}"][data-day="${day}"][data-slot="${slot}"]`);
-    const currentType = cell.classList.contains('remoto') ? 'remoto' : 'presenza';
-    const currentActivity = cell.querySelector('.slot-activity')?.textContent?.trim() || '';
-    const currentDetails = cell.querySelector('.slot-details')?.textContent?.replace('📍 ', '') || '';
+    try {
+        // Store current slot being edited
+        document.getElementById('edit-week').value = week;
+        document.getElementById('edit-day').value = day;
+        document.getElementById('edit-slot').value = slot;
 
-    // Set form values
-    document.getElementById('edit-type').value = currentType;
-    document.getElementById('edit-details').value = currentDetails;
+        // Find current values
+        const cell = document.querySelector(`[data-week="${week}"][data-day="${day}"][data-slot="${slot}"]`);
+        log('Cell found:', cell);
 
-    // Check if activity is in the dropdown
-    const activitySelect = document.getElementById('edit-activity-select');
-    let found = false;
-    for (let option of activitySelect.options) {
-        if (option.value === currentActivity) {
-            activitySelect.value = currentActivity;
-            found = true;
-            break;
+        if (!cell) {
+            console.error('Cell not found for:', week, day, slot);
+            return;
         }
-    }
-    if (!found && currentActivity && currentActivity !== '-') {
-        activitySelect.value = 'custom';
-        document.getElementById('edit-activity-custom').style.display = 'block';
-        document.getElementById('edit-activity-custom').value = currentActivity;
-    }
 
-    openModal('edit-slot');
+        const currentType = cell.classList.contains('remoto') ? 'remoto' : 'presenza';
+        const currentActivity = cell.querySelector('.slot-activity')?.textContent?.trim() || '';
+        const detailsElem = cell.querySelector('.slot-details');
+        const currentDetails = detailsElem ? detailsElem.textContent.replace('📍 ', '').trim() : '';
+
+        log('Current values:', { currentType, currentActivity, currentDetails });
+
+        // Set form values
+        document.getElementById('edit-type').value = currentType;
+        document.getElementById('edit-details').value = currentDetails;
+        document.getElementById('edit-location').value = '';
+
+        // Reset custom field
+        document.getElementById('edit-activity-custom').style.display = 'none';
+        document.getElementById('edit-activity-custom').value = '';
+
+        // Check if activity is in the dropdown
+        const activitySelect = document.getElementById('edit-activity-select');
+        let found = false;
+        for (let option of activitySelect.options) {
+            if (option.value === currentActivity) {
+                activitySelect.value = currentActivity;
+                found = true;
+                break;
+            }
+        }
+        if (!found && currentActivity && currentActivity !== '-') {
+            activitySelect.value = 'custom';
+            document.getElementById('edit-activity-custom').style.display = 'block';
+            document.getElementById('edit-activity-custom').value = currentActivity;
+        } else if (!found) {
+            activitySelect.value = '';
+        }
+
+        log('Opening modal now...');
+        openModal('edit-slot');
+
+    } catch (error) {
+        console.error('Error in editSlot:', error);
+        alert('Errore: ' + error.message);
+    }
 }
 
 // Show/hide custom activity field
-document.getElementById('edit-activity-select').addEventListener('change', function() {
-    const customField = document.getElementById('edit-activity-custom');
-    if (this.value === 'custom') {
-        customField.style.display = 'block';
-        customField.focus();
-    } else {
-        customField.style.display = 'none';
+document.addEventListener('DOMContentLoaded', function() {
+    const activitySelect = document.getElementById('edit-activity-select');
+    if (activitySelect) {
+        activitySelect.addEventListener('change', function() {
+            const customField = document.getElementById('edit-activity-custom');
+            if (this.value === 'custom') {
+                customField.style.display = 'block';
+                customField.focus();
+            } else {
+                customField.style.display = 'none';
+            }
+        });
     }
 });
 
@@ -908,10 +998,13 @@ function saveProgram() {
 }
 
 // Close modal on overlay click
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
+document.querySelectorAll('.ftm-modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', function(e) {
         if (e.target === this) {
+            log('Overlay clicked, closing modal');
             this.classList.remove('active');
+            this.style.display = 'none';
+            document.body.style.overflow = '';
         }
     });
 });
@@ -919,10 +1012,19 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 // Close modal on Escape
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+        log('Escape pressed, closing all modals');
+        document.querySelectorAll('.ftm-modal-overlay.active').forEach(modal => {
             modal.classList.remove('active');
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
         });
     }
+});
+
+// Log on page load
+log('Student Program JS loaded. Modal elements:', {
+    editSlot: document.getElementById('modal-edit-slot'),
+    tests: document.getElementById('modal-tests')
 });
 </script>
 

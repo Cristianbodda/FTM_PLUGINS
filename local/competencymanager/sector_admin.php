@@ -336,19 +336,19 @@ $status_icons = [
 
 /* Modal - stile scheduler */
 .ftm-modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 10000;
-    align-items: center;
-    justify-content: center;
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0,0,0,0.5) !important;
+    z-index: 99999 !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
-.ftm-modal-overlay.active { display: flex; }
+.ftm-modal-overlay.active { display: flex !important; }
 
 .ftm-modal {
     background: white;
@@ -696,22 +696,25 @@ $status_icons = [
                                 <?php endif; ?>
                             </td>
                             <td>
+                                <?php
+                                $modalData = json_encode([
+                                    'userid' => $student->id,
+                                    'username' => fullname($student),
+                                    'email' => $student->email,
+                                    'course' => $student->course_name ?: '-',
+                                    'cohort' => $student->cohort_name ?: '-',
+                                    'datestart' => $student->date_start ? userdate($student->date_start, '%d/%m/%Y') : '-',
+                                    'primary' => $student->primary_sector ?: '',
+                                    'sectors' => array_map(function($s) {
+                                        return ['sector' => $s->sector, 'quiz_count' => $s->quiz_count, 'is_primary' => $s->is_primary];
+                                    }, $student->sectors),
+                                    'courseid' => $student->coaching_courseid ?: 0
+                                ], JSON_HEX_APOS | JSON_HEX_QUOT);
+                                ?>
                                 <div class="quick-actions">
                                     <button type="button" class="action-icon"
                                             title="Modifica settore"
-                                            onclick="openEditModal(<?php echo htmlspecialchars(json_encode([
-                                                'userid' => $student->id,
-                                                'username' => fullname($student),
-                                                'email' => $student->email,
-                                                'course' => $student->course_name ?: '-',
-                                                'cohort' => $student->cohort_name ?: '-',
-                                                'datestart' => $student->date_start ? userdate($student->date_start, '%d/%m/%Y') : '-',
-                                                'primary' => $student->primary_sector ?: '',
-                                                'sectors' => array_map(function($s) {
-                                                    return ['sector' => $s->sector, 'quiz_count' => $s->quiz_count, 'is_primary' => $s->is_primary];
-                                                }, $student->sectors),
-                                                'courseid' => $student->coaching_courseid ?: 0
-                                            ])); ?>)">
+                                            onclick='openEditModal(<?php echo $modalData; ?>)'>
                                         ✏️
                                     </button>
                                 </div>
@@ -789,35 +792,58 @@ $status_icons = [
 <script>
 var sectorsMap = <?php echo json_encode($sectors); ?>;
 
+// Debug mode
+var DEBUG = true;
+function log() {
+    if (DEBUG) console.log.apply(console, ['[Sector Admin]'].concat(Array.prototype.slice.call(arguments)));
+}
+
 function openEditModal(data) {
-    document.getElementById('modal-student-name').textContent = data.username;
-    document.getElementById('modal-student-email').textContent = data.email;
-    document.getElementById('modal-course-name').textContent = data.course;
-    document.getElementById('modal-cohort-name').textContent = data.cohort;
-    document.getElementById('modal-date-start').textContent = data.datestart;
-    document.getElementById('modal-primary-sector').value = data.primary;
-    document.getElementById('modal-userid').value = data.userid;
-    document.getElementById('modal-courseid').value = data.courseid;
+    log('openEditModal called with:', data);
 
-    // Mostra settori rilevati
-    var detectedHtml = '';
-    data.sectors.forEach(function(s) {
-        if (!s.is_primary) {
-            var sectorName = sectorsMap[s.sector] || s.sector;
-            detectedHtml += '<span class="sector-badge sector-detected">' +
-                           sectorName + ' <small>(' + s.quiz_count + ' quiz)</small></span> ';
+    try {
+        document.getElementById('modal-student-name').textContent = data.username;
+        document.getElementById('modal-student-email').textContent = data.email;
+        document.getElementById('modal-course-name').textContent = data.course;
+        document.getElementById('modal-cohort-name').textContent = data.cohort;
+        document.getElementById('modal-date-start').textContent = data.datestart;
+        document.getElementById('modal-primary-sector').value = data.primary;
+        document.getElementById('modal-userid').value = data.userid;
+        document.getElementById('modal-courseid').value = data.courseid;
+
+        // Mostra settori rilevati
+        var detectedHtml = '';
+        if (data.sectors && data.sectors.length > 0) {
+            data.sectors.forEach(function(s) {
+                if (!s.is_primary) {
+                    var sectorName = sectorsMap[s.sector] || s.sector;
+                    detectedHtml += '<span class="sector-badge sector-detected">' +
+                                   sectorName + ' <small>(' + s.quiz_count + ' quiz)</small></span> ';
+                }
+            });
         }
-    });
-    if (!detectedHtml) {
-        detectedHtml = '<span style="color: #999;">Nessun settore rilevato</span>';
-    }
-    document.getElementById('modal-detected-sectors').innerHTML = detectedHtml;
+        if (!detectedHtml) {
+            detectedHtml = '<span style="color: #999;">Nessun settore rilevato</span>';
+        }
+        document.getElementById('modal-detected-sectors').innerHTML = detectedHtml;
 
-    document.getElementById('editModal').classList.add('active');
+        var modal = document.getElementById('editModal');
+        log('Modal element:', modal);
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        log('Modal opened');
+
+    } catch (error) {
+        console.error('Error in openEditModal:', error);
+        alert('Errore: ' + error.message);
+    }
 }
 
 function closeEditModal() {
-    document.getElementById('editModal').classList.remove('active');
+    log('closeEditModal called');
+    var modal = document.getElementById('editModal');
+    modal.classList.remove('active');
+    modal.style.display = 'none';
 }
 
 function saveSector() {

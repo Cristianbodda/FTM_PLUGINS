@@ -641,21 +641,21 @@ class sector_manager {
     public static function get_student_sectors_with_quiz_data($userid) {
         global $DB;
 
-        // Ottieni settori dalla tabella dedicata
-        $sectors = self::get_student_sectors($userid);
+        // Ottieni settori dalla tabella dedicata (include is_primary)
+        $savedSectors = self::get_student_sectors($userid);
 
-        if (!empty($sectors)) {
-            return $sectors;
-        }
-
-        // Fallback: rileva settori dai quiz completati
+        // SEMPRE calcola i settori dai quiz completati per avere conteggi aggiornati
+        // Query corretta per Moodle 4.x con question_references e question_versions
         $sql = "SELECT DISTINCT c.idnumber
                 FROM {quiz_attempts} qa
                 JOIN {quiz} q ON q.id = qa.quiz
-                JOIN {question_references} qr ON qr.component = 'mod_quiz'
+                JOIN {quiz_slots} qs ON qs.quizid = q.id
+                JOIN {question_references} qr ON qr.itemid = qs.id
+                     AND qr.component = 'mod_quiz'
                      AND qr.questionarea = 'slot'
                 JOIN {question_bank_entries} qbe ON qbe.id = qr.questionbankentryid
-                JOIN {qbank_competenciesbyquestion} cq ON cq.questionid = qbe.id
+                JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
+                JOIN {qbank_competenciesbyquestion} cq ON cq.questionid = qv.questionid
                 JOIN {competency} c ON c.id = cq.competencyid
                 WHERE qa.userid = :userid
                   AND qa.state = 'finished'
@@ -664,26 +664,52 @@ class sector_manager {
 
         $competencies = $DB->get_records_sql($sql, ['userid' => $userid]);
 
+        // Conta competenze per settore (rappresenta quante domande con competenza per settore)
         $sector_counts = [];
         foreach ($competencies as $comp) {
             $sector = extract_sector_from_idnumber($comp->idnumber);
             if ($sector && $sector !== 'UNKNOWN') {
-                if (!isset($sector_counts[$sector])) {
-                    $sector_counts[$sector] = 0;
+                $sectorUpper = strtoupper($sector);
+                if (!isset($sector_counts[$sectorUpper])) {
+                    $sector_counts[$sectorUpper] = 0;
                 }
-                $sector_counts[$sector]++;
+                $sector_counts[$sectorUpper]++;
             }
         }
 
-        // Converti in formato oggetto
+        // Combina settori salvati con conteggi calcolati
         $result = [];
-        foreach ($sector_counts as $sector => $count) {
+
+        // Prima aggiungi settori salvati con conteggi aggiornati
+        foreach ($savedSectors as $saved) {
+            $sectorUpper = strtoupper($saved->sector);
             $obj = new \stdClass();
-            $obj->sector = $sector;
-            $obj->quiz_count = $count;
-            $obj->is_primary = 0;
-            $result[$sector] = $obj;
+            $obj->sector = $sectorUpper;
+            $obj->quiz_count = $sector_counts[$sectorUpper] ?? 0;
+            $obj->is_primary = $saved->is_primary ?? 0;
+            $result[$sectorUpper] = $obj;
+            // Rimuovi dal conteggio per non duplicare
+            unset($sector_counts[$sectorUpper]);
         }
+
+        // Poi aggiungi settori rilevati dai quiz che non erano salvati
+        foreach ($sector_counts as $sector => $count) {
+            if (!isset($result[$sector])) {
+                $obj = new \stdClass();
+                $obj->sector = $sector;
+                $obj->quiz_count = $count;
+                $obj->is_primary = 0;
+                $result[$sector] = $obj;
+            }
+        }
+
+        // Ordina: primario prima, poi per quiz_count decrescente
+        uasort($result, function($a, $b) {
+            if ($a->is_primary != $b->is_primary) {
+                return $b->is_primary - $a->is_primary;
+            }
+            return $b->quiz_count - $a->quiz_count;
+        });
 
         return $result;
     }

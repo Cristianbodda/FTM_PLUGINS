@@ -442,7 +442,7 @@ echo $OUTPUT->header();
                     <?php if ($canManageOrCoach): ?>
                     <div class="member-actions">
                         <a href="<?php echo new moodle_url('/local/ftm_scheduler/student_program.php', [
-                            'userid' => $member->id,
+                            'userid' => $member->userid,
                             'groupid' => $id
                         ]); ?>" class="member-btn member-btn-program" title="Programma Individuale">
                             📋 Programma

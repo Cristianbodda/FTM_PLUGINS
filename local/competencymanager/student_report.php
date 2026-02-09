@@ -114,6 +114,17 @@ $sogliaMonitorare = max(15, min(60, $sogliaMonitorare));
 if ($sogliaMonitorare <= $sogliaAllineamento) {
     $sogliaMonitorare = $sogliaAllineamento + 15;
 }
+
+// Soglia per considerare un gap come "critico" (default 30%)
+// > 30% = Critico (rosso intenso)
+$sogliaCritico = optional_param('soglia_critico', 30, PARAM_INT);
+// Limita il range valido: minimo 20%, massimo 80%
+$sogliaCritico = max(20, min(80, $sogliaCritico));
+
+// Assicura che soglia critico sia sempre > soglia monitorare
+if ($sogliaCritico <= $sogliaMonitorare) {
+    $sogliaCritico = $sogliaMonitorare + 5;
+}
 // ============================================
 
 $selectedQuizzes = optional_param_array('quizids', [], PARAM_INT);

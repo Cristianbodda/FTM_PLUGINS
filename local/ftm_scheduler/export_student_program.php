@@ -33,7 +33,7 @@ $group = $DB->get_record('local_ftm_groups', ['id' => $groupid], '*', MUST_EXIST
 
 // Get student's sector
 $sector = '';
-$sectorRecord = $DB->get_record('local_student_sectors', ['userid' => $userid, 'priority' => 'primary']);
+$sectorRecord = $DB->get_record('local_student_sectors', ['userid' => $userid, 'is_primary' => 1]);
 if ($sectorRecord) {
     $sector = $sectorRecord->sector;
 }
