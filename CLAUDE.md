@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida Completa per Claude
 
-**Ultimo aggiornamento:** 9 Febbraio 2026
+**Ultimo aggiornamento:** 10 Febbraio 2026
 
 ## Panoramica Progetto
 
@@ -106,14 +106,22 @@ Sistema automatico di suggerimenti basati su gap analysis:
 - **Due toni:** Formale (report) e Colloquiale (spunti colloquio)
 - **File:** `gap_comments_mapping.php`
 
-#### 2c. Coach Evaluation System (NUOVO 09/02/2026)
+#### 2c. Coach Evaluation System (AGGIORNATO 10/02/2026)
 Sistema di valutazione formatore per competenze studente:
 - **Valutazione Bloom (0-6):** 0=N/O, 1-6=Scala Bloom
 - **Organizzazione per Area:** Competenze raggruppate per area (A, B, C, ...)
-- **Nomi aree italiane:** Descrizioni complete per ogni settore
-- **UI migliorata:** Bottoni rating visibili, descrizioni competenze
-- **Integrazione Student Report:** Dati visibili nel grafico overlay
-- **File:** `coach_evaluation.php`, `classes/coach_evaluation_manager.php`
+- **Nomi aree italiane:** Descrizioni complete per ogni settore (es. "A. Accoglienza, diagnosi...")
+- **Descrizioni competenze:** Mostrate sotto ogni codice nella tabella
+- **NUOVO: Inline Rating Editor (10/02/2026):**
+  - Badge Bloom cliccabile direttamente nella tabella Student Report
+  - Dropdown rapido con valori N/O, 1-6
+  - Salvataggio AJAX immediato senza reload
+  - Toast feedback di conferma
+- **NUOVO: Reopen Evaluation (10/02/2026):**
+  - Bottone "🔓 Riapri per Modifiche" per valutazioni firmate
+  - Permette modifiche anche dopo firma
+- **Auto-inizializzazione:** Rating mancanti inizializzati a N/O al caricamento
+- **File:** `coach_evaluation.php`, `classes/coach_evaluation_manager.php`, `ajax_save_evaluation.php`
 - **Tabelle DB:** `local_coach_evaluations`, `local_coach_eval_ratings`, `local_coach_eval_history`
 
 #### 2d. FTM AI Integration (IN STANDBY - local_ftm_ai)

@@ -73,7 +73,9 @@ if ($evaluationid) {
 $canEdit = coach_evaluation_manager::can_edit($evaluationid);
 
 // Handle actions
-if ($action && confirm_sesskey() && $canEdit) {
+// Note: 'reopen' action is allowed even when $canEdit is false (for signed evaluations)
+$allowedWithoutEdit = ['reopen'];
+if ($action && confirm_sesskey() && ($canEdit || in_array($action, $allowedWithoutEdit))) {
     switch ($action) {
         case 'complete':
             coach_evaluation_manager::complete_evaluation($evaluationid);
@@ -103,6 +105,12 @@ if ($action && confirm_sesskey() && $canEdit) {
         case 'revoke':
             coach_evaluation_manager::set_student_can_view($evaluationid, false);
             redirect($PAGE->url, get_string('student_revoked', 'local_competencymanager'), null, \core\output\notification::NOTIFY_SUCCESS);
+            break;
+
+        case 'reopen':
+            if (coach_evaluation_manager::reopen_evaluation($evaluationid)) {
+                redirect($PAGE->url, 'Valutazione riaperta per modifiche', null, \core\output\notification::NOTIFY_SUCCESS);
+            }
             break;
     }
 }
@@ -445,6 +453,15 @@ switch ($evaluation->status) {
                        class="btn-eval btn-sign"
                        onclick="return confirm('<?php echo get_string('sign_confirm', 'local_competencymanager'); ?>');">
                         <?php echo get_string('sign_evaluation', 'local_competencymanager'); ?>
+                    </a>
+                <?php endif; ?>
+
+                <?php if ($evaluation->status === 'signed' || $evaluation->status === 'completed'): ?>
+                    <a href="<?php echo $PAGE->url; ?>&action=reopen&sesskey=<?php echo sesskey(); ?>"
+                       class="btn-eval"
+                       style="background: #17a2b8; color: white;"
+                       onclick="return confirm('Sei sicuro di voler riaprire questa valutazione per modifiche?');">
+                        🔓 Riapri per Modifiche
                     </a>
                 <?php endif; ?>
 

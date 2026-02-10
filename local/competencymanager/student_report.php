@@ -3422,12 +3422,17 @@ if ($tab === 'overview') {
                     }
                 }
                 $areaAvg = $areaCount > 0 ? round($areaAvg / $areaCount, 1) : 0;
+
+                // Ottieni nome completo area dal primo rating
+                $firstRating = reset($areaRatings);
+                $areaInfo = get_area_info($firstRating->idnumber ?? '');
+                $areaFullName = $areaInfo['name'] ?? "Area $area";
                 ?>
                 <div class="card mb-2">
                     <div class="card-header py-2" style="background: #f8f9fa; cursor: pointer;"
                          onclick="this.nextElementSibling.classList.toggle('d-none')">
                         <div class="d-flex justify-content-between align-items-center">
-                            <strong>📁 Area <?php echo s($area); ?></strong>
+                            <strong>📁 <?php echo s($areaFullName); ?></strong>
                             <div>
                                 <span class="badge badge-info"><?php echo count($areaRatings); ?> comp.</span>
                                 <?php if ($areaAvg > 0): ?>
@@ -3457,11 +3462,31 @@ if ($tab === 'overview') {
                                         <td>
                                             <strong><?php echo format_string($rating->shortname); ?></strong><br>
                                             <small class="text-muted"><?php echo s($rating->idnumber); ?></small>
+                                            <?php if (!empty($rating->comp_description)): ?>
+                                                <div class="mt-1" style="font-size: 0.85em; color: #555;">
+                                                    <?php echo format_text($rating->comp_description, FORMAT_HTML); ?>
+                                                </div>
+                                            <?php endif; ?>
                                         </td>
                                         <td class="text-center">
+                                            <?php if (has_capability('local/competencymanager:evaluate', $context)): ?>
+                                            <!-- Editable rating dropdown -->
+                                            <div class="inline-rating-editor" style="position: relative; display: inline-block;">
+                                                <span class="badge badge-<?php echo $ratingClass; ?> rating-badge-clickable"
+                                                      style="font-size: 1.1rem; cursor: pointer;"
+                                                      data-evaluationid="<?php echo $coachEvaluationData->id; ?>"
+                                                      data-competencyid="<?php echo $rating->competencyid; ?>"
+                                                      data-currentrating="<?php echo $rating->rating; ?>"
+                                                      onclick="showRatingDropdown(this)"
+                                                      title="Clicca per modificare">
+                                                    <?php echo $ratingDisplay; ?>
+                                                </span>
+                                            </div>
+                                            <?php else: ?>
                                             <span class="badge badge-<?php echo $ratingClass; ?>" style="font-size: 1.1rem;">
                                                 <?php echo $ratingDisplay; ?>
                                             </span>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <?php if (!empty($rating->notes)): ?>
@@ -3487,6 +3512,132 @@ if ($tab === 'overview') {
             <?php endif; ?>
         </div>
     </div>
+
+    <!-- Inline Rating Editor Script -->
+    <script>
+    let activeDropdown = null;
+
+    function showRatingDropdown(badge) {
+        // Remove any existing dropdown
+        if (activeDropdown) {
+            activeDropdown.remove();
+            activeDropdown = null;
+        }
+
+        const evaluationId = badge.dataset.evaluationid;
+        const competencyId = badge.dataset.competencyid;
+        const currentRating = parseInt(badge.dataset.currentrating);
+
+        // Create dropdown
+        const dropdown = document.createElement('div');
+        dropdown.className = 'rating-dropdown';
+        dropdown.style.cssText = 'position: absolute; top: 100%; left: 50%; transform: translateX(-50%); z-index: 1000; background: white; border: 2px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 8px; display: flex; gap: 4px; margin-top: 4px;';
+
+        // Rating options: N/O (0), 1-6
+        const options = [
+            {value: 0, label: 'N/O', color: '#6c757d'},
+            {value: 1, label: '1', color: '#dc3545'},
+            {value: 2, label: '2', color: '#fd7e14'},
+            {value: 3, label: '3', color: '#ffc107'},
+            {value: 4, label: '4', color: '#20c997'},
+            {value: 5, label: '5', color: '#28a745'},
+            {value: 6, label: '6', color: '#155724'}
+        ];
+
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = opt.label;
+            btn.style.cssText = `width: 32px; height: 32px; border: 2px solid ${opt.color}; background: ${currentRating === opt.value ? opt.color : 'white'}; color: ${currentRating === opt.value ? 'white' : opt.color}; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px;`;
+            btn.onclick = function(e) {
+                e.stopPropagation();
+                saveInlineRating(evaluationId, competencyId, opt.value, badge, dropdown);
+            };
+            dropdown.appendChild(btn);
+        });
+
+        badge.parentElement.appendChild(dropdown);
+        activeDropdown = dropdown;
+
+        // Close on click outside
+        setTimeout(() => {
+            document.addEventListener('click', closeDropdownOnClickOutside);
+        }, 10);
+    }
+
+    function closeDropdownOnClickOutside(e) {
+        if (activeDropdown && !activeDropdown.contains(e.target) && !e.target.classList.contains('rating-badge-clickable')) {
+            activeDropdown.remove();
+            activeDropdown = null;
+            document.removeEventListener('click', closeDropdownOnClickOutside);
+        }
+    }
+
+    function saveInlineRating(evaluationId, competencyId, rating, badge, dropdown) {
+        // Show saving indicator
+        badge.textContent = '...';
+        badge.style.opacity = '0.5';
+
+        fetch(M.cfg.wwwroot + '/local/competencymanager/ajax_save_evaluation.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: new URLSearchParams({
+                sesskey: M.cfg.sesskey,
+                action: 'save_single_rating',
+                evaluationid: evaluationId,
+                competencyid: competencyId,
+                rating: rating
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update badge
+                const colors = {
+                    0: {bg: '#6c757d', class: 'secondary'},
+                    1: {bg: '#dc3545', class: 'danger'},
+                    2: {bg: '#fd7e14', class: 'warning'},
+                    3: {bg: '#ffc107', class: 'warning'},
+                    4: {bg: '#20c997', class: 'success'},
+                    5: {bg: '#28a745', class: 'success'},
+                    6: {bg: '#155724', class: 'success'}
+                };
+                const display = rating === 0 ? 'N/O' : rating;
+                const colorInfo = colors[rating] || colors[0];
+
+                badge.textContent = display;
+                badge.className = `badge badge-${colorInfo.class} rating-badge-clickable`;
+                badge.dataset.currentrating = rating;
+                badge.style.opacity = '1';
+
+                // Show success toast
+                showToast('✅ Valutazione salvata', 'success');
+            } else {
+                badge.textContent = badge.dataset.currentrating == 0 ? 'N/O' : badge.dataset.currentrating;
+                badge.style.opacity = '1';
+                showToast('❌ Errore: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            badge.textContent = badge.dataset.currentrating == 0 ? 'N/O' : badge.dataset.currentrating;
+            badge.style.opacity = '1';
+            showToast('❌ Errore di connessione', 'error');
+        });
+
+        // Close dropdown
+        dropdown.remove();
+        activeDropdown = null;
+        document.removeEventListener('click', closeDropdownOnClickOutside);
+    }
+
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; font-weight: 500; z-index: 9999; background: ${type === 'success' ? '#28a745' : '#dc3545'};`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+    </script>
     <?php endif; ?>
 
     <?php

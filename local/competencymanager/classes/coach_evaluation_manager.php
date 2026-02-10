@@ -377,6 +377,38 @@ class coach_evaluation_manager {
     }
 
     /**
+     * Riapre una valutazione firmata per permettere modifiche
+     *
+     * @param int $evaluationid
+     * @return bool
+     */
+    public static function reopen_evaluation(int $evaluationid): bool {
+        global $DB, $USER;
+
+        $evaluation = self::get_evaluation($evaluationid);
+        if (!$evaluation) {
+            return false;
+        }
+
+        // Can reopen from signed or completed status
+        if (!in_array($evaluation->status, [self::STATUS_SIGNED, self::STATUS_COMPLETED])) {
+            return false;
+        }
+
+        $oldStatus = $evaluation->status;
+        $evaluation->status = self::STATUS_DRAFT;
+        $evaluation->evaluation_date = null; // Reset evaluation date
+        $evaluation->timemodified = time();
+
+        $DB->update_record('local_coach_evaluations', $evaluation);
+
+        self::log_history($evaluationid, null, 'updated', 'status',
+                          $oldStatus, self::STATUS_DRAFT, $USER->id);
+
+        return true;
+    }
+
+    /**
      * Aggiorna le note generali della valutazione
      *
      * @param int $evaluationid

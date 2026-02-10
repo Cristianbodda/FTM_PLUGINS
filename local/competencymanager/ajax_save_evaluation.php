@@ -72,6 +72,32 @@ try {
             ];
             break;
 
+        case 'save_single_rating':
+            // Save a single rating inline (from student_report view)
+            $competencyid = required_param('competencyid', PARAM_INT);
+            $rating = required_param('rating', PARAM_INT);
+
+            if ($rating < 0 || $rating > 6) {
+                throw new invalid_parameter_exception('Rating must be between 0 and 6');
+            }
+
+            // For inline editing, we need to reopen the evaluation if it's signed
+            $evaluation = coach_evaluation_manager::get_evaluation($evaluationid);
+            if ($evaluation && in_array($evaluation->status, ['signed', 'completed'])) {
+                // Reopen to allow edit
+                coach_evaluation_manager::reopen_evaluation($evaluationid);
+            }
+
+            coach_evaluation_manager::save_rating($evaluationid, $competencyid, $rating, null);
+
+            $result['message'] = 'Rating saved';
+            $result['data'] = [
+                'rating' => $rating,
+                'stats' => coach_evaluation_manager::get_rating_stats($evaluationid),
+                'average' => coach_evaluation_manager::calculate_average($evaluationid)
+            ];
+            break;
+
         default:
             throw new invalid_parameter_exception('Unknown action: ' . $action);
     }

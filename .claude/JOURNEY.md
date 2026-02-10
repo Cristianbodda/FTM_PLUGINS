@@ -1,5 +1,28 @@
 # FTM Plugins - Development Journey
 
+## 10 Febbraio 2026
+
+### Coach Evaluation - Inline Rating Editor
+- **Funzionalità:** Modifica valutazioni Bloom direttamente dalla tabella in Student Report
+- **Caratteristiche:**
+  - Badge cliccabile con dropdown rapido (N/O, 1-6)
+  - Salvataggio AJAX immediato senza reload pagina
+  - Toast feedback "✅ Valutazione salvata"
+  - Auto-reopen valutazioni firmate per permettere modifiche
+- **File:** `student_report.php`, `ajax_save_evaluation.php`
+
+### Coach Evaluation - Reopen Functionality
+- **Funzionalità:** Bottone "🔓 Riapri per Modifiche" per valutazioni firmate
+- **File:** `coach_evaluation.php`, `coach_evaluation_manager.php`
+
+### Coach Evaluation - UI Improvements
+- **Nomi area completi:** Es. "A. Accoglienza, diagnosi preliminare e documentazione"
+- **Descrizioni competenze:** Mostrate sotto ogni codice competenza
+- **Inizializzazione rating:** Tutti i rating inizializzati a N/O al caricamento pagina
+- **File:** `student_report.php`, `coach_evaluation.php`
+
+---
+
 ## 9 Febbraio 2026
 
 ### Student Report - Grafico Overlay Multi-Fonte
