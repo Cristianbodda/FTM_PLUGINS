@@ -156,6 +156,29 @@ foreach ($ratings as $r) {
     $existingRatings[$r->competencyid] = $r;
 }
 
+// Initialize missing ratings to N/O (0) so they appear in overlay radar
+// This ensures all competencies have a rating record in the database
+$ratingsInitialized = 0;
+foreach ($competencies as $comp) {
+    if (!isset($existingRatings[$comp->id])) {
+        // Create N/O rating for this competency
+        $ratingId = coach_evaluation_manager::save_rating($evaluationid, $comp->id, 0, null);
+        // Add to existingRatings so it shows correctly in the form
+        $newRating = new stdClass();
+        $newRating->id = $ratingId;
+        $newRating->competencyid = $comp->id;
+        $newRating->rating = 0;
+        $newRating->notes = null;
+        $existingRatings[$comp->id] = $newRating;
+        $ratingsInitialized++;
+    }
+}
+
+// Reload stats after initialization
+if ($ratingsInitialized > 0) {
+    $stats = coach_evaluation_manager::get_rating_stats($evaluationid);
+}
+
 // Get statistics
 $stats = coach_evaluation_manager::get_rating_stats($evaluationid);
 $average = coach_evaluation_manager::calculate_average($evaluationid);

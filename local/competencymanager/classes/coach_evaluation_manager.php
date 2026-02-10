@@ -600,14 +600,17 @@ class coach_evaluation_manager {
      * @param string $sector
      * @return array Array di ['area' => X, 'value' => Y] normalizzato 0-100
      */
-    public static function get_radar_data(int $studentid, string $sector): array {
+    public static function get_radar_data(int $studentid, string $sector, bool $include_draft = true): array {
         global $DB;
 
-        // Find the most recent completed evaluation for this student/sector
+        // Find the most recent evaluation for this student/sector
+        // Include draft if requested (for overlay chart), otherwise only completed/signed
+        $statusFilter = $include_draft ? "('draft', 'completed', 'signed')" : "('completed', 'signed')";
+
         $evaluation = $DB->get_record_sql(
             "SELECT * FROM {local_coach_evaluations}
              WHERE studentid = :studentid AND sector = :sector
-             AND status IN ('completed', 'signed')
+             AND status IN $statusFilter
              ORDER BY evaluation_date DESC, id DESC
              LIMIT 1",
             ['studentid' => $studentid, 'sector' => strtoupper($sector)]
@@ -622,25 +625,36 @@ class coach_evaluation_manager {
         $radarData = [];
 
         foreach ($ratingsByArea as $area => $ratings) {
-            // Calculate average for area (excluding N/O)
+            // Calculate average for area
             $sum = 0;
-            $count = 0;
+            $countRated = 0;
+            $countTotal = count($ratings);
+
             foreach ($ratings as $r) {
                 if ($r->rating > 0) {
                     $sum += $r->rating;
-                    $count++;
+                    $countRated++;
                 }
             }
 
-            if ($count > 0) {
-                $avgBloom = $sum / $count;
-                // Convert Bloom 1-6 to percentage 0-100
-                $percentage = round(($avgBloom / 6) * 100, 1);
+            // Include area even if all N/O (show as 0)
+            if ($countTotal > 0) {
+                if ($countRated > 0) {
+                    $avgBloom = $sum / $countRated;
+                    $percentage = round(($avgBloom / 6) * 100, 1);
+                } else {
+                    // All N/O - show as 0
+                    $avgBloom = 0;
+                    $percentage = 0;
+                }
+
                 $radarData[] = [
                     'area' => $area,
                     'label' => "Area $area",
                     'value' => $percentage,
-                    'bloom_avg' => round($avgBloom, 2)
+                    'bloom_avg' => round($avgBloom, 2),
+                    'rated_count' => $countRated,
+                    'total_count' => $countTotal
                 ];
             }
         }
