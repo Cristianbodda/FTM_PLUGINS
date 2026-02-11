@@ -159,5 +159,46 @@
         <INDEX NAME="evaluationid_time_idx" UNIQUE="false" FIELDS="evaluationid, timecreated"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="local_compman_final_ratings" COMMENT="Modifiche manuali ai valori di valutazione finale">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID dello studente"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="ID del corso"/>
+        <FIELD NAME="sector" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="Settore (AUTOMOBILE, MECCANICA, etc.)"/>
+        <FIELD NAME="area_code" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Codice area (A, B, C, CNC, etc.)"/>
+        <FIELD NAME="method" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Metodo: media4, media3, media2, coach"/>
+        <FIELD NAME="calculated_value" TYPE="int" LENGTH="3" NOTNULL="false" SEQUENCE="false" COMMENT="Valore calcolato automaticamente (0-100)"/>
+        <FIELD NAME="manual_value" TYPE="int" LENGTH="3" NOTNULL="true" SEQUENCE="false" COMMENT="Valore inserito manualmente (0-100)"/>
+        <FIELD NAME="modifiedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID utente che ha modificato"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="studentid_fk" TYPE="foreign" FIELDS="studentid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="modifiedby_fk" TYPE="foreign" FIELDS="modifiedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="student_sector_area_method_idx" UNIQUE="true" FIELDS="studentid, courseid, sector, area_code, method"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_compman_final_history" COMMENT="Storico modifiche valutazioni finali">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="ratingid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK a local_compman_final_ratings"/>
+        <FIELD NAME="old_value" TYPE="int" LENGTH="3" NOTNULL="false" SEQUENCE="false" COMMENT="Valore precedente"/>
+        <FIELD NAME="new_value" TYPE="int" LENGTH="3" NOTNULL="true" SEQUENCE="false" COMMENT="Nuovo valore"/>
+        <FIELD NAME="modifiedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Chi ha modificato"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="ratingid_fk" TYPE="foreign" FIELDS="ratingid" REFTABLE="local_compman_final_ratings" REFFIELDS="id"/>
+        <KEY NAME="modifiedby_fk" TYPE="foreign" FIELDS="modifiedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="ratingid_time_idx" UNIQUE="false" FIELDS="ratingid, timecreated"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>

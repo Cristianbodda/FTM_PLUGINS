@@ -1,5 +1,46 @@
 # FTM Plugins - Development Journey
 
+## 11 Febbraio 2026
+
+### Valutazioni Finali Editabili (IN REVISIONE)
+- **Stato:** Sezione nascosta con codice sblocco (6807) - in attesa di approvazione
+- **Funzionalità:** Tutti i valori nella tabella "Metodi di Valutazione Finale" sono modificabili dal coach
+- **4 Metodi di calcolo:**
+  - 📊 Media Completa (4 Fonti): (Quiz + Auto + Lab + Coach) / 4
+  - 🎯 Media Oggettiva (3 Fonti): (Quiz + Lab + Coach) / 3
+  - 📝 Media Pratica (Quiz + Coach) / 2
+  - 👨‍🏫 Solo Coach
+- **Caratteristiche:**
+  - Badge cliccabile con input numerico (0-100%)
+  - Salvataggio AJAX immediato con feedback toast
+  - Indicatore ✏️ per valori modificati manualmente
+  - Pulsante ↩️ per ripristinare valore calcolato
+  - **Audit trail completo:** Chi ha modificato, quando (data/ora), valore originale
+  - **Tooltip hover:** Passando sopra valori modificati mostra ultima modifica
+  - **Storico completo:** Bottone per visualizzare tutte le modifiche precedenti
+- **Sblocco sezione:** Input password nel report, codice **6807**
+- **Database:**
+  - Tabella `local_compman_final_ratings`: Valori manuali per ogni area/metodo
+  - Tabella `local_compman_final_history`: Storico completo modifiche
+- **File:**
+  - `student_report.php` - UI editabile con JavaScript inline
+  - `ajax_save_final_rating.php` - Endpoint AJAX per salvataggio
+  - `db/install.xml` - Schema 2 nuove tabelle
+  - `db/upgrade.php` - Migrazione versione 2026021001
+  - `version.php` - v2.5.0
+
+### Sistema Ponderazione (PROSSIMO STEP)
+- **Obiettivo:** Sostituire le medie semplici con valutazione ponderata configurabile
+- **Fasi pianificate:**
+  1. UI configurazione pesi per Area (pesi default 100%)
+  2. Calcolo e tabella risultato ponderato
+  3. Grafico radar con overlay ponderato
+  4. Modalità avanzata per competenza singola
+- **Concetto:** Ogni fonte (Quiz, Auto, Lab, Coach) ha peso configurabile
+- **Normalizzazione:** Se una fonte manca, ricalcola sui pesi disponibili
+
+---
+
 ## 10 Febbraio 2026
 
 ### Coach Evaluation - Inline Rating Editor

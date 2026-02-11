@@ -2942,6 +2942,14 @@ if ($tab === 'overview') {
                                 $allAreas4Fonti[$code]['auto'] = round(($areaData['percentage'] / 100) * 6, 1);
                             }
                         }
+                        if (!empty($labEvalByArea)) {
+                            foreach ($labEvalByArea as $areaCode => $areaData) {
+                                if (!isset($allAreas4Fonti[$areaCode])) {
+                                    $allAreas4Fonti[$areaCode] = ['name' => $areaData['name'] ?? "Area $areaCode", 'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null];
+                                }
+                                $allAreas4Fonti[$areaCode]['labeval'] = round($areaData['percentage']);
+                            }
+                        }
                         if (!empty($coachRadarData)) {
                             foreach ($coachRadarData as $areaData) {
                                 $code = $areaData['area'];
@@ -2999,6 +3007,478 @@ if ($tab === 'overview') {
                     👨‍🏫 Coach: Scala Bloom (1-6)
                 </small>
             </div>
+
+            <!-- ============================================ -->
+            <!-- SBLOCCO SEZIONE METODI (con codice) -->
+            <!-- ============================================ -->
+            <hr class="my-4">
+            <div class="card mb-3" style="border: 1px dashed #6c757d;">
+                <div class="card-body py-2">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="text-muted">
+                            🔒 <strong>Sezione Avanzata</strong> - Inserisci codice per visualizzare i Metodi di Valutazione Finale
+                        </span>
+                        <div class="d-flex align-items-center" style="gap: 8px;">
+                            <input type="password" id="metodiUnlockCode" placeholder="Codice"
+                                   style="width: 100px; padding: 4px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9rem;">
+                            <button type="button" onclick="unlockMetodiSection()"
+                                    class="btn btn-sm btn-outline-secondary">
+                                🔓 Sblocca
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- SEZIONE: METODI DI VALUTAZIONE FINALE -->
+            <!-- (Nascosta di default - sbloccabile con codice) -->
+            <!-- ============================================ -->
+            <div id="sezioneMetodiValutazione" style="display: none;">
+            <div class="mt-4">
+                <h5 class="mb-3" style="color: #5f2c82;">
+                    🎯 Metodi di Valutazione Finale <span class="badge badge-success" style="font-size: 0.6em;">Sbloccato</span>
+                    <small class="text-muted d-block mt-1" style="font-size: 0.7em;">
+                        Confronto tra diversi metodi di calcolo per determinare la valutazione finale dello studente
+                    </small>
+                </h5>
+
+                <!-- Spiegazione per il responsabile -->
+                <div class="alert alert-info mb-4">
+                    <h6 class="alert-heading">📋 Guida alla scelta del metodo di valutazione</h6>
+                    <p class="mb-2">Questa sezione presenta <strong>4 metodi diversi</strong> per calcolare la valutazione finale delle competenze dello studente. Ogni metodo ha pro e contro:</p>
+                    <ul class="mb-0 small">
+                        <li><strong>Media Completa (4 Fonti):</strong> Considera Quiz, Autovalutazione, LabEval e Coach con peso uguale. <em>Pro: visione completa. Contro: l'autovalutazione può essere soggettiva.</em></li>
+                        <li><strong>Media Oggettiva (3 Fonti):</strong> Esclude l'autovalutazione, usa solo Quiz, LabEval e Coach. <em>Pro: più oggettiva. Contro: non considera la percezione dello studente.</em></li>
+                        <li><strong>Media Pratica (2 Fonti):</strong> Solo Quiz (teoria) + Coach (giudizio esperto). <em>Pro: semplice e diretta. Contro: esclude la pratica (LabEval).</em></li>
+                        <li><strong>Valutazione Coach:</strong> Il formatore ha l'ultima parola. <em>Pro: giudizio esperto. Contro: soggettivo a un singolo valutatore.</em></li>
+                    </ul>
+                </div>
+
+                <?php
+                // Calcola le 4 formule per ogni area
+                // Normalizza tutto a percentuale (0-100)
+                $metodiValutazione = [];
+                foreach ($allAreas4Fonti as $code => $data) {
+                    // Normalizza i valori Bloom a percentuale (1-6 → 0-100)
+                    $quizPct = $data['quiz']; // già in %
+                    $autoPct = $data['auto'] !== null ? round(($data['auto'] / 6) * 100) : null;
+                    $labPct = $data['labeval']; // già in %
+                    $coachPct = $data['coach'] !== null ? round(($data['coach'] / 6) * 100) : null;
+
+                    // Formula 1: Media Completa (4 Fonti)
+                    $valori1 = array_filter([$quizPct, $autoPct, $labPct, $coachPct], fn($v) => $v !== null);
+                    $media4 = count($valori1) > 0 ? round(array_sum($valori1) / count($valori1)) : null;
+
+                    // Formula 2: Media Oggettiva (3 Fonti - senza Auto)
+                    $valori2 = array_filter([$quizPct, $labPct, $coachPct], fn($v) => $v !== null);
+                    $media3 = count($valori2) > 0 ? round(array_sum($valori2) / count($valori2)) : null;
+
+                    // Formula 3: Media Pratica (Quiz + Coach)
+                    $valori3 = array_filter([$quizPct, $coachPct], fn($v) => $v !== null);
+                    $media2 = count($valori3) > 0 ? round(array_sum($valori3) / count($valori3)) : null;
+
+                    // Formula 4: Solo Coach
+                    $soloCoach = $coachPct;
+
+                    $metodiValutazione[$code] = [
+                        'name' => $data['name'],
+                        'quiz' => $quizPct,
+                        'auto' => $autoPct,
+                        'lab' => $labPct,
+                        'coach' => $coachPct,
+                        'media4' => $media4,
+                        'media3' => $media3,
+                        'media2' => $media2,
+                        'soloCoach' => $soloCoach,
+                        // Valori per editing manuale
+                        'media4_calc' => $media4,
+                        'media3_calc' => $media3,
+                        'media2_calc' => $media2,
+                        'soloCoach_calc' => $soloCoach,
+                        'media4_modified' => false,
+                        'media3_modified' => false,
+                        'media2_modified' => false,
+                        'soloCoach_modified' => false
+                    ];
+                }
+
+                // Carica eventuali valori manuali dal database
+                $manualRatings = $DB->get_records('local_compman_final_ratings', [
+                    'studentid' => $userid,
+                    'courseid' => $courseid,
+                    'sector' => $currentSector
+                ]);
+
+                // Mappa metodi DB → chiavi array
+                $methodMap = [
+                    'media4' => 'media4',
+                    'media3' => 'media3',
+                    'media2' => 'media2',
+                    'soloCoach' => 'soloCoach'
+                ];
+
+                foreach ($manualRatings as $mr) {
+                    $areaCode = $mr->area_code;
+                    $method = $mr->method;
+                    if (isset($metodiValutazione[$areaCode]) && isset($methodMap[$method])) {
+                        $key = $methodMap[$method];
+                        $metodiValutazione[$areaCode][$key] = (int)$mr->manual_value;
+                        $metodiValutazione[$areaCode][$key . '_modified'] = true;
+                    }
+                }
+
+                // Verifica se l'utente può modificare
+                $canEditFinalRatings = has_capability('local/competencymanager:evaluate', $context);
+                ?>
+
+                <!-- Tabella Metodi di Valutazione -->
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered table-hover table-sm" id="tabellaMetodiValutazione">
+                        <thead>
+                            <tr style="background: linear-gradient(135deg, #5f2c82 0%, #49a09d 100%); color: white;">
+                                <th style="width: 40px;" class="text-center">
+                                    <input type="checkbox" id="selectAllAreas" checked title="Seleziona/Deseleziona tutte">
+                                </th>
+                                <th>Area di Competenza</th>
+                                <th class="text-center" style="width: 110px; background: rgba(255,255,255,0.1);">
+                                    📊 Media Completa<br><small>(4 Fonti)</small>
+                                </th>
+                                <th class="text-center" style="width: 110px; background: rgba(255,255,255,0.1);">
+                                    🎯 Media Oggettiva<br><small>(3 Fonti)</small>
+                                </th>
+                                <th class="text-center" style="width: 110px; background: rgba(255,255,255,0.1);">
+                                    📝 Media Pratica<br><small>(Quiz+Coach)</small>
+                                </th>
+                                <th class="text-center" style="width: 110px; background: rgba(255,255,255,0.1);">
+                                    👨‍🏫 Solo Coach<br><small>(Formatore)</small>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($metodiValutazione as $code => $mv): ?>
+                            <tr data-area="<?php echo $code; ?>">
+                                <td class="text-center">
+                                    <input type="checkbox" class="area-checkbox" value="<?php echo $code; ?>" checked>
+                                </td>
+                                <td>
+                                    <strong><?php echo s($mv['name']); ?></strong>
+                                    <small class="text-muted d-block">(<?php echo $code; ?>)</small>
+                                </td>
+                                <!-- Media Completa (4 Fonti) -->
+                                <td class="text-center">
+                                    <?php if ($mv['media4'] !== null): ?>
+                                        <?php if ($canEditFinalRatings): ?>
+                                        <span class="badge badge-<?php echo $mv['media4'] >= 60 ? 'success' : ($mv['media4'] >= 40 ? 'warning' : 'danger'); ?> final-rating-editable"
+                                              style="font-size: 1rem; cursor: pointer;"
+                                              data-area="<?php echo $code; ?>"
+                                              data-method="media4"
+                                              data-value="<?php echo $mv['media4']; ?>"
+                                              data-calculated="<?php echo $mv['media4_calc']; ?>"
+                                              data-modified="<?php echo $mv['media4_modified'] ? '1' : '0'; ?>"
+                                              onclick="showFinalRatingDropdown(this)"
+                                              title="Clicca per modificare">
+                                            <?php echo $mv['media4']; ?>%
+                                            <?php if ($mv['media4_modified']): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
+                                        </span>
+                                        <?php else: ?>
+                                        <span class="badge badge-<?php echo $mv['media4'] >= 60 ? 'success' : ($mv['media4'] >= 40 ? 'warning' : 'danger'); ?>" style="font-size: 1rem;">
+                                            <?php echo $mv['media4']; ?>%
+                                        </span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">-</span>
+                                    <?php endif; ?>
+                                </td>
+                                <!-- Media Oggettiva (3 Fonti) -->
+                                <td class="text-center">
+                                    <?php if ($mv['media3'] !== null): ?>
+                                        <?php if ($canEditFinalRatings): ?>
+                                        <span class="badge badge-<?php echo $mv['media3'] >= 60 ? 'success' : ($mv['media3'] >= 40 ? 'warning' : 'danger'); ?> final-rating-editable"
+                                              style="font-size: 1rem; cursor: pointer;"
+                                              data-area="<?php echo $code; ?>"
+                                              data-method="media3"
+                                              data-value="<?php echo $mv['media3']; ?>"
+                                              data-calculated="<?php echo $mv['media3_calc']; ?>"
+                                              data-modified="<?php echo $mv['media3_modified'] ? '1' : '0'; ?>"
+                                              onclick="showFinalRatingDropdown(this)"
+                                              title="Clicca per modificare">
+                                            <?php echo $mv['media3']; ?>%
+                                            <?php if ($mv['media3_modified']): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
+                                        </span>
+                                        <?php else: ?>
+                                        <span class="badge badge-<?php echo $mv['media3'] >= 60 ? 'success' : ($mv['media3'] >= 40 ? 'warning' : 'danger'); ?>" style="font-size: 1rem;">
+                                            <?php echo $mv['media3']; ?>%
+                                        </span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">-</span>
+                                    <?php endif; ?>
+                                </td>
+                                <!-- Media Pratica (Quiz+Coach) -->
+                                <td class="text-center">
+                                    <?php if ($mv['media2'] !== null): ?>
+                                        <?php if ($canEditFinalRatings): ?>
+                                        <span class="badge badge-<?php echo $mv['media2'] >= 60 ? 'success' : ($mv['media2'] >= 40 ? 'warning' : 'danger'); ?> final-rating-editable"
+                                              style="font-size: 1rem; cursor: pointer;"
+                                              data-area="<?php echo $code; ?>"
+                                              data-method="media2"
+                                              data-value="<?php echo $mv['media2']; ?>"
+                                              data-calculated="<?php echo $mv['media2_calc']; ?>"
+                                              data-modified="<?php echo $mv['media2_modified'] ? '1' : '0'; ?>"
+                                              onclick="showFinalRatingDropdown(this)"
+                                              title="Clicca per modificare">
+                                            <?php echo $mv['media2']; ?>%
+                                            <?php if ($mv['media2_modified']): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
+                                        </span>
+                                        <?php else: ?>
+                                        <span class="badge badge-<?php echo $mv['media2'] >= 60 ? 'success' : ($mv['media2'] >= 40 ? 'warning' : 'danger'); ?>" style="font-size: 1rem;">
+                                            <?php echo $mv['media2']; ?>%
+                                        </span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">-</span>
+                                    <?php endif; ?>
+                                </td>
+                                <!-- Solo Coach -->
+                                <td class="text-center">
+                                    <?php if ($mv['soloCoach'] !== null): ?>
+                                        <?php if ($canEditFinalRatings): ?>
+                                        <span class="badge badge-info final-rating-editable"
+                                              style="font-size: 1rem; cursor: pointer;"
+                                              data-area="<?php echo $code; ?>"
+                                              data-method="soloCoach"
+                                              data-value="<?php echo $mv['soloCoach']; ?>"
+                                              data-calculated="<?php echo $mv['soloCoach_calc']; ?>"
+                                              data-modified="<?php echo $mv['soloCoach_modified'] ? '1' : '0'; ?>"
+                                              onclick="showFinalRatingDropdown(this)"
+                                              title="Clicca per modificare">
+                                            <?php echo $mv['soloCoach']; ?>%
+                                            <?php if ($mv['soloCoach_modified']): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
+                                        </span>
+                                        <?php else: ?>
+                                        <span class="badge badge-info" style="font-size: 1rem;">
+                                            <?php echo $mv['soloCoach']; ?>%
+                                        </span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">-</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                        <tfoot style="background: #f8f9fa; font-weight: bold;">
+                            <tr>
+                                <td></td>
+                                <td>📈 Media Globale</td>
+                                <?php
+                                $totMedia4 = array_filter(array_column($metodiValutazione, 'media4'), fn($v) => $v !== null);
+                                $totMedia3 = array_filter(array_column($metodiValutazione, 'media3'), fn($v) => $v !== null);
+                                $totMedia2 = array_filter(array_column($metodiValutazione, 'media2'), fn($v) => $v !== null);
+                                $totCoach = array_filter(array_column($metodiValutazione, 'soloCoach'), fn($v) => $v !== null);
+                                ?>
+                                <td class="text-center"><?php echo count($totMedia4) > 0 ? round(array_sum($totMedia4) / count($totMedia4)) . '%' : '-'; ?></td>
+                                <td class="text-center"><?php echo count($totMedia3) > 0 ? round(array_sum($totMedia3) / count($totMedia3)) . '%' : '-'; ?></td>
+                                <td class="text-center"><?php echo count($totMedia2) > 0 ? round(array_sum($totMedia2) / count($totMedia2)) . '%' : '-'; ?></td>
+                                <td class="text-center"><?php echo count($totCoach) > 0 ? round(array_sum($totCoach) / count($totCoach)) . '%' : '-'; ?></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Grafico Radar Comparativo -->
+                <div class="card">
+                    <div class="card-header" style="background: #34495e; color: white;">
+                        <h6 class="mb-0">📈 Grafico Radar: Confronto Metodi di Valutazione</h6>
+                        <small>Seleziona le aree nella tabella sopra per includerle nel grafico</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center">
+                            <canvas id="radarMetodiValutazione" style="max-height: 500px;"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <p class="small text-muted mb-1"><strong>Legenda metodi:</strong></p>
+                            <div class="d-flex flex-wrap justify-content-center" style="gap: 15px;">
+                                <span class="badge" style="background: #9b59b6; color: white; padding: 8px 12px;">📊 Media Completa (4 Fonti)</span>
+                                <span class="badge" style="background: #3498db; color: white; padding: 8px 12px;">🎯 Media Oggettiva (3 Fonti)</span>
+                                <span class="badge" style="background: #e67e22; color: white; padding: 8px 12px;">📝 Media Pratica (Quiz+Coach)</span>
+                                <span class="badge" style="background: #1abc9c; color: white; padding: 8px 12px;">👨‍🏫 Solo Coach</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Script per il grafico -->
+                <script>
+                (function() {
+                    // Dati iniziali
+                    const metodiData = <?php echo json_encode($metodiValutazione); ?>;
+                    let radarChart = null;
+
+                    function updateRadarChart() {
+                        // Ottieni aree selezionate
+                        const selectedAreas = [];
+                        document.querySelectorAll('.area-checkbox:checked').forEach(cb => {
+                            selectedAreas.push(cb.value);
+                        });
+
+                        if (selectedAreas.length === 0) {
+                            if (radarChart) {
+                                radarChart.destroy();
+                                radarChart = null;
+                            }
+                            return;
+                        }
+
+                        // Prepara dati per il grafico
+                        const labels = [];
+                        const dataMedia4 = [];
+                        const dataMedia3 = [];
+                        const dataMedia2 = [];
+                        const dataCoach = [];
+
+                        selectedAreas.forEach(code => {
+                            if (metodiData[code]) {
+                                labels.push(metodiData[code].name || code);
+                                dataMedia4.push(metodiData[code].media4);
+                                dataMedia3.push(metodiData[code].media3);
+                                dataMedia2.push(metodiData[code].media2);
+                                dataCoach.push(metodiData[code].soloCoach);
+                            }
+                        });
+
+                        const ctx = document.getElementById('radarMetodiValutazione');
+                        if (!ctx) return;
+
+                        if (radarChart) {
+                            radarChart.destroy();
+                        }
+
+                        radarChart = new Chart(ctx, {
+                            type: 'radar',
+                            data: {
+                                labels: labels,
+                                datasets: [
+                                    {
+                                        label: '📊 Media Completa (4 Fonti)',
+                                        data: dataMedia4,
+                                        backgroundColor: 'rgba(155, 89, 182, 0.2)',
+                                        borderColor: 'rgba(155, 89, 182, 1)',
+                                        borderWidth: 2,
+                                        pointBackgroundColor: 'rgba(155, 89, 182, 1)',
+                                        pointRadius: 4
+                                    },
+                                    {
+                                        label: '🎯 Media Oggettiva (3 Fonti)',
+                                        data: dataMedia3,
+                                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                                        borderColor: 'rgba(52, 152, 219, 1)',
+                                        borderWidth: 2,
+                                        pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+                                        pointRadius: 4
+                                    },
+                                    {
+                                        label: '📝 Media Pratica (Quiz+Coach)',
+                                        data: dataMedia2,
+                                        backgroundColor: 'rgba(230, 126, 34, 0.2)',
+                                        borderColor: 'rgba(230, 126, 34, 1)',
+                                        borderWidth: 2,
+                                        pointBackgroundColor: 'rgba(230, 126, 34, 1)',
+                                        pointRadius: 4
+                                    },
+                                    {
+                                        label: '👨‍🏫 Solo Coach',
+                                        data: dataCoach,
+                                        backgroundColor: 'rgba(26, 188, 156, 0.2)',
+                                        borderColor: 'rgba(26, 188, 156, 1)',
+                                        borderWidth: 2,
+                                        pointBackgroundColor: 'rgba(26, 188, 156, 1)',
+                                        pointRadius: 4
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: true,
+                                scales: {
+                                    r: {
+                                        beginAtZero: true,
+                                        max: 100,
+                                        ticks: {
+                                            stepSize: 20,
+                                            callback: function(value) { return value + '%'; }
+                                        },
+                                        pointLabels: {
+                                            font: { size: 11 }
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: { font: { size: 11 }, boxWidth: 15 }
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                let value = context.parsed.r;
+                                                return context.dataset.label + ': ' + (value !== null ? value + '%' : 'N/D');
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // Event listeners per checkbox
+                    document.querySelectorAll('.area-checkbox').forEach(cb => {
+                        cb.addEventListener('change', updateRadarChart);
+                    });
+
+                    // Select All checkbox
+                    document.getElementById('selectAllAreas')?.addEventListener('change', function() {
+                        document.querySelectorAll('.area-checkbox').forEach(cb => {
+                            cb.checked = this.checked;
+                        });
+                        updateRadarChart();
+                    });
+
+                    // Inizializza il grafico quando Chart.js è disponibile
+                    if (typeof Chart !== 'undefined') {
+                        updateRadarChart();
+                    } else {
+                        window.addEventListener('load', updateRadarChart);
+                    }
+                })();
+                </script>
+
+            </div>
+            <!-- Fine Sezione Metodi di Valutazione Finale -->
+            </div><!-- Fine sezioneMetodiValutazione -->
+
+            <script>
+            function unlockMetodiSection() {
+                const code = document.getElementById('metodiUnlockCode').value;
+                if (code === '6807') {
+                    document.getElementById('sezioneMetodiValutazione').style.display = 'block';
+                    document.getElementById('metodiUnlockCode').parentElement.parentElement.parentElement.parentElement.style.display = 'none';
+                    showToast('✅ Sezione Metodi sbloccata');
+                } else {
+                    alert('Codice non valido');
+                    document.getElementById('metodiUnlockCode').value = '';
+                }
+            }
+
+            // Sblocca anche premendo Enter nell'input
+            document.getElementById('metodiUnlockCode')?.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    unlockMetodiSection();
+                }
+            });
+            </script>
+
         </div>
     </div>
     <?php endif; // Fine Confronto 4 Fonti ?>
@@ -5514,6 +5994,395 @@ function getScoreColor(score) {
     if (score >= 60) return '#17a2b8';
     if (score >= 50) return '#ffc107';
     return '#dc3545';
+}
+
+// ============================================
+// FINAL RATING INLINE EDITOR
+// ============================================
+let activeFinalRatingDropdown = null;
+
+function showFinalRatingDropdown(element) {
+    // Chiudi dropdown precedente
+    if (activeFinalRatingDropdown) {
+        activeFinalRatingDropdown.remove();
+        activeFinalRatingDropdown = null;
+    }
+
+    const area = element.dataset.area;
+    const method = element.dataset.method;
+    const currentValue = parseInt(element.dataset.value);
+    const calculatedValue = parseInt(element.dataset.calculated) || 0;
+    const isModified = element.dataset.modified === '1';
+
+    // Crea dropdown
+    const dropdown = document.createElement('div');
+    dropdown.className = 'final-rating-dropdown';
+    dropdown.style.cssText = `
+        position: absolute;
+        z-index: 1050;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        padding: 10px;
+        min-width: 180px;
+    `;
+
+    // Header con valore calcolato
+    let headerHtml = `<div style="font-size: 0.75rem; color: #6c757d; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+        Valore calcolato: <strong>${calculatedValue}%</strong>
+    </div>`;
+
+    // Input per nuovo valore
+    headerHtml += `
+        <div style="margin-bottom: 8px;">
+            <label style="font-size: 0.75rem; font-weight: bold;">Nuovo valore (0-100):</label>
+            <input type="number" id="finalRatingInput" min="0" max="100" value="${currentValue}"
+                   style="width: 100%; padding: 5px; border: 1px solid #ced4da; border-radius: 4px; font-size: 1rem;">
+        </div>
+        <div style="display: flex; gap: 5px;">
+            <button onclick="saveFinalRating('${area}', '${method}', ${calculatedValue})"
+                    style="flex: 1; padding: 6px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                💾 Salva
+            </button>
+            <button onclick="resetFinalRating('${area}', '${method}', ${calculatedValue})"
+                    style="padding: 6px 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"
+                    title="Ripristina valore calcolato">
+                ↩️
+            </button>
+        </div>
+    `;
+
+    // Pulsante storico se modificato
+    if (isModified) {
+        headerHtml += `
+            <div style="margin-top: 8px; border-top: 1px solid #eee; padding-top: 8px;">
+                <button onclick="showFinalRatingHistory('${area}', '${method}', this)"
+                        style="width: 100%; padding: 5px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+                    📜 Mostra storico modifiche
+                </button>
+                <div id="historyContainer_${area}_${method}"></div>
+            </div>
+        `;
+    }
+
+    dropdown.innerHTML = headerHtml;
+
+    // Posiziona dropdown
+    const rect = element.getBoundingClientRect();
+    dropdown.style.left = (rect.left + window.scrollX - 50) + 'px';
+    dropdown.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+
+    document.body.appendChild(dropdown);
+    activeFinalRatingDropdown = dropdown;
+
+    // Focus sull'input
+    setTimeout(() => {
+        const input = document.getElementById('finalRatingInput');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }, 100);
+
+    // Chiudi cliccando fuori
+    setTimeout(() => {
+        document.addEventListener('click', closeFinalRatingDropdownOnClickOutside);
+    }, 100);
+}
+
+function closeFinalRatingDropdownOnClickOutside(e) {
+    if (activeFinalRatingDropdown && !activeFinalRatingDropdown.contains(e.target) && !e.target.classList.contains('final-rating-editable')) {
+        activeFinalRatingDropdown.remove();
+        activeFinalRatingDropdown = null;
+        document.removeEventListener('click', closeFinalRatingDropdownOnClickOutside);
+    }
+}
+
+function saveFinalRating(area, method, calculatedValue) {
+    const input = document.getElementById('finalRatingInput');
+    const newValue = parseInt(input.value);
+
+    if (isNaN(newValue) || newValue < 0 || newValue > 100) {
+        alert('Il valore deve essere tra 0 e 100');
+        return;
+    }
+
+    // Parametri dal PHP
+    const studentid = <?php echo json_encode($userid); ?>;
+    const courseid = <?php echo json_encode($courseid); ?>;
+    const sector = <?php echo json_encode($currentSector ?? ''); ?>;
+    const sesskey = M.cfg.sesskey;
+
+    fetch('<?php echo $CFG->wwwroot; ?>/local/competencymanager/ajax_save_final_rating.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            sesskey: sesskey,
+            action: 'save_final_rating',
+            studentid: studentid,
+            courseid: courseid,
+            sector: sector,
+            areacode: area,
+            method: method,
+            manualvalue: newValue,
+            calculatedvalue: calculatedValue
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Aggiorna il badge nella tabella
+            const badge = document.querySelector(`.final-rating-editable[data-area="${area}"][data-method="${method}"]`);
+            if (badge) {
+                badge.dataset.value = newValue;
+                badge.dataset.modified = '1';
+
+                // Aggiorna colore e testo
+                let badgeClass = newValue >= 60 ? 'success' : (newValue >= 40 ? 'warning' : 'danger');
+                if (method === 'soloCoach') badgeClass = 'info';
+
+                badge.className = `badge badge-${badgeClass} final-rating-editable`;
+                badge.innerHTML = `${newValue}% <span style="font-size: 0.7em;">✏️</span>`;
+                badge.style.cursor = 'pointer';
+            }
+
+            // Chiudi dropdown
+            if (activeFinalRatingDropdown) {
+                activeFinalRatingDropdown.remove();
+                activeFinalRatingDropdown = null;
+            }
+
+            // Toast di conferma
+            showToast('✅ Valore salvato: ' + newValue + '%');
+        } else {
+            alert('Errore: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Errore:', error);
+        alert('Errore di connessione');
+    });
+}
+
+function resetFinalRating(area, method, calculatedValue) {
+    document.getElementById('finalRatingInput').value = calculatedValue;
+    saveFinalRating(area, method, calculatedValue);
+}
+
+function showFinalRatingHistory(area, method, button) {
+    const container = document.getElementById(`historyContainer_${area}_${method}`);
+    if (!container) return;
+
+    // Toggle visibility
+    if (container.innerHTML !== '') {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = '<div style="padding: 10px; text-align: center;"><small>Caricamento...</small></div>';
+
+    const studentid = <?php echo json_encode($userid); ?>;
+    const courseid = <?php echo json_encode($courseid); ?>;
+    const sector = <?php echo json_encode($currentSector ?? ''); ?>;
+    const sesskey = M.cfg.sesskey;
+
+    fetch('<?php echo $CFG->wwwroot; ?>/local/competencymanager/ajax_save_final_rating.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            sesskey: sesskey,
+            action: 'get_rating_history',
+            studentid: studentid,
+            courseid: courseid,
+            sector: sector,
+            areacode: area,
+            method: method
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.data.hasHistory) {
+            let html = '<div style="margin-top: 8px; font-size: 0.75rem; max-height: 150px; overflow-y: auto;">';
+            html += '<table style="width: 100%; font-size: 0.7rem;">';
+            html += '<tr style="background: #f8f9fa;"><th style="padding: 3px;">Da</th><th style="padding: 3px;">A</th><th style="padding: 3px;">Chi</th><th style="padding: 3px;">Quando</th></tr>';
+
+            data.data.history.forEach(h => {
+                html += `<tr>
+                    <td style="padding: 3px; text-align: center;">${h.oldValue}</td>
+                    <td style="padding: 3px; text-align: center; font-weight: bold;">${h.newValue}</td>
+                    <td style="padding: 3px;">${h.modifiedBy}</td>
+                    <td style="padding: 3px;">${h.date} ${h.time}</td>
+                </tr>`;
+            });
+
+            html += '</table></div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div style="padding: 5px; font-size: 0.75rem; color: #6c757d;">Nessuna modifica precedente</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Errore:', error);
+        container.innerHTML = '<div style="padding: 5px; color: #dc3545;">Errore caricamento</div>';
+    });
+}
+
+function showToast(message) {
+    // Rimuovi toast esistenti
+    document.querySelectorAll('.ftm-toast').forEach(t => t.remove());
+
+    const toast = document.createElement('div');
+    toast.className = 'ftm-toast';
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-weight: bold;
+        animation: slideIn 0.3s ease-out;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => toast.remove(), 300);
+    }, 2500);
+}
+
+// CSS per animazioni toast e tooltip
+const toastStyle = document.createElement('style');
+toastStyle.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+    .final-rating-editable:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .history-tooltip {
+        position: absolute;
+        z-index: 1060;
+        background: #343a40;
+        color: white;
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        max-width: 250px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        pointer-events: none;
+    }
+    .history-tooltip::before {
+        content: "";
+        position: absolute;
+        top: -6px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-bottom: 6px solid #343a40;
+    }
+`;
+document.head.appendChild(toastStyle);
+
+// Tooltip hover per valori modificati
+let hoverTimeout = null;
+let activeTooltip = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.final-rating-editable[data-modified="1"]').forEach(badge => {
+        badge.addEventListener('mouseenter', function(e) {
+            const area = this.dataset.area;
+            const method = this.dataset.method;
+
+            hoverTimeout = setTimeout(() => {
+                showHistoryTooltip(this, area, method);
+            }, 600); // Mostra dopo 600ms
+        });
+
+        badge.addEventListener('mouseleave', function() {
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout);
+                hoverTimeout = null;
+            }
+            if (activeTooltip) {
+                activeTooltip.remove();
+                activeTooltip = null;
+            }
+        });
+    });
+});
+
+function showHistoryTooltip(element, area, method) {
+    if (activeTooltip) {
+        activeTooltip.remove();
+    }
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'history-tooltip';
+    tooltip.innerHTML = '<small>Caricamento...</small>';
+
+    const rect = element.getBoundingClientRect();
+    tooltip.style.left = (rect.left + window.scrollX + rect.width/2 - 100) + 'px';
+    tooltip.style.top = (rect.bottom + window.scrollY + 10) + 'px';
+
+    document.body.appendChild(tooltip);
+    activeTooltip = tooltip;
+
+    const studentid = <?php echo json_encode($userid); ?>;
+    const courseid = <?php echo json_encode($courseid); ?>;
+    const sector = <?php echo json_encode($currentSector ?? ''); ?>;
+    const sesskey = M.cfg.sesskey;
+
+    fetch('<?php echo $CFG->wwwroot; ?>/local/competencymanager/ajax_save_final_rating.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            sesskey: sesskey,
+            action: 'get_rating_history',
+            studentid: studentid,
+            courseid: courseid,
+            sector: sector,
+            areacode: area,
+            method: method
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (activeTooltip && data.success && data.data.hasHistory && data.data.history.length > 0) {
+            const lastMod = data.data.history[0];
+            activeTooltip.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 5px;">📜 Ultima modifica</div>
+                <div><strong>${lastMod.oldValue}</strong> → <strong>${lastMod.newValue}</strong></div>
+                <div style="margin-top: 3px; opacity: 0.8;">
+                    👤 ${lastMod.modifiedBy}<br>
+                    📅 ${lastMod.date} alle ${lastMod.time}
+                </div>
+            `;
+        } else if (activeTooltip) {
+            activeTooltip.innerHTML = '<small>Nessuna modifica</small>';
+        }
+    })
+    .catch(() => {
+        if (activeTooltip) {
+            activeTooltip.innerHTML = '<small>Errore</small>';
+        }
+    });
 }
 </script>
 
