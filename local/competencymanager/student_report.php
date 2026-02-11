@@ -3485,6 +3485,338 @@ if ($tab === 'overview') {
 
     <?php
     // ============================================
+    // SEZIONE: CONFIGURAZIONE PONDERAZIONE
+    // ============================================
+    if ($showOverlayRadar || $printOverlayRadar):
+        // Verifica se la tabella pesi esiste
+        $dbman = $DB->get_manager();
+        $weightsTableExists = $dbman->table_exists('local_compman_weights');
+
+        // Carica i pesi esistenti dal database (se la tabella esiste)
+        $weightsMap = [];
+        if ($weightsTableExists) {
+            $existingWeights = $DB->get_records('local_compman_weights', [
+                'studentid' => $userid,
+                'courseid' => $courseid,
+                'sector' => $currentSector,
+                'level_type' => 'area'
+            ]);
+            foreach ($existingWeights as $w) {
+                $weightsMap[$w->item_code] = [
+                    'quiz' => (int)$w->weight_quiz,
+                    'auto' => (int)$w->weight_auto,
+                    'lab' => (int)$w->weight_lab,
+                    'coach' => (int)$w->weight_coach
+                ];
+            }
+        }
+
+        // Prepara le aree per la configurazione (usa areasData o allAreas4Fonti)
+        $configAreas = [];
+        if (!empty($areasData)) {
+            foreach ($areasData as $areaData) {
+                $configAreas[$areaData['code']] = $areaData['name'];
+            }
+        } elseif (!empty($allAreas4Fonti)) {
+            foreach ($allAreas4Fonti as $code => $data) {
+                $configAreas[$code] = $data['name'] ?? "Area $code";
+            }
+        }
+    ?>
+
+    <!-- Sezione Configurazione Ponderazione -->
+    <div class="card mt-4" id="weights-config-section">
+        <div class="card-header" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; cursor: pointer;"
+             onclick="toggleWeightsSection()">
+            <h5 class="mb-0 d-flex justify-content-between align-items-center">
+                <span>⚖️ Configurazione Ponderazione Valutazioni</span>
+                <span id="weightsToggleIcon">▼</span>
+            </h5>
+            <small>Definisci il peso di ogni fonte di valutazione per il calcolo finale</small>
+        </div>
+        <div class="card-body" id="weightsConfigBody" style="display: none;">
+
+            <!-- Info box -->
+            <div class="alert alert-info mb-3">
+                <strong>ℹ️ Come funziona:</strong> Ogni fonte ha un peso da 0 a 100. Il valore finale per ogni area
+                viene calcolato come media ponderata delle fonti disponibili.<br>
+                <small>Default: tutti a 100 (peso uguale). Metti 0 per escludere una fonte dal calcolo.</small>
+            </div>
+
+            <!-- Pesi globali (applica a tutte le aree) -->
+            <div class="card mb-3" style="border: 2px solid #11998e;">
+                <div class="card-header py-2" style="background: #e8f5e9;">
+                    <strong>🌍 Pesi Globali</strong>
+                    <small class="text-muted">(applica a tutte le aree)</small>
+                </div>
+                <div class="card-body py-2">
+                    <div class="row align-items-center">
+                        <div class="col-md-2">
+                            <label class="mb-0"><strong>📊 Quiz</strong></label>
+                            <input type="number" id="globalWeightQuiz" min="0" max="100" value="100"
+                                   class="form-control form-control-sm" style="width: 80px;">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="mb-0"><strong>🧑 Auto</strong></label>
+                            <input type="number" id="globalWeightAuto" min="0" max="100" value="100"
+                                   class="form-control form-control-sm" style="width: 80px;">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="mb-0"><strong>🔧 Lab</strong></label>
+                            <input type="number" id="globalWeightLab" min="0" max="100" value="100"
+                                   class="form-control form-control-sm" style="width: 80px;">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="mb-0"><strong>👨‍🏫 Coach</strong></label>
+                            <input type="number" id="globalWeightCoach" min="0" max="100" value="100"
+                                   class="form-control form-control-sm" style="width: 80px;">
+                        </div>
+                        <div class="col-md-4 text-right">
+                            <button type="button" class="btn btn-success btn-sm" onclick="applyGlobalWeights()">
+                                ✅ Applica a tutte le aree
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetAllWeights()">
+                                ↩️ Reset (100)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabella pesi per area -->
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm" id="weightsTable">
+                    <thead>
+                        <tr style="background: #f8f9fa;">
+                            <th style="width: 30%;">Area di Competenza</th>
+                            <th class="text-center" style="width: 15%;">📊 Quiz</th>
+                            <th class="text-center" style="width: 15%;">🧑 Auto</th>
+                            <th class="text-center" style="width: 15%;">🔧 Lab</th>
+                            <th class="text-center" style="width: 15%;">👨‍🏫 Coach</th>
+                            <th class="text-center" style="width: 10%;">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($configAreas as $areaCode => $areaName):
+                            $w = $weightsMap[$areaCode] ?? ['quiz' => 100, 'auto' => 100, 'lab' => 100, 'coach' => 100];
+                        ?>
+                        <tr data-area="<?php echo $areaCode; ?>">
+                            <td>
+                                <strong><?php echo s($areaName); ?></strong>
+                                <small class="text-muted d-block">(<?php echo $areaCode; ?>)</small>
+                            </td>
+                            <td class="text-center">
+                                <input type="number" class="form-control form-control-sm weight-input"
+                                       data-area="<?php echo $areaCode; ?>" data-source="quiz"
+                                       min="0" max="100" value="<?php echo $w['quiz']; ?>"
+                                       style="width: 70px; margin: 0 auto;">
+                            </td>
+                            <td class="text-center">
+                                <input type="number" class="form-control form-control-sm weight-input"
+                                       data-area="<?php echo $areaCode; ?>" data-source="auto"
+                                       min="0" max="100" value="<?php echo $w['auto']; ?>"
+                                       style="width: 70px; margin: 0 auto;">
+                            </td>
+                            <td class="text-center">
+                                <input type="number" class="form-control form-control-sm weight-input"
+                                       data-area="<?php echo $areaCode; ?>" data-source="lab"
+                                       min="0" max="100" value="<?php echo $w['lab']; ?>"
+                                       style="width: 70px; margin: 0 auto;">
+                            </td>
+                            <td class="text-center">
+                                <input type="number" class="form-control form-control-sm weight-input"
+                                       data-area="<?php echo $areaCode; ?>" data-source="coach"
+                                       min="0" max="100" value="<?php echo $w['coach']; ?>"
+                                       style="width: 70px; margin: 0 auto;">
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="saveAreaWeights('<?php echo $areaCode; ?>')" title="Salva">
+                                    💾
+                                </button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Status message -->
+            <div id="weightsStatusMessage" class="mt-2" style="display: none;"></div>
+
+        </div>
+    </div>
+
+    <script>
+    // Toggle sezione pesi
+    function toggleWeightsSection() {
+        const body = document.getElementById('weightsConfigBody');
+        const icon = document.getElementById('weightsToggleIcon');
+        if (body.style.display === 'none') {
+            body.style.display = 'block';
+            icon.textContent = '▲';
+        } else {
+            body.style.display = 'none';
+            icon.textContent = '▼';
+        }
+    }
+
+    // Applica pesi globali a tutte le aree
+    function applyGlobalWeights() {
+        const quiz = document.getElementById('globalWeightQuiz').value;
+        const auto = document.getElementById('globalWeightAuto').value;
+        const lab = document.getElementById('globalWeightLab').value;
+        const coach = document.getElementById('globalWeightCoach').value;
+
+        document.querySelectorAll('#weightsTable tbody tr').forEach(row => {
+            row.querySelector('[data-source="quiz"]').value = quiz;
+            row.querySelector('[data-source="auto"]').value = auto;
+            row.querySelector('[data-source="lab"]').value = lab;
+            row.querySelector('[data-source="coach"]').value = coach;
+        });
+
+        // Salva tutti
+        saveAllWeights();
+    }
+
+    // Reset tutti i pesi a 100
+    function resetAllWeights() {
+        document.getElementById('globalWeightQuiz').value = 100;
+        document.getElementById('globalWeightAuto').value = 100;
+        document.getElementById('globalWeightLab').value = 100;
+        document.getElementById('globalWeightCoach').value = 100;
+
+        document.querySelectorAll('.weight-input').forEach(input => {
+            input.value = 100;
+        });
+
+        // Reset nel database
+        const studentid = <?php echo json_encode($userid); ?>;
+        const courseid = <?php echo json_encode($courseid); ?>;
+        const sector = <?php echo json_encode($currentSector ?? ''); ?>;
+
+        fetch('<?php echo $CFG->wwwroot; ?>/local/competencymanager/ajax_save_weights.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                sesskey: M.cfg.sesskey,
+                action: 'reset_weights',
+                studentid: studentid,
+                courseid: courseid,
+                sector: sector
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showWeightsStatus('✅ Tutti i pesi resettati a 100%', 'success');
+                recalculateWeightedValues();
+            }
+        });
+    }
+
+    // Salva pesi di una singola area
+    function saveAreaWeights(areaCode) {
+        const row = document.querySelector(`#weightsTable tr[data-area="${areaCode}"]`);
+        const quiz = row.querySelector('[data-source="quiz"]').value;
+        const auto = row.querySelector('[data-source="auto"]').value;
+        const lab = row.querySelector('[data-source="lab"]').value;
+        const coach = row.querySelector('[data-source="coach"]').value;
+
+        const studentid = <?php echo json_encode($userid); ?>;
+        const courseid = <?php echo json_encode($courseid); ?>;
+        const sector = <?php echo json_encode($currentSector ?? ''); ?>;
+
+        fetch('<?php echo $CFG->wwwroot; ?>/local/competencymanager/ajax_save_weights.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                sesskey: M.cfg.sesskey,
+                action: 'save_all_weights',
+                studentid: studentid,
+                courseid: courseid,
+                sector: sector,
+                leveltype: 'area',
+                itemcode: areaCode,
+                weight_quiz: quiz,
+                weight_auto: auto,
+                weight_lab: lab,
+                weight_coach: coach
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showWeightsStatus(`✅ Pesi salvati per ${areaCode}`, 'success');
+                recalculateWeightedValues();
+            } else {
+                showWeightsStatus('❌ Errore: ' + data.message, 'danger');
+            }
+        });
+    }
+
+    // Salva tutti i pesi
+    function saveAllWeights() {
+        const promises = [];
+        document.querySelectorAll('#weightsTable tbody tr').forEach(row => {
+            const areaCode = row.dataset.area;
+            promises.push(saveAreaWeightsAsync(areaCode, row));
+        });
+
+        Promise.all(promises).then(() => {
+            showWeightsStatus('✅ Tutti i pesi salvati', 'success');
+            recalculateWeightedValues();
+        });
+    }
+
+    function saveAreaWeightsAsync(areaCode, row) {
+        const quiz = row.querySelector('[data-source="quiz"]').value;
+        const auto = row.querySelector('[data-source="auto"]').value;
+        const lab = row.querySelector('[data-source="lab"]').value;
+        const coach = row.querySelector('[data-source="coach"]').value;
+
+        const studentid = <?php echo json_encode($userid); ?>;
+        const courseid = <?php echo json_encode($courseid); ?>;
+        const sector = <?php echo json_encode($currentSector ?? ''); ?>;
+
+        return fetch('<?php echo $CFG->wwwroot; ?>/local/competencymanager/ajax_save_weights.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                sesskey: M.cfg.sesskey,
+                action: 'save_all_weights',
+                studentid: studentid,
+                courseid: courseid,
+                sector: sector,
+                leveltype: 'area',
+                itemcode: areaCode,
+                weight_quiz: quiz,
+                weight_auto: auto,
+                weight_lab: lab,
+                weight_coach: coach
+            })
+        });
+    }
+
+    // Mostra messaggio di stato
+    function showWeightsStatus(message, type) {
+        const el = document.getElementById('weightsStatusMessage');
+        el.className = `alert alert-${type}`;
+        el.textContent = message;
+        el.style.display = 'block';
+        setTimeout(() => { el.style.display = 'none'; }, 3000);
+    }
+
+    // Ricalcola i valori ponderati (placeholder - da implementare in Fase 2)
+    function recalculateWeightedValues() {
+        console.log('Ricalcolo valori ponderati...');
+        // TODO: Fase 2 - ricalcolare i valori nella tabella e nel grafico
+    }
+    </script>
+
+    <?php endif; // Fine sezione ponderazione ?>
+
+    <?php
+    // ============================================
     // GRAFICO RADAR SOVRAPPOSIZIONE (Overlay)
     // ============================================
     if ($showOverlayRadar || $printOverlayRadar):
@@ -3591,38 +3923,21 @@ if ($tab === 'overview') {
         if (!empty($coachRadarData)) $sourceCount++;
     ?>
     <div class="card mt-4" id="overlay-radar-section">
-        <div class="card-header" style="background: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%); color: white;">
+        <div class="card-header" style="background: linear-gradient(135deg, #0066cc 0%, #004499 100%); color: white;">
             <h5 class="mb-0">🔀 Grafico Sovrapposizione: Confronto Multi-Fonte</h5>
-            <small class="d-block mt-1 opacity-75">
-                Visualizza e confronta tutte le valutazioni sovrapposte (normalizzate a percentuale)
-                | Fonti: <?php echo $sourceCount; ?> disponibili
-                (<?php echo !empty($areasData) ? '✅Quiz ' : '❌Quiz '; ?>
-                 <?php echo !empty($autovalutazioneAreas) ? '✅Auto ' : '❌Auto '; ?>
-                 <?php echo !empty($labEvalByArea) ? '✅Lab ' : '❌Lab '; ?>
-                 <?php echo !empty($coachRadarData) ? '✅Coach' : '❌Coach'; ?>)
+            <small class="d-block mt-1" style="opacity: 0.9;">
+                Confronto tra Rilevamento (Quiz+Lab), Autovalutazione e Valutazione Formatore
             </small>
         </div>
         <div class="card-body">
-            <!-- Debug info (rimuovere in produzione) -->
-            <div class="alert alert-secondary mb-3 small">
-                <strong>🔧 Debug Info:</strong>
-                hasOverlayData=<?php echo $hasOverlayData ? 'true' : 'false'; ?> |
-                sourceCount=<?php echo $sourceCount; ?> |
-                areasData=<?php echo count($areasData ?? []); ?> aree |
-                autovalutazioneAreas=<?php echo count($autovalutazioneAreas ?? []); ?> aree |
-                labEvalByArea=<?php echo count($labEvalByArea ?? []); ?> aree |
-                coachRadarData=<?php echo count($coachRadarData ?? []); ?> aree |
-                overlayAreas=<?php echo count($overlayAreas ?? []); ?> aree
-            </div>
             <?php if (!$hasOverlayData): ?>
             <!-- Nessun dato disponibile -->
             <div class="alert alert-warning text-center">
                 <h5>⚠️ Nessun dato disponibile per il grafico sovrapposizione</h5>
                 <p class="mb-2">Per visualizzare questo grafico, lo studente deve avere almeno una delle seguenti valutazioni:</p>
                 <ul class="list-unstyled mb-0">
-                    <li>📊 Quiz completati con competenze assegnate</li>
+                    <li>🔍 Rilevamento (Quiz e/o Laboratorio)</li>
                     <li>🧑 Autovalutazione completata</li>
-                    <li>🔧 Valutazioni LabEval</li>
                     <li>👨‍🏫 Valutazione Formatore</li>
                 </ul>
             </div>
@@ -3636,25 +3951,34 @@ if ($tab === 'overview') {
 
             <?php if ($hasOverlayData): ?>
             <!-- Controlli Toggle -->
-            <div class="alert alert-light border mb-4">
-                <div class="d-flex flex-wrap align-items-center justify-content-center" style="gap: 20px;">
-                    <span class="font-weight-bold">Mostra:</span>
-                    <label class="mb-0 d-flex align-items-center" style="cursor: pointer;">
-                        <input type="checkbox" id="overlay-toggle-quiz" checked class="mr-2">
-                        <span class="badge" style="background: #28a745; color: white; padding: 8px 12px;">📊 Quiz</span>
-                    </label>
-                    <label class="mb-0 d-flex align-items-center" style="cursor: pointer;">
-                        <input type="checkbox" id="overlay-toggle-auto" checked class="mr-2">
-                        <span class="badge" style="background: #667eea; color: white; padding: 8px 12px;">🧑 Autovalutazione</span>
-                    </label>
-                    <label class="mb-0 d-flex align-items-center" style="cursor: pointer;">
-                        <input type="checkbox" id="overlay-toggle-labeval" checked class="mr-2">
-                        <span class="badge" style="background: #fd7e14; color: white; padding: 8px 12px;">🔧 LabEval</span>
-                    </label>
-                    <label class="mb-0 d-flex align-items-center" style="cursor: pointer;">
-                        <input type="checkbox" id="overlay-toggle-coach" checked class="mr-2">
-                        <span class="badge" style="background: #11998e; color: white; padding: 8px 12px;">👨‍🏫 Formatore</span>
-                    </label>
+            <div class="card mb-4" style="border: 1px solid #dee2e6;">
+                <div class="card-body py-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-center" style="gap: 20px;">
+                        <span class="font-weight-bold text-dark">Mostra nel grafico:</span>
+                        <label class="mb-0 d-flex align-items-center" style="cursor: pointer;">
+                            <input type="checkbox" id="overlay-toggle-rilevamento" checked class="mr-2">
+                            <span class="badge" style="background: #28a745; color: white; padding: 8px 12px;">🔍 Rilevamento</span>
+                        </label>
+                        <label class="mb-0 d-flex align-items-center" style="cursor: pointer;">
+                            <input type="checkbox" id="overlay-toggle-auto" checked class="mr-2">
+                            <span class="badge" style="background: #667eea; color: white; padding: 8px 12px;">🧑 Autovalutazione</span>
+                        </label>
+                        <label class="mb-0 d-flex align-items-center" style="cursor: pointer;">
+                            <input type="checkbox" id="overlay-toggle-coach" checked class="mr-2">
+                            <span class="badge" style="background: #0066cc; color: white; padding: 8px 12px;">👨‍🏫 Formatore</span>
+                        </label>
+                        <span class="text-muted mx-2">|</span>
+                        <label class="mb-0 d-flex align-items-center" style="cursor: pointer;" title="Mostra Lab separato dal Rilevamento">
+                            <input type="checkbox" id="overlay-toggle-lab-separato" class="mr-2">
+                            <span class="badge" style="background: #6c757d; color: white; padding: 8px 12px;">🔧 Lab (separato)</span>
+                        </label>
+                    </div>
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            <strong>Rilevamento</strong> = Quiz + Laboratorio combinati |
+                            Attiva "Lab (separato)" per vedere i dati del laboratorio come fonte indipendente
+                        </small>
+                    </div>
                 </div>
             </div>
 
@@ -3670,28 +3994,145 @@ if ($tab === 'overview') {
                     <thead>
                         <tr style="background: #34495e; color: white;">
                             <th style="min-width: 200px;">Area</th>
-                            <th class="text-center" style="background: #28a745; color: white; width: 80px;">📊 Quiz</th>
+                            <th class="text-center col-rilevamento" style="background: #28a745; color: white; width: 100px;">🔍 Rilevamento</th>
+                            <th class="text-center col-lab-separato" style="background: #6c757d; color: white; width: 80px; display: none;">🔧 Lab</th>
                             <th class="text-center" style="background: #667eea; color: white; width: 80px;">🧑 Auto</th>
-                            <th class="text-center" style="background: #fd7e14; color: white; width: 80px;">🔧 Lab</th>
-                            <th class="text-center" style="background: #11998e; color: white; width: 80px;">👨‍🏫 Coach</th>
-                            <th class="text-center" style="background: #6c757d; color: white; width: 80px;">📈 Media</th>
-                            <th class="text-center" style="background: #6c757d; color: white; width: 80px;">📊 Gap Max</th>
+                            <th class="text-center" style="background: #0066cc; color: white; width: 80px;">👨‍🏫 Coach</th>
+                            <th class="text-center" style="background: #495057; color: white; width: 80px;">📈 Media</th>
+                            <th class="text-center" style="background: #495057; color: white; width: 80px;">📊 Gap Max</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
+                        // Carica valori manuali per la tabella comparativa
+                        $manualComparative = [];
+                        $dbmanComp = $DB->get_manager();
+                        $finalRatingsTableExists = $dbmanComp->table_exists('local_compman_final_ratings');
+                        if ($finalRatingsTableExists) {
+                            $manualRecs = $DB->get_records_sql("
+                                SELECT * FROM {local_compman_final_ratings}
+                                WHERE studentid = ? AND courseid = ? AND sector = ?
+                                AND method IN ('rilevamento', 'auto_comp', 'coach_comp')
+                            ", [$userid, $courseid, $currentSector]);
+                            foreach ($manualRecs as $mr) {
+                                $manualComparative[$mr->area_code][$mr->method] = [
+                                    'value' => (float)$mr->manual_value,
+                                    'calculated' => $mr->calculated_value,
+                                    'modified' => true
+                                ];
+                            }
+                        }
+
+                        // Verifica capability per editing
+                        $canEditComparative = has_capability('local/competencymanager:evaluate', $context);
+
                         foreach ($overlayAreas as $code => $data):
-                            $values = array_filter([$data['quiz'], $data['auto'], $data['labeval'], $data['coach']], function($v) { return $v !== null; });
+                            // Calcola Rilevamento = Quiz + Lab (usa Lab se disponibile, altrimenti Quiz)
+                            $rilevamentoCalc = null;
+                            if ($data['quiz'] !== null && $data['labeval'] !== null) {
+                                $rilevamentoCalc = round(($data['quiz'] + $data['labeval']) / 2, 1);
+                            } elseif ($data['labeval'] !== null) {
+                                $rilevamentoCalc = $data['labeval'];
+                            } elseif ($data['quiz'] !== null) {
+                                $rilevamentoCalc = $data['quiz'];
+                            }
+
+                            // Usa valore manuale se presente
+                            $rilevamento = isset($manualComparative[$code]['rilevamento'])
+                                ? $manualComparative[$code]['rilevamento']['value']
+                                : $rilevamentoCalc;
+                            $rilevamentoModified = isset($manualComparative[$code]['rilevamento']);
+
+                            $autoVal = isset($manualComparative[$code]['auto_comp'])
+                                ? $manualComparative[$code]['auto_comp']['value']
+                                : $data['auto'];
+                            $autoModified = isset($manualComparative[$code]['auto_comp']);
+
+                            $coachVal = isset($manualComparative[$code]['coach_comp'])
+                                ? $manualComparative[$code]['coach_comp']['value']
+                                : $data['coach'];
+                            $coachModified = isset($manualComparative[$code]['coach_comp']);
+
+                            $values = array_filter([$rilevamento, $autoVal, $coachVal], function($v) { return $v !== null; });
                             $avg = count($values) > 0 ? round(array_sum($values) / count($values), 1) : null;
                             $gapMax = count($values) > 1 ? round(max($values) - min($values), 1) : null;
                             $gapClass = $gapMax !== null ? ($gapMax > 30 ? 'text-danger font-weight-bold' : ($gapMax > 15 ? 'text-warning' : 'text-success')) : '';
                         ?>
-                        <tr>
+                        <tr data-area="<?php echo $code; ?>">
                             <td><strong><?php echo s($data['name']); ?></strong> <small class="text-muted">(<?php echo $code; ?>)</small></td>
-                            <td class="text-center"><?php echo $data['quiz'] !== null ? "<span class='badge badge-success'>{$data['quiz']}%</span>" : '<span class="text-muted">-</span>'; ?></td>
-                            <td class="text-center"><?php echo $data['auto'] !== null ? "<span class='badge badge-primary'>{$data['auto']}%</span>" : '<span class="text-muted">-</span>'; ?></td>
-                            <td class="text-center"><?php echo $data['labeval'] !== null ? "<span class='badge badge-warning text-dark'>{$data['labeval']}%</span>" : '<span class="text-muted">-</span>'; ?></td>
-                            <td class="text-center"><?php echo $data['coach'] !== null ? "<span class='badge badge-info'>{$data['coach']}%</span>" : '<span class="text-muted">-</span>'; ?></td>
+                            <!-- Rilevamento -->
+                            <td class="text-center col-rilevamento">
+                                <?php if ($rilevamento !== null): ?>
+                                    <?php if ($canEditComparative): ?>
+                                    <span class="badge badge-success comparative-editable"
+                                          style="cursor: pointer;"
+                                          data-area="<?php echo $code; ?>"
+                                          data-method="rilevamento"
+                                          data-value="<?php echo $rilevamento; ?>"
+                                          data-calculated="<?php echo $rilevamentoCalc; ?>"
+                                          data-modified="<?php echo $rilevamentoModified ? '1' : '0'; ?>"
+                                          onclick="showComparativeDropdown(this)"
+                                          title="Clicca per modificare">
+                                        <?php echo $rilevamento; ?>%<?php if ($rilevamentoModified): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
+                                    </span>
+                                    <?php else: ?>
+                                    <span class="badge badge-success"><?php echo $rilevamento; ?>%</span>
+                                    <?php endif; ?>
+                                    <?php if ($data['quiz'] !== null && $data['labeval'] !== null && !$rilevamentoModified): ?>
+                                        <small class="d-block text-muted" style="font-size: 0.65em;">Q:<?php echo $data['quiz']; ?>+L:<?php echo $data['labeval']; ?></small>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
+                            <!-- Lab separato -->
+                            <td class="text-center col-lab-separato" style="display: none;">
+                                <?php echo $data['labeval'] !== null ? "<span class='badge' style='background: #6c757d; color: white;'>{$data['labeval']}%</span>" : '<span class="text-muted">-</span>'; ?>
+                            </td>
+                            <!-- Auto -->
+                            <td class="text-center">
+                                <?php if ($autoVal !== null): ?>
+                                    <?php if ($canEditComparative): ?>
+                                    <span class="badge badge-primary comparative-editable"
+                                          style="cursor: pointer;"
+                                          data-area="<?php echo $code; ?>"
+                                          data-method="auto_comp"
+                                          data-value="<?php echo $autoVal; ?>"
+                                          data-calculated="<?php echo $data['auto']; ?>"
+                                          data-modified="<?php echo $autoModified ? '1' : '0'; ?>"
+                                          onclick="showComparativeDropdown(this)"
+                                          title="Clicca per modificare">
+                                        <?php echo $autoVal; ?>%<?php if ($autoModified): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
+                                    </span>
+                                    <?php else: ?>
+                                    <span class="badge badge-primary"><?php echo $autoVal; ?>%</span>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
+                            <!-- Coach -->
+                            <td class="text-center">
+                                <?php if ($coachVal !== null): ?>
+                                    <?php if ($canEditComparative): ?>
+                                    <span class="badge comparative-editable"
+                                          style="background: #0066cc; color: white; cursor: pointer;"
+                                          data-area="<?php echo $code; ?>"
+                                          data-method="coach_comp"
+                                          data-value="<?php echo $coachVal; ?>"
+                                          data-calculated="<?php echo $data['coach']; ?>"
+                                          data-modified="<?php echo $coachModified ? '1' : '0'; ?>"
+                                          onclick="showComparativeDropdown(this)"
+                                          title="Clicca per modificare">
+                                        <?php echo $coachVal; ?>%<?php if ($coachModified): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
+                                    </span>
+                                    <?php else: ?>
+                                    <span class="badge" style="background: #0066cc; color: white;"><?php echo $coachVal; ?>%</span>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="text-center"><?php echo $avg !== null ? "<strong>{$avg}%</strong>" : '-'; ?></td>
                             <td class="text-center <?php echo $gapClass; ?>"><?php echo $gapMax !== null ? "{$gapMax}%" : '-'; ?></td>
                         </tr>
@@ -3714,9 +4155,8 @@ if ($tab === 'overview') {
     </div>
 
     <script>
-    // Aspetta il caricamento di Chart.js (che viene caricato alla fine della pagina)
+    // Aspetta il caricamento di Chart.js
     window.addEventListener('load', function() {
-        // Verifica che Chart.js sia disponibile
         if (typeof Chart === 'undefined') {
             console.error('Chart.js non caricato');
             document.getElementById('overlayRadarChart').parentElement.innerHTML =
@@ -3732,6 +4172,18 @@ if ($tab === 'overview') {
             coach: <?php echo json_encode($overlayCoach); ?>
         };
 
+        // Calcola Rilevamento = Quiz + Lab (media se entrambi presenti)
+        const rilevamentoData = overlayData.quiz.map((quizVal, i) => {
+            const labVal = overlayData.labeval[i];
+            if (quizVal !== null && labVal !== null) {
+                return Math.round((quizVal + labVal) / 2 * 10) / 10;
+            } else if (labVal !== null) {
+                return labVal;
+            } else {
+                return quizVal;
+            }
+        });
+
         const ctx = document.getElementById('overlayRadarChart');
         if (!ctx) {
             console.error('Canvas overlayRadarChart non trovato');
@@ -3744,8 +4196,8 @@ if ($tab === 'overview') {
                 labels: overlayLabels,
                 datasets: [
                     {
-                        label: '📊 Quiz',
-                        data: overlayData.quiz,
+                        label: '🔍 Rilevamento (Quiz+Lab)',
+                        data: rilevamentoData,
                         backgroundColor: 'rgba(40, 167, 69, 0.2)',
                         borderColor: 'rgba(40, 167, 69, 1)',
                         borderWidth: 2,
@@ -3762,22 +4214,23 @@ if ($tab === 'overview') {
                         pointRadius: 4
                     },
                     {
-                        label: '🔧 LabEval',
-                        data: overlayData.labeval,
-                        backgroundColor: 'rgba(253, 126, 20, 0.2)',
-                        borderColor: 'rgba(253, 126, 20, 1)',
+                        label: '👨‍🏫 Formatore',
+                        data: overlayData.coach,
+                        backgroundColor: 'rgba(0, 102, 204, 0.2)',
+                        borderColor: 'rgba(0, 102, 204, 1)',
                         borderWidth: 2,
-                        pointBackgroundColor: 'rgba(253, 126, 20, 1)',
+                        pointBackgroundColor: 'rgba(0, 102, 204, 1)',
                         pointRadius: 4
                     },
                     {
-                        label: '👨‍🏫 Formatore',
-                        data: overlayData.coach,
-                        backgroundColor: 'rgba(17, 153, 142, 0.2)',
-                        borderColor: 'rgba(17, 153, 142, 1)',
+                        label: '🔧 Lab (separato)',
+                        data: overlayData.labeval,
+                        backgroundColor: 'rgba(108, 117, 125, 0.2)',
+                        borderColor: 'rgba(108, 117, 125, 1)',
                         borderWidth: 2,
-                        pointBackgroundColor: 'rgba(17, 153, 142, 1)',
-                        pointRadius: 4
+                        pointBackgroundColor: 'rgba(108, 117, 125, 1)',
+                        pointRadius: 4,
+                        hidden: true // Nascosto di default
                     }
                 ]
             },
@@ -3815,7 +4268,7 @@ if ($tab === 'overview') {
         });
 
         // Toggle handlers
-        document.getElementById('overlay-toggle-quiz')?.addEventListener('change', function() {
+        document.getElementById('overlay-toggle-rilevamento')?.addEventListener('change', function() {
             overlayChart.data.datasets[0].hidden = !this.checked;
             overlayChart.update();
         });
@@ -3823,17 +4276,262 @@ if ($tab === 'overview') {
             overlayChart.data.datasets[1].hidden = !this.checked;
             overlayChart.update();
         });
-        document.getElementById('overlay-toggle-labeval')?.addEventListener('change', function() {
+        document.getElementById('overlay-toggle-coach')?.addEventListener('change', function() {
             overlayChart.data.datasets[2].hidden = !this.checked;
             overlayChart.update();
         });
-        document.getElementById('overlay-toggle-coach')?.addEventListener('change', function() {
+        document.getElementById('overlay-toggle-lab-separato')?.addEventListener('change', function() {
             overlayChart.data.datasets[3].hidden = !this.checked;
+            // Mostra/nascondi anche la colonna Lab nella tabella
+            document.querySelectorAll('.col-lab-separato').forEach(el => {
+                el.style.display = this.checked ? '' : 'none';
+            });
             overlayChart.update();
         });
 
         console.log('Overlay Radar Chart inizializzato con successo');
     });
+
+    // ============================================
+    // EDITOR TABELLA COMPARATIVA
+    // ============================================
+    let activeComparativeDropdown = null;
+
+    function showComparativeDropdown(element) {
+        // Chiudi dropdown precedente
+        if (activeComparativeDropdown) {
+            activeComparativeDropdown.remove();
+            activeComparativeDropdown = null;
+        }
+
+        const area = element.dataset.area;
+        const method = element.dataset.method;
+        const currentValue = parseFloat(element.dataset.value);
+        const calculatedValue = parseFloat(element.dataset.calculated) || 0;
+        const isModified = element.dataset.modified === '1';
+
+        // Etichette per i metodi
+        const methodLabels = {
+            'rilevamento': '🔍 Rilevamento',
+            'auto_comp': '🧑 Autovalutazione',
+            'coach_comp': '👨‍🏫 Coach'
+        };
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'comparative-dropdown';
+        dropdown.style.cssText = `
+            position: absolute;
+            z-index: 1050;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 12px;
+            min-width: 200px;
+        `;
+
+        let html = `
+            <div style="font-size: 0.8rem; font-weight: bold; margin-bottom: 8px; color: #333;">
+                ${methodLabels[method] || method} - Area ${area}
+            </div>
+            <div style="font-size: 0.75rem; color: #6c757d; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                Valore calcolato: <strong>${calculatedValue}%</strong>
+            </div>
+            <div style="margin-bottom: 8px;">
+                <label style="font-size: 0.75rem; font-weight: bold;">Nuovo valore (0-100):</label>
+                <input type="number" id="comparativeInput" min="0" max="100" step="0.1" value="${currentValue}"
+                       style="width: 100%; padding: 6px; border: 1px solid #ced4da; border-radius: 4px; font-size: 1rem;">
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button onclick="saveComparativeValue('${area}', '${method}', ${calculatedValue})"
+                        style="flex: 1; padding: 6px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                    💾 Salva
+                </button>
+                <button onclick="resetComparativeValue('${area}', '${method}', ${calculatedValue})"
+                        style="padding: 6px 10px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;"
+                        title="Ripristina valore calcolato">
+                    ↩️
+                </button>
+            </div>
+        `;
+
+        if (isModified) {
+            html += `
+                <div style="margin-top: 8px; border-top: 1px solid #eee; padding-top: 8px;">
+                    <button onclick="showComparativeHistory('${area}', '${method}')"
+                            style="width: 100%; padding: 5px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+                        📜 Mostra storico
+                    </button>
+                    <div id="compHistoryContainer_${area}_${method}"></div>
+                </div>
+            `;
+        }
+
+        dropdown.innerHTML = html;
+
+        const rect = element.getBoundingClientRect();
+        dropdown.style.left = (rect.left + window.scrollX - 60) + 'px';
+        dropdown.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+
+        document.body.appendChild(dropdown);
+        activeComparativeDropdown = dropdown;
+
+        setTimeout(() => {
+            const input = document.getElementById('comparativeInput');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        }, 100);
+
+        setTimeout(() => {
+            document.addEventListener('click', closeComparativeDropdownOnClickOutside);
+        }, 100);
+    }
+
+    function closeComparativeDropdownOnClickOutside(e) {
+        if (activeComparativeDropdown && !activeComparativeDropdown.contains(e.target) && !e.target.classList.contains('comparative-editable')) {
+            activeComparativeDropdown.remove();
+            activeComparativeDropdown = null;
+            document.removeEventListener('click', closeComparativeDropdownOnClickOutside);
+        }
+    }
+
+    function saveComparativeValue(area, method, calculatedValue) {
+        const input = document.getElementById('comparativeInput');
+        const newValue = parseFloat(input.value);
+
+        if (isNaN(newValue) || newValue < 0 || newValue > 100) {
+            alert('Il valore deve essere tra 0 e 100');
+            return;
+        }
+
+        const studentid = <?php echo json_encode($userid); ?>;
+        const courseid = <?php echo json_encode($courseid); ?>;
+        const sector = <?php echo json_encode($currentSector ?? ''); ?>;
+
+        fetch('<?php echo $CFG->wwwroot; ?>/local/competencymanager/ajax_save_final_rating.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                sesskey: M.cfg.sesskey,
+                action: 'save_final_rating',
+                studentid: studentid,
+                courseid: courseid,
+                sector: sector,
+                areacode: area,
+                method: method,
+                manualvalue: newValue,
+                calculatedvalue: calculatedValue
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Aggiorna il badge nella tabella
+                const badge = document.querySelector(`.comparative-editable[data-area="${area}"][data-method="${method}"]`);
+                if (badge) {
+                    badge.dataset.value = newValue;
+                    badge.dataset.modified = '1';
+                    badge.innerHTML = `${newValue}% <span style="font-size: 0.7em;">✏️</span>`;
+                }
+
+                // Chiudi dropdown
+                if (activeComparativeDropdown) {
+                    activeComparativeDropdown.remove();
+                    activeComparativeDropdown = null;
+                }
+
+                // Ricalcola media e gap nella riga
+                recalculateRowStats(area);
+
+                showToast('✅ Valore salvato: ' + newValue + '%');
+            } else {
+                alert('Errore: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Errore:', error);
+            alert('Errore di connessione');
+        });
+    }
+
+    function resetComparativeValue(area, method, calculatedValue) {
+        document.getElementById('comparativeInput').value = calculatedValue;
+        saveComparativeValue(area, method, calculatedValue);
+    }
+
+    function showComparativeHistory(area, method) {
+        const container = document.getElementById(`compHistoryContainer_${area}_${method}`);
+        if (!container) return;
+
+        if (container.innerHTML !== '') {
+            container.innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = '<div style="padding: 5px; text-align: center;"><small>Caricamento...</small></div>';
+
+        const studentid = <?php echo json_encode($userid); ?>;
+        const courseid = <?php echo json_encode($courseid); ?>;
+        const sector = <?php echo json_encode($currentSector ?? ''); ?>;
+
+        fetch('<?php echo $CFG->wwwroot; ?>/local/competencymanager/ajax_save_final_rating.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                sesskey: M.cfg.sesskey,
+                action: 'get_rating_history',
+                studentid: studentid,
+                courseid: courseid,
+                sector: sector,
+                areacode: area,
+                method: method
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data.hasHistory) {
+                let html = '<div style="margin-top: 8px; font-size: 0.7rem; max-height: 120px; overflow-y: auto;">';
+                html += '<table style="width: 100%;">';
+                data.data.history.forEach(h => {
+                    html += `<tr><td>${h.oldValue}→${h.newValue}</td><td>${h.modifiedBy}</td><td>${h.date} ${h.time}</td></tr>`;
+                });
+                html += '</table></div>';
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div style="padding: 5px; font-size: 0.7rem; color: #6c757d;">Nessuna modifica</div>';
+            }
+        });
+    }
+
+    function recalculateRowStats(area) {
+        const row = document.querySelector(`#overlay-comparison-table tr[data-area="${area}"]`);
+        if (!row) return;
+
+        const values = [];
+        row.querySelectorAll('.comparative-editable').forEach(badge => {
+            const val = parseFloat(badge.dataset.value);
+            if (!isNaN(val)) values.push(val);
+        });
+
+        if (values.length > 0) {
+            const avg = (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+            const gapMax = values.length > 1 ? (Math.max(...values) - Math.min(...values)).toFixed(1) : null;
+
+            // Aggiorna celle Media e Gap
+            const cells = row.querySelectorAll('td');
+            const mediaCell = cells[cells.length - 2];
+            const gapCell = cells[cells.length - 1];
+
+            if (mediaCell) mediaCell.innerHTML = `<strong>${avg}%</strong>`;
+            if (gapCell && gapMax !== null) {
+                let gapClass = gapMax > 30 ? 'text-danger font-weight-bold' : (gapMax > 15 ? 'text-warning' : 'text-success');
+                gapCell.className = `text-center ${gapClass}`;
+                gapCell.textContent = `${gapMax}%`;
+            }
+        }
+    }
     </script>
     <?php endif; // Fine hasOverlayData ?>
     <?php endif; // Fine Overlay Radar ?>

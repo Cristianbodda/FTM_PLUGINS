@@ -239,5 +239,37 @@ function xmldb_local_competencymanager_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026021001, 'local', 'competencymanager');
     }
 
+    // Versione 2026021101: Tabella pesi per ponderazione valutazioni
+    if ($oldversion < 2026021101) {
+
+        $table = new xmldb_table('local_compman_weights');
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('studentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('sector', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('level_type', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'area');
+        $table->add_field('item_code', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('weight_quiz', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, null, '100');
+        $table->add_field('weight_auto', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, null, '100');
+        $table->add_field('weight_lab', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, null, '100');
+        $table->add_field('weight_coach', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, null, '100');
+        $table->add_field('modifiedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('studentid_fk', XMLDB_KEY_FOREIGN, ['studentid'], 'user', ['id']);
+        $table->add_key('modifiedby_fk', XMLDB_KEY_FOREIGN, ['modifiedby'], 'user', ['id']);
+
+        $table->add_index('student_course_sector_item_idx', XMLDB_INDEX_UNIQUE, ['studentid', 'courseid', 'sector', 'level_type', 'item_code']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026021101, 'local', 'competencymanager');
+    }
+
     return true;
 }

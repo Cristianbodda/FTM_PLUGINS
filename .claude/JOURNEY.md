@@ -2,42 +2,46 @@
 
 ## 11 Febbraio 2026
 
-### Valutazioni Finali Editabili (IN REVISIONE)
-- **Stato:** Sezione nascosta con codice sblocco (6807) - in attesa di approvazione
-- **Funzionalità:** Tutti i valori nella tabella "Metodi di Valutazione Finale" sono modificabili dal coach
-- **4 Metodi di calcolo:**
-  - 📊 Media Completa (4 Fonti): (Quiz + Auto + Lab + Coach) / 4
-  - 🎯 Media Oggettiva (3 Fonti): (Quiz + Lab + Coach) / 3
-  - 📝 Media Pratica (Quiz + Coach) / 2
-  - 👨‍🏫 Solo Coach
+### Grafico Overlay - Rilevamento (Quiz + Lab)
+- **Modifica principale:** "Quiz" rinominato in "🔍 Rilevamento"
+- **Rilevamento:** Combina Quiz + Laboratorio (media se entrambi presenti)
+- **Lab separato:** Nascosto di default, mostrabile con toggle "🔧 Lab (separato)"
+- **Contrasti migliorati:** Colori aggiornati per accessibilità
+  - Formatore: #0066cc (blu)
+  - Header card: gradiente blu
+- **File:** `student_report.php`
+
+### Tabella Comparativa Editabile
+- **Funzionalità:** Valori Rilevamento, Auto e Coach modificabili dal formatore
 - **Caratteristiche:**
   - Badge cliccabile con input numerico (0-100%)
-  - Salvataggio AJAX immediato con feedback toast
-  - Indicatore ✏️ per valori modificati manualmente
+  - Indicatore ✏️ per valori modificati
   - Pulsante ↩️ per ripristinare valore calcolato
-  - **Audit trail completo:** Chi ha modificato, quando (data/ora), valore originale
-  - **Tooltip hover:** Passando sopra valori modificati mostra ultima modifica
-  - **Storico completo:** Bottone per visualizzare tutte le modifiche precedenti
-- **Sblocco sezione:** Input password nel report, codice **6807**
-- **Database:**
-  - Tabella `local_compman_final_ratings`: Valori manuali per ogni area/metodo
-  - Tabella `local_compman_final_history`: Storico completo modifiche
-- **File:**
-  - `student_report.php` - UI editabile con JavaScript inline
-  - `ajax_save_final_rating.php` - Endpoint AJAX per salvataggio
-  - `db/install.xml` - Schema 2 nuove tabelle
-  - `db/upgrade.php` - Migrazione versione 2026021001
-  - `version.php` - v2.5.0
+  - Storico modifiche consultabile
+  - Ricalcolo automatico Media e Gap Max dopo modifica
+- **Audit trail:** Chi ha modificato, quando (data/ora), valore originale
+- **File:** `student_report.php`, `ajax_save_final_rating.php`
 
-### Sistema Ponderazione (PROSSIMO STEP)
-- **Obiettivo:** Sostituire le medie semplici con valutazione ponderata configurabile
-- **Fasi pianificate:**
-  1. UI configurazione pesi per Area (pesi default 100%)
-  2. Calcolo e tabella risultato ponderato
-  3. Grafico radar con overlay ponderato
-  4. Modalità avanzata per competenza singola
-- **Concetto:** Ogni fonte (Quiz, Auto, Lab, Coach) ha peso configurabile
-- **Normalizzazione:** Se una fonte manca, ricalcola sui pesi disponibili
+### Sistema Ponderazione - Fase 1
+- **Sezione:** "⚖️ Configurazione Ponderazione Valutazioni" (collassabile)
+- **Pesi Globali:** Applica a tutte le aree con un click
+- **Pesi per Area:** Tabella con 4 input (Quiz, Auto, Lab, Coach) per ogni area
+- **Default:** Tutti i pesi a 100%
+- **Salvataggio AJAX:** Immediato con feedback
+- **Reset:** Pulsante per tornare tutti a 100%
+- **Database:** Tabella `local_compman_weights`
+- **File:**
+  - `student_report.php` - UI configurazione
+  - `ajax_save_weights.php` - Endpoint AJAX
+  - `db/install.xml`, `db/upgrade.php` - Schema
+  - `version.php` - v2.6.0 (2026021101)
+
+### Valutazioni Finali Editabili (IN REVISIONE)
+- **Stato:** Sezione nascosta con codice sblocco (6807) - in attesa di approvazione
+- **Sblocco:** Input password nel report, codice **6807**
+- **Database:**
+  - Tabella `local_compman_final_ratings`: Valori manuali
+  - Tabella `local_compman_final_history`: Storico modifiche
 
 ---
 
