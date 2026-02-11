@@ -161,7 +161,7 @@ $SECTOR_DISPLAY_NAMES = [
 // ========================================
 
 /**
- * Normalizza il nome del settore (gestisce varianti encoding)
+ * Normalizza il nome del settore (gestisce varianti encoding e alias)
  * @param string $sector Nome settore grezzo
  * @return string Nome settore normalizzato
  */
@@ -174,7 +174,86 @@ function normalize_sector_name($sector) {
     );
     // ELETTRICITÀ -> ELETTRICITA
     $normalized = str_replace(['Ì', 'Í', 'Î', 'Ï', 'ì', 'í', 'î', 'ï'], 'I', $normalized);
-    return strtoupper($normalized);
+    $normalized = strtoupper($normalized);
+
+    // Mappa alias settori
+    $sectorAliases = [
+        // =============================================
+        // CODICI NUMERICI (usati nelle competenze padre)
+        // =============================================
+        '01' => 'AUTOMOBILE',
+        '02' => 'CHIMFARM',
+        '03' => 'ELETTRICITA',
+        '04' => 'AUTOMAZIONE',
+        '05' => 'LOGISTICA',
+        '06' => 'MECCANICA',
+        '07' => 'METALCOSTRUZIONE',
+        // Pattern XX-YY (es. 06-01 → MECCANICA)
+        '01-01' => 'AUTOMOBILE', '01-02' => 'AUTOMOBILE', '01-03' => 'AUTOMOBILE', '01-04' => 'AUTOMOBILE',
+        '01-05' => 'AUTOMOBILE', '01-06' => 'AUTOMOBILE', '01-07' => 'AUTOMOBILE', '01-08' => 'AUTOMOBILE',
+        '01-09' => 'AUTOMOBILE', '01-10' => 'AUTOMOBILE', '01-11' => 'AUTOMOBILE', '01-12' => 'AUTOMOBILE',
+        '01-13' => 'AUTOMOBILE', '01-14' => 'AUTOMOBILE',
+        '02-01' => 'CHIMFARM', '02-02' => 'CHIMFARM', '02-03' => 'CHIMFARM', '02-04' => 'CHIMFARM',
+        '02-05' => 'CHIMFARM', '02-06' => 'CHIMFARM', '02-07' => 'CHIMFARM', '02-08' => 'CHIMFARM',
+        '02-09' => 'CHIMFARM', '02-10' => 'CHIMFARM', '02-11' => 'CHIMFARM',
+        '03-01' => 'ELETTRICITA', '03-02' => 'ELETTRICITA', '03-03' => 'ELETTRICITA', '03-04' => 'ELETTRICITA',
+        '03-05' => 'ELETTRICITA', '03-06' => 'ELETTRICITA', '03-07' => 'ELETTRICITA', '03-08' => 'ELETTRICITA',
+        '04-01' => 'AUTOMAZIONE', '04-02' => 'AUTOMAZIONE', '04-03' => 'AUTOMAZIONE', '04-04' => 'AUTOMAZIONE',
+        '04-05' => 'AUTOMAZIONE', '04-06' => 'AUTOMAZIONE', '04-07' => 'AUTOMAZIONE', '04-08' => 'AUTOMAZIONE',
+        '05-01' => 'LOGISTICA', '05-02' => 'LOGISTICA', '05-03' => 'LOGISTICA', '05-04' => 'LOGISTICA',
+        '05-05' => 'LOGISTICA', '05-06' => 'LOGISTICA', '05-07' => 'LOGISTICA', '05-08' => 'LOGISTICA',
+        '06-01' => 'MECCANICA', '06-02' => 'MECCANICA', '06-03' => 'MECCANICA', '06-04' => 'MECCANICA',
+        '06-05' => 'MECCANICA', '06-06' => 'MECCANICA', '06-07' => 'MECCANICA', '06-08' => 'MECCANICA',
+        '06-09' => 'MECCANICA', '06-10' => 'MECCANICA', '06-11' => 'MECCANICA', '06-12' => 'MECCANICA',
+        '06-13' => 'MECCANICA',
+        '07-01' => 'METALCOSTRUZIONE', '07-02' => 'METALCOSTRUZIONE', '07-03' => 'METALCOSTRUZIONE',
+        '07-04' => 'METALCOSTRUZIONE', '07-05' => 'METALCOSTRUZIONE', '07-06' => 'METALCOSTRUZIONE',
+        '07-07' => 'METALCOSTRUZIONE', '07-08' => 'METALCOSTRUZIONE', '07-09' => 'METALCOSTRUZIONE',
+        '07-10' => 'METALCOSTRUZIONE',
+        // =============================================
+        // ALIAS TESTUALI
+        // =============================================
+        // Meccanica
+        'MECC' => 'MECCANICA',
+        'MEC' => 'MECCANICA',
+        // Codici area Meccanica (se usati come prefisso)
+        'LMB' => 'MECCANICA',
+        'LMC' => 'MECCANICA',
+        'CNC' => 'MECCANICA',
+        'ASS' => 'MECCANICA',
+        'MIS' => 'MECCANICA',
+        'MAN' => 'MECCANICA',
+        'DT' => 'MECCANICA',
+        'PIAN' => 'MECCANICA',
+        'SAQ' => 'MECCANICA',
+        'CSP' => 'MECCANICA',
+        'PRG' => 'MECCANICA',
+        // Automobile
+        'AUTO' => 'AUTOMOBILE',
+        'AUTOVEICOLO' => 'AUTOMOBILE',
+        // Automazione (ATTENZIONE: AUT può essere anche area Meccanica)
+        'AUTOM' => 'AUTOMAZIONE',
+        'AUTOMAZ' => 'AUTOMAZIONE',
+        // Elettricità
+        'ELETTR' => 'ELETTRICITA',
+        'ELETT' => 'ELETTRICITA',
+        'ELETTRICITA' => 'ELETTRICITA', // Normalizza accenti
+        // Chimfarm
+        'CHIM' => 'CHIMFARM',
+        'CHIMICA' => 'CHIMFARM',
+        'FARMACEUTICA' => 'CHIMFARM',
+        'FARM' => 'CHIMFARM',
+        // Logistica
+        'LOG' => 'LOGISTICA',
+        // Metalcostruzione
+        'METAL' => 'METALCOSTRUZIONE',
+        // Generico
+        'GENERICO' => 'GEN',
+        'TRASVERSALI' => 'GEN',
+        'SOFT' => 'GEN',
+    ];
+
+    return $sectorAliases[$normalized] ?? $normalized;
 }
 
 /**
@@ -195,7 +274,7 @@ function extract_sector_from_idnumber($idnumber) {
 
 /**
  * Estrae il codice area e il nome completo da un idnumber di competenza
- * @param string $idnumber Es. "LOGISTICA_LO_A1" o "MECCANICA_CNC_01" o "CHIMFARM_1C_01"
+ * @param string $idnumber Es. "LOGISTICA_LO_A1" o "MECCANICA_CNC_01" o "CHIMFARM_1C_01" o "CNC_01"
  * @return array ['code' => 'A', 'name' => 'A. Organizzazione...', 'key' => 'LOGISTICA_A']
  */
 function get_area_info($idnumber) {
@@ -210,7 +289,19 @@ function get_area_info($idnumber) {
         return ['code' => 'OTHER', 'name' => 'Altro', 'key' => 'OTHER'];
     }
 
+    $rawFirstPart = strtoupper($parts[0]);
     $sector = normalize_sector_name($parts[0]);
+
+    // Codici area Meccanica (per gestire idnumber come "CNC_01" senza prefisso MECCANICA_)
+    $meccanicaAreaCodes = ['LMB', 'LMC', 'CNC', 'ASS', 'MIS', 'MAN', 'DT', 'AUT', 'PIAN', 'SAQ', 'CSP', 'PRG', 'GEN'];
+
+    // Caso speciale: idnumber inizia con codice area Meccanica (es. "CNC_01")
+    if ($sector === 'MECCANICA' && in_array($rawFirstPart, $meccanicaAreaCodes)) {
+        $code = $rawFirstPart;
+        $key = 'MECCANICA_' . $code;
+        $name = $AREA_NAMES[$key] ?? $code;
+        return ['code' => $code, 'name' => $name, 'key' => $key];
+    }
 
     // Pattern speciale per GEN (GENERICO): GEN_A_01 -> seconda parte è la lettera
     if ($sector === 'GEN' && count($parts) >= 2) {

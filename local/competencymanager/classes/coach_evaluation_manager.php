@@ -632,21 +632,40 @@ class coach_evaluation_manager {
      * @param string $sector
      * @return array Array di ['area' => X, 'value' => Y] normalizzato 0-100
      */
-    public static function get_radar_data(int $studentid, string $sector, bool $include_draft = true): array {
+    public static function get_radar_data(int $studentid, string $sector, bool $include_draft = true, ?int $evaluationid = null): array {
         global $DB;
 
-        // Find the most recent evaluation for this student/sector
-        // Include draft if requested (for overlay chart), otherwise only completed/signed
-        $statusFilter = $include_draft ? "('draft', 'completed', 'signed')" : "('completed', 'signed')";
+        // Se fornito un evaluationid specifico, usalo direttamente
+        if ($evaluationid) {
+            $evaluation = $DB->get_record('local_coach_evaluations', ['id' => $evaluationid]);
+        } else {
+            // Find the most recent evaluation for this student/sector WITH ratings
+            // Include draft if requested (for overlay chart), otherwise only completed/signed
+            $statusFilter = $include_draft ? "('draft', 'completed', 'signed')" : "('completed', 'signed')";
 
-        $evaluation = $DB->get_record_sql(
-            "SELECT * FROM {local_coach_evaluations}
-             WHERE studentid = :studentid AND sector = :sector
-             AND status IN $statusFilter
-             ORDER BY evaluation_date DESC, id DESC
-             LIMIT 1",
-            ['studentid' => $studentid, 'sector' => strtoupper($sector)]
-        );
+            // Cerca valutazioni ordinate per data, poi verifica quali hanno ratings
+            $evaluations = $DB->get_records_sql(
+                "SELECT * FROM {local_coach_evaluations}
+                 WHERE studentid = :studentid AND sector = :sector
+                 AND status IN $statusFilter
+                 ORDER BY evaluation_date DESC, id DESC",
+                ['studentid' => $studentid, 'sector' => strtoupper($sector)]
+            );
+
+            // Trova la prima valutazione che ha effettivamente dei ratings
+            $evaluation = null;
+            foreach ($evaluations as $eval) {
+                $ratingCount = $DB->count_records('local_coach_eval_ratings', ['evaluationid' => $eval->id]);
+                if ($ratingCount > 0) {
+                    $evaluation = $eval;
+                    break;
+                }
+            }
+            // Fallback alla prima se nessuna ha ratings
+            if (!$evaluation && !empty($evaluations)) {
+                $evaluation = reset($evaluations);
+            }
+        }
 
         if (!$evaluation) {
             return [];

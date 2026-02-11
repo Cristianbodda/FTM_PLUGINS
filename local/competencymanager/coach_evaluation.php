@@ -23,7 +23,7 @@ require_capability('local/competencymanager:evaluate', $context);
 
 // Parameters
 $studentid = required_param('studentid', PARAM_INT);
-$sector = required_param('sector', PARAM_ALPHANUMEXT);
+$sector = optional_param('sector', '', PARAM_ALPHANUMEXT); // Now optional - will use primary if not specified
 $evaluationid = optional_param('evaluationid', 0, PARAM_INT);
 $courseid = optional_param('courseid', 0, PARAM_INT);
 $action = optional_param('action', '', PARAM_ALPHANUMEXT);
@@ -31,12 +31,30 @@ $action = optional_param('action', '', PARAM_ALPHANUMEXT);
 // Validate student
 $student = $DB->get_record('user', ['id' => $studentid], '*', MUST_EXIST);
 
+// Load student's assigned sectors
+require_once(__DIR__ . '/classes/sector_manager.php');
+$studentSectorsRanked = \local_competencymanager\sector_manager::get_student_sectors_ranked($studentid, 0);
+$studentSectorsList = \local_competencymanager\sector_manager::get_student_sectors($studentid, 0);
+
+// If no sector specified, use primary
+if (empty($sector)) {
+    $sector = $studentSectorsRanked['primary'] ?? 'MECCANICA';
+}
+
 // Validate sector
 $sector = strtoupper(trim($sector));
-$validSectors = ['AUTOMOBILE', 'AUTOMAZIONE', 'CHIMFARM', 'ELETTRICITÀ', 'LOGISTICA', 'MECCANICA', 'METALCOSTRUZIONE', 'GENERICO'];
+$validSectors = ['AUTOMOBILE', 'AUTOMAZIONE', 'CHIMFARM', 'ELETTRICITÀ', 'ELETTRICITA', 'LOGISTICA', 'MECCANICA', 'METALCOSTRUZIONE', 'GENERICO'];
 if (!in_array($sector, $validSectors)) {
     throw new moodle_exception('invalid_sector', 'local_competencymanager');
 }
+
+// Determine medal for current sector
+$sectorMedals = [
+    strtoupper($studentSectorsRanked['primary'] ?? '') => '🥇',
+    strtoupper($studentSectorsRanked['secondary'] ?? '') => '🥈',
+    strtoupper($studentSectorsRanked['tertiary'] ?? '') => '🥉'
+];
+$currentSectorMedal = $sectorMedals[$sector] ?? '';
 
 // Page setup
 $PAGE->set_context($context);
@@ -300,10 +318,85 @@ switch ($evaluation->status) {
 <div class="eval-container">
     <!-- Header -->
     <div class="eval-header">
-        <h2><?php echo get_string('coach_evaluation_title', 'local_competencymanager'); ?></h2>
-        <div class="student-info"><?php echo fullname($student); ?> (<?php echo $student->email; ?>)</div>
-        <div class="sector-badge"><?php echo $sector; ?></div>
+        <div class="d-flex justify-content-between align-items-start flex-wrap">
+            <div>
+                <h2><?php echo get_string('coach_evaluation_title', 'local_competencymanager'); ?></h2>
+                <div class="student-info"><?php echo fullname($student); ?> (<?php echo $student->email; ?>)</div>
+            </div>
+            <!-- Sector Selector -->
+            <div class="sector-selector" style="margin-top: 10px;">
+                <label style="font-size: 0.9rem; opacity: 0.9; display: block; margin-bottom: 5px;">Settore da valutare:</label>
+                <select id="sector-select" class="form-control" style="background: rgba(255,255,255,0.95); color: #333; font-weight: 600; min-width: 220px; border-radius: 8px;"
+                        onchange="changeSector(this.value)">
+                    <?php
+                    // Build options from assigned sectors
+                    $sectorNames = \local_competencymanager\sector_manager::SECTORS;
+                    $assignedSectors = [];
+
+                    // Add sectors with medals
+                    if (!empty($studentSectorsRanked['primary'])) {
+                        $assignedSectors[$studentSectorsRanked['primary']] = '🥇';
+                    }
+                    if (!empty($studentSectorsRanked['secondary'])) {
+                        $assignedSectors[$studentSectorsRanked['secondary']] = '🥈';
+                    }
+                    if (!empty($studentSectorsRanked['tertiary'])) {
+                        $assignedSectors[$studentSectorsRanked['tertiary']] = '🥉';
+                    }
+
+                    // Also add sectors from quiz data
+                    foreach ($studentSectorsList as $sec) {
+                        $secUpper = strtoupper($sec->sector);
+                        if (!isset($assignedSectors[$secUpper])) {
+                            $assignedSectors[$secUpper] = '📊'; // From quiz
+                        }
+                    }
+
+                    if (empty($assignedSectors)) {
+                        // Fallback: show all valid sectors
+                        foreach ($validSectors as $vs) {
+                            if ($vs !== 'ELETTRICITA') { // Skip duplicate
+                                $assignedSectors[$vs] = '';
+                            }
+                        }
+                    }
+
+                    foreach ($assignedSectors as $secCode => $medal):
+                        $secName = $sectorNames[$secCode] ?? ucfirst(strtolower($secCode));
+                        $isSelected = (strtoupper($sector) === strtoupper($secCode));
+                    ?>
+                    <option value="<?php echo $secCode; ?>" <?php echo $isSelected ? 'selected' : ''; ?>>
+                        <?php echo $medal; ?> <?php echo $secName; ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+                <small style="display: block; margin-top: 5px; opacity: 0.8;">
+                    🥇 Primario | 🥈 Secondario | 🥉 Terziario | 📊 Da quiz
+                </small>
+            </div>
+        </div>
+        <div class="sector-badge mt-2">
+            <?php echo $currentSectorMedal; ?> <?php echo $sector; ?>
+            <?php
+            // Check if evaluation exists for this sector
+            $existingEvals = coach_evaluation_manager::get_student_evaluations($studentid, $sector);
+            if (!empty($existingEvals)):
+                $evalStatus = reset($existingEvals)->status;
+                $statusIcon = ['draft' => '📝', 'completed' => '✅', 'signed' => '🔒'][$evalStatus] ?? '';
+            ?>
+            <span style="margin-left: 10px; font-size: 0.85rem;"><?php echo $statusIcon; ?> <?php echo ucfirst($evalStatus); ?></span>
+            <?php endif; ?>
+        </div>
     </div>
+
+    <script>
+    function changeSector(newSector) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('sector', newSector);
+        url.searchParams.delete('evaluationid'); // Start fresh for new sector
+        window.location.href = url.toString();
+    }
+    </script>
 
     <!-- Status Banner -->
     <div class="status-banner <?php echo $statusClass; ?>">

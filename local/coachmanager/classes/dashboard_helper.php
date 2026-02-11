@@ -122,8 +122,11 @@ class dashboard_helper {
         $student->group_color = $group['color'];
         $student->current_week = $group['week'];
 
-        // Get sector
+        // Get sector (primary for backward compatibility)
         $student->sector = $this->get_student_sector($student->id);
+
+        // Get all sectors (primary, secondary, tertiary)
+        $student->sectors_all = $this->get_student_all_sectors($student->id);
 
         // Get course info
         $course = $this->get_student_main_course($student->id);
@@ -286,7 +289,41 @@ class dashboard_helper {
      * @return string
      */
     private function get_student_sector($userid) {
-        // Get from course name
+        // PRIORITY 1: Check local_student_sectors table for assigned sector (primary)
+        if ($this->db->get_manager()->table_exists('local_student_sectors')) {
+            $assignedSector = $this->db->get_record_sql(
+                "SELECT sector FROM {local_student_sectors}
+                 WHERE userid = ? AND is_primary = 1
+                 ORDER BY timemodified DESC
+                 LIMIT 1",
+                [$userid]
+            );
+            if ($assignedSector && !empty($assignedSector->sector)) {
+                return strtoupper($assignedSector->sector);
+            }
+
+            // Check any sector if no primary
+            $anySector = $this->db->get_record_sql(
+                "SELECT sector FROM {local_student_sectors}
+                 WHERE userid = ?
+                 ORDER BY is_primary DESC, quiz_count DESC, timemodified DESC
+                 LIMIT 1",
+                [$userid]
+            );
+            if ($anySector && !empty($anySector->sector)) {
+                return strtoupper($anySector->sector);
+            }
+        }
+
+        // PRIORITY 2: Check local_student_coaching table
+        if ($this->db->get_manager()->table_exists('local_student_coaching')) {
+            $coaching = $this->db->get_record('local_student_coaching', ['userid' => $userid], 'sector');
+            if ($coaching && !empty($coaching->sector)) {
+                return strtoupper($coaching->sector);
+            }
+        }
+
+        // PRIORITY 3: Fallback to course name detection
         $sql = "SELECT c.fullname, c.shortname
                 FROM {course} c
                 JOIN {enrol} e ON e.courseid = c.id
@@ -309,6 +346,55 @@ class dashboard_helper {
         }
 
         return 'ALTRO';
+    }
+
+    /**
+     * Get all student's sectors (primary, secondary, tertiary)
+     * @param int $userid
+     * @return array ['primary' => string|null, 'secondary' => string|null, 'tertiary' => string|null]
+     */
+    private function get_student_all_sectors($userid) {
+        $result = [
+            'primary' => null,
+            'secondary' => null,
+            'tertiary' => null
+        ];
+
+        if (!$this->db->get_manager()->table_exists('local_student_sectors')) {
+            // Fallback: use single sector detection
+            $result['primary'] = $this->get_student_sector($userid);
+            return $result;
+        }
+
+        // Get all sectors ordered by is_primary DESC, quiz_count DESC
+        $sectors = $this->db->get_records_sql(
+            "SELECT sector, is_primary, quiz_count
+             FROM {local_student_sectors}
+             WHERE userid = ?
+             ORDER BY is_primary DESC, quiz_count DESC, timemodified DESC",
+            [$userid]
+        );
+
+        if (empty($sectors)) {
+            // Fallback to course name detection
+            $result['primary'] = $this->get_student_sector($userid);
+            return $result;
+        }
+
+        $rank = 0;
+        foreach ($sectors as $sec) {
+            $sectorName = strtoupper($sec->sector);
+            if ($sec->is_primary || ($rank == 0 && empty($result['primary']))) {
+                $result['primary'] = $sectorName;
+            } else if (empty($result['secondary']) && $sectorName !== $result['primary']) {
+                $result['secondary'] = $sectorName;
+            } else if (empty($result['tertiary']) && $sectorName !== $result['primary'] && $sectorName !== $result['secondary']) {
+                $result['tertiary'] = $sectorName;
+            }
+            $rank++;
+        }
+
+        return $result;
     }
 
     /**

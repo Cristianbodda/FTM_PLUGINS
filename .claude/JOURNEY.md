@@ -1,5 +1,54 @@
 # FTM Plugins - Development Journey
 
+## 12 Febbraio 2026
+
+### Fix Mapping Competenze - Tutti i Settori
+- **Problema:** Competenze con idnumber numerico (06, 06-01, ecc.) non venivano riconosciute
+- **Causa:** La funzione `normalize_sector_name()` non gestiva i codici numerici
+- **Soluzione:** Aggiunto mapping completo per tutti i codici numerici:
+  - `01`, `01-01`...`01-14` → AUTOMOBILE
+  - `02`, `02-01`...`02-11` → CHIMFARM
+  - `03`, `03-01`...`03-08` → ELETTRICITA
+  - `04`, `04-01`...`04-08` → AUTOMAZIONE
+  - `05`, `05-01`...`05-08` → LOGISTICA
+  - `06`, `06-01`...`06-13` → MECCANICA
+  - `07`, `07-01`...`07-10` → METALCOSTRUZIONE
+- **Verifica:** 591/591 competenze mappate correttamente ✅
+- **File:** `area_mapping.php`
+
+### Fix Selezione Valutazione Coach
+- **Problema:** Student Report mostrava 0/0 competenze anche con valutazioni esistenti
+- **Causa:** Il sistema prendeva la valutazione più recente (vuota) invece di quella con ratings
+- **Soluzione:**
+  - Modificata logica per scegliere valutazione con più ratings
+  - `get_radar_data()` ora accetta parametro `evaluationid` opzionale
+  - Cerca automaticamente valutazioni con ratings effettivi
+- **File:** `student_report.php`, `classes/coach_evaluation_manager.php`
+- **Version:** v2.6.4 (2026021201)
+
+### Script Diagnostici
+- **diagnose_all_sectors.php** - Verifica completa tutti i 7 settori + GENERICO
+  - Test `normalize_sector_name()` con 29 casi
+  - Verifica mapping competenze testuali e numeriche
+  - Verifica estrazione aree per ogni settore
+- **diagnose_meccanica.php** - Diagnosi specifica settore MECCANICA
+- **diagnose_coach_eval.php** - Debug valutazioni coach per utente/settore
+- **test_coach_meccanica.php** - Test rapido valutazione coach MECCANICA
+
+### Riepilogo Settori Verificati
+| Settore | Competenze | Aree | Status |
+|---------|------------|------|--------|
+| AUTOMOBILE | 101 | 14 | ✅ |
+| CHIMFARM | 95 | 11 | ✅ |
+| ELETTRICITA | 93 | 8 | ✅ |
+| AUTOMAZIONE | 81 | 8 | ✅ |
+| LOGISTICA | 47 | 8 | ✅ |
+| MECCANICA | 86 | 13 | ✅ |
+| METALCOSTRUZIONE | 88 | 10 | ✅ |
+| GENERICO (FTM_GEN) | 35 | 7 | ✅ |
+
+---
+
 ## 11 Febbraio 2026
 
 ### Grafico Overlay - Rilevamento (Quiz + Lab)
@@ -42,6 +91,55 @@
 - **Database:**
   - Tabella `local_compman_final_ratings`: Valori manuali
   - Tabella `local_compman_final_history`: Storico modifiche
+
+### Gestione Settori da Coach
+- **Funzionalità:** Coach può assegnare settori primario/secondario/terziario allo studente
+- **Ubicazione:** Sezione collassabile nel Student Report (dopo box valutazione)
+- **Caratteristiche:**
+  - Visualizzazione settori attuali con badge colorati
+  - 3 dropdown: Primario 🥇, Secondario 🥈, Terziario 🥉
+  - Validazione: settori devono essere diversi tra loro
+  - Salvataggio AJAX con feedback immediato
+  - Solo visibile a chi ha capability `managesectors`
+- **File:**
+  - `classes/sector_manager.php` - Nuovi metodi: `set_student_sectors()`, `add_sector()`, `remove_sector()`, `get_student_sectors_ranked()`
+  - `ajax_manage_sectors.php` - Endpoint AJAX per gestione settori
+  - `student_report.php` - UI sezione gestione settori
+  - `version.php` - v2.6.1 (2026021102)
+
+### Coach Dashboard - Multi-Settore
+- **Funzionalità:** Dashboard coach mostra tutti i settori assegnati (non solo primario)
+- **Visualizzazione:** Badge con medaglie 🥇🥈🥉 disposti in colonna
+- **Colori badge:**
+  - Primario: viola/blu (originale)
+  - Secondario: grigio
+  - Terziario: marrone/bronzo
+- **File:**
+  - `local/coachmanager/classes/dashboard_helper.php` - Metodo `get_student_all_sectors()`
+  - `local/coachmanager/coach_dashboard_v2.php` - Funzione `render_sector_badges()` + CSS
+  - `local/coachmanager/version.php` - v2.1.2 (2026021102)
+
+### Filtro Multi-Settore Migliorato
+- **Dropdown settore:** Mostra medaglie 🥇🥈🥉 in base al ranking
+- **Indicatore fonte:** "(X quiz)" per settori con quiz, "(assegnato)" per settori manuali
+- **Avviso:** Messaggio info quando settore selezionato non ha quiz completati
+- **File:**
+  - `student_report.php` - Dropdown migliorato
+  - `version.php` - v2.6.2 (2026021103)
+
+### Coach Evaluation Multi-Settore
+- **Funzionalità:** Coach può valutare TUTTI i settori assegnati allo studente (non solo primario)
+- **Selettore settore:** Dropdown nell'header della pagina valutazione
+- **Indicatori:**
+  - 🥇 Settore primario
+  - 🥈 Settore secondario
+  - 🥉 Settore terziario
+  - 📊 Settore rilevato da quiz
+- **Status evaluation:** Mostra se esiste già valutazione per il settore (📝 draft, ✅ completed, 🔒 signed)
+- **Parametro sector:** Ora opzionale, usa primario se non specificato
+- **File:**
+  - `coach_evaluation.php` - Selettore settore + logica multi-settore
+  - `version.php` - v2.6.3 (2026021104)
 
 ---
 

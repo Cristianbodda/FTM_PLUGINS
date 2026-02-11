@@ -735,4 +735,180 @@ class sector_manager {
         'marrone' => '#996633',
         'viola' => '#7030A0',
     ];
+
+    // ============================================
+    // GESTIONE MULTI-SETTORE (Coach Assignment)
+    // ============================================
+
+    /**
+     * Imposta i settori dello studente (primario, secondario, terziario)
+     *
+     * @param int $userid ID studente
+     * @param string $primary Settore primario
+     * @param string $secondary Settore secondario (opzionale)
+     * @param string $tertiary Settore terziario (opzionale)
+     * @param int $courseid ID corso (0 = globale)
+     * @return bool Success
+     */
+    public static function set_student_sectors($userid, $primary, $secondary = '', $tertiary = '', $courseid = 0) {
+        global $DB;
+
+        $now = time();
+
+        // Clear all existing is_primary flags for this user
+        $DB->execute(
+            "UPDATE {local_student_sectors} SET is_primary = 0, timemodified = :time WHERE userid = :userid AND courseid = :courseid",
+            ['time' => $now, 'userid' => $userid, 'courseid' => $courseid]
+        );
+
+        // Helper function to upsert sector
+        $upsertSector = function($sector, $isPrimary) use ($DB, $userid, $courseid, $now) {
+            if (empty($sector)) {
+                return;
+            }
+
+            $existing = $DB->get_record('local_student_sectors', [
+                'userid' => $userid,
+                'courseid' => $courseid,
+                'sector' => $sector
+            ]);
+
+            if ($existing) {
+                $existing->is_primary = $isPrimary;
+                $existing->source = 'manual';
+                $existing->timemodified = $now;
+                $DB->update_record('local_student_sectors', $existing);
+            } else {
+                $record = new \stdClass();
+                $record->userid = $userid;
+                $record->courseid = $courseid;
+                $record->sector = $sector;
+                $record->is_primary = $isPrimary;
+                $record->source = 'manual';
+                $record->quiz_count = 0;
+                $record->first_detected = $now;
+                $record->last_detected = $now;
+                $record->timecreated = $now;
+                $record->timemodified = $now;
+                $DB->insert_record('local_student_sectors', $record);
+            }
+        };
+
+        // Set primary sector
+        $upsertSector($primary, 1);
+
+        // Set secondary sector
+        $upsertSector($secondary, 0);
+
+        // Set tertiary sector
+        $upsertSector($tertiary, 0);
+
+        // Sync with coaching table if primary sector is set
+        if (!empty($primary)) {
+            self::sync_coaching_sector($userid, $courseid, $primary);
+        }
+
+        return true;
+    }
+
+    /**
+     * Aggiunge un settore a uno studente (secondario/terziario)
+     *
+     * @param int $userid ID studente
+     * @param string $sector Codice settore
+     * @param int $courseid ID corso (0 = globale)
+     * @return bool Success
+     */
+    public static function add_sector($userid, $sector, $courseid = 0) {
+        global $DB;
+
+        if (empty($sector)) {
+            return false;
+        }
+
+        // Check if sector already exists
+        $existing = $DB->get_record('local_student_sectors', [
+            'userid' => $userid,
+            'courseid' => $courseid,
+            'sector' => $sector
+        ]);
+
+        if ($existing) {
+            // Already exists, no need to add
+            return true;
+        }
+
+        $now = time();
+        $record = new \stdClass();
+        $record->userid = $userid;
+        $record->courseid = $courseid;
+        $record->sector = $sector;
+        $record->is_primary = 0; // Secondary/tertiary sectors are not primary
+        $record->source = 'manual';
+        $record->quiz_count = 0;
+        $record->first_detected = $now;
+        $record->last_detected = $now;
+        $record->timecreated = $now;
+        $record->timemodified = $now;
+
+        return $DB->insert_record('local_student_sectors', $record) > 0;
+    }
+
+    /**
+     * Rimuove un settore da uno studente
+     *
+     * @param int $userid ID studente
+     * @param string $sector Codice settore
+     * @param int $courseid ID corso (0 = globale)
+     * @return bool Success
+     */
+    public static function remove_sector($userid, $sector, $courseid = 0) {
+        global $DB;
+
+        if (empty($sector)) {
+            return false;
+        }
+
+        return $DB->delete_records('local_student_sectors', [
+            'userid' => $userid,
+            'courseid' => $courseid,
+            'sector' => $sector
+        ]);
+    }
+
+    /**
+     * Ottiene i settori con rank (primary=1, secondary=2, tertiary=3)
+     *
+     * @param int $userid ID studente
+     * @param int $courseid ID corso (0 = globale)
+     * @return array Array con chiavi 'primary', 'secondary', 'tertiary'
+     */
+    public static function get_student_sectors_ranked($userid, $courseid = 0) {
+        $sectors = self::get_student_sectors($userid, $courseid);
+
+        $result = [
+            'primary' => null,
+            'secondary' => null,
+            'tertiary' => null,
+            'all' => []
+        ];
+
+        $rank = 0;
+        foreach ($sectors as $sec) {
+            $result['all'][] = $sec;
+            if ($sec->is_primary) {
+                $result['primary'] = $sec->sector;
+            } else if ($rank == 0 && empty($result['primary'])) {
+                // First one becomes primary if no primary flag set
+                $result['primary'] = $sec->sector;
+            } else if (empty($result['secondary']) && $sec->sector !== $result['primary']) {
+                $result['secondary'] = $sec->sector;
+            } else if (empty($result['tertiary']) && $sec->sector !== $result['primary'] && $sec->sector !== $result['secondary']) {
+                $result['tertiary'] = $sec->sector;
+            }
+            $rank++;
+        }
+
+        return $result;
+    }
 }

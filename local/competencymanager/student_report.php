@@ -959,11 +959,30 @@ if (!empty($currentSector)) {
     $coachEvaluations = coach_evaluation_manager::get_student_evaluations($userid, $currentSector);
     $hasCoachEvaluation = !empty($coachEvaluations);
     if ($hasCoachEvaluation) {
-        // Prendi la valutazione più recente
-        $coachEvaluationData = reset($coachEvaluations);
+        // Cerca la valutazione con più ratings (preferisci completed/signed su draft vuoti)
+        $coachEvaluationData = null;
+        $maxRatings = -1;
+        foreach ($coachEvaluations as $eval) {
+            $stats = coach_evaluation_manager::get_rating_stats($eval->id);
+            // Preferisci valutazioni con ratings, poi per status (completed > draft)
+            if ($stats['total'] > $maxRatings) {
+                $maxRatings = $stats['total'];
+                $coachEvaluationData = $eval;
+            } elseif ($stats['total'] == $maxRatings && $maxRatings == 0) {
+                // Se entrambe vuote, preferisci completed/signed
+                if (in_array($eval->status, ['completed', 'signed']) && $coachEvaluationData->status == 'draft') {
+                    $coachEvaluationData = $eval;
+                }
+            }
+        }
+        // Fallback alla prima se nessuna ha ratings
+        if (!$coachEvaluationData) {
+            $coachEvaluationData = reset($coachEvaluations);
+        }
         // Pre-carica dati radar se necessario (anche per overlay)
+        // Passa l'evaluationid per garantire coerenza tra sezioni
         if ($showCoachEvaluation || $printCoachEvaluation || $showOverlayRadar || $printOverlayRadar) {
-            $coachRadarData = coach_evaluation_manager::get_radar_data($userid, $currentSector);
+            $coachRadarData = coach_evaluation_manager::get_radar_data($userid, $currentSector, true, $coachEvaluationData->id);
         }
     }
 }
@@ -1766,6 +1785,165 @@ echo '<div class="col"><h4 class="mb-1" style="color: ' . $evaluation['color'] .
 echo '<div class="col-auto text-center p-3 rounded" style="background: ' . $evaluation['bgColor'] . ';"><div style="font-size: 2rem; font-weight: bold; color: ' . $evaluation['color'] . ';">' . ($summary['correct_total'] ?? $summary['correct_questions']) . '/' . ($summary['questions_total'] ?? $summary['total_questions']) . '</div><small>risposte corrette</small></div></div></div></div>';
 
 // ============================================
+// SEZIONE GESTIONE SETTORI (Solo Coach/Segreteria)
+// ============================================
+$canManageSectors = has_capability('local/competencymanager:managesectors', $context);
+if ($canManageSectors) {
+    // Carica settori attuali
+    $studentSectorsRanked = \local_competencymanager\sector_manager::get_student_sectors_ranked($userid, 0);
+    $allAvailableSectors = \local_competencymanager\sector_manager::SECTORS;
+
+    // CSS per badge settori (stile coerente con ftm_cpurc)
+    $sectorColors = [
+        'AUTOMOBILE' => ['bg' => '#DBEAFE', 'text' => '#1E40AF'],
+        'MECCANICA' => ['bg' => '#D1FAE5', 'text' => '#065F46'],
+        'LOGISTICA' => ['bg' => '#FEF3C7', 'text' => '#92400E'],
+        'ELETTRICITA' => ['bg' => '#FEE2E2', 'text' => '#991B1B'],
+        'AUTOMAZIONE' => ['bg' => '#F3E8FF', 'text' => '#6B21A8'],
+        'METALCOSTRUZIONE' => ['bg' => '#E5E7EB', 'text' => '#374151'],
+        'CHIMFARM' => ['bg' => '#FCE7F3', 'text' => '#9D174D'],
+    ];
+    ?>
+    <div class="card mb-4" id="sector-management-card">
+        <div class="card-header py-2" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; cursor: pointer;"
+             onclick="document.getElementById('sector-management-body').classList.toggle('d-none'); this.querySelector('.toggle-icon').textContent = document.getElementById('sector-management-body').classList.contains('d-none') ? '▶' : '▼';">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><span class="toggle-icon">▼</span> 🏷️ Gestione Settori Studente</h6>
+                <small class="opacity-75">Coach/Segreteria</small>
+            </div>
+        </div>
+        <div class="card-body py-3" id="sector-management-body">
+            <div class="row">
+                <!-- Settori Attuali -->
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <label class="text-muted small mb-2 d-block">Settori rilevati/assegnati:</label>
+                    <div id="current-sectors-badges" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        <?php if (!empty($studentSectorsRanked['all'])): ?>
+                            <?php foreach ($studentSectorsRanked['all'] as $sec):
+                                $sectorCode = $sec->sector;
+                                $isPrimary = $sec->is_primary;
+                                $colors = $sectorColors[$sectorCode] ?? ['bg' => '#E5E7EB', 'text' => '#374151'];
+                            ?>
+                            <span class="badge" style="background: <?php echo $colors['bg']; ?>; color: <?php echo $colors['text']; ?>; padding: 6px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                <?php if ($isPrimary): ?>⭐<?php endif; ?>
+                                <?php echo s($allAvailableSectors[$sectorCode] ?? $sectorCode); ?>
+                                <?php if ($sec->quiz_count > 0): ?>
+                                    <small style="opacity: 0.7;">(<?php echo $sec->quiz_count; ?>)</small>
+                                <?php endif; ?>
+                            </span>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <span class="text-muted small">Nessun settore assegnato</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Dropdown Settori -->
+                <div class="col-md-8">
+                    <div class="row">
+                        <div class="col-4">
+                            <label class="small text-muted">🥇 Primario</label>
+                            <select id="sector-primary" class="form-control form-control-sm" data-userid="<?php echo $userid; ?>">
+                                <option value="">-- Seleziona --</option>
+                                <?php foreach ($allAvailableSectors as $code => $name): ?>
+                                <option value="<?php echo $code; ?>" <?php echo ($studentSectorsRanked['primary'] === $code) ? 'selected' : ''; ?>>
+                                    <?php echo s($name); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <label class="small text-muted">🥈 Secondario</label>
+                            <select id="sector-secondary" class="form-control form-control-sm" data-userid="<?php echo $userid; ?>">
+                                <option value="">-- Nessuno --</option>
+                                <?php foreach ($allAvailableSectors as $code => $name): ?>
+                                <option value="<?php echo $code; ?>" <?php echo ($studentSectorsRanked['secondary'] === $code) ? 'selected' : ''; ?>>
+                                    <?php echo s($name); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <label class="small text-muted">🥉 Terziario</label>
+                            <select id="sector-tertiary" class="form-control form-control-sm" data-userid="<?php echo $userid; ?>">
+                                <option value="">-- Nessuno --</option>
+                                <?php foreach ($allAvailableSectors as $code => $name): ?>
+                                <option value="<?php echo $code; ?>" <?php echo ($studentSectorsRanked['tertiary'] === $code) ? 'selected' : ''; ?>>
+                                    <?php echo s($name); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-2 d-flex align-items-center">
+                        <button type="button" id="btn-save-sectors" class="btn btn-sm btn-primary">
+                            💾 Salva Settori
+                        </button>
+                        <span id="sector-save-status" class="ml-3 small"></span>
+                    </div>
+                </div>
+            </div>
+            <small class="text-muted d-block mt-2">
+                <strong>🥇 Primario:</strong> Determina quiz e autovalutazione assegnati |
+                <strong>🥈🥉 Secondario/Terziario:</strong> Suggerimenti aggiuntivi per il coach
+            </small>
+        </div>
+    </div>
+
+    <script>
+    // Gestione salvataggio settori
+    document.getElementById('btn-save-sectors')?.addEventListener('click', function() {
+        const userid = <?php echo $userid; ?>;
+        const primary = document.getElementById('sector-primary').value;
+        const secondary = document.getElementById('sector-secondary').value;
+        const tertiary = document.getElementById('sector-tertiary').value;
+        const statusEl = document.getElementById('sector-save-status');
+
+        // Validazione: settori devono essere diversi
+        const sectors = [primary, secondary, tertiary].filter(s => s !== '');
+        const uniqueSectors = [...new Set(sectors)];
+        if (sectors.length !== uniqueSectors.length) {
+            statusEl.innerHTML = '<span class="text-danger">❌ I settori devono essere diversi tra loro</span>';
+            return;
+        }
+
+        statusEl.innerHTML = '<span class="text-info">⏳ Salvataggio...</span>';
+
+        fetch('<?php echo $CFG->wwwroot; ?>/local/competencymanager/ajax_manage_sectors.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                sesskey: M.cfg.sesskey,
+                action: 'save_sectors',
+                userid: userid,
+                courseid: 0,
+                primary: primary,
+                secondary: secondary,
+                tertiary: tertiary
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                statusEl.innerHTML = '<span class="text-success">✅ Settori salvati!</span>';
+                // Aggiorna i badge visivamente dopo 1 secondo
+                setTimeout(() => {
+                    statusEl.innerHTML = '';
+                }, 3000);
+            } else {
+                statusEl.innerHTML = '<span class="text-danger">❌ ' + data.message + '</span>';
+            }
+        })
+        .catch(err => {
+            statusEl.innerHTML = '<span class="text-danger">❌ Errore di rete</span>';
+            console.error('Sector save error:', err);
+        });
+    });
+    </script>
+    <?php
+}
+
+// ============================================
 // PANNELLO DIAGNOSTICA: Quiz ultimi 7 giorni (TUTTI gli stati, TUTTI i corsi)
 // ============================================
 $sevenDaysAgo = time() - (7 * 24 * 60 * 60);
@@ -2147,6 +2325,15 @@ if (!empty($selectedQuizzes) && empty($competencies)) {
                     }
                     ?>
 
+                    <?php
+                    // Ottieni settori con ranking per medaglie
+                    $sectorsRanked = \local_competencymanager\sector_manager::get_student_sectors_ranked($userid, 0);
+                    $rankMedals = [
+                        $sectorsRanked['primary'] => '🥇',
+                        $sectorsRanked['secondary'] => '🥈',
+                        $sectorsRanked['tertiary'] => '🥉'
+                    ];
+                    ?>
                     <?php if (empty($student_sectors)): ?>
                     <!-- Nessun settore rilevato - mostra messaggio -->
                     <div class="alert alert-warning mb-3">
@@ -2161,8 +2348,12 @@ if (!empty($selectedQuizzes) && empty($competencies)) {
                     <!-- Settori disponibili per lo studente -->
                     <div class="alert alert-success py-2 mb-2">
                         <small>
-                            ✅ <strong><?php echo count($student_sectors); ?></strong> settore/i rilevato/i
-                            (<strong><?php echo $total_quiz_count; ?></strong> quiz completati)
+                            ✅ <strong><?php echo count($student_sectors); ?></strong> settore/i
+                            <?php if ($total_quiz_count > 0): ?>
+                                (<strong><?php echo $total_quiz_count; ?></strong> quiz completati)
+                            <?php else: ?>
+                                (assegnati dal coach)
+                            <?php endif; ?>
                         </small>
                     </div>
                     <div class="form-group mb-3">
@@ -2177,16 +2368,27 @@ if (!empty($selectedQuizzes) && empty($competencies)) {
                                     'code' => strtolower($sec->sector)
                                 ];
                                 $is_selected = (strtolower($cm_sector_filter) === $display['code']);
-                                $is_primary = !empty($sec->is_primary);
+                                // Determina medaglia in base al ranking
+                                $medal = $rankMedals[strtoupper($sec->sector)] ?? '';
+                                $sourceLabel = ($sec->quiz_count > 0) ? "({$sec->quiz_count} quiz)" : "(assegnato)";
                             ?>
                             <option value="<?php echo $display['code']; ?>" <?php echo $is_selected ? "selected" : ""; ?>>
-                                <?php echo $display['icon']; ?> <?php echo $display['name']; ?>
-                                (<?php echo $sec->quiz_count; ?> quiz)
-                                <?php echo $is_primary ? ' ⭐' : ''; ?>
+                                <?php echo $medal; ?> <?php echo $display['icon']; ?> <?php echo $display['name']; ?>
+                                <?php echo $sourceLabel; ?>
                             </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
+                    <?php
+                    // Avviso se settore selezionato non ha quiz
+                    if ($cm_sector_filter !== 'all') {
+                        $selectedSectorData = $student_sectors[strtoupper($cm_sector_filter)] ?? null;
+                        if ($selectedSectorData && $selectedSectorData->quiz_count == 0):
+                    ?>
+                    <div class="alert alert-info py-2 mb-2">
+                        <small>ℹ️ Settore assegnato dal coach ma nessun quiz completato. I dati mostrati potrebbero essere limitati.</small>
+                    </div>
+                    <?php endif; } ?>
                     <?php endif; ?>
                     <h6>📊 Sezioni Aggiuntive (CoachManager):</h6>
                     

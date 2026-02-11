@@ -59,6 +59,29 @@ $stats = $dashboard->get_dashboard_stats($students);
 $end6weeks = $dashboard->get_students_end_6_weeks($students);
 $calendar_data = $dashboard->get_calendar_data(date('Y'), date('m'));
 
+// Helper function to render sector badges (primary, secondary, tertiary)
+function render_sector_badges($student) {
+    $sectors = $student->sectors_all ?? ['primary' => $student->sector ?? 'N/D', 'secondary' => null, 'tertiary' => null];
+    $html = '<div class="sector-badges-container" style="display: flex; flex-wrap: wrap; gap: 3px;">';
+
+    // Primary sector (always shown)
+    $primary = $sectors['primary'] ?? $student->sector ?? 'N/D';
+    $html .= '<span class="settore-badge settore-primary" title="Settore Primario">🥇 ' . strtoupper($primary) . '</span>';
+
+    // Secondary sector (if exists)
+    if (!empty($sectors['secondary'])) {
+        $html .= '<span class="settore-badge settore-secondary" title="Settore Secondario" style="opacity: 0.85; font-size: 0.9em;">🥈 ' . strtoupper($sectors['secondary']) . '</span>';
+    }
+
+    // Tertiary sector (if exists)
+    if (!empty($sectors['tertiary'])) {
+        $html .= '<span class="settore-badge settore-tertiary" title="Settore Terziario" style="opacity: 0.7; font-size: 0.85em;">🥉 ' . strtoupper($sectors['tertiary']) . '</span>';
+    }
+
+    $html .= '</div>';
+    return $html;
+}
+
 echo $OUTPUT->header();
 
 // ============================================
@@ -81,6 +104,29 @@ echo $OUTPUT->header();
     max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
+}
+
+/* Sector badges - Base styles */
+.settore-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: inline-block;
+    margin: 1px 0;
+    white-space: nowrap;
+}
+
+.settore-secondary { background: linear-gradient(135deg, #a8a8a8 0%, #6c757d 100%) !important; }
+.settore-tertiary { background: linear-gradient(135deg, #c4b5a0 0%, #8b7355 100%) !important; }
+
+.sector-badges-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
 }
 
 /* View Selector & Zoom - GRANDE per over 50 */
@@ -546,14 +592,20 @@ echo $OUTPUT->header();
 }
 
 .view-compatta .settore-badge {
-    padding: 6px 14px;
-    border-radius: 15px;
-    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
     font-weight: 600;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     text-align: center;
+    display: inline-block;
+    margin: 1px 0;
 }
+
+.view-compatta .settore-secondary { background: linear-gradient(135deg, #a8a8a8 0%, #6c757d 100%); }
+.view-compatta .settore-tertiary { background: linear-gradient(135deg, #c4b5a0 0%, #8b7355 100%); }
+.view-compatta .sector-badges-container { flex-direction: column; align-items: flex-start; }
 
 .view-compatta .week-cell {
     font-weight: 600;
@@ -769,13 +821,19 @@ echo $OUTPUT->header();
 }
 
 .view-standard .settore-badge {
-    padding: 6px 14px;
-    border-radius: 15px;
-    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
     font-weight: 600;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
+    display: inline-block;
+    margin: 1px 0;
 }
+
+.view-standard .settore-secondary { background: linear-gradient(135deg, #a8a8a8 0%, #6c757d 100%); }
+.view-standard .settore-tertiary { background: linear-gradient(135deg, #c4b5a0 0%, #8b7355 100%); }
+.view-standard .sector-badges-container { flex-direction: column; align-items: flex-start; }
 
 .view-standard .week-badge {
     padding: 8px 14px;
@@ -1257,13 +1315,19 @@ echo $OUTPUT->header();
 }
 
 .view-dettagliata .settore-badge {
-    padding: 8px 18px;
-    border-radius: 20px;
-    font-size: 14px;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 13px;
     font-weight: 600;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
+    display: inline-block;
+    margin: 2px 0;
 }
+
+.view-dettagliata .settore-secondary { background: linear-gradient(135deg, #a8a8a8 0%, #6c757d 100%); }
+.view-dettagliata .settore-tertiary { background: linear-gradient(135deg, #c4b5a0 0%, #8b7355 100%); }
+.view-dettagliata .sector-badges-container { flex-direction: column; align-items: flex-start; }
 
 .view-dettagliata .week-badge {
     padding: 10px 18px;
@@ -2293,7 +2357,7 @@ function render_view_compatta($students, $dashboard) {
                     <div class="email"><?php echo $student->email; ?></div>
                 </div>
                 <div>
-                    <span class="settore-badge"><?php echo strtoupper($student->sector ?? 'N/D'); ?></span>
+                    <?php echo render_sector_badges($student); ?>
                 </div>
                 <div class="week-cell">
                     <?php echo $student->current_week ?? 1; ?>
@@ -2404,7 +2468,7 @@ function render_view_standard($students, $dashboard) {
                         <?php if ($is_below): ?>
                         <span class="badge-below">SOTTO SOGLIA</span>
                         <?php endif; ?>
-                        <span class="settore-badge"><?php echo strtoupper($student->sector ?? 'N/D'); ?></span>
+                        <?php echo render_sector_badges($student); ?>
                         <span class="week-badge <?php echo $header_class; ?>">Sett. <?php echo $current_week; ?></span>
                     </div>
                 </div>
@@ -2790,7 +2854,7 @@ function render_view_dettagliata($students, $dashboard) {
                         <?php if ($is_end6): ?>
                         <span class="badge-6-weeks">&#127937; FINE 6 SETTIMANE</span>
                         <?php endif; ?>
-                        <span class="settore-badge"><?php echo strtoupper($student->sector ?? 'N/D'); ?></span>
+                        <?php echo render_sector_badges($student); ?>
                         <span class="week-badge <?php echo $header_class; ?>">Settimana <?php echo $current_week; ?></span>
                     </div>
                 </div>
@@ -3006,7 +3070,7 @@ function render_view_classica($students, $dashboard) {
                         <?php if ($is_below): ?>
                         <span class="badge-below">SOTTO SOGLIA</span>
                         <?php endif; ?>
-                        <span class="settore-badge"><?php echo strtoupper($student->sector ?? 'N/D'); ?></span>
+                        <?php echo render_sector_badges($student); ?>
                         <span class="week-badge <?php echo $header_class; ?>">Sett. <?php echo $student->current_week ?? 1; ?></span>
                     </div>
                 </div>
