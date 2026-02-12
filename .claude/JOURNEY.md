@@ -2,6 +2,15 @@
 
 ## 12 Febbraio 2026 (Sessione 2)
 
+### Fix Auto-Default Opzioni Visualizzazione
+- **Problema:** Il grafico sovrapposizione non veniva settato di default quando si selezionava un quiz
+- **Causa:** Le opzioni venivano auto-settate via JavaScript solo la prima volta (`!previouslyHadSelection`), ma al reload della pagina i valori non erano preservati
+- **Soluzione:**
+  - Aggiunto flag `viz_configured` per tracciare se l'utente ha già configurato le opzioni
+  - Se quiz selezionati e `viz_configured=0` → tutte le opzioni attive di default nel PHP
+  - Dopo il submit → `viz_configured=1` → preferenze utente preservate
+- **File:** `student_report.php` (linee 81, 155-165, 2321, 2621-2628, 2760)
+
 ### Sistema Tab Orizzontale per Student Report
 - **Nuova UI:** Barra tab orizzontale per organizzare sezioni del report
 - **6 Tab disponibili:**
