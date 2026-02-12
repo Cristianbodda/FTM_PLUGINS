@@ -521,7 +521,7 @@ Tabelle Condivise:
 - Setup Universale: /local/competencyxmlimport/setup_universale.php?courseid=X
 - Scheduler: /local/ftm_scheduler/index.php
 - Sector Admin: /local/competencymanager/sector_admin.php
-- Test Suite: /local/ftm_testsuite/agent_tests.php
+- **🧪 Test Suite:** /local/ftm_testsuite/agent_tests.php (6 agenti, 79+ test)
 - Moodle Docs: https://docs.moodle.org/dev/
 
 ---

@@ -12,6 +12,7 @@
 // ========================================
 // MAPPING NOMI AREE PER SETTORE
 // ========================================
+global $AREA_NAMES;
 $AREA_NAMES = [
     // ========================================
     // AUTOMOBILE (pattern: AUTOMOBILE_XX_A1 -> A)
@@ -134,16 +135,19 @@ $AREA_NAMES = [
 // Settori che usano il pattern lettera (terza parte dell'idnumber)
 // Es. LOGISTICA_LO_A1 -> estrae "A" dalla terza parte
 // Nota: GEN usa pattern speciale GEN_A_01 (seconda parte = lettera)
+global $LETTER_BASED_SECTORS;
 $LETTER_BASED_SECTORS = ['AUTOMOBILE', 'LOGISTICA', 'ELETTRICITA', 'AUTOMAZIONE', 'METALCOSTRUZIONE'];
 
 // Settori che usano il pattern codice (seconda parte dell'idnumber)
 // Es. MECCANICA_CNC_01 -> estrae "CNC" dalla seconda parte
 // Es. CHIMFARM_1C_01 -> estrae "1C" dalla seconda parte
+global $CODE_BASED_SECTORS;
 $CODE_BASED_SECTORS = ['MECCANICA', 'CHIMFARM'];
 
 // ========================================
 // NOMI SETTORI PER DISPLAY
 // ========================================
+global $SECTOR_DISPLAY_NAMES;
 $SECTOR_DISPLAY_NAMES = [
     'AUTOMOBILE' => 'Automobile',
     'LOGISTICA' => 'Logistica',
