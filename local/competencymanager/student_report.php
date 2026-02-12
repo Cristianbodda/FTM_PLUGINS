@@ -77,6 +77,8 @@ $printCoachEvaluation = optional_param('print_coach_eval', 0, PARAM_INT);
 // ============================================
 // PARAMETRI GRAFICO SOVRAPPOSIZIONE (Overlay Radar)
 // ============================================
+// Flag per sapere se le opzioni di visualizzazione sono state configurate dall'utente
+$vizConfigured = optional_param('viz_configured', 0, PARAM_INT);
 $showOverlayRadar = optional_param('show_overlay', 0, PARAM_INT);
 $printOverlayRadar = optional_param('print_overlay', 0, PARAM_INT);
 
@@ -148,6 +150,20 @@ $singleQuizId = optional_param('quizid', 0, PARAM_INT);
 if ($singleQuizId && empty($selectedQuizzes)) {
     $selectedQuizzes = [$singleQuizId];
 }
+
+// ============================================
+// DEFAULT OPZIONI VISUALIZZAZIONE
+// Se ci sono quiz selezionati e le opzioni non sono state configurate,
+// attiva automaticamente tutte le opzioni di visualizzazione
+// ============================================
+if (!empty($selectedQuizzes) && !$vizConfigured) {
+    $showDualRadar = 1;
+    $showGapAnalysis = 1;
+    $showSpuntiColloquio = 1;
+    $showCoachEvaluation = 1;
+    $showOverlayRadar = 1;
+}
+
 // Filtro tentativi: 'all' (tutti), 'first' (solo primo), 'last' (solo ultimo)
 $attemptFilter = optional_param('attempt_filter', 'all', PARAM_ALPHA);
 if (!in_array($attemptFilter, ['all', 'first', 'last'])) {
@@ -2302,6 +2318,7 @@ if (!empty($quizComparison)) {
                 <input type="hidden" name="userid" value="<?php echo $userid; ?>">
                 <input type="hidden" name="courseid" value="<?php echo $courseid; ?>">
                 <input type="hidden" name="tab" value="<?php echo $tab; ?>">
+                <input type="hidden" name="viz_configured" value="1">
                 <?php if ($selectedArea): ?><input type="hidden" name="selectedarea" value="<?php echo $selectedArea; ?>"><?php endif; ?>
                 <?php if ($showDualRadar): ?><input type="hidden" name="show_dual_radar" value="1"><?php endif; ?>
                 <?php if ($showGapAnalysis): ?><input type="hidden" name="show_gap" value="1"><?php endif; ?>
@@ -2601,6 +2618,15 @@ if (!empty($quizComparison)) {
                                 form.appendChild(hidden);
                             }
                         });
+                        // Aggiungi flag viz_configured per indicare che le opzioni sono state configurate
+                        var vizConfigInput = form.querySelector('input[name="viz_configured"]');
+                        if (!vizConfigInput) {
+                            vizConfigInput = document.createElement('input');
+                            vizConfigInput.type = 'hidden';
+                            vizConfigInput.name = 'viz_configured';
+                            form.appendChild(vizConfigInput);
+                        }
+                        vizConfigInput.value = '1';
                         form.submit();
                     }
                 }, 800); // 800ms di delay per permettere selezioni multiple
@@ -2731,6 +2757,7 @@ if (!empty($selectedQuizzes) && empty($competencies)) {
             <input type="hidden" name="userid" value="<?php echo $userid; ?>">
             <input type="hidden" name="courseid" value="<?php echo $courseid; ?>">
             <input type="hidden" name="tab" value="<?php echo $tab; ?>">
+            <input type="hidden" name="viz_configured" value="1">
             <?php foreach ($selectedQuizzes as $qid): ?>
             <input type="hidden" name="quizids[]" value="<?php echo $qid; ?>">
             <?php endforeach; ?>
