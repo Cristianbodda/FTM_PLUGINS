@@ -1785,9 +1785,207 @@ echo '<div class="col"><h4 class="mb-1" style="color: ' . $evaluation['color'] .
 echo '<div class="col-auto text-center p-3 rounded" style="background: ' . $evaluation['bgColor'] . ';"><div style="font-size: 2rem; font-weight: bold; color: ' . $evaluation['color'] . ';">' . ($summary['correct_total'] ?? $summary['correct_questions']) . '/' . ($summary['questions_total'] ?? $summary['total_questions']) . '</div><small>risposte corrette</small></div></div></div></div>';
 
 // ============================================
-// SEZIONE GESTIONE SETTORI (Solo Coach/Segreteria)
+// SISTEMA TAB CONFIGURAZIONE COACH
 // ============================================
 $canManageSectors = has_capability('local/competencymanager:managesectors', $context);
+
+// Mostra i tab solo se l'utente ha permessi coach/segreteria
+if ($canManageSectors || !empty($quizComparison)):
+?>
+<!-- CSS per il sistema Tab -->
+<style>
+/* Tab Container */
+.ftm-tabs-container {
+    margin-bottom: 20px;
+}
+
+/* Tab Bar */
+.ftm-tabs-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 15px;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 0;
+}
+
+/* Single Tab Button */
+.ftm-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.ftm-tab-btn:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.4);
+    transform: translateY(-2px);
+}
+
+.ftm-tab-btn.active {
+    background: rgba(255,255,255,0.95);
+    color: #1e3a5f;
+    border-color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.ftm-tab-btn .tab-icon {
+    font-size: 18px;
+}
+
+/* Tab Content Area */
+.ftm-tabs-content {
+    background: #f8f9fa;
+    border: 2px solid #1e3a5f;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 0;
+}
+
+/* Individual Tab Panel */
+.ftm-tab-panel {
+    display: none;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+.ftm-tab-panel.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mini-accordion inside tab */
+.ftm-mini-accordion {
+    margin-bottom: 12px;
+}
+
+.ftm-mini-accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ftm-mini-accordion-header:hover {
+    filter: brightness(1.1);
+}
+
+.ftm-mini-accordion-header.collapsed {
+    border-radius: 8px;
+}
+
+.ftm-mini-accordion-header:not(.collapsed) {
+    border-radius: 8px 8px 0 0;
+}
+
+.ftm-mini-accordion-header h6 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.ftm-mini-accordion-body {
+    display: none;
+    padding: 15px;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+}
+
+.ftm-mini-accordion-body.show {
+    display: block;
+}
+
+/* Different colors for each mini-accordion */
+.ftm-mini-accordion[data-section="quiz-filter"] .ftm-mini-accordion-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.ftm-mini-accordion[data-section="viz-options"] .ftm-mini-accordion-header {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.ftm-mini-accordion[data-section="weights"] .ftm-mini-accordion-header {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* No content message */
+.ftm-tab-empty {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+}
+
+/* Mobile: 2 rows */
+@media (max-width: 768px) {
+    .ftm-tabs-bar {
+        justify-content: center;
+    }
+    .ftm-tab-btn {
+        flex: 1 1 45%;
+        justify-content: center;
+        font-size: 13px;
+        padding: 8px 12px;
+    }
+}
+</style>
+
+<!-- Tab Bar -->
+<div class="ftm-tabs-container">
+    <div class="ftm-tabs-bar">
+        <button type="button" class="ftm-tab-btn" data-tab="settori" onclick="toggleFtmTab('settori')">
+            <span class="tab-icon">👤</span>
+            <span>Settori</span>
+        </button>
+        <button type="button" class="ftm-tab-btn" data-tab="ultimi7gg" onclick="toggleFtmTab('ultimi7gg')">
+            <span class="tab-icon">📅</span>
+            <span>Ultimi 7gg</span>
+        </button>
+        <button type="button" class="ftm-tab-btn" data-tab="config-report" onclick="toggleFtmTab('config-report')">
+            <span class="tab-icon">⚙️</span>
+            <span>Configurazione</span>
+        </button>
+        <button type="button" class="ftm-tab-btn" data-tab="progresso" onclick="toggleFtmTab('progresso')">
+            <span class="tab-icon">📊</span>
+            <span>Progresso</span>
+        </button>
+        <button type="button" class="ftm-tab-btn" data-tab="gap-analysis" onclick="toggleFtmTab('gap-analysis')">
+            <span class="tab-icon">📈</span>
+            <span>Gap Analysis</span>
+        </button>
+        <button type="button" class="ftm-tab-btn" data-tab="spunti" onclick="toggleFtmTab('spunti')">
+            <span class="tab-icon">💬</span>
+            <span>Spunti Colloquio</span>
+        </button>
+    </div>
+
+    <div class="ftm-tabs-content">
+        <!-- TAB 1: Settori -->
+        <div class="ftm-tab-panel" id="ftm-tab-settori">
+<?php endif; ?>
+
+<?php
+// SEZIONE GESTIONE SETTORI (Contenuto del Tab 1)
 if ($canManageSectors) {
     // Carica settori attuali
     $studentSectorsRanked = \local_competencymanager\sector_manager::get_student_sectors_ranked($userid, 0);
@@ -1802,6 +2000,7 @@ if ($canManageSectors) {
         'AUTOMAZIONE' => ['bg' => '#F3E8FF', 'text' => '#6B21A8'],
         'METALCOSTRUZIONE' => ['bg' => '#E5E7EB', 'text' => '#374151'],
         'CHIMFARM' => ['bg' => '#FCE7F3', 'text' => '#9D174D'],
+        'GEN' => ['bg' => '#E0E7FF', 'text' => '#3730A3'],
     ];
     ?>
     <div class="card mb-4" id="sector-management-card">
@@ -1941,8 +2140,16 @@ if ($canManageSectors) {
     });
     </script>
     <?php
+} else {
+    // Se non può gestire settori, mostra messaggio
+    echo '<div class="ftm-tab-empty"><p>👤 Nessun settore configurabile</p></div>';
 }
+?>
+        </div><!-- Fine TAB 1: Settori -->
 
+        <!-- TAB 2: Ultimi 7 giorni -->
+        <div class="ftm-tab-panel" id="ftm-tab-ultimi7gg">
+<?php
 // ============================================
 // PANNELLO DIAGNOSTICA: Quiz ultimi 7 giorni (TUTTI gli stati, TUTTI i corsi)
 // ============================================
@@ -2034,8 +2241,17 @@ if (!empty($inProgressAttempts)) {
     echo '</div>';
 }
 
+if (empty($recentAllAttempts) && empty($inProgressAttempts)) {
+    echo '<div class="ftm-tab-empty"><p>📅 Nessun quiz completato negli ultimi 7 giorni</p></div>';
+}
+?>
+        </div><!-- Fine TAB 2: Ultimi 7gg -->
+
+        <!-- TAB 3: Configurazione Report -->
+        <div class="ftm-tab-panel" id="ftm-tab-config-report">
+<?php
 // ============================================
-// PANNELLO FILTRO QUIZ AVANZATO
+// PANNELLO FILTRO QUIZ AVANZATO (Mini-accordion 1)
 // ============================================
 if (!empty($quizComparison)) {
     // Raggruppa quiz per settore (estrai dal nome)
@@ -2075,16 +2291,13 @@ if (!empty($quizComparison)) {
     // Parametro filtro tentativi
     $attemptFilter = optional_param('attempt_filter', 'all', PARAM_ALPHA);
     ?>
-    <div class="card mb-4">
-        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer;"
-             onclick="document.getElementById('quizFilterPanel').classList.toggle('d-none'); this.querySelector('.toggle-icon').textContent = document.getElementById('quizFilterPanel').classList.contains('d-none') ? '▶' : '▼';">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">🔍 Filtra Quiz per Analisi Radar</h5>
-                <span class="toggle-icon">▼</span>
-            </div>
-            <small class="d-block mt-1 opacity-75">Clicca per espandere/comprimere • Seleziona i quiz da includere nel grafico</small>
+    <!-- Mini-accordion 1: Filtra Quiz -->
+    <div class="ftm-mini-accordion" data-section="quiz-filter">
+        <div class="ftm-mini-accordion-header collapsed" onclick="toggleMiniAccordion(this)">
+            <h6>📊 Filtra Quiz per Analisi Radar</h6>
+            <span class="toggle-icon">▶</span>
         </div>
-        <div class="card-body" id="quizFilterPanel">
+        <div class="ftm-mini-accordion-body" id="quizFilterPanel">
             <form method="get" id="quizFilterForm">
                 <input type="hidden" name="userid" value="<?php echo $userid; ?>">
                 <input type="hidden" name="courseid" value="<?php echo $courseid; ?>">
@@ -2094,6 +2307,7 @@ if (!empty($quizComparison)) {
                 <?php if ($showGapAnalysis): ?><input type="hidden" name="show_gap" value="1"><?php endif; ?>
                 <?php if ($showSpuntiColloquio): ?><input type="hidden" name="show_spunti" value="1"><?php endif; ?>
                 <?php if ($showCoachEvaluation): ?><input type="hidden" name="show_coach_eval" value="1"><?php endif; ?>
+                <?php if ($showOverlayRadar): ?><input type="hidden" name="show_overlay" value="1"><?php endif; ?>
                 <?php if (!empty($currentSector)): ?><input type="hidden" name="cm_sector" value="<?php echo $currentSector; ?>"><?php endif; ?>
 
                 <!-- Filtro tentativi -->
@@ -2121,11 +2335,11 @@ if (!empty($quizComparison)) {
                         <span style="font-size: 1.5rem;" class="mr-2"><?php echo $sectorIcons[$sector] ?? '📁'; ?></span>
                         <h6 class="mb-0 mr-3"><?php echo $sector; ?></h6>
                         <button type="button" class="btn btn-outline-success btn-sm py-0 mr-1"
-                                onclick="document.querySelectorAll('.quiz-check-<?php echo strtolower(preg_replace('/[^a-z]/i', '', $sector)); ?>').forEach(c=>c.checked=true)">
+                                onclick="document.querySelectorAll('.quiz-check-<?php echo strtolower(preg_replace('/[^a-z]/i', '', $sector)); ?>').forEach(c=>c.checked=true); if(typeof updateQuizSelection === 'function') updateQuizSelection();">
                             ✓ Tutti
                         </button>
                         <button type="button" class="btn btn-outline-secondary btn-sm py-0"
-                                onclick="document.querySelectorAll('.quiz-check-<?php echo strtolower(preg_replace('/[^a-z]/i', '', $sector)); ?>').forEach(c=>c.checked=false)">
+                                onclick="document.querySelectorAll('.quiz-check-<?php echo strtolower(preg_replace('/[^a-z]/i', '', $sector)); ?>').forEach(c=>c.checked=false); if(typeof updateQuizSelection === 'function') updateQuizSelection();">
                             ✗ Nessuno
                         </button>
                     </div>
@@ -2203,39 +2417,257 @@ if (!empty($quizComparison)) {
                 <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
                     <div>
                         <button type="button" class="btn btn-outline-primary btn-sm mr-2"
-                                onclick="document.querySelectorAll('.quiz-checkbox').forEach(c=>c.checked=true)">
+                                onclick="document.querySelectorAll('.quiz-checkbox').forEach(c=>c.checked=true); if(typeof updateQuizSelection === 'function') updateQuizSelection();">
                             ✅ Seleziona Tutti
                         </button>
                         <button type="button" class="btn btn-outline-secondary btn-sm"
-                                onclick="document.querySelectorAll('.quiz-checkbox').forEach(c=>c.checked=false)">
+                                onclick="document.querySelectorAll('.quiz-checkbox').forEach(c=>c.checked=false); if(typeof updateQuizSelection === 'function') updateQuizSelection();">
                             ☐ Deseleziona Tutti
                         </button>
                     </div>
                     <div class="d-flex align-items-center">
-                        <span class="text-muted mr-3" id="quizSelectionCount">
-                            <script>
-                                document.addEventListener('DOMContentLoaded', function() {
-                                    function updateCount() {
-                                        var checked = document.querySelectorAll('.quiz-checkbox:checked').length;
-                                        var total = document.querySelectorAll('.quiz-checkbox').length;
-                                        document.getElementById('quizSelectionCount').innerHTML =
-                                            '<strong>' + checked + '</strong>/' + total + ' quiz selezionati';
-                                    }
-                                    updateCount();
-                                    document.querySelectorAll('.quiz-checkbox').forEach(function(cb) {
-                                        cb.addEventListener('change', updateCount);
-                                    });
-                                });
-                            </script>
+                        <span class="text-muted mr-3" id="quizSelectionCount"></span>
+                        <span id="quizSectorError" class="text-danger mr-3" style="display: none;">
+                            ⚠️ Non puoi selezionare quiz di settori diversi!
                         </span>
-                        <button type="submit" class="btn btn-success">
-                            🔄 Aggiorna Grafici
-                        </button>
+                        <!-- Pulsante spostato in fondo alla sezione Configurazione Report -->
                     </div>
                 </div>
             </form>
         </div>
-    </div>
+    </div><!-- Fine mini-accordion 1: Filtra Quiz -->
+
+    <!-- Script per auto-attivazione opzioni quando si seleziona un quiz -->
+    <script>
+    // Funzione globale per aggiornare la selezione quiz
+    var updateQuizSelection;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mappa quiz -> settore (generata da PHP)
+        var quizSectorMap = {
+            <?php foreach ($quizBySector as $sectorName => $quizzes): ?>
+            <?php foreach ($quizzes as $quizId => $quiz): ?>
+            '<?php echo $quizId; ?>': '<?php echo strtolower($sectorName); ?>',
+            <?php endforeach; ?>
+            <?php endforeach; ?>
+        };
+
+        // Mappa settore -> codice per dropdown
+        var sectorCodeMap = {
+            'automobile': 'automobile',
+            'meccanica': 'meccanica',
+            'logistica': 'logistica',
+            'elettricita': 'elettricita',
+            'elettricità': 'elettricita',
+            'automazione': 'automazione',
+            'metalcostruzione': 'metalcostruzione',
+            'chimfarm': 'chimfarm',
+            'chimico-farmaceutico': 'chimfarm',
+            'gen': 'gen',
+            'generico': 'gen'
+        };
+
+        var previouslyHadSelection = <?php echo !empty($selectedQuizzes) ? 'true' : 'false'; ?>;
+
+        updateQuizSelection = function() {
+            var checkboxes = document.querySelectorAll('.quiz-checkbox');
+            var checkedBoxes = document.querySelectorAll('.quiz-checkbox:checked');
+            var total = checkboxes.length;
+            var checked = checkedBoxes.length;
+
+            // Aggiorna conteggio
+            document.getElementById('quizSelectionCount').innerHTML =
+                '<strong>' + checked + '</strong>/' + total + ' quiz selezionati';
+
+            // Raccogli settori dei quiz selezionati
+            var selectedSectors = new Set();
+            checkedBoxes.forEach(function(cb) {
+                var quizId = cb.value;
+                var sector = quizSectorMap[quizId];
+                if (sector) {
+                    selectedSectors.add(sector.toLowerCase());
+                }
+            });
+
+            var sectorsArray = Array.from(selectedSectors);
+            var errorEl = document.getElementById('quizSectorError');
+            var submitBtn = document.getElementById('btnUpdateGraphs');
+
+            // Controlla se ci sono settori diversi
+            if (sectorsArray.length > 1) {
+                errorEl.style.display = 'inline';
+                submitBtn.disabled = true;
+                return;
+            } else {
+                errorEl.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+
+            // Se almeno un quiz è selezionato
+            if (checked > 0 && !previouslyHadSelection) {
+                // Auto-attiva le opzioni
+                var dualRadar = document.getElementById('show_dual_radar');
+                var gapAnalysis = document.getElementById('show_gap');
+                var spunti = document.getElementById('show_spunti');
+                var coachEval = document.getElementById('show_coach_eval');
+                var overlay = document.getElementById('show_overlay');
+
+                if (dualRadar && !dualRadar.disabled) dualRadar.checked = true;
+                if (gapAnalysis && !gapAnalysis.disabled) gapAnalysis.checked = true;
+                if (spunti && !spunti.disabled) spunti.checked = true;
+                if (coachEval && !coachEval.disabled) coachEval.checked = true;
+                if (overlay && !overlay.disabled) overlay.checked = true;
+
+                // Auto-setta il settore nel dropdown
+                if (sectorsArray.length === 1) {
+                    var sectorCode = sectorCodeMap[sectorsArray[0]] || sectorsArray[0];
+                    var sectorDropdown = document.getElementById('cm_sector');
+                    if (sectorDropdown) {
+                        // Cerca l'opzione con il valore corrispondente
+                        for (var i = 0; i < sectorDropdown.options.length; i++) {
+                            if (sectorDropdown.options[i].value === sectorCode) {
+                                sectorDropdown.selectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Apri il pannello opzioni se era chiuso
+                var optionsPanel = document.getElementById('optionsPanel');
+                if (optionsPanel && optionsPanel.classList.contains('d-none')) {
+                    optionsPanel.classList.remove('d-none');
+                    // Aggiorna icona toggle
+                    var toggleIcon = optionsPanel.parentElement.querySelector('.toggle-icon');
+                    if (toggleIcon) toggleIcon.textContent = '▼';
+                }
+
+                previouslyHadSelection = true;
+
+                // Auto-submit form dopo aver auto-attivato le opzioni
+                // Usa debounce per permettere selezione multipla
+                if (window.autoSubmitTimeout) {
+                    clearTimeout(window.autoSubmitTimeout);
+                }
+
+                // Mostra messaggio di caricamento
+                var submitBtn = document.getElementById('btnUpdateGraphs');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '⏳ Caricamento grafici...';
+                    submitBtn.disabled = true;
+                }
+
+                window.autoSubmitTimeout = setTimeout(function() {
+                    var form = document.getElementById('additiveOptionsForm');
+                    if (form) {
+                        // Sincronizza quiz selezionati con additiveOptionsForm
+                        // Rimuovi tutti i hidden inputs dei quiz esistenti
+                        form.querySelectorAll('input[name="quizids[]"]').forEach(function(inp) {
+                            inp.remove();
+                        });
+                        // Aggiungi i quiz attualmente selezionati
+                        document.querySelectorAll('.quiz-checkbox:checked').forEach(function(cb) {
+                            var hidden = document.createElement('input');
+                            hidden.type = 'hidden';
+                            hidden.name = 'quizids[]';
+                            hidden.value = cb.value;
+                            form.appendChild(hidden);
+                        });
+                        // Sincronizza filtro tentativi
+                        var attemptFilter = document.querySelector('input[name="attempt_filter"]:checked');
+                        if (attemptFilter) {
+                            var existingFilter = form.querySelector('input[name="attempt_filter"]');
+                            if (existingFilter) existingFilter.remove();
+                            var hidden = document.createElement('input');
+                            hidden.type = 'hidden';
+                            hidden.name = 'attempt_filter';
+                            hidden.value = attemptFilter.value;
+                            form.appendChild(hidden);
+                        }
+                        // Forza le opzioni di visualizzazione come hidden inputs
+                        // (le checkbox potrebbero non essere inviate correttamente)
+                        var vizOptions = ['show_dual_radar', 'show_gap', 'show_spunti', 'show_coach_eval', 'show_overlay'];
+                        vizOptions.forEach(function(optName) {
+                            var checkbox = document.getElementById(optName);
+                            if (checkbox && checkbox.checked) {
+                                // Rimuovi eventuale hidden esistente
+                                var existing = form.querySelector('input[type="hidden"][name="' + optName + '"]');
+                                if (existing) existing.remove();
+                                // Aggiungi hidden input
+                                var hidden = document.createElement('input');
+                                hidden.type = 'hidden';
+                                hidden.name = optName;
+                                hidden.value = '1';
+                                form.appendChild(hidden);
+                            }
+                        });
+                        form.submit();
+                    }
+                }, 800); // 800ms di delay per permettere selezioni multiple
+            }
+
+            // Se nessun quiz selezionato, resetta tutto
+            if (checked === 0 && previouslyHadSelection) {
+                var dualRadar = document.getElementById('show_dual_radar');
+                var gapAnalysis = document.getElementById('show_gap');
+                var spunti = document.getElementById('show_spunti');
+                var coachEval = document.getElementById('show_coach_eval');
+                var overlay = document.getElementById('show_overlay');
+
+                if (dualRadar) dualRadar.checked = false;
+                if (gapAnalysis) gapAnalysis.checked = false;
+                if (spunti) spunti.checked = false;
+                if (coachEval) coachEval.checked = false;
+                if (overlay) overlay.checked = false;
+
+                // Resetta settore a "tutti"
+                var sectorDropdown = document.getElementById('cm_sector');
+                if (sectorDropdown) {
+                    sectorDropdown.selectedIndex = 0; // "Tutti i settori"
+                }
+
+                previouslyHadSelection = false;
+
+                // Auto-submit per resettare la pagina
+                if (window.autoSubmitTimeout) {
+                    clearTimeout(window.autoSubmitTimeout);
+                }
+
+                var submitBtn = document.getElementById('btnUpdateGraphs');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '⏳ Resettando...';
+                    submitBtn.disabled = true;
+                }
+
+                window.autoSubmitTimeout = setTimeout(function() {
+                    var form = document.getElementById('additiveOptionsForm');
+                    if (form) {
+                        // Sincronizza quiz selezionati (nessuno) con additiveOptionsForm
+                        form.querySelectorAll('input[name="quizids[]"]').forEach(function(inp) {
+                            inp.remove();
+                        });
+                        form.submit();
+                    }
+                }, 500);
+            }
+        }
+
+        // Inizializza
+        updateQuizSelection();
+
+        // Aggiungi listener a tutte le checkbox
+        document.querySelectorAll('.quiz-checkbox').forEach(function(cb) {
+            cb.addEventListener('change', updateQuizSelection);
+        });
+
+        // Intercetta i pulsanti "Seleziona Tutti" e "Deseleziona Tutti"
+        document.querySelectorAll('button[onclick*="quiz-checkbox"]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                setTimeout(updateQuizSelection, 50); // Attendi che le checkbox siano aggiornate
+            });
+        });
+    });
+    </script>
     <?php
 }
 
@@ -2285,14 +2717,16 @@ if (!empty($selectedQuizzes) && empty($competencies)) {
 }
 
 // ============================================
-// PANNELLO OPZIONI ADDITIVE (CoachManager)
+// PANNELLO OPZIONI ADDITIVE (CoachManager) - Mini-accordion 2
 // ============================================
 ?>
-<div class="card mb-4">
-    <div class="card-header" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
-        <h5 class="mb-0">🔧 Opzioni Visualizzazione Aggiuntive</h5>
+<!-- Mini-accordion 2: Opzioni Visualizzazione -->
+<div class="ftm-mini-accordion" data-section="viz-options">
+    <div class="ftm-mini-accordion-header collapsed" onclick="toggleMiniAccordion(this)">
+        <h6>🔧 Opzioni Visualizzazione</h6>
+        <span class="toggle-icon">▶</span>
     </div>
-    <div class="card-body">
+    <div class="ftm-mini-accordion-body" id="optionsPanel">
         <form method="get" id="additiveOptionsForm">
             <input type="hidden" name="userid" value="<?php echo $userid; ?>">
             <input type="hidden" name="courseid" value="<?php echo $courseid; ?>">
@@ -2370,7 +2804,14 @@ if (!empty($selectedQuizzes) && empty($competencies)) {
                                 $is_selected = (strtolower($cm_sector_filter) === $display['code']);
                                 // Determina medaglia in base al ranking
                                 $medal = $rankMedals[strtoupper($sec->sector)] ?? '';
-                                $sourceLabel = ($sec->quiz_count > 0) ? "({$sec->quiz_count} quiz)" : "(assegnato)";
+                                // Determina etichetta fonte
+                                if ($sec->quiz_count > 0) {
+                                    $sourceLabel = "({$sec->quiz_count} quiz)";
+                                } elseif (!empty($sec->has_selfassessment)) {
+                                    $sourceLabel = "(autovalutazione)";
+                                } else {
+                                    $sourceLabel = "(assegnato)";
+                                }
                             ?>
                             <option value="<?php echo $display['code']; ?>" <?php echo $is_selected ? "selected" : ""; ?>>
                                 <?php echo $medal; ?> <?php echo $display['icon']; ?> <?php echo $display['name']; ?>
@@ -2528,17 +2969,243 @@ if (!empty($selectedQuizzes) && empty($competencies)) {
                 </div>
             </div>
             
-            <div class="mt-3 text-right">
-                <button type="submit" class="btn btn-success">🔄 Applica Opzioni</button>
-            </div>
         </form>
     </div>
+</div><!-- Fine mini-accordion 2: Opzioni Visualizzazione -->
+
+<!-- Mini-accordion 3: Ponderazioni - Sarà popolato se showOverlayRadar è attivo -->
+<div class="ftm-mini-accordion" data-section="weights" id="weights-mini-accordion" style="display: none;">
+    <div class="ftm-mini-accordion-header collapsed" onclick="toggleMiniAccordion(this)">
+        <h6>⚖️ Configurazione Ponderazioni</h6>
+        <span class="toggle-icon">▶</span>
+    </div>
+    <div class="ftm-mini-accordion-body" id="weightsMiniAccordionBody">
+        <!-- Contenuto caricato dinamicamente se overlay attivo -->
+    </div>
 </div>
+
+<!-- Pulsante Aggiorna Grafici (per tutto il tab Configurazione Report) -->
+<div class="text-center mt-4 mb-3 p-3" style="background: #e9ecef; border-radius: 8px;">
+    <button type="submit" form="additiveOptionsForm" class="btn btn-success btn-lg" id="btnUpdateGraphs">
+        🔄 Aggiorna Grafici
+    </button>
+    <p class="text-muted small mt-2 mb-0">Applica tutte le opzioni selezionate sopra</p>
+</div>
+
+<?php if (!$canManageSectors && empty($quizComparison)): ?>
+<!-- Messaggio se nessuna opzione disponibile -->
+<div class="ftm-tab-empty">
+    <p>⚙️ Nessuna opzione di configurazione disponibile per questo studente</p>
+</div>
+<?php endif; ?>
+
+        </div><!-- Fine TAB 3: Configurazione Report -->
+
+        <!-- TAB 4: Progresso Certificazione -->
+        <div class="ftm-tab-panel" id="ftm-tab-progresso">
+            <div id="progresso-content-placeholder">
+                <!-- Contenuto spostato via JavaScript -->
+                <div class="ftm-tab-empty">
+                    <p>📊 Caricamento progresso certificazione...</p>
+                </div>
+            </div>
+        </div><!-- Fine TAB 4: Progresso -->
+
+        <!-- TAB 5: Gap Analysis -->
+        <div class="ftm-tab-panel" id="ftm-tab-gap-analysis">
+            <div id="gap-analysis-content-placeholder">
+                <!-- Contenuto spostato via JavaScript -->
+                <div class="ftm-tab-empty">
+                    <p>📈 Seleziona le opzioni nella tab "Configurazione" e clicca "Aggiorna Grafici" per vedere la Gap Analysis</p>
+                </div>
+            </div>
+        </div><!-- Fine TAB 5: Gap Analysis -->
+
+        <!-- TAB 6: Spunti Colloquio -->
+        <div class="ftm-tab-panel" id="ftm-tab-spunti">
+            <div id="spunti-content-placeholder">
+                <!-- Contenuto spostato via JavaScript -->
+                <div class="ftm-tab-empty">
+                    <p>💬 Seleziona le opzioni nella tab "Configurazione" e clicca "Aggiorna Grafici" per vedere gli Spunti Colloquio</p>
+                </div>
+            </div>
+        </div><!-- Fine TAB 6: Spunti Colloquio -->
+
+    </div><!-- Fine ftm-tabs-content -->
+</div><!-- Fine ftm-tabs-container -->
+
+<!-- JavaScript per gestione Tab e localStorage -->
+<script>
+// Toggle Tab principale
+function toggleFtmTab(tabId) {
+    const btn = document.querySelector(`.ftm-tab-btn[data-tab="${tabId}"]`);
+    const panel = document.getElementById(`ftm-tab-${tabId}`);
+
+    if (!btn || !panel) return;
+
+    const isActive = btn.classList.contains('active');
+
+    if (isActive) {
+        // Chiudi tab
+        btn.classList.remove('active');
+        panel.classList.remove('active');
+    } else {
+        // Apri tab
+        btn.classList.add('active');
+        panel.classList.add('active');
+    }
+
+    // Salva stato in localStorage
+    saveFtmTabState();
+}
+
+// Toggle Mini-accordion
+function toggleMiniAccordion(header) {
+    const body = header.nextElementSibling;
+    const icon = header.querySelector('.toggle-icon');
+
+    header.classList.toggle('collapsed');
+    body.classList.toggle('show');
+
+    if (icon) {
+        icon.textContent = body.classList.contains('show') ? '▼' : '▶';
+    }
+
+    // Salva stato
+    saveFtmTabState();
+}
+
+// Salva stato in localStorage
+function saveFtmTabState() {
+    const state = {
+        tabs: {},
+        accordions: {}
+    };
+
+    // Salva stato tab
+    document.querySelectorAll('.ftm-tab-btn').forEach(btn => {
+        state.tabs[btn.dataset.tab] = btn.classList.contains('active');
+    });
+
+    // Salva stato mini-accordion
+    document.querySelectorAll('.ftm-mini-accordion-header').forEach(header => {
+        const section = header.parentElement.dataset.section;
+        if (section) {
+            state.accordions[section] = !header.classList.contains('collapsed');
+        }
+    });
+
+    localStorage.setItem('ftm_report_tabs_<?php echo $userid; ?>_<?php echo $courseid; ?>', JSON.stringify(state));
+}
+
+// Ripristina stato da localStorage
+function restoreFtmTabState() {
+    const saved = localStorage.getItem('ftm_report_tabs_<?php echo $userid; ?>_<?php echo $courseid; ?>');
+    if (!saved) return;
+
+    try {
+        const state = JSON.parse(saved);
+
+        // Ripristina tab
+        if (state.tabs) {
+            Object.entries(state.tabs).forEach(([tabId, isOpen]) => {
+                if (isOpen) {
+                    const btn = document.querySelector(`.ftm-tab-btn[data-tab="${tabId}"]`);
+                    const panel = document.getElementById(`ftm-tab-${tabId}`);
+                    if (btn && panel) {
+                        btn.classList.add('active');
+                        panel.classList.add('active');
+                    }
+                }
+            });
+        }
+
+        // Ripristina mini-accordion
+        if (state.accordions) {
+            Object.entries(state.accordions).forEach(([section, isOpen]) => {
+                if (isOpen) {
+                    const accordion = document.querySelector(`.ftm-mini-accordion[data-section="${section}"]`);
+                    if (accordion) {
+                        const header = accordion.querySelector('.ftm-mini-accordion-header');
+                        const body = accordion.querySelector('.ftm-mini-accordion-body');
+                        const icon = header?.querySelector('.toggle-icon');
+                        if (header && body) {
+                            header.classList.remove('collapsed');
+                            body.classList.add('show');
+                            if (icon) icon.textContent = '▼';
+                        }
+                    }
+                }
+            });
+        }
+    } catch (e) {
+        console.error('Error restoring tab state:', e);
+    }
+}
+
+// Inizializza al caricamento
+document.addEventListener('DOMContentLoaded', function() {
+    restoreFtmTabState();
+
+    // Sposta la sezione Ponderazioni nel mini-accordion (se esiste)
+    const weightsSection = document.getElementById('weights-config-section');
+    const weightsMiniAccordion = document.getElementById('weights-mini-accordion');
+    const weightsMiniBody = document.getElementById('weightsMiniAccordionBody');
+
+    if (weightsSection && weightsMiniAccordion && weightsMiniBody) {
+        // Prendi il contenuto del body della sezione originale
+        const originalBody = weightsSection.querySelector('.card-body');
+        if (originalBody) {
+            // Sposta il contenuto
+            weightsMiniBody.innerHTML = originalBody.innerHTML;
+            // Nascondi sezione originale
+            weightsSection.style.display = 'none';
+            // Mostra mini-accordion
+            weightsMiniAccordion.style.display = 'block';
+        }
+    }
+
+    // ==========================================
+    // SPOSTA CONTENUTO NELLE NUOVE TAB
+    // ==========================================
+
+    // TAB Progresso Certificazione
+    const progressoOriginal = document.getElementById('progresso-section-original');
+    const progressoPlaceholder = document.getElementById('progresso-content-placeholder');
+    if (progressoOriginal && progressoPlaceholder) {
+        // Sposta l'intero contenuto della card
+        progressoPlaceholder.innerHTML = progressoOriginal.innerHTML;
+        // Nascondi sezione originale
+        progressoOriginal.style.display = 'none';
+    }
+
+    // TAB Gap Analysis
+    const gapOriginal = document.getElementById('gap-analysis-section-original');
+    const gapPlaceholder = document.getElementById('gap-analysis-content-placeholder');
+    if (gapOriginal && gapPlaceholder) {
+        // Sposta l'intero contenuto della card
+        gapPlaceholder.innerHTML = gapOriginal.innerHTML;
+        // Nascondi sezione originale
+        gapOriginal.style.display = 'none';
+    }
+
+    // TAB Spunti Colloquio
+    const spuntiOriginal = document.getElementById('spunti-section-original');
+    const spuntiPlaceholder = document.getElementById('spunti-content-placeholder');
+    if (spuntiOriginal && spuntiPlaceholder) {
+        // Sposta l'intero contenuto della card
+        spuntiPlaceholder.innerHTML = spuntiOriginal.innerHTML;
+        // Nascondi sezione originale
+        spuntiOriginal.style.display = 'none';
+    }
+});
+</script>
+
 <?php
 // ============================================
 
 // Progresso certificazione
-echo '<div class="card mb-4"><div class="card-header" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;"><h5 class="mb-0">📊 Progresso Certificazione</h5></div><div class="card-body">';
+echo '<div class="card mb-4" id="progresso-section-original"><div class="card-header" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;"><h5 class="mb-0">📊 Progresso Certificazione</h5></div><div class="card-body">';
 echo '<div class="progress mb-3" style="height: 30px;"><div class="progress-bar bg-success" style="width: ' . $certProgress['percentage'] . '%;"><strong>' . $certProgress['percentage'] . '% completato</strong></div></div>';
 echo '<div class="row text-center"><div class="col-md-4"><div class="p-3 rounded" style="background: #d4edda;"><h3 class="text-success mb-0">' . $certProgress['certified'] . '</h3><small>✅ Certificate (≥80%)</small></div></div>';
 echo '<div class="col-md-4"><div class="p-3 rounded" style="background: #fff3cd;"><h3 class="text-warning mb-0">' . $certProgress['inProgress'] . '</h3><small>🔄 In corso</small></div></div>';
@@ -4101,7 +4768,21 @@ if ($tab === 'overview') {
 
         ksort($overlayAreas);
 
-        // Prepara dati per Chart.js
+        // Carica valori manuali per il grafico (stessa logica della tabella)
+        $manualOverlay = [];
+        $dbmanOverlay = $DB->get_manager();
+        if ($dbmanOverlay->table_exists('local_compman_final_ratings')) {
+            $manualRecsOverlay = $DB->get_records_sql("
+                SELECT * FROM {local_compman_final_ratings}
+                WHERE studentid = ? AND courseid = ? AND sector = ?
+                AND method IN ('rilevamento', 'auto_comp', 'coach_comp')
+            ", [$userid, $courseid, $currentSector]);
+            foreach ($manualRecsOverlay as $mr) {
+                $manualOverlay[$mr->area_code][$mr->method] = (float)$mr->manual_value;
+            }
+        }
+
+        // Prepara dati per Chart.js (usa valori manuali se presenti)
         $overlayLabels = [];
         $overlayQuiz = [];
         $overlayAuto = [];
@@ -4110,10 +4791,25 @@ if ($tab === 'overview') {
 
         foreach ($overlayAreas as $code => $data) {
             $overlayLabels[] = $data['name'] ?: "Area $code";
-            $overlayQuiz[] = $data['quiz'];
-            $overlayAuto[] = $data['auto'];
+
+            // Quiz/Rilevamento - usa valore manuale se presente
+            $quizVal = $data['quiz'];
+            // Nota: il rilevamento viene calcolato in JS come (quiz+lab)/2
+
+            // Auto - usa valore manuale se presente
+            $autoVal = isset($manualOverlay[$code]['auto_comp'])
+                ? $manualOverlay[$code]['auto_comp']
+                : $data['auto'];
+
+            // Coach - usa valore manuale se presente
+            $coachVal = isset($manualOverlay[$code]['coach_comp'])
+                ? $manualOverlay[$code]['coach_comp']
+                : $data['coach'];
+
+            $overlayQuiz[] = $quizVal;
+            $overlayAuto[] = $autoVal;
             $overlayLabeval[] = $data['labeval'];
-            $overlayCoach[] = $data['coach'];
+            $overlayCoach[] = $coachVal;
         }
 
         // Verifica se ci sono dati da visualizzare
@@ -4122,7 +4818,15 @@ if ($tab === 'overview') {
         if (!empty($areasData)) $sourceCount++;
         if (!empty($autovalutazioneAreas)) $sourceCount++;
         if (!empty($labEvalByArea)) $sourceCount++;
-        if (!empty($coachRadarData)) $sourceCount++;
+        // Coach: conta come fonte se ci sono dati originali O valori manuali
+        $hasCoachSource = !empty($coachRadarData) || !empty($manualOverlay);
+        if ($hasCoachSource) $sourceCount++;
+
+        // Verifica se ci sono valori coach effettivi (non tutti null)
+        $hasCoachValues = array_filter($overlayCoach, function($v) { return $v !== null; });
+        if (!empty($hasCoachValues)) {
+            $hasOverlayData = true;
+        }
     ?>
     <div class="card mt-4" id="overlay-radar-section">
         <div class="card-header" style="background: linear-gradient(135deg, #0066cc 0%, #004499 100%); color: white;">
@@ -4167,7 +4871,7 @@ if ($tab === 'overview') {
                         </label>
                         <label class="mb-0 d-flex align-items-center" style="cursor: pointer;">
                             <input type="checkbox" id="overlay-toggle-coach" checked class="mr-2">
-                            <span class="badge" style="background: #0066cc; color: white; padding: 8px 12px;">👨‍🏫 Formatore</span>
+                            <span class="badge" style="background: #dc3545; color: white; padding: 8px 12px;">👨‍🏫 Formatore</span>
                         </label>
                         <span class="text-muted mx-2">|</span>
                         <label class="mb-0 d-flex align-items-center" style="cursor: pointer;" title="Mostra Lab separato dal Rilevamento">
@@ -4199,7 +4903,7 @@ if ($tab === 'overview') {
                             <th class="text-center col-rilevamento" style="background: #28a745; color: white; width: 100px;">🔍 Rilevamento</th>
                             <th class="text-center col-lab-separato" style="background: #6c757d; color: white; width: 80px; display: none;">🔧 Lab</th>
                             <th class="text-center" style="background: #667eea; color: white; width: 80px;">🧑 Auto</th>
-                            <th class="text-center" style="background: #0066cc; color: white; width: 80px;">👨‍🏫 Coach</th>
+                            <th class="text-center" style="background: #dc3545; color: white; width: 80px;">👨‍🏫 Coach</th>
                             <th class="text-center" style="background: #495057; color: white; width: 80px;">📈 Media</th>
                             <th class="text-center" style="background: #495057; color: white; width: 80px;">📊 Gap Max</th>
                         </tr>
@@ -4318,7 +5022,7 @@ if ($tab === 'overview') {
                                 <?php if ($coachVal !== null): ?>
                                     <?php if ($canEditComparative): ?>
                                     <span class="badge comparative-editable"
-                                          style="background: #0066cc; color: white; cursor: pointer;"
+                                          style="background: #dc3545; color: white; cursor: pointer;"
                                           data-area="<?php echo $code; ?>"
                                           data-method="coach_comp"
                                           data-value="<?php echo $coachVal; ?>"
@@ -4329,7 +5033,7 @@ if ($tab === 'overview') {
                                         <?php echo $coachVal; ?>%<?php if ($coachModified): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
                                     </span>
                                     <?php else: ?>
-                                    <span class="badge" style="background: #0066cc; color: white;"><?php echo $coachVal; ?>%</span>
+                                    <span class="badge" style="background: #dc3545; color: white;"><?php echo $coachVal; ?>%</span>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <span class="text-muted">-</span>
@@ -4418,10 +5122,10 @@ if ($tab === 'overview') {
                     {
                         label: '👨‍🏫 Formatore',
                         data: overlayData.coach,
-                        backgroundColor: 'rgba(0, 102, 204, 0.2)',
-                        borderColor: 'rgba(0, 102, 204, 1)',
+                        backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                        borderColor: 'rgba(220, 53, 69, 1)',
                         borderWidth: 2,
-                        pointBackgroundColor: 'rgba(0, 102, 204, 1)',
+                        pointBackgroundColor: 'rgba(220, 53, 69, 1)',
                         pointRadius: 4
                     },
                     {
@@ -5027,7 +5731,7 @@ if ($tab === 'overview') {
         $countSotto = count(array_filter($gapAnalysisData, fn($g) => $g['tipo'] === 'sottovalutazione'));
         $countAllineato = count(array_filter($gapAnalysisData, fn($g) => $g['tipo'] === 'allineato'));
     ?>
-    <div class="card mt-4">
+    <div class="card mt-4" id="gap-analysis-section-original">
         <div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
             <h5 class="mb-0">📊 Gap Analysis: Autovalutazione vs Performance Reale</h5>
         </div>
@@ -5106,7 +5810,7 @@ if ($tab === 'overview') {
     // SPUNTI COLLOQUIO
     if ($showSpuntiColloquio && !empty($colloquioHints)):
     ?>
-    <div class="card mt-4">
+    <div class="card mt-4" id="spunti-section-original">
         <div class="card-header" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: #333;">
             <h5 class="mb-0">💬 Spunti per il Colloquio</h5>
         </div>

@@ -24,6 +24,7 @@ class sector_manager {
         'AUTOMAZIONE' => 'Automazione',
         'METALCOSTRUZIONE' => 'Metalcostruzione',
         'CHIMFARM' => 'Chimico-Farmaceutico',
+        'GEN' => 'Generico',
     ];
 
     /**
@@ -700,6 +701,30 @@ class sector_manager {
                 $obj->quiz_count = $count;
                 $obj->is_primary = 0;
                 $result[$sector] = $obj;
+            }
+        }
+
+        // Controlla se lo studente ha autovalutazioni con competenze GENERICO (framework FTM_GEN)
+        // Questo è necessario perché GENERICO ha un framework separato (FTM_GEN) e potrebbe non essere
+        // rilevato dalla query quiz sopra
+        if (!isset($result['GEN']) && !isset($result['GENERICO'])) {
+            $genCount = $DB->count_records_sql(
+                "SELECT COUNT(DISTINCT sa.competencyid)
+                 FROM {local_selfassessment} sa
+                 JOIN {competency} c ON c.id = sa.competencyid
+                 JOIN {competency_framework} cf ON cf.id = c.competencyframeworkid
+                 WHERE sa.userid = :userid
+                   AND cf.idnumber = 'FTM_GEN'",
+                ['userid' => $userid]
+            );
+
+            if ($genCount > 0) {
+                $obj = new \stdClass();
+                $obj->sector = 'GEN';
+                $obj->quiz_count = 0; // Autovalutazioni, non quiz
+                $obj->is_primary = 0;
+                $obj->has_selfassessment = true;
+                $result['GEN'] = $obj;
             }
         }
 

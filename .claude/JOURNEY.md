@@ -1,5 +1,58 @@
 # FTM Plugins - Development Journey
 
+## 12 Febbraio 2026 (Sessione 2)
+
+### Sistema Tab Orizzontale per Student Report
+- **Nuova UI:** Barra tab orizzontale per organizzare sezioni del report
+- **6 Tab disponibili:**
+  1. 👤 Settori - Gestione settori studente (primary, secondary, tertiary)
+  2. 📅 Ultimi 7gg - Quiz completati negli ultimi 7 giorni
+  3. ⚙️ Configurazione - Filtri quiz, opzioni visualizzazione, ponderazioni
+  4. 📊 Progresso - Progresso certificazione
+  5. 📈 Gap Analysis - Confronto autovalutazione vs performance
+  6. 💬 Spunti Colloquio - Suggerimenti per il colloquio coach
+- **Comportamento:**
+  - Tutti i tab chiusi di default
+  - Multi-apertura: più tab aperti contemporaneamente
+  - LocalStorage: salva stato tab per utente/corso
+  - Mobile: layout a 2 righe su schermi piccoli
+- **Mini-accordion:** Sezioni collassabili dentro la tab Configurazione
+- **File:** `student_report.php` (linee 1795-3200)
+
+### Fix Grafico Overlay (Sovrapposizione)
+- **Problema:** Il checkbox "Grafico Sovrapposizione" non veniva preservato tra le richieste
+- **Causa:** Mancava hidden input `show_overlay` nel `quizFilterForm`
+- **Soluzione:** Aggiunto `<?php if ($showOverlayRadar): ?><input type="hidden" name="show_overlay" value="1"><?php endif; ?>`
+- **File:** `student_report.php` (linea 2310)
+
+### Auto-Submit Quiz Selection
+- **Funzionalità:** Quando l'utente seleziona un quiz:
+  1. Auto-attiva tutte le opzioni di visualizzazione (Dual Radar, Gap, Spunti, Coach, Overlay)
+  2. Auto-seleziona il settore nel dropdown
+  3. Submit automatico dopo 800ms di debounce
+- **Logica:** Solo alla prima selezione (`!previouslyHadSelection`)
+- **Hidden inputs:** Crea dinamicamente hidden inputs per preservare stato checkbox
+- **File:** `student_report.php` (linee 2506-2605)
+
+### Fix Valutazione Coach - Settore GEN
+- **Problema:** Errore "Settore non valido" quando si creava valutazione per GENERICO
+- **Causa:** 'GEN' mancante dalla lista `$validSectors`
+- **Soluzione:** Aggiunto 'GEN' all'array dei settori validi
+- **File:** `coach_evaluation.php`
+
+### Fix Race Condition Salvataggio Ratings
+- **Problema:** Ratings non salvati quando si cliccava "Completa"
+- **Causa:** Navigazione alla pagina di conferma prima che AJAX completasse
+- **Soluzione:**
+  - Cambiato link "Completa" da `<a>` a `<button>`
+  - Nuova funzione `saveAndComplete()` che:
+    1. Mostra messaggio "Salvando..."
+    2. Chiama `saveAllRatings()` con callback
+    3. Solo dopo il successo, naviga alla pagina di conferma
+- **File:** `coach_evaluation.php`
+
+---
+
 ## 12 Febbraio 2026
 
 ### Fix Mapping Competenze - Tutti i Settori

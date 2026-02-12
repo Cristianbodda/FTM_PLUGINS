@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida Completa per Claude
 
-**Ultimo aggiornamento:** 10 Febbraio 2026
+**Ultimo aggiornamento:** 12 Febbraio 2026
 
 ## Panoramica Progetto
 
@@ -12,7 +12,7 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (06/02/2026)
+## STATO ATTUALE SVILUPPO (12/02/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -73,12 +73,23 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
   - **File:** `import_calendar.php`, `classes/calendar_importer.php`
 - **Version:** 2026020601
 
-#### 2. Sector Manager + Student Report (local_competencymanager) - AGGIORNATO 09/02/2026
+#### 2. Sector Manager + Student Report (local_competencymanager) - AGGIORNATO 12/02/2026
 - Sistema Multi-Settore per studenti
 - Interfaccia segreteria: `sector_admin.php`
 - Rilevamento automatico settori da quiz
 - Capability `managesectors` per coach/segreteria
 - **Gap Comments System (NUOVO 28/01/2026):** Suggerimenti automatici basati su gap analysis
+- **NUOVO: Sistema Tab Orizzontale (12/02/2026):**
+  - **6 Tab:** Settori, Ultimi 7gg, Configurazione, Progresso, Gap Analysis, Spunti Colloquio
+  - **Multi-apertura:** Più tab aperti contemporaneamente
+  - **LocalStorage:** Persistenza stato tab tra sessioni
+  - **Mini-accordion:** Sezioni collassabili dentro le tab
+  - **Mobile responsive:** 2 righe su schermi piccoli
+  - **Auto-submit:** Seleziona quiz → auto-attiva opzioni → submit con debounce 800ms
+- **NUOVO: Fix Grafico Overlay (12/02/2026):**
+  - Preservazione parametro show_overlay tra richieste
+  - Hidden input aggiunto nel quizFilterForm
+  - Auto-selezione checkbox quando si seleziona un quiz
 - **NUOVO: Grafico Overlay Multi-Fonte (09/02/2026):**
   - Radar sovrapposto con 4 fonti: Quiz, Autovalutazione, LabEval, Formatore
   - Normalizzazione a percentuale (Bloom 1-6 → valore/6×100)

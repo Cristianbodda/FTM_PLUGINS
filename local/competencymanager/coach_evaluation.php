@@ -43,7 +43,7 @@ if (empty($sector)) {
 
 // Validate sector
 $sector = strtoupper(trim($sector));
-$validSectors = ['AUTOMOBILE', 'AUTOMAZIONE', 'CHIMFARM', 'ELETTRICITÀ', 'ELETTRICITA', 'LOGISTICA', 'MECCANICA', 'METALCOSTRUZIONE', 'GENERICO'];
+$validSectors = ['AUTOMOBILE', 'AUTOMAZIONE', 'CHIMFARM', 'ELETTRICITÀ', 'ELETTRICITA', 'LOGISTICA', 'MECCANICA', 'METALCOSTRUZIONE', 'GENERICO', 'GEN'];
 if (!in_array($sector, $validSectors)) {
     throw new moodle_exception('invalid_sector', 'local_competencymanager');
 }
@@ -534,11 +534,10 @@ switch ($evaluation->status) {
                     <button type="button" class="btn-eval btn-save" onclick="saveAllRatings()">
                         <?php echo get_string('save_draft', 'local_competencymanager'); ?>
                     </button>
-                    <a href="<?php echo $PAGE->url; ?>&action=complete&sesskey=<?php echo sesskey(); ?>"
-                       class="btn-eval btn-complete"
-                       onclick="return confirm('<?php echo get_string('sign_confirm', 'local_competencymanager'); ?>');">
+                    <button type="button" class="btn-eval btn-complete"
+                            onclick="saveAndComplete()">
                         <?php echo get_string('save_and_complete', 'local_competencymanager'); ?>
-                    </a>
+                    </button>
                 <?php endif; ?>
 
                 <?php if ($canEdit && $evaluation->status === 'completed'): ?>
@@ -650,8 +649,11 @@ function saveGeneralNotes() {
     .catch(err => console.error('Save error:', err));
 }
 
-function saveAllRatings() {
-    if (Object.keys(pendingRatings).length === 0) return;
+function saveAllRatings(callback) {
+    if (Object.keys(pendingRatings).length === 0) {
+        if (callback) callback(true);
+        return;
+    }
 
     showSaving();
 
@@ -671,11 +673,36 @@ function saveAllRatings() {
         if (data.success) {
             pendingRatings = {};
             updateStats(data.stats);
+            if (callback) callback(true);
         } else {
             alert(data.message || 'Error saving ratings');
+            if (callback) callback(false);
         }
     })
-    .catch(err => console.error('Save error:', err));
+    .catch(err => {
+        console.error('Save error:', err);
+        if (callback) callback(false);
+    });
+}
+
+// Salva e poi completa la valutazione
+function saveAndComplete() {
+    if (!confirm('<?php echo get_string('sign_confirm', 'local_competencymanager'); ?>')) {
+        return;
+    }
+
+    // Mostra messaggio di salvataggio
+    showSaving();
+
+    // Prima salva tutti i ratings pendenti
+    saveAllRatings(function(success) {
+        if (success) {
+            // Poi naviga al complete
+            window.location.href = '<?php echo $PAGE->url; ?>&action=complete&sesskey=<?php echo sesskey(); ?>';
+        } else {
+            alert('Errore durante il salvataggio. Riprova.');
+        }
+    });
 }
 
 function showSaving() {
