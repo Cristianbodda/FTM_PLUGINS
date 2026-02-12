@@ -47,6 +47,44 @@
 | METALCOSTRUZIONE | 88 | 10 | ✅ |
 | GENERICO (FTM_GEN) | 35 | 7 | ✅ |
 
+### Test Suite - Sector Mapping Validator (NUOVO)
+- **Nuovo agente di test:** `sector_mapping_validator.php`
+- **21 test totali, 100% pass rate** ✅
+- **Test funzioni:**
+  - SECT001-SECT005: `normalize_sector_name()` (codici numerici, pattern XX-YY, alias, accenti)
+  - SECT006-SECT007: `extract_sector_from_idnumber()` (testuali e numerici)
+  - SECT008: `get_area_info()` per tutti i settori
+- **Test database:**
+  - SECT009-SECT015: Verifica mapping per ogni settore (AUTOMOBILE, CHIMFARM, ecc.)
+  - SECT016: Framework GENERICO (FTM_GEN)
+  - SECT017: Nessuna competenza con settore UNKNOWN
+- **Test Coach Evaluation:**
+  - COACH001: `get_rating_stats()` funziona correttamente
+  - COACH002: `get_radar_data()` funziona correttamente
+  - COACH003: Selezione valutazioni con ratings
+  - COACH004: Valutazioni vuote non selezionate
+- **File:** `local/ftm_testsuite/classes/agents/sector_mapping_validator.php`
+
+### Fix Variabili Globali area_mapping.php
+- **Problema:** TypeError su `in_array()` quando file incluso da funzioni
+- **Causa:** Variabili definite nello scope locale invece che globale
+- **Soluzione:** Aggiunto `global` prima delle definizioni:
+  - `global $AREA_NAMES;`
+  - `global $LETTER_BASED_SECTORS;`
+  - `global $CODE_BASED_SECTORS;`
+  - `global $SECTOR_DISPLAY_NAMES;`
+- **File:** `area_mapping.php`
+
+### Pulizia Valutazioni Coach Vuote
+- **Script:** `cleanup_empty_evaluations.php`
+- **Funzionalità:**
+  - Trova valutazioni senza ratings
+  - Mostra statistiche (totali, con ratings, vuote)
+  - Elenco dettagliato con studente, settore, coach, status
+  - Conferma prima dell'eliminazione
+- **Protezioni:** require_capability + sesskey
+- **Risultato:** Eliminate valutazioni vuote che causavano il bug 0/0
+
 ---
 
 ## 11 Febbraio 2026
