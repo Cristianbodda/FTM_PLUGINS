@@ -91,6 +91,8 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
   - Hidden input aggiunto nel quizFilterForm
   - Auto-selezione checkbox quando si seleziona un quiz
   - **Fix Auto-Default:** Flag `viz_configured` per attivare tutte le opzioni di default quando ci sono quiz selezionati
+  - **Pre-selezione Quiz:** Solo quiz del settore primario pre-selezionati (non tutti)
+  - **Confronto 4 Fonti:** Sezione collapsabile, chiusa di default con localStorage
 - **NUOVO: Grafico Overlay Multi-Fonte (09/02/2026):**
   - Radar sovrapposto con 4 fonti: Quiz, Autovalutazione, LabEval, Formatore
   - Normalizzazione a percentuale (Bloom 1-6 → valore/6×100)

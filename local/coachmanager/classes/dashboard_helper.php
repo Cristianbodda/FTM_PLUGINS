@@ -368,7 +368,7 @@ class dashboard_helper {
 
         // Get all sectors ordered by is_primary DESC, quiz_count DESC
         $sectors = $this->db->get_records_sql(
-            "SELECT sector, is_primary, quiz_count
+            "SELECT id, sector, is_primary, quiz_count
              FROM {local_student_sectors}
              WHERE userid = ?
              ORDER BY is_primary DESC, quiz_count DESC, timemodified DESC",

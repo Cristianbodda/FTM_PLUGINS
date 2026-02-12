@@ -2362,7 +2362,18 @@ if (!empty($quizComparison)) {
                     </div>
                     <div class="row">
                         <?php foreach ($quizzes as $quizId => $quiz):
-                            $isSelected = empty($selectedQuizzes) || in_array($quizId, $selectedQuizzes);
+                            // Logica selezione quiz:
+                            // - Se selectedQuizzes non è vuoto → usa la selezione esistente
+                            // - Se selectedQuizzes è vuoto E c'è settore primario → seleziona solo quiz del settore primario
+                            // - Se selectedQuizzes è vuoto E non c'è settore primario → nessun quiz selezionato
+                            if (!empty($selectedQuizzes)) {
+                                $isSelected = in_array($quizId, $selectedQuizzes);
+                            } else if (!empty($studentPrimarySector)) {
+                                // Confronto case-insensitive tra settore quiz e settore primario
+                                $isSelected = strcasecmp(trim($sector), trim($studentPrimarySector)) === 0;
+                            } else {
+                                $isSelected = false;
+                            }
                             $attempts = $quiz['attempts'];
                             $lastAttempt = end($attempts);
                             $firstAttempt = reset($attempts);
@@ -3800,12 +3811,18 @@ if ($tab === 'overview') {
         $bloomScale = coach_evaluation_manager::get_bloom_scale();
         $coachRadarData = coach_evaluation_manager::get_radar_data($userid, $currentSector);
     ?>
-    <div class="card mt-4">
-        <div class="card-header" style="background: linear-gradient(135deg, #5f2c82 0%, #49a09d 100%); color: white;">
-            <h5 class="mb-0">📊 Confronto 4 Fonti: Quiz, Autovalutazione, LabEval, Formatore</h5>
-            <small class="d-block mt-1 opacity-75">Visualizzazione comparativa di tutte le valutazioni disponibili</small>
+    <div class="card mt-4" id="confronto-4-fonti-card">
+        <div class="card-header" style="background: linear-gradient(135deg, #5f2c82 0%, #49a09d 100%); color: white; cursor: pointer;"
+             onclick="toggleConfronto4Fonti()" id="confronto-4-fonti-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">📊 Confronto 4 Fonti: Quiz, Autovalutazione, LabEval, Formatore</h5>
+                    <small class="d-block mt-1 opacity-75">Visualizzazione comparativa di tutte le valutazioni disponibili</small>
+                </div>
+                <span id="confronto-4-fonti-icon" style="font-size: 1.5rem; transition: transform 0.3s;">▶</span>
+            </div>
         </div>
-        <div class="card-body">
+        <div class="card-body" id="confronto-4-fonti-body" style="display: none;">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover">
                     <thead>
@@ -4371,6 +4388,38 @@ if ($tab === 'overview') {
             document.getElementById('metodiUnlockCode')?.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     unlockMetodiSection();
+                }
+            });
+
+            // Toggle Confronto 4 Fonti
+            function toggleConfronto4Fonti() {
+                const body = document.getElementById('confronto-4-fonti-body');
+                const icon = document.getElementById('confronto-4-fonti-icon');
+                if (body.style.display === 'none') {
+                    body.style.display = 'block';
+                    icon.style.transform = 'rotate(90deg)';
+                    icon.textContent = '▼';
+                    // Salva stato in localStorage
+                    localStorage.setItem('ftm_confronto4fonti_open', '1');
+                } else {
+                    body.style.display = 'none';
+                    icon.style.transform = 'rotate(0deg)';
+                    icon.textContent = '▶';
+                    localStorage.setItem('ftm_confronto4fonti_open', '0');
+                }
+            }
+
+            // Ripristina stato da localStorage
+            document.addEventListener('DOMContentLoaded', function() {
+                const savedState = localStorage.getItem('ftm_confronto4fonti_open');
+                if (savedState === '1') {
+                    const body = document.getElementById('confronto-4-fonti-body');
+                    const icon = document.getElementById('confronto-4-fonti-icon');
+                    if (body && icon) {
+                        body.style.display = 'block';
+                        icon.style.transform = 'rotate(90deg)';
+                        icon.textContent = '▼';
+                    }
                 }
             });
             </script>

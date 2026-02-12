@@ -2,6 +2,27 @@
 
 ## 12 Febbraio 2026 (Sessione 2)
 
+### Sezione Confronto 4 Fonti Collapsabile
+- **Modifica:** La sezione "📊 Confronto 4 Fonti" è ora un accordion collapsabile
+- **Comportamento:** Inizialmente chiusa, il coach la apre se necessario
+- **Icona:** ▶ (chiuso) / ▼ (aperto)
+- **Persistenza:** Stato salvato in localStorage
+- **File:** `student_report.php` (linee 3814-4397)
+
+### Pre-selezione Quiz Settore Primario
+- **Modifica:** I quiz non sono più tutti selezionati di default
+- **Nuova logica:**
+  - Se selectedQuizzes ha valori → usa selezione esistente
+  - Se vuoto + settore primario → pre-seleziona solo quiz del settore primario
+  - Se vuoto + no settore primario → nessun quiz selezionato
+- **File:** `student_report.php` (linea 2365)
+
+### Fix Duplicate Sector in Dashboard Helper
+- **Problema:** Errore "Duplicate value 'GEN' found in column 'sector'"
+- **Causa:** Query SQL usava `sector` come prima colonna (non unica)
+- **Soluzione:** Aggiunto `id` come prima colonna nella SELECT
+- **File:** `dashboard_helper.php` (linea 370)
+
 ### Fix Auto-Default Opzioni Visualizzazione
 - **Problema:** Il grafico sovrapposizione non veniva settato di default quando si selezionava un quiz
 - **Causa:** Le opzioni venivano auto-settate via JavaScript solo la prima volta (`!previouslyHadSelection`), ma al reload della pagina i valori non erano preservati
