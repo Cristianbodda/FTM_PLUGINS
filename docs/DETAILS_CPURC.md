@@ -1,0 +1,97 @@
+# SISTEMA CPURC - DETTAGLI TECNICI (24/01/2026)
+
+## Panoramica
+Sistema completo per la gestione degli studenti CPURC (Centro Professionale URC) con import da CSV, gestione anagrafica, assegnazione coach/settori e generazione report Word.
+
+## File Principali
+```
+local/ftm_cpurc/
+├── index.php                 # Dashboard segreteria con filtri
+├── student_card.php          # Scheda studente (4 tab)
+├── report.php                # Compilazione report Word
+├── import.php                # Import CSV CPURC
+├── export_excel.php          # Export Excel completo
+├── export_word.php           # Export singolo Word
+├── export_word_bulk.php      # Export ZIP tutti i Word
+├── ajax_assign_coach.php     # AJAX assegnazione coach
+├── ajax_save_sectors.php     # AJAX salvataggio settori
+├── ajax_delete_sector.php    # AJAX eliminazione settore
+├── classes/
+│   ├── cpurc_manager.php     # Manager principale
+│   ├── csv_importer.php      # Parser CSV
+│   ├── word_exporter.php     # Generatore Word
+│   └── profession_mapper.php # Mapping professione->settore
+└── db/
+    └── install.xml           # Schema database
+```
+
+## Tabelle Database
+
+### local_ftm_cpurc_students
+| Campo | Tipo | Descrizione |
+|-------|------|-------------|
+| id | BIGINT | Primary key |
+| userid | BIGINT | FK -> mdl_user.id |
+| personal_number | VARCHAR(50) | Numero personale URC |
+| urc_office | VARCHAR(100) | Ufficio URC di riferimento |
+| urc_consultant | VARCHAR(200) | Consulente URC |
+| date_start | BIGINT | Data inizio percorso |
+| date_end_planned | BIGINT | Data fine pianificata |
+| date_end_actual | BIGINT | Data fine effettiva |
+| sector_detected | VARCHAR(50) | Settore rilevato |
+| last_profession | VARCHAR(200) | Ultima professione |
+| status | VARCHAR(20) | Stato (active, closed) |
+| absence_* | INT | Campi assenze (x, o, a, b, c, d, e, f, g, h, i) |
+| stage_* | Vari | Campi stage (company, contact, dates) |
+
+### local_ftm_cpurc_reports
+| Campo | Tipo | Descrizione |
+|-------|------|-------------|
+| id | BIGINT | Primary key |
+| studentid | BIGINT | FK -> local_ftm_cpurc_students.id |
+| coachid | BIGINT | FK -> mdl_user.id (coach) |
+| status | VARCHAR(20) | draft, final, sent |
+| narrative_* | TEXT | Campi narrativi (comportamento, competenze, etc.) |
+| conclusion_* | Vari | Campi conclusione |
+
+## Dashboard Segreteria (index.php)
+
+### Filtri Disponibili
+| Filtro | Tipo | Descrizione |
+|--------|------|-------------|
+| search | Text | Ricerca nome/cognome/email |
+| urc | Select | Ufficio URC |
+| sector | Select | Settore |
+| reportstatus | Select | Nessuno/Bozza/Completo |
+| coach | Select | Coach assegnato |
+
+### Colonne Tabella
+- Nome studente (link a student_card)
+- URC, Settore (badge), Settimana (1-6+), Coach (dropdown), Stato Report (badge), Azioni
+
+## Student Card (student_card.php)
+
+### Tab: Anagrafica, Percorso, Assenze, Stage
+
+### Coach Assignment
+- Dropdown con coach da `local_ftm_coaches` (scheduler)
+- Fallback a ruolo editingteacher se tabella non presente
+- Salvataggio in `local_student_coaching` (condivisa)
+
+### Multi-Settore
+- **Primario:** Determina quiz e autovalutazione assegnati
+- **Secondario/Terziario:** Suggerimenti per il coach
+- Salvataggio in `local_student_sectors` (condivisa)
+
+## Report Word (report.php)
+
+### Campi Narrativi
+- `narrative_behavior`, `narrative_technical`, `narrative_transversal`, `narrative_recommendations`, `narrative_conclusion`
+
+## Capabilities
+| Capability | Descrizione |
+|------------|-------------|
+| local/ftm_cpurc:view | Visualizza dashboard e student card |
+| local/ftm_cpurc:edit | Modifica dati, assegna coach/settori |
+| local/ftm_cpurc:import | Importa CSV |
+| local/ftm_cpurc:generatereport | Genera e esporta report Word |
