@@ -65,7 +65,7 @@ $PAGE->set_url(new moodle_url('/local/competencymanager/coach_evaluation.php', [
 ]));
 $PAGE->set_title(get_string('coach_evaluation_title', 'local_competencymanager'));
 $PAGE->set_heading(get_string('evaluation_for', 'local_competencymanager', fullname($student)));
-$PAGE->set_pagelayout('standard');
+$PAGE->set_pagelayout('report');
 
 // Get or create evaluation
 if ($evaluationid) {
@@ -237,28 +237,45 @@ switch ($evaluation->status) {
 ?>
 
 <style>
-.eval-container { max-width: 1200px; margin: 0 auto; }
-.eval-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-.eval-header h2 { margin: 0; font-size: 1.5rem; }
-.eval-header .student-info { opacity: 0.9; margin-top: 5px; }
-.eval-header .sector-badge { background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; display: inline-block; margin-top: 10px; }
+/* Override Moodle container limits - full width */
+#page-content, #region-main, [role="main"], #region-main-box {
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    overflow-x: hidden !important;
+}
+#page.drawers .main-inner,
+#page .main-inner {
+    max-width: 100% !important;
+    margin: 0 !important;
+}
+.pagelayout-report #region-main {
+    border: none !important;
+    padding: 0 !important;
+}
 
-.status-banner { padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; }
+.eval-container { max-width: 100%; margin: 0 auto; padding: 0 20px; }
+.eval-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+.eval-header h2 { margin: 0; font-size: 2rem; }
+.eval-header .student-info { opacity: 0.9; margin-top: 5px; font-size: 1.2rem; }
+.eval-header .sector-badge { background: rgba(255,255,255,0.2); padding: 6px 18px; border-radius: 20px; display: inline-block; margin-top: 10px; font-size: 1.1rem; }
+
+.status-banner { padding: 14px 22px; border-radius: 8px; margin-bottom: 20px; font-size: 1.1rem; }
 .status-banner.alert-warning { background: #fff3cd; border: 1px solid #ffc107; }
 .status-banner.alert-success { background: #d4edda; border: 1px solid #28a745; }
 .status-banner.alert-secondary { background: #e2e3e5; border: 1px solid #6c757d; }
 
-.stats-bar { background: #f8f9fa; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 30px; flex-wrap: wrap; }
+.stats-bar { background: #f8f9fa; padding: 18px 22px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 30px; flex-wrap: wrap; }
 .stat-item { display: flex; align-items: center; gap: 8px; }
-.stat-value { font-size: 1.25rem; font-weight: 600; color: #333; }
-.stat-label { color: #666; font-size: 0.875rem; }
+.stat-value { font-size: 1.7rem; font-weight: 600; color: #333; }
+.stat-label { color: #666; font-size: 1.1rem; }
 
 .area-accordion { margin-bottom: 10px; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; }
 .area-header { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; gap: 15px; }
 .area-header:hover { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); }
-.area-header h3 { margin: 0; font-size: 1rem; color: #333; font-weight: 600; flex: 1; }
-.area-header .area-stats { font-size: 0.875rem; color: #666; background: #fff; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
-.area-header .toggle-icon { transition: transform 0.3s; font-size: 0.8rem; }
+.area-header h3 { margin: 0; font-size: 1.35rem; color: #333; font-weight: 600; flex: 1; }
+.area-header .area-stats { font-size: 1.1rem; color: #666; background: #fff; padding: 5px 12px; border-radius: 12px; white-space: nowrap; }
+.area-header .toggle-icon { transition: transform 0.3s; font-size: 1rem; }
 .area-header.collapsed .toggle-icon { transform: rotate(-90deg); }
 
 .area-content { padding: 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s; }
@@ -267,48 +284,49 @@ switch ($evaluation->status) {
 .competency-row { display: grid; grid-template-columns: 1.5fr 200px 1fr; gap: 15px; padding: 12px 0; border-bottom: 1px solid #eee; align-items: start; }
 .competency-row:last-child { border-bottom: none; }
 .comp-info { display: flex; flex-direction: column; gap: 4px; }
-.comp-code { font-size: 0.7rem; color: #667eea; font-family: monospace; font-weight: 600; background: #f0f0ff; padding: 2px 6px; border-radius: 4px; display: inline-block; }
-.comp-name { font-weight: 600; color: #333; font-size: 0.95rem; margin-top: 4px; }
-.comp-desc { font-size: 0.85rem; color: #555; line-height: 1.4; margin-top: 2px; }
+.comp-name { font-weight: 700; color: #1a1a2e; font-size: 1.3rem; line-height: 1.3; }
+.comp-desc { font-size: 1.15rem; color: #444; line-height: 1.4; }
+.comp-code { font-size: 0.95rem; color: #5a6078; font-family: monospace; font-weight: 600; background: #eef0f4; padding: 4px 10px; border-radius: 5px; display: inline-block; margin-top: 5px; letter-spacing: 0.4px; }
 
 .rating-buttons { display: flex; gap: 4px; flex-wrap: wrap; }
-.rating-btn { width: 36px; height: 36px; border: 2px solid #495057; background: #f8f9fa; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; color: #212529; font-size: 14px; }
+.rating-btn { width: 46px; height: 46px; border: 2px solid #495057; background: #f8f9fa; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; color: #212529; font-size: 18px; }
 .rating-btn:hover:not(:disabled) { border-color: #667eea; background: #e0e0ff; color: #333; }
 .rating-btn.selected { background: #667eea; color: white; border-color: #667eea; }
-.rating-btn.no { font-size: 0.65rem; background: #e9ecef; }
+.rating-btn.no { font-size: 0.82rem; background: #e9ecef; }
 .rating-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.notes-input { width: 100%; padding: 8px 12px; border: 1px solid #dee2e6; border-radius: 6px; font-size: 0.875rem; resize: vertical; min-height: 36px; }
+.notes-input { width: 100%; padding: 10px 14px; border: 1px solid #dee2e6; border-radius: 6px; font-size: 1.1rem; resize: vertical; min-height: 44px; }
 .notes-input:focus { border-color: #667eea; outline: none; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
 .notes-input:disabled { background: #f8f9fa; }
 
-.general-notes-section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px; }
-.general-notes-section h4 { margin-top: 0; }
-.general-notes-section textarea { width: 100%; min-height: 100px; }
+.general-notes-section { background: #f8f9fa; padding: 22px; border-radius: 8px; margin-top: 20px; }
+.general-notes-section h4 { margin-top: 0; font-size: 1.3rem; }
+.general-notes-section textarea { width: 100%; min-height: 120px; font-size: 1.1rem; }
 
-.action-bar { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: space-between; }
-.action-group { display: flex; gap: 10px; flex-wrap: wrap; }
+.action-bar { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; justify-content: space-between; }
+.action-group { display: flex; gap: 12px; flex-wrap: wrap; }
 
-.btn-eval { padding: 10px 20px; border-radius: 6px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; }
-.btn-save { background: #667eea; color: white; }
-.btn-save:hover { background: #5a6fd6; }
-.btn-complete { background: #28a745; color: white; }
-.btn-complete:hover { background: #218838; }
-.btn-sign { background: #dc3545; color: white; }
-.btn-sign:hover { background: #c82333; }
-.btn-delete { background: #6c757d; color: white; }
-.btn-delete:hover { background: #5a6268; }
-.btn-auth { background: #17a2b8; color: white; }
-.btn-auth:hover { background: #138496; }
+.btn-eval { padding: 14px 30px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; border: none; font-size: 1.2rem; letter-spacing: 0.3px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+.btn-eval:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.btn-save { background: #4a63d6; color: white; }
+.btn-save:hover { background: #3a50b8; color: white; }
+.btn-complete { background: #1e7e34; color: white; }
+.btn-complete:hover { background: #166b29; color: white; }
+.btn-sign { background: #c82333; color: white; }
+.btn-sign:hover { background: #a71d2a; color: white; }
+.btn-delete { background: #555b64; color: white; }
+.btn-delete:hover { background: #3d4248; color: white; }
+.btn-auth { background: #0f7b8a; color: white; }
+.btn-auth:hover { background: #0b6170; color: white; }
 
 .bloom-legend { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; }
-.bloom-legend h4 { margin-top: 0; margin-bottom: 15px; font-size: 1rem; }
-.bloom-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; }
+.bloom-legend h4 { margin-top: 0; margin-bottom: 15px; font-size: 1.35rem; }
+.bloom-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
 .bloom-item { display: flex; align-items: flex-start; gap: 10px; }
-.bloom-num { width: 28px; height: 28px; background: #667eea; color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
-.bloom-num.no { background: #6c757d; font-size: 0.7rem; }
-.bloom-desc { font-size: 0.875rem; color: #666; }
-.bloom-title { font-weight: 500; color: #333; }
+.bloom-num { width: 34px; height: 34px; background: #667eea; color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; font-size: 1.1rem; }
+.bloom-num.no { background: #6c757d; font-size: 0.85rem; }
+.bloom-desc { font-size: 1.1rem; color: #666; }
+.bloom-title { font-weight: 500; color: #333; font-size: 1.1rem; }
 
 .saving-indicator { position: fixed; bottom: 20px; right: 20px; background: #667eea; color: white; padding: 10px 20px; border-radius: 8px; display: none; z-index: 1000; }
 .saving-indicator.show { display: block; animation: fadeInOut 2s; }
@@ -483,11 +501,10 @@ switch ($evaluation->status) {
                         ?>
                         <div class="competency-row" data-compid="<?php echo $comp->id; ?>">
                             <div class="comp-info">
-                                <div class="comp-code"><?php echo s($comp->idnumber); ?></div>
-                                <div class="comp-name"><?php echo format_string($comp->shortname); ?></div>
                                 <?php if ($showDesc): ?>
-                                <div class="comp-desc"><?php echo s($cleanDesc); ?></div>
+                                <div class="comp-name"><?php echo s($cleanDesc); ?></div>
                                 <?php endif; ?>
+                                <div class="comp-code"><?php echo s($comp->shortname); ?></div>
                             </div>
                             <div class="rating-buttons">
                                 <?php for ($i = 0; $i <= 6; $i++): ?>
@@ -580,7 +597,7 @@ switch ($evaluation->status) {
                 <?php endif; ?>
 
                 <a href="<?php echo new moodle_url('/local/competencymanager/student_report.php', ['userid' => $studentid, 'courseid' => $courseid]); ?>"
-                   class="btn-eval" style="background:#6c757d;color:white;">
+                   class="btn-eval" style="background:#334155;color:white;">
                     ← Torna al Report
                 </a>
             </div>

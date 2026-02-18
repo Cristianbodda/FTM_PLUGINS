@@ -1277,13 +1277,24 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
                 <div class="form-row">
                     <div class="form-group">
                         <label>Tipo Attività *</label>
-                        <select name="activity_type" required>
+                        <select name="activity_type" required onchange="toggleAtelierSelect(this)">
                             <option value="week1">Settimana 1</option>
                             <option value="week2_mon_tue">Settimana 2 (Lun-Mar)</option>
                             <option value="week2_thu_fri">Settimana 2 (Gio-Ven)</option>
                             <option value="week3_5">Settimane 3-5</option>
                             <option value="week6">Settimana 6</option>
                             <option value="atelier">Atelier</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="atelierSelectGroup" style="display:none;">
+                        <label>Atelier dal catalogo</label>
+                        <select name="atelierid">
+                            <option value="">-- Seleziona atelier --</option>
+                            <?php foreach ($atelier_catalog as $at): ?>
+                            <option value="<?php echo $at->id; ?>">
+                                <?php echo $at->name; ?><?php echo $at->is_mandatory ? ' (Obbligatorio)' : ''; ?>
+                            </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
@@ -1387,6 +1398,14 @@ function ftmOpenModal(modalName) {
 
 function ftmCloseModal(modalName) {
     document.getElementById('modal-' + modalName).classList.remove('active');
+}
+
+// Toggle atelier catalog select when activity_type = 'atelier'
+function toggleAtelierSelect(selectEl) {
+    var atelierGroup = document.getElementById('atelierSelectGroup');
+    if (atelierGroup) {
+        atelierGroup.style.display = selectEl.value === 'atelier' ? '' : 'none';
+    }
 }
 
 // Color selection

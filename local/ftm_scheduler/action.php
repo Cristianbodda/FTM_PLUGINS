@@ -104,6 +104,7 @@ switch ($action) {
         $data->teacherid = optional_param('teacherid', 0, PARAM_INT);
         $data->max_participants = optional_param('max_participants', 10, PARAM_INT);
         $data->notes = optional_param('notes', '', PARAM_TEXT);
+        $data->atelierid = optional_param('atelierid', 0, PARAM_INT) ?: null;
 
         // Calculate start and end times based on slot
         if ($time_slot === 'matt') {

@@ -59,6 +59,75 @@ $stats = $dashboard->get_dashboard_stats($students);
 $end6weeks = $dashboard->get_students_end_6_weeks($students);
 $calendar_data = $dashboard->get_calendar_data(date('Y'), date('m'));
 
+// All available sectors for coach assignment
+$ALL_SECTORS = [
+    'AUTOMOBILE' => 'Automobile',
+    'MECCANICA' => 'Meccanica',
+    'LOGISTICA' => 'Logistica',
+    'ELETTRICITA' => 'Elettricità',
+    'AUTOMAZIONE' => 'Automazione',
+    'METALCOSTRUZIONE' => 'Metalcostruzione',
+    'CHIMFARM' => 'Chimico-Farm.',
+    'GEN' => 'Generico',
+    'BIT' => 'BIT',
+    'URAR' => 'URAR',
+    'ESTERNO' => 'Esterno',
+];
+
+// Helper function to render sector multi-select chips + add dropdown
+function render_sector_selector($student) {
+    global $ALL_SECTORS;
+    $current = strtoupper($student->sector ?? '');
+    $sectors_all = $student->sectors_all ?? ['primary' => $current, 'secondary' => null, 'tertiary' => null];
+
+    // Build ordered list of assigned sectors
+    $assigned = [];
+    if (!empty($sectors_all['primary'])) $assigned[] = strtoupper($sectors_all['primary']);
+    if (!empty($sectors_all['secondary'])) $assigned[] = strtoupper($sectors_all['secondary']);
+    if (!empty($sectors_all['tertiary'])) $assigned[] = strtoupper($sectors_all['tertiary']);
+    // Remove duplicates keeping order
+    $assigned = array_values(array_unique($assigned));
+
+    $medals = ['🥇', '🥈', '🥉'];
+    $sid = $student->id;
+
+    // Pass assigned sectors as JSON data attribute
+    $json = htmlspecialchars(json_encode($assigned), ENT_QUOTES, 'UTF-8');
+
+    $html = '<div class="sector-chips-wrap" id="sector-wrap-' . $sid . '" data-sectors="' . $json . '" onclick="event.stopPropagation();" style="display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; gap:5px;">';
+
+    // Render chips
+    foreach ($assigned as $idx => $sec) {
+        $label = $ALL_SECTORS[$sec] ?? $sec;
+        $medal = $medals[$idx] ?? '';
+        $html .= '<span class="sector-chip" data-sector="' . $sec . '" style="display:inline-flex; white-space:nowrap;">';
+        $html .= $medal . ' ' . $sec;
+        $html .= '<button type="button" class="chip-remove" onclick="removeSectorChip(' . $sid . ', \'' . $sec . '\')" title="Rimuovi">&times;</button>';
+        $html .= '</span>';
+    }
+
+    // Add button (only if < 3 sectors assigned)
+    if (count($assigned) < 3) {
+        $html .= '<div class="sector-add-wrap" style="display:inline-flex;">';
+        $html .= '<button type="button" class="sector-add-btn" onclick="toggleSectorDropdown(' . $sid . ')" title="Aggiungi settore">+</button>';
+        $html .= '<div class="sector-dropdown" id="sector-dd-' . $sid . '">';
+        foreach ($ALL_SECTORS as $key => $label) {
+            $disabled = in_array($key, $assigned) ? ' disabled' : '';
+            $cls = in_array($key, $assigned) ? ' class="already-assigned"' : '';
+            $html .= '<div' . $cls . ' data-value="' . $key . '"' . $disabled;
+            if (!in_array($key, $assigned)) {
+                $html .= ' onclick="addSectorChip(' . $sid . ', \'' . $key . '\')"';
+            }
+            $html .= '>' . $label . '</div>';
+        }
+        $html .= '</div>';
+        $html .= '</div>';
+    }
+
+    $html .= '</div>';
+    return $html;
+}
+
 // Helper function to render sector badges (primary, secondary, tertiary)
 function render_sector_badges($student) {
     $sectors = $student->sectors_all ?? ['primary' => $student->sector ?? 'N/D', 'secondary' => null, 'tertiary' => null];
@@ -100,10 +169,20 @@ echo $OUTPUT->header();
 .coach-dashboard-v2.zoom-120 { font-size: 120%; }
 .coach-dashboard-v2.zoom-140 { font-size: 140%; }
 
+/* Override Moodle container limits */
+#page-content, #region-main, [role="main"], #region-main-box {
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+#page.drawers .main-inner {
+    max-width: 100% !important;
+}
+
 .coach-dashboard-v2 {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
+    max-width: 100%;
+    margin: 0;
+    padding: 15px 20px;
 }
 
 /* Sector badges - Base styles */
@@ -112,15 +191,15 @@ echo $OUTPUT->header();
     border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #475569;
     color: white;
     display: inline-block;
     margin: 1px 0;
     white-space: nowrap;
 }
 
-.settore-secondary { background: linear-gradient(135deg, #a8a8a8 0%, #6c757d 100%) !important; }
-.settore-tertiary { background: linear-gradient(135deg, #c4b5a0 0%, #8b7355 100%) !important; }
+.settore-secondary { background: #78808d !important; }
+.settore-tertiary { background: #94979d !important; }
 
 .sector-badges-container {
     display: flex;
@@ -138,8 +217,8 @@ echo $OUTPUT->header();
     padding: 15px 20px;
     background: white;
     border-radius: 12px;
-    border: 2px solid #e0e0e0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 2px solid #b8bcc8;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     flex-wrap: wrap;
     gap: 15px;
 }
@@ -161,8 +240,8 @@ echo $OUTPUT->header();
 
 .view-btn {
     padding: 12px 20px;
-    border: 2px solid #e0e0e0;
-    background: white;
+    border: 2px solid #a0a8c0;
+    background: #f8f9fc;
     border-radius: 8px;
     cursor: pointer;
     font-size: 16px;
@@ -171,18 +250,18 @@ echo $OUTPUT->header();
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #333 !important; /* SEMPRE VISIBILE - testo scuro */
+    color: #333 !important;
 }
 
 .view-btn:hover {
-    border-color: #667eea;
-    color: #667eea;
+    border-color: #475569;
+    color: #475569;
 }
 
 .view-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white !important; /* Testo bianco su sfondo viola */
-    border-color: #667eea;
+    background: #475569;
+    color: white !important;
+    border-color: #475569;
 }
 
 .zoom-controls {
@@ -201,8 +280,8 @@ echo $OUTPUT->header();
 .zoom-btn {
     width: 50px;
     height: 50px;
-    border: 2px solid #e0e0e0;
-    background: white;
+    border: 2px solid #a0a8c0;
+    background: #f8f9fc;
     border-radius: 8px;
     cursor: pointer;
     font-size: 20px;
@@ -214,15 +293,15 @@ echo $OUTPUT->header();
 }
 
 .zoom-btn:hover {
-    border-color: #667eea;
-    color: #667eea;
+    border-color: #475569;
+    color: #475569;
     transform: scale(1.05);
 }
 
 .zoom-btn.active {
-    background: #667eea;
+    background: #475569;
     color: white;
-    border-color: #667eea;
+    border-color: #475569;
 }
 
 .zoom-level {
@@ -252,8 +331,8 @@ echo $OUTPUT->header();
 }
 
 .dashboard-header .student-count {
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
+    background: #f0f2f5;
+    color: #475569;
     padding: 6px 16px;
     border-radius: 20px;
     font-size: 16px;
@@ -282,32 +361,33 @@ echo $OUTPUT->header();
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #475569;
     color: white;
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(71, 85, 105, 0.3);
+    background: #334155;
 }
 
 .btn-secondary {
-    background: #6c757d;
+    background: #64748b;
     color: white;
 }
 
 .btn-success {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    background: #3d7a60;
     color: white;
 }
 
 .btn-warning {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: #9a6c20;
     color: white;
 }
 
 .btn-info {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    background: #3a6a8a;
     color: white;
 }
 
@@ -327,8 +407,8 @@ echo $OUTPUT->header();
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 20px;
-    border: 2px solid #e0e0e0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 2px solid #b8bcc8;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .filters-header {
@@ -340,7 +420,7 @@ echo $OUTPUT->header();
 
 .filters-header h4 {
     font-size: 16px;
-    color: #667eea;
+    color: #475569;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -355,13 +435,13 @@ echo $OUTPUT->header();
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    background: rgba(102, 126, 234, 0.1);
+    background: #f0f2f5;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.3s;
     font-size: 14px;
-    color: #667eea;
+    color: #475569;
 }
 
 .filters-section.collapsed .filters-toggle {
@@ -379,7 +459,7 @@ echo $OUTPUT->header();
     gap: 20px;
     margin-top: 20px;
     padding-top: 20px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid #c5c9d4;
 }
 
 .filters-body .filter-group {
@@ -401,17 +481,18 @@ echo $OUTPUT->header();
 
 .filter-group select {
     padding: 14px 16px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #a0a8c0;
     border-radius: 8px;
     font-size: 16px;
     transition: all 0.2s;
     background: white;
+    color: #333;
 }
 
 .filter-group select:focus {
-    border-color: #667eea;
+    border-color: #475569;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.15);
 }
 
 /* Color Chips - Grandi */
@@ -451,9 +532,9 @@ echo $OUTPUT->header();
     background: white;
     border-radius: 12px;
     padding: 20px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #c5c9d4;
     text-align: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     transition: all 0.2s;
 }
 
@@ -462,16 +543,16 @@ echo $OUTPUT->header();
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-.stat-card.violet { border-left: 5px solid #667eea; }
-.stat-card.violet .stat-number { color: #667eea; }
-.stat-card.blue { border-left: 5px solid #4facfe; }
-.stat-card.blue .stat-number { color: #4facfe; }
-.stat-card.green { border-left: 5px solid #28a745; }
-.stat-card.green .stat-number { color: #28a745; }
-.stat-card.orange { border-left: 5px solid #fd7e14; }
-.stat-card.orange .stat-number { color: #fd7e14; }
-.stat-card.red { border-left: 5px solid #dc3545; }
-.stat-card.red .stat-number { color: #dc3545; }
+.stat-card.violet { border-left: 4px solid #475569; }
+.stat-card.violet .stat-number { color: #334155; }
+.stat-card.blue { border-left: 4px solid #3a6a8a; }
+.stat-card.blue .stat-number { color: #2c5a78; }
+.stat-card.green { border-left: 4px solid #3d7a60; }
+.stat-card.green .stat-number { color: #2d6a4e; }
+.stat-card.orange { border-left: 4px solid #9a6c20; }
+.stat-card.orange .stat-number { color: #7a5418; }
+.stat-card.red { border-left: 4px solid #9b3030; }
+.stat-card.red .stat-number { color: #8a2828; }
 
 .stat-number {
     font-size: 32px;
@@ -480,8 +561,9 @@ echo $OUTPUT->header();
 
 .stat-label {
     font-size: 14px;
-    color: #666;
+    color: #444;
     margin-top: 8px;
+    font-weight: 500;
 }
 
 /* Quick Filters - Grandi */
@@ -494,35 +576,41 @@ echo $OUTPUT->header();
 
 .quick-filter {
     padding: 12px 20px;
-    background: white;
-    border: 2px solid #e0e0e0;
+    background: #f0f2f8;
+    border: 2px solid #a0a8c0;
     border-radius: 25px;
     font-size: 15px;
     cursor: pointer;
     transition: all 0.2s;
-    font-weight: 500;
+    font-weight: 600;
+    color: #333;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
 .quick-filter:hover {
-    border-color: #667eea;
-    color: #667eea;
+    border-color: #475569;
+    color: #334155;
+    background: #eef0f4;
 }
 
 .quick-filter.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #475569;
     color: white;
-    border-color: #667eea;
+    border-color: #475569;
+    box-shadow: 0 2px 6px rgba(71, 85, 105, 0.25);
 }
 
 .quick-filter.end6 {
-    background: #fff3cd;
-    border-color: #ffc107;
-    color: #856404;
+    background: #fef8e7;
+    border-color: #c4a430;
+    color: #6d5010;
+    font-weight: 700;
 }
 
 .quick-filter.end6.active {
-    background: #ffc107;
-    color: #333;
+    background: #8a6d14;
+    color: white;
+    border-color: #8a6d14;
 }
 
 /* =============================================
@@ -531,8 +619,9 @@ echo $OUTPUT->header();
 .view-compatta .students-list {
     background: white;
     border-radius: 12px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #b8bcc8;
     overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
 }
 
 .view-compatta .student-row {
@@ -540,7 +629,7 @@ echo $OUTPUT->header();
     grid-template-columns: 40px 250px 120px 80px 100px 100px 100px 1fr;
     align-items: center;
     padding: 15px 20px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #c5c9d4;
     transition: background 0.2s;
     gap: 15px;
 }
@@ -554,10 +643,10 @@ echo $OUTPUT->header();
 }
 
 .view-compatta .student-row.header {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    background: #f0f2f5;
     font-weight: 700;
     font-size: 13px;
-    color: #667eea;
+    color: #475569;
     text-transform: uppercase;
 }
 
@@ -565,7 +654,7 @@ echo $OUTPUT->header();
     width: 32px;
     height: 32px;
     border: none;
-    background: rgba(102, 126, 234, 0.1);
+    background: #f0f2f5;
     border-radius: 50%;
     cursor: pointer;
     font-size: 14px;
@@ -576,7 +665,7 @@ echo $OUTPUT->header();
 }
 
 .view-compatta .expand-btn:hover {
-    background: #667eea;
+    background: #475569;
     color: white;
 }
 
@@ -587,7 +676,7 @@ echo $OUTPUT->header();
 
 .view-compatta .student-name-cell .email {
     font-size: 12px;
-    color: #666;
+    color: #4a4a4a;
     font-weight: normal;
 }
 
@@ -596,15 +685,15 @@ echo $OUTPUT->header();
     border-radius: 12px;
     font-size: 11px;
     font-weight: 600;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #475569;
     color: white;
     text-align: center;
     display: inline-block;
     margin: 1px 0;
 }
 
-.view-compatta .settore-secondary { background: linear-gradient(135deg, #a8a8a8 0%, #6c757d 100%); }
-.view-compatta .settore-tertiary { background: linear-gradient(135deg, #c4b5a0 0%, #8b7355 100%); }
+.view-compatta .settore-secondary { background: #78808d; }
+.view-compatta .settore-tertiary { background: #94979d; }
 .view-compatta .sector-badges-container { flex-direction: column; align-items: flex-start; }
 
 .view-compatta .week-cell {
@@ -618,11 +707,11 @@ echo $OUTPUT->header();
 }
 
 .view-compatta .competency-cell.danger {
-    color: #dc3545;
+    color: #9b2c2c;
 }
 
 .view-compatta .competency-cell.success {
-    color: #28a745;
+    color: #2d6a4e;
 }
 
 .view-compatta .status-cell {
@@ -657,21 +746,21 @@ echo $OUTPUT->header();
 }
 
 /* Row color indicators */
-.view-compatta .student-row.color-giallo { border-left: 5px solid #EAB308; }
-.view-compatta .student-row.color-blu { border-left: 5px solid #3B82F6; }
-.view-compatta .student-row.color-verde { border-left: 5px solid #10B981; }
-.view-compatta .student-row.color-arancione { border-left: 5px solid #F97316; }
-.view-compatta .student-row.color-rosso { border-left: 5px solid #EF4444; }
-.view-compatta .student-row.color-viola { border-left: 5px solid #8B5CF6; }
-.view-compatta .student-row.color-grigio { border-left: 5px solid #6B7280; }
+.view-compatta .student-row.color-giallo { border-left: 4px solid #a08210; }
+.view-compatta .student-row.color-blu { border-left: 4px solid #2e5a96; }
+.view-compatta .student-row.color-verde { border-left: 4px solid #1f6a4c; }
+.view-compatta .student-row.color-arancione { border-left: 4px solid #9a5c14; }
+.view-compatta .student-row.color-rosso { border-left: 4px solid #9a3030; }
+.view-compatta .student-row.color-viola { border-left: 4px solid #5c3a80; }
+.view-compatta .student-row.color-grigio { border-left: 4px solid #4e5565; }
 
 /* Alert rows */
 .view-compatta .student-row.alert-end6 {
-    background: #fff3cd;
+    background: #f7f2dc;
 }
 
 .view-compatta .student-row.alert-below {
-    background: #f8d7da;
+    background: #f5eaea;
 }
 
 /* =============================================
@@ -686,10 +775,10 @@ echo $OUTPUT->header();
 .view-standard .student-card {
     background: white;
     border-radius: 16px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #b8bcc8;
     overflow: visible;
     transition: all 0.3s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .view-standard .student-card:hover {
@@ -698,23 +787,24 @@ echo $OUTPUT->header();
 }
 
 .view-standard .student-card.alert-border {
-    border-color: #dc3545;
-    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.15);
+    border-color: #b03838;
+    box-shadow: 0 2px 10px rgba(176, 56, 56, 0.1);
 }
 
 .view-standard .student-card.end-6-weeks {
-    border-color: #ffc107;
-    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+    border-color: #b8960f;
+    box-shadow: 0 2px 10px rgba(160, 130, 30, 0.1);
 }
 
 /* Card Header - Colorato */
 .view-standard .student-card-header {
-    padding: 18px 22px;
+    padding: 14px 16px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     cursor: pointer;
     user-select: none;
+    gap: 8px;
 }
 
 .view-standard .student-card-header:hover {
@@ -722,44 +812,46 @@ echo $OUTPUT->header();
 }
 
 .view-standard .student-card-header.giallo {
-    background: linear-gradient(135deg, #FEF9C3 0%, #FDE68A 100%);
-    border-left: 5px solid #EAB308;
+    background: #f7f2dc;
+    border-left: 5px solid #a08210;
 }
 
 .view-standard .student-card-header.blu {
-    background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
-    border-left: 5px solid #3B82F6;
+    background: #e8eff8;
+    border-left: 5px solid #2e5a96;
 }
 
 .view-standard .student-card-header.verde {
-    background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
-    border-left: 5px solid #10B981;
+    background: #e8f3ec;
+    border-left: 5px solid #1f6a4c;
 }
 
 .view-standard .student-card-header.arancione {
-    background: linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%);
-    border-left: 5px solid #F97316;
+    background: #f5eddf;
+    border-left: 5px solid #9a5c14;
 }
 
 .view-standard .student-card-header.rosso {
-    background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
-    border-left: 5px solid #EF4444;
+    background: #f5eaea;
+    border-left: 5px solid #9a3030;
 }
 
 .view-standard .student-card-header.viola {
-    background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%);
-    border-left: 5px solid #8B5CF6;
+    background: #f0ebf6;
+    border-left: 5px solid #5c3a80;
 }
 
 .view-standard .student-card-header.grigio {
-    background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
-    border-left: 5px solid #6B7280;
+    background: #eeeff1;
+    border-left: 5px solid #4e5565;
 }
 
 .view-standard .student-info-left {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 15px;
+    flex: 1;
+    min-width: 0;
 }
 
 .view-standard .collapse-toggle {
@@ -786,32 +878,55 @@ echo $OUTPUT->header();
 
 .view-standard .student-email {
     font-size: 14px;
-    color: #666;
+    color: #4a4a4a;
+}
+
+.view-standard .student-email a,
+.student-email a,
+.email a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.view-standard .student-email a:hover,
+.student-email a:hover,
+.email a:hover {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.view-standard .student-info-left > div:last-child {
+    flex: 1;
+    min-width: 0;
 }
 
 .view-standard .student-badges {
     display: flex;
-    gap: 10px;
+    gap: 6px;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .view-standard .badge-6-weeks {
-    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-    color: #333;
-    padding: 6px 14px;
-    border-radius: 12px;
-    font-size: 12px;
+    background: #f5edd0;
+    color: #6d5510;
+    border: 1px solid #b8a040;
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 11px;
     font-weight: 700;
     animation: pulse 2s infinite;
 }
 
 .view-standard .badge-below {
-    background: #dc3545;
-    color: white;
-    padding: 6px 12px;
-    border-radius: 10px;
-    font-size: 12px;
+    background: #f2e4e4;
+    color: #7a2020;
+    border: 1px solid #c48888;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 11px;
     font-weight: 600;
 }
 
@@ -825,14 +940,14 @@ echo $OUTPUT->header();
     border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #475569;
     color: white;
     display: inline-block;
     margin: 1px 0;
 }
 
-.view-standard .settore-secondary { background: linear-gradient(135deg, #a8a8a8 0%, #6c757d 100%); }
-.view-standard .settore-tertiary { background: linear-gradient(135deg, #c4b5a0 0%, #8b7355 100%); }
+.view-standard .settore-secondary { background: #78808d; }
+.view-standard .settore-tertiary { background: #94979d; }
 .view-standard .sector-badges-container { flex-direction: column; align-items: flex-start; }
 
 .view-standard .week-badge {
@@ -842,13 +957,13 @@ echo $OUTPUT->header();
     font-weight: 600;
 }
 
-.view-standard .week-badge.giallo { background: #EAB308; color: #333; }
-.view-standard .week-badge.blu { background: #3B82F6; color: white; }
-.view-standard .week-badge.verde { background: #10B981; color: white; }
-.view-standard .week-badge.arancione { background: #F97316; color: white; }
-.view-standard .week-badge.rosso { background: #EF4444; color: white; }
-.view-standard .week-badge.viola { background: #8B5CF6; color: white; }
-.view-standard .week-badge.grigio { background: #6B7280; color: white; }
+.view-standard .week-badge.giallo { background: #f7f2dc; color: #6d5510; border: 2px solid #a08210; }
+.view-standard .week-badge.blu { background: #e8eff8; color: #244a78; border: 2px solid #2e5a96; }
+.view-standard .week-badge.verde { background: #e8f3ec; color: #18583e; border: 2px solid #1f6a4c; }
+.view-standard .week-badge.arancione { background: #f5eddf; color: #70440e; border: 2px solid #9a5c14; }
+.view-standard .week-badge.rosso { background: #f5eaea; color: #722424; border: 2px solid #9a3030; }
+.view-standard .week-badge.viola { background: #f0ebf6; color: #462e68; border: 2px solid #5c3a80; }
+.view-standard .week-badge.grigio { background: #eeeff1; color: #3c424c; border: 2px solid #4e5565; }
 
 /* Collapsible Content */
 .view-standard .student-card-collapsible {
@@ -880,7 +995,7 @@ echo $OUTPUT->header();
     padding: 15px 10px;
     background: #f8f9fa;
     border-radius: 12px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #c5c9d4;
 }
 
 .view-standard .progress-item .value {
@@ -890,18 +1005,19 @@ echo $OUTPUT->header();
 
 .view-standard .progress-item .label {
     font-size: 13px;
-    color: #666;
+    color: #444;
     margin-top: 6px;
+    font-weight: 500;
 }
 
-.view-standard .progress-item.competenze { border-left: 4px solid #667eea; }
-.view-standard .progress-item.competenze .value { color: #667eea; }
-.view-standard .progress-item.autoval { border-left: 4px solid #20c997; }
-.view-standard .progress-item.autoval .value { color: #20c997; }
-.view-standard .progress-item.lab { border-left: 4px solid #fd7e14; }
-.view-standard .progress-item.lab .value { color: #fd7e14; }
-.view-standard .progress-item.danger { border-left: 4px solid #dc3545; background: #f8d7da; }
-.view-standard .progress-item.danger .value { color: #dc3545; }
+.view-standard .progress-item.competenze { border-left: 4px solid #475569; }
+.view-standard .progress-item.competenze .value { color: #334155; }
+.view-standard .progress-item.autoval { border-left: 4px solid #3d7a70; }
+.view-standard .progress-item.autoval .value { color: #2d6a5e; }
+.view-standard .progress-item.lab { border-left: 4px solid #9a6c20; }
+.view-standard .progress-item.lab .value { color: #7a5418; }
+.view-standard .progress-item.danger { border-left: 4px solid #9a3030; background: #f2e4e4; }
+.view-standard .progress-item.danger .value { color: #9b2c2c; }
 
 .view-standard .mini-progress {
     height: 8px;
@@ -916,10 +1032,10 @@ echo $OUTPUT->header();
     border-radius: 4px;
 }
 
-.view-standard .mini-progress-fill.violet { background: linear-gradient(90deg, #667eea, #764ba2); }
-.view-standard .mini-progress-fill.teal { background: linear-gradient(90deg, #11998e, #38ef7d); }
-.view-standard .mini-progress-fill.orange { background: #fd7e14; }
-.view-standard .mini-progress-fill.red { background: #dc3545; }
+.view-standard .mini-progress-fill.violet { background: #4f6080; }
+.view-standard .mini-progress-fill.teal { background: #3d8a74; }
+.view-standard .mini-progress-fill.orange { background: #a07028; }
+.view-standard .mini-progress-fill.red { background: #9a3838; }
 
 /* Status Row */
 .view-standard .status-row {
@@ -939,24 +1055,24 @@ echo $OUTPUT->header();
     font-weight: 500;
 }
 
-.view-standard .status-badge.done { background: #d4edda; color: #155724; }
-.view-standard .status-badge.pending { background: #fff3cd; color: #856404; }
-.view-standard .status-badge.missing { background: #f8d7da; color: #721c24; }
+.view-standard .status-badge.done { background: #d8e8dc; color: #1e5a38; }
+.view-standard .status-badge.pending { background: #f0e8c8; color: #6d5010; }
+.view-standard .status-badge.missing { background: #ecd4d4; color: #6a1a1a; }
 .view-standard .status-badge.end-path { background: #fff3cd; color: #856404; }
 
 /* Timeline 6 Settimane */
 .view-standard .timeline-section {
     margin: 20px 0;
     padding: 18px;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    background: #f8f9fb;
     border-radius: 12px;
-    border: 1px solid rgba(102, 126, 234, 0.2);
+    border: 1px solid #d8dce4;
 }
 
 .view-standard .timeline-title {
     font-size: 15px;
     font-weight: 600;
-    color: #667eea;
+    color: #475569;
     margin-bottom: 15px;
     display: flex;
     align-items: center;
@@ -976,19 +1092,19 @@ echo $OUTPUT->header();
     background: white;
     border-radius: 10px;
     text-align: center;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #c0c5d0;
     transition: all 0.2s;
 }
 
 .view-standard .timeline-week.completed {
-    background: #d4edda;
-    border-color: #28a745;
+    background: #e4f0e8;
+    border-color: #5a8a68;
 }
 
 .view-standard .timeline-week.current {
-    background: #fff3cd;
-    border-color: #ffc107;
-    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+    background: #f5edd0;
+    border-color: #a09030;
+    box-shadow: 0 2px 8px rgba(140, 120, 40, 0.18);
 }
 
 .view-standard .timeline-week.future {
@@ -1003,8 +1119,8 @@ echo $OUTPUT->header();
     margin-bottom: 6px;
 }
 
-.view-standard .timeline-week.completed .week-num { color: #155724; }
-.view-standard .timeline-week.current .week-num { color: #856404; }
+.view-standard .timeline-week.completed .week-num { color: #2d6a4e; }
+.view-standard .timeline-week.current .week-num { color: #6d5010; }
 .view-standard .timeline-week.future .week-num { color: #6c757d; }
 
 .view-standard .timeline-week .week-icon {
@@ -1014,7 +1130,7 @@ echo $OUTPUT->header();
 
 .view-standard .timeline-week .week-detail {
     font-size: 11px;
-    color: #666;
+    color: #4a4a4a;
 }
 
 /* Week Choices */
@@ -1025,18 +1141,18 @@ echo $OUTPUT->header();
 }
 
 .view-standard .week-choices.giallo {
-    background: linear-gradient(135deg, #FEF9C3 0%, #FDE68A 100%);
-    border: 2px solid #EAB308;
+    background: #f7f2dc;
+    border: 1px solid #a09030;
 }
 
 .view-standard .week-choices.blu {
-    background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
-    border: 2px solid #3B82F6;
+    background: #e8eff8;
+    border: 1px solid #5580a8;
 }
 
 .view-standard .week-choices.verde {
-    background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
-    border: 2px solid #10B981;
+    background: #e8f3ec;
+    border: 1px solid #4a8868;
 }
 
 .view-standard .week-choices h4 {
@@ -1044,9 +1160,9 @@ echo $OUTPUT->header();
     margin: 0 0 12px 0;
 }
 
-.view-standard .week-choices.giallo h4 { color: #92400E; }
-.view-standard .week-choices.blu h4 { color: #1E40AF; }
-.view-standard .week-choices.verde h4 { color: #065F46; }
+.view-standard .week-choices.giallo h4 { color: #6d5010; }
+.view-standard .week-choices.blu h4 { color: #2c5a8f; }
+.view-standard .week-choices.verde h4 { color: #1e6648; }
 
 .view-standard .choice-row {
     display: flex;
@@ -1076,8 +1192,8 @@ echo $OUTPUT->header();
 
 .view-standard .choice-select:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    border-color: #475569;
+    box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.15);
 }
 
 /* Notes Section */
@@ -1086,7 +1202,7 @@ echo $OUTPUT->header();
     padding: 18px;
     background: #f8f9fa;
     border-radius: 12px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #c5c9d4;
 }
 
 .view-standard .notes-title {
@@ -1103,17 +1219,18 @@ echo $OUTPUT->header();
     width: 100%;
     min-height: 80px;
     padding: 12px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #b0b5c0;
     border-radius: 8px;
     font-size: 14px;
     resize: vertical;
     font-family: inherit;
+    color: #333;
 }
 
 .view-standard .notes-textarea:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    border-color: #475569;
+    box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.15);
 }
 
 .view-standard .notes-footer {
@@ -1125,97 +1242,139 @@ echo $OUTPUT->header();
 
 .view-standard .notes-meta {
     font-size: 12px;
-    color: #666;
+    color: #555;
 }
 
 /* End Path Box */
 .view-standard .end-path-box {
-    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+    background: #f5edd0;
     padding: 18px;
     border-radius: 12px;
-    border: 2px solid #ffc107;
+    border: 1px solid #b8a040;
     margin-top: 18px;
 }
 
 .view-standard .end-path-box h4 {
-    color: #856404;
+    color: #6d5010;
     font-size: 15px;
     margin: 0 0 10px 0;
 }
 
 .view-standard .end-path-box p {
     font-size: 14px;
-    color: #856404;
+    color: #6d5010;
     margin: 0;
 }
 
 /* Quick Actions - Sempre visibili */
 .quick-actions {
-    display: flex;
+    display: flex !important;
     gap: 8px;
-    padding: 10px 15px;
-    background: linear-gradient(to right, #f8f9fa, #fff);
-    border-bottom: 1px solid #e0e0e0;
+    padding: 12px 18px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e2e5ea;
+    border-top: 1px solid #e8eaf0;
     flex-wrap: wrap;
     align-items: center;
 }
 
 .quick-btn {
-    display: inline-flex;
+    display: inline-flex !important;
     align-items: center;
     gap: 5px;
     padding: 8px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    text-decoration: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none !important;
     transition: all 0.2s;
     cursor: pointer;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-    border: 1px solid rgba(0,0,0,0.1);
+    border: 1px solid #c0c5d0;
+    opacity: 1 !important;
+    visibility: visible !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    background: #f8f9fa !important;
+    color: #334155 !important;
 }
 
 .quick-btn.report {
-    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-    color: #fff;
+    background: #f8f9fa !important;
+    color: #334155 !important;
 }
 
 .quick-btn.eval {
-    background: linear-gradient(135deg, #0d8b7d 0%, #059669 100%);
-    color: #fff;
+    background: #f8f9fa !important;
+    color: #334155 !important;
 }
 
-.quick-btn.profile {
-    background: linear-gradient(135deg, #3b82f6 0%, #0284c7 100%);
-    color: #fff;
+.quick-btn.qb-profile {
+    background: #f8f9fa !important;
+    color: #334155 !important;
 }
 
 .quick-btn.word {
-    background: linear-gradient(135deg, #db2777 0%, #dc2626 100%);
-    color: #fff;
+    background: #f8f9fa !important;
+    color: #334155 !important;
 }
 
 .quick-btn.colloquio {
-    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-    color: #fff;
+    background: #f8f9fa !important;
+    color: #334155 !important;
 }
 
 .quick-btn.sollecita {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    color: #fff;
+    background: #fff8ef !important;
+    color: #7a5418 !important;
+    border-color: #d4b88a !important;
 }
 
 .quick-btn.salva {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: #fff;
+    background: #475569 !important;
+    color: #fff !important;
+    border-color: #475569 !important;
 }
 
 .quick-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    text-decoration: none;
-    color: #fff;
-    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+    text-decoration: none !important;
+    background: #e8eaed !important;
+    color: #1e293b !important;
+}
+
+.quick-btn.salva:hover {
+    background: #334155 !important;
+    color: #fff !important;
+}
+
+.quick-btn:visited,
+.quick-btn:focus,
+.quick-btn:active {
+    color: #334155 !important;
+    text-decoration: none !important;
+}
+
+.quick-btn.salva:visited,
+.quick-btn.salva:focus,
+.quick-btn.salva:active {
+    color: #fff !important;
+}
+
+.quick-btn.cpurc {
+    background: #475569 !important;
+    color: #fff !important;
+    border-color: #475569 !important;
+}
+
+.quick-btn.cpurc:hover {
+    background: #334155 !important;
+    color: #fff !important;
+}
+
+.quick-btn.cpurc:visited,
+.quick-btn.cpurc:focus,
+.quick-btn.cpurc:active {
+    color: #fff !important;
 }
 
 /* Card Footer */
@@ -1241,17 +1400,17 @@ echo $OUTPUT->header();
 .view-dettagliata .student-panel {
     background: white;
     border-radius: 16px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #b8bcc8;
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .view-dettagliata .student-panel.alert-border {
-    border-color: #dc3545;
+    border-color: #b03838;
 }
 
 .view-dettagliata .student-panel.end-6-weeks {
-    border-color: #ffc107;
+    border-color: #b8960f;
 }
 
 .view-dettagliata .panel-header {
@@ -1259,15 +1418,51 @@ echo $OUTPUT->header();
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
+    user-select: none;
 }
 
-.view-dettagliata .panel-header.giallo { background: linear-gradient(135deg, #FEF9C3 0%, #FDE68A 100%); border-left: 6px solid #EAB308; }
-.view-dettagliata .panel-header.blu { background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); border-left: 6px solid #3B82F6; }
-.view-dettagliata .panel-header.verde { background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); border-left: 6px solid #10B981; }
-.view-dettagliata .panel-header.arancione { background: linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%); border-left: 6px solid #F97316; }
-.view-dettagliata .panel-header.rosso { background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%); border-left: 6px solid #EF4444; }
-.view-dettagliata .panel-header.viola { background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%); border-left: 6px solid #8B5CF6; }
-.view-dettagliata .panel-header.grigio { background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%); border-left: 6px solid #6B7280; }
+.view-dettagliata .panel-header:hover {
+    filter: brightness(0.97);
+}
+
+.view-dettagliata .panel-collapse-toggle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s;
+    font-size: 16px;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.view-dettagliata .student-panel.collapsed .panel-collapse-toggle {
+    transform: rotate(-90deg);
+}
+
+.view-dettagliata .panel-collapsible {
+    max-height: 3000px;
+    overflow: hidden;
+    transition: max-height 0.35s ease-out, opacity 0.25s ease;
+    opacity: 1;
+}
+
+.view-dettagliata .student-panel.collapsed .panel-collapsible {
+    max-height: 0;
+    opacity: 0;
+}
+
+.view-dettagliata .panel-header.giallo { background: #f7f2dc; border-left: 5px solid #a08210; }
+.view-dettagliata .panel-header.blu { background: #e8eff8; border-left: 5px solid #2e5a96; }
+.view-dettagliata .panel-header.verde { background: #e8f3ec; border-left: 5px solid #1f6a4c; }
+.view-dettagliata .panel-header.arancione { background: #f5eddf; border-left: 5px solid #9a5c14; }
+.view-dettagliata .panel-header.rosso { background: #f5eaea; border-left: 5px solid #9a3030; }
+.view-dettagliata .panel-header.viola { background: #f0ebf6; border-left: 5px solid #5c3a80; }
+.view-dettagliata .panel-header.grigio { background: #eeeff1; border-left: 5px solid #4e5565; }
 
 .view-dettagliata .student-main-info {
     display: flex;
@@ -1296,7 +1491,7 @@ echo $OUTPUT->header();
 
 .view-dettagliata .student-name-block .email {
     font-size: 15px;
-    color: #666;
+    color: #4a4a4a;
 }
 
 .view-dettagliata .student-badges {
@@ -1306,8 +1501,9 @@ echo $OUTPUT->header();
 }
 
 .view-dettagliata .badge-6-weeks {
-    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-    color: #333;
+    background: #f5edd0;
+    color: #6d5510;
+    border: 1px solid #b8a040;
     padding: 8px 16px;
     border-radius: 12px;
     font-size: 14px;
@@ -1319,14 +1515,14 @@ echo $OUTPUT->header();
     border-radius: 15px;
     font-size: 13px;
     font-weight: 600;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #475569;
     color: white;
     display: inline-block;
     margin: 2px 0;
 }
 
-.view-dettagliata .settore-secondary { background: linear-gradient(135deg, #a8a8a8 0%, #6c757d 100%); }
-.view-dettagliata .settore-tertiary { background: linear-gradient(135deg, #c4b5a0 0%, #8b7355 100%); }
+.view-dettagliata .settore-secondary { background: #78808d; }
+.view-dettagliata .settore-tertiary { background: #94979d; }
 .view-dettagliata .sector-badges-container { flex-direction: column; align-items: flex-start; }
 
 .view-dettagliata .week-badge {
@@ -1336,9 +1532,9 @@ echo $OUTPUT->header();
     font-weight: 700;
 }
 
-.view-dettagliata .week-badge.giallo { background: #EAB308; color: #333; }
-.view-dettagliata .week-badge.blu { background: #3B82F6; color: white; }
-.view-dettagliata .week-badge.verde { background: #10B981; color: white; }
+.view-dettagliata .week-badge.giallo { background: #f7f2dc; color: #6d5510; border: 2px solid #a08210; }
+.view-dettagliata .week-badge.blu { background: #e8eff8; color: #244a78; border: 2px solid #2e5a96; }
+.view-dettagliata .week-badge.verde { background: #e8f3ec; color: #18583e; border: 2px solid #1f6a4c; }
 
 .view-dettagliata .panel-body {
     padding: 25px;
@@ -1368,7 +1564,7 @@ echo $OUTPUT->header();
     padding: 18px;
     background: #f8f9fa;
     border-radius: 12px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #b8bcc8;
 }
 
 .view-dettagliata .stat-box .value {
@@ -1378,18 +1574,18 @@ echo $OUTPUT->header();
 
 .view-dettagliata .stat-box .label {
     font-size: 14px;
-    color: #666;
+    color: #555;
     margin-top: 8px;
 }
 
-.view-dettagliata .stat-box.competenze { border-left: 5px solid #667eea; }
-.view-dettagliata .stat-box.competenze .value { color: #667eea; }
-.view-dettagliata .stat-box.autoval { border-left: 5px solid #20c997; }
-.view-dettagliata .stat-box.autoval .value { color: #20c997; }
-.view-dettagliata .stat-box.lab { border-left: 5px solid #fd7e14; }
-.view-dettagliata .stat-box.lab .value { color: #fd7e14; }
-.view-dettagliata .stat-box.danger { border-left: 5px solid #dc3545; background: #f8d7da; }
-.view-dettagliata .stat-box.danger .value { color: #dc3545; }
+.view-dettagliata .stat-box.competenze { border-left: 4px solid #475569; }
+.view-dettagliata .stat-box.competenze .value { color: #334155; }
+.view-dettagliata .stat-box.autoval { border-left: 4px solid #3d7a70; }
+.view-dettagliata .stat-box.autoval .value { color: #2d6a5e; }
+.view-dettagliata .stat-box.lab { border-left: 4px solid #9a6c20; }
+.view-dettagliata .stat-box.lab .value { color: #7a5418; }
+.view-dettagliata .stat-box.danger { border-left: 4px solid #9a3030; background: #f2e4e4; }
+.view-dettagliata .stat-box.danger .value { color: #9b2c2c; }
 
 /* Right Column - Notes & Actions */
 .view-dettagliata .right-column {
@@ -1402,7 +1598,7 @@ echo $OUTPUT->header();
     padding: 18px;
     background: #f8f9fa;
     border-radius: 12px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #b8bcc8;
     flex: 1;
 }
 
@@ -1417,7 +1613,7 @@ echo $OUTPUT->header();
     width: 100%;
     min-height: 100px;
     padding: 12px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid #b8bcc8;
     border-radius: 8px;
     font-size: 14px;
     resize: vertical;
@@ -1426,7 +1622,7 @@ echo $OUTPUT->header();
 
 .view-dettagliata .notes-textarea:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #475569;
 }
 
 /* Panel Footer - Actions */
@@ -1518,15 +1714,15 @@ echo $OUTPUT->header();
 .atelier-section {
     margin-top: 18px;
     padding: 15px;
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    background: #eef2f7;
     border-radius: 10px;
-    border: 1px solid #7dd3fc;
+    border: 1px solid #b8c4d4;
 }
 
 .atelier-section .section-title {
     font-weight: 700;
     font-size: 14px;
-    color: #0369a1;
+    color: #3a5a7a;
     margin-bottom: 12px;
     display: flex;
     align-items: center;
@@ -1543,26 +1739,28 @@ echo $OUTPUT->header();
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
     padding: 10px 12px;
     background: white;
     border-radius: 8px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #c0c5d0;
     font-size: 13px;
 }
 
 .atelier-item.attended {
-    background: #dcfce7;
-    border-color: #86efac;
+    background: #e4f0e8;
+    border-color: #78a890;
 }
 
 .atelier-item.enrolled {
-    background: #fef3c7;
-    border-color: #fcd34d;
+    background: #f5edd0;
+    border-color: #b0a068;
 }
 
 .atelier-item.mandatory {
-    border-color: #f87171;
-    background: #fef2f2;
+    border-color: #b88888;
+    background: #f2e4e4;
 }
 
 .atelier-item .atelier-name {
@@ -1580,19 +1778,19 @@ echo $OUTPUT->header();
 }
 
 .atelier-item.attended .atelier-status {
-    background: #22c55e;
+    background: #3d7a60;
     color: white;
 }
 
 .atelier-item.enrolled .atelier-status {
-    background: #f59e0b;
+    background: #9a7a20;
     color: white;
 }
 
 .atelier-item .btn-enroll {
     padding: 5px 12px;
     font-size: 12px;
-    background: #3b82f6;
+    background: #475569;
     color: white;
     border: none;
     border-radius: 6px;
@@ -1601,7 +1799,7 @@ echo $OUTPUT->header();
 }
 
 .atelier-item .btn-enroll:hover {
-    background: #2563eb;
+    background: #334155;
 }
 
 .atelier-item .btn-enroll:disabled {
@@ -1611,17 +1809,67 @@ echo $OUTPUT->header();
 
 .atelier-item .full-badge {
     font-size: 11px;
-    color: #dc2626;
+    color: #9b2c2c;
     font-weight: 600;
 }
+
+/* Atelier date selector with dropdown */
+.atelier-date-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.atelier-date-dropdown {
+    padding: 4px 8px;
+    font-size: 12px;
+    border: 1px solid #94a3b8;
+    border-radius: 6px;
+    background: #fff;
+    color: #334155;
+    min-width: 180px;
+    max-width: 260px;
+    cursor: pointer;
+}
+
+.atelier-date-dropdown:focus {
+    border-color: #475569;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(71,85,105,0.2);
+}
+
+.atelier-nodate {
+    font-size: 12px;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.atelier-scheduler-link {
+    font-size: 11px;
+    color: #475569;
+    text-decoration: none;
+    padding: 3px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    background: #f8fafc;
+    white-space: nowrap;
+}
+
+.atelier-scheduler-link:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+    text-decoration: none;
+}
+
 
 .mandatory-alert {
     margin-top: 10px;
     padding: 10px;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
+    background: #f2e4e4;
+    border: 1px solid #c49090;
     border-radius: 8px;
-    color: #dc2626;
+    color: #7a2020;
     font-size: 13px;
     font-weight: 600;
     display: flex;
@@ -1635,15 +1883,15 @@ echo $OUTPUT->header();
 .week-activities-section {
     margin-top: 18px;
     padding: 15px;
-    background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+    background: #f5edd0;
     border-radius: 10px;
-    border: 1px solid #facc15;
+    border: 1px solid #b8a040;
 }
 
 .week-activities-section .section-title {
     font-weight: 700;
     font-size: 14px;
-    color: #a16207;
+    color: #6d5010;
     margin-bottom: 12px;
     display: flex;
     align-items: center;
@@ -1664,12 +1912,12 @@ echo $OUTPUT->header();
     background: white;
     border-radius: 6px;
     font-size: 13px;
-    border-left: 3px solid #facc15;
+    border-left: 3px solid #a09030;
 }
 
 .week-activity-item .day-label {
     font-weight: 700;
-    color: #a16207;
+    color: #6d5010;
     min-width: 40px;
 }
 
@@ -1679,7 +1927,7 @@ echo $OUTPUT->header();
 
 .week-activity-item .activity-room {
     font-size: 12px;
-    color: #666;
+    color: #555;
     background: #f3f4f6;
     padding: 2px 8px;
     border-radius: 4px;
@@ -1687,7 +1935,7 @@ echo $OUTPUT->header();
 
 .week-activity-item .activity-time {
     font-weight: 600;
-    color: #0369a1;
+    color: #3a5a7a;
 }
 
 /* =============================================
@@ -1704,18 +1952,18 @@ echo $OUTPUT->header();
 }
 
 .absence-stats.good {
-    background: #dcfce7;
-    color: #166534;
+    background: #e4f0e8;
+    color: #1e5a38;
 }
 
 .absence-stats.warning {
-    background: #fef3c7;
-    color: #a16207;
+    background: #f0e8c8;
+    color: #5a4410;
 }
 
 .absence-stats.danger {
-    background: #fef2f2;
-    color: #dc2626;
+    background: #f2e4e4;
+    color: #7a2020;
 }
 
 /* Enroll Modal */
@@ -1762,15 +2010,15 @@ echo $OUTPUT->header();
     justify-content: space-between;
     align-items: center;
     padding: 12px 15px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #c0c5d0;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .enroll-date-item:hover:not(.full) {
-    border-color: #3b82f6;
-    background: #eff6ff;
+    border-color: #475569;
+    background: #f0f2f5;
 }
 
 .enroll-date-item.full {
@@ -1784,7 +2032,7 @@ echo $OUTPUT->header();
 
 .enroll-date-item .date-info .room {
     font-weight: 400;
-    color: #666;
+    color: #555;
     font-size: 12px;
 }
 
@@ -1793,17 +2041,185 @@ echo $OUTPUT->header();
 }
 
 .enroll-date-item .spots.available {
-    color: #22c55e;
+    color: #2d6a4e;
 }
 
 .enroll-date-item .spots.full {
-    color: #dc2626;
+    color: #9b2c2c;
 }
 
 .enroll-modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+}
+
+/* =============================================
+   SECTOR MULTI-SELECT CHIPS
+   ============================================= */
+.sector-chips-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    position: relative;
+}
+
+.sector-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 600;
+    background: #475569;
+    color: #fff;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.sector-chip .chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border: none;
+    background: rgba(255,255,255,0.25);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 10px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 2px;
+    transition: background 0.15s;
+}
+
+.sector-chip .chip-remove:hover {
+    background: rgba(255,255,255,0.5);
+}
+
+.sector-chip.saving {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Add button */
+.sector-add-wrap {
+    position: relative;
+    display: inline-flex;
+}
+
+.sector-add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border: 1.5px dashed #94a3b8;
+    background: transparent;
+    color: #64748b;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s;
+}
+
+.sector-add-btn:hover {
+    border-color: #475569;
+    color: #475569;
+    background: #f1f5f9;
+}
+
+/* Dropdown list */
+.sector-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    min-width: 170px;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    margin-top: 4px;
+}
+
+.sector-dropdown.open {
+    display: block;
+}
+
+.sector-dropdown > div {
+    padding: 7px 12px;
+    font-size: 0.82em;
+    font-weight: 500;
+    color: #334155;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.sector-dropdown > div:hover:not(.already-assigned) {
+    background: #f1f5f9;
+}
+
+.sector-dropdown > div.already-assigned {
+    color: #c0c5ce;
+    cursor: default;
+    text-decoration: line-through;
+}
+
+/* Compatta view adjustments */
+.view-compatta .sector-chip {
+    font-size: 0.75em;
+    padding: 2px 7px;
+}
+
+.view-compatta .sector-add-btn {
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+}
+
+.view-compatta .sector-chips-wrap {
+    flex-direction: row;
+    gap: 3px;
+}
+
+/* Sectors row below student name - horizontal flow, wraps if needed */
+.student-sectors-row {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    max-width: 100%;
+}
+
+.student-sectors-row .sector-chips-wrap {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 5px !important;
+    max-width: 100% !important;
+}
+
+.student-sectors-row .sector-chip {
+    display: inline-flex !important;
+    font-size: 0.82em !important;
+    padding: 3px 8px !important;
+    border-radius: 12px !important;
+}
+
+.student-sectors-row .sector-add-wrap {
+    display: inline-flex !important;
 }
 </style>
 
@@ -1868,7 +2284,7 @@ echo $OUTPUT->header();
     </div>
 
     <!-- Filters Section -->
-    <div class="filters-section" id="filtersSection">
+    <div class="filters-section collapsed" id="filtersSection">
         <div class="filters-header" onclick="toggleFilters()">
             <h4>
                 <span class="filter-icon">&#9776;</span>
@@ -1886,7 +2302,7 @@ echo $OUTPUT->header();
                 <tr>
                     <td style="padding: 10px; vertical-align: top; width: 25%;">
                         <label style="display: block; font-weight: 600; color: #555; margin-bottom: 8px;"><?php echo get_string('course', 'local_coachmanager'); ?></label>
-                        <select name="courseid" onchange="this.form.submit()" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px;">
+                        <select name="courseid" onchange="this.form.submit()" style="width: 100%; padding: 12px; border: 2px solid #a0a8c0; border-radius: 8px; font-size: 15px; color: #333;">
                             <option value=""><?php echo get_string('all_courses', 'local_coachmanager'); ?></option>
                             <?php foreach ($courses as $course): ?>
                             <option value="<?php echo $course->id; ?>" <?php echo $courseid == $course->id ? 'selected' : ''; ?>>
@@ -1899,8 +2315,8 @@ echo $OUTPUT->header();
                         <label style="display: block; font-weight: 600; color: #555; margin-bottom: 8px;"><?php echo get_string('group_color', 'local_coachmanager'); ?></label>
                         <div class="color-chips" style="display: flex; gap: 8px; flex-wrap: wrap;">
                             <?php
-                            $colors = ['giallo' => '#FFFF00', 'blu' => '#0066cc', 'verde' => '#28a745',
-                                       'arancione' => '#fd7e14', 'rosso' => '#dc3545', 'viola' => '#7030A0', 'grigio' => '#808080'];
+                            $colors = ['giallo' => '#c4a830', 'blu' => '#3668a8', 'verde' => '#3d7a60',
+                                       'arancione' => '#b06a1a', 'rosso' => '#b03838', 'viola' => '#6b4590', 'grigio' => '#6a7080'];
                             foreach ($colors as $name => $hex):
                             ?>
                             <div class="color-chip <?php echo $name; ?> <?php echo $colorfilter == $name ? 'selected' : ''; ?>"
@@ -1914,7 +2330,7 @@ echo $OUTPUT->header();
                     </td>
                     <td style="padding: 10px; vertical-align: top; width: 25%;">
                         <label style="display: block; font-weight: 600; color: #555; margin-bottom: 8px;"><?php echo get_string('week', 'local_coachmanager'); ?></label>
-                        <select name="week" onchange="this.form.submit()" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px;">
+                        <select name="week" onchange="this.form.submit()" style="width: 100%; padding: 12px; border: 2px solid #a0a8c0; border-radius: 8px; font-size: 15px; color: #333;">
                             <option value=""><?php echo get_string('all_weeks', 'local_coachmanager'); ?></option>
                             <?php for ($i = 1; $i <= 6; $i++): ?>
                             <option value="<?php echo $i; ?>" <?php echo $weekfilter == $i ? 'selected' : ''; ?>>
@@ -1926,7 +2342,7 @@ echo $OUTPUT->header();
                     </td>
                     <td style="padding: 10px; vertical-align: top; width: 25%;">
                         <label style="display: block; font-weight: 600; color: #555; margin-bottom: 8px;"><?php echo get_string('status', 'local_coachmanager'); ?></label>
-                        <select name="status" onchange="this.form.submit()" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px;">
+                        <select name="status" onchange="this.form.submit()" style="width: 100%; padding: 12px; border: 2px solid #a0a8c0; border-radius: 8px; font-size: 15px; color: #333;">
                             <option value=""><?php echo get_string('all_statuses', 'local_coachmanager'); ?></option>
                             <option value="end6" <?php echo $statusfilter == 'end6' ? 'selected' : ''; ?>>Fine 6 Settimane</option>
                             <option value="below50" <?php echo $statusfilter == 'below50' ? 'selected' : ''; ?>>Sotto Soglia 50%</option>
@@ -2016,6 +2432,26 @@ echo $OUTPUT->header();
 </div>
 
 <script>
+// Open email in classic Outlook 365 desktop app
+// Creates a .eml file which Windows opens with classic Outlook (not new Outlook/Mail)
+// X-Unsent: 1 header opens it in compose mode
+function openOutlook(email) {
+    var emlContent = 'To: ' + email + '\r\n'
+        + 'Subject: \r\n'
+        + 'X-Unsent: 1\r\n'
+        + 'Content-Type: text/plain; charset=utf-8\r\n'
+        + '\r\n';
+    var blob = new Blob([emlContent], { type: 'message/rfc822' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'email.eml';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+}
+
 // Change view
 function changeView(newView) {
     const url = new URL(window.location.href);
@@ -2052,22 +2488,27 @@ function setColorFilter(color) {
     document.getElementById('filterForm').submit();
 }
 
-// Toggle card (for standard view)
+// Toggle card (for standard/classic view)
 function toggleCard(cardId) {
     document.getElementById(cardId).classList.toggle('collapsed');
 }
 
-// Expand all cards
+// Toggle panel (for detailed view)
+function togglePanel(panelId) {
+    document.getElementById(panelId).classList.toggle('collapsed');
+}
+
+// Expand all cards and panels
 function expandAllCards() {
-    document.querySelectorAll('.student-card').forEach(card => {
-        card.classList.remove('collapsed');
+    document.querySelectorAll('.student-card, .student-panel').forEach(el => {
+        el.classList.remove('collapsed');
     });
 }
 
-// Collapse all cards
+// Collapse all cards and panels
 function collapseAllCards() {
-    document.querySelectorAll('.student-card').forEach(card => {
-        card.classList.add('collapsed');
+    document.querySelectorAll('.student-card, .student-panel').forEach(el => {
+        el.classList.add('collapsed');
     });
 }
 
@@ -2091,7 +2532,7 @@ function saveNotes(studentId) {
             if (btn) {
                 const originalText = btn.innerHTML;
                 btn.innerHTML = '&#10004; Salvato!';
-                btn.style.background = '#28a745';
+                btn.style.background = '#3d7a60';
                 setTimeout(() => {
                     btn.innerHTML = originalText;
                     btn.style.background = '';
@@ -2230,11 +2671,11 @@ function loadAtelierDates(atelierId) {
             });
             dateList.innerHTML = html;
         } else {
-            dateList.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">Nessuna data disponibile per questo atelier.</div>';
+            dateList.innerHTML = '<div style="text-align: center; padding: 20px; color: #555;">Nessuna data disponibile per questo atelier.</div>';
         }
     })
     .catch(err => {
-        dateList.innerHTML = '<div style="text-align: center; padding: 20px; color: #dc2626;">Errore nel caricamento delle date.</div>';
+        dateList.innerHTML = '<div style="text-align: center; padding: 20px; color: #9b2c2c;">Errore nel caricamento delle date.</div>';
     });
 }
 
@@ -2263,6 +2704,168 @@ function confirmEnroll(activityId) {
         alert('Errore di connessione. Riprova.');
     });
 }
+
+// Enroll student in atelier directly from dropdown (no modal)
+function enrollAtelierFromDropdown(studentId, selectId, atelierName) {
+    var select = document.getElementById(selectId);
+    if (!select || !select.value) {
+        alert('Seleziona prima una data dal menu a tendina.');
+        return;
+    }
+
+    var activityId = select.value;
+    var dateText = select.options[select.selectedIndex].text;
+
+    if (!confirm('Confermi iscrizione di questo studente a:\n\n' + atelierName + '\n' + dateText + '?')) {
+        return;
+    }
+
+    // Disable button during request
+    var btn = select.parentNode.querySelector('.btn-enroll');
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+    fetch('ajax_enroll_atelier.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=enroll&studentid=' + studentId + '&activityid=' + activityId + '&sesskey=<?php echo sesskey(); ?>'
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.success) {
+            alert('Iscrizione confermata!\n\n' + atelierName + '\nData: ' + (data.date || dateText));
+            location.reload();
+        } else {
+            alert('Errore: ' + data.message);
+            if (btn) { btn.disabled = false; btn.textContent = 'Iscrivi'; }
+        }
+    })
+    .catch(function(err) {
+        alert('Errore di connessione. Riprova.');
+        if (btn) { btn.disabled = false; btn.textContent = 'Iscrivi'; }
+    });
+}
+
+// ============================================
+// SECTOR MULTI-SELECT CHIP FUNCTIONS
+// ============================================
+
+const SECTOR_LABELS = <?php echo json_encode($ALL_SECTORS); ?>;
+const MEDALS = ['🥇', '🥈', '🥉'];
+
+// Get current sectors for a student from the wrap element
+function getStudentSectors(studentId) {
+    const wrap = document.getElementById('sector-wrap-' + studentId);
+    if (!wrap) return [];
+    try {
+        return JSON.parse(wrap.dataset.sectors || '[]');
+    } catch(e) { return []; }
+}
+
+// Save sectors to server and rebuild chips
+function saveSectors(studentId, sectors) {
+    const wrap = document.getElementById('sector-wrap-' + studentId);
+    if (!wrap) return;
+
+    // Update data attribute immediately
+    wrap.dataset.sectors = JSON.stringify(sectors);
+
+    // Mark all chips as saving
+    wrap.querySelectorAll('.sector-chip').forEach(c => c.classList.add('saving'));
+
+    fetch('ajax_save_sector.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'userid=' + studentId + '&sectors=' + encodeURIComponent(sectors.join(',')) + '&sesskey=<?php echo sesskey(); ?>'
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            rebuildChips(studentId, data.sectors);
+        } else {
+            alert('Errore: ' + (data.message || 'Salvataggio fallito'));
+            location.reload();
+        }
+    })
+    .catch(() => {
+        alert('Errore di connessione');
+        location.reload();
+    });
+}
+
+// Rebuild chip HTML inside the wrap
+function rebuildChips(studentId, sectors) {
+    const wrap = document.getElementById('sector-wrap-' + studentId);
+    if (!wrap) return;
+
+    wrap.dataset.sectors = JSON.stringify(sectors);
+
+    let html = '';
+
+    // Chips
+    sectors.forEach((sec, idx) => {
+        const medal = MEDALS[idx] || '';
+        html += '<span class="sector-chip" data-sector="' + sec + '" style="display:inline-flex; white-space:nowrap;">';
+        html += medal + ' ' + sec;
+        html += '<button type="button" class="chip-remove" onclick="removeSectorChip(' + studentId + ', \'' + sec + '\')" title="Rimuovi">&times;</button>';
+        html += '</span>';
+    });
+
+    // Add button (if < 3)
+    if (sectors.length < 3) {
+        html += '<div class="sector-add-wrap" style="display:inline-flex;">';
+        html += '<button type="button" class="sector-add-btn" onclick="toggleSectorDropdown(' + studentId + ')" title="Aggiungi settore">+</button>';
+        html += '<div class="sector-dropdown" id="sector-dd-' + studentId + '">';
+        for (const [key, label] of Object.entries(SECTOR_LABELS)) {
+            const assigned = sectors.includes(key);
+            if (assigned) {
+                html += '<div class="already-assigned" data-value="' + key + '" disabled>' + label + '</div>';
+            } else {
+                html += '<div data-value="' + key + '" onclick="addSectorChip(' + studentId + ', \'' + key + '\')">' + label + '</div>';
+            }
+        }
+        html += '</div></div>';
+    }
+
+    wrap.innerHTML = html;
+}
+
+// Add a sector chip
+function addSectorChip(studentId, sector) {
+    const sectors = getStudentSectors(studentId);
+    if (sectors.length >= 3 || sectors.includes(sector)) return;
+    sectors.push(sector);
+    closeSectorDropdowns();
+    saveSectors(studentId, sectors);
+}
+
+// Remove a sector chip
+function removeSectorChip(studentId, sector) {
+    let sectors = getStudentSectors(studentId);
+    sectors = sectors.filter(s => s !== sector);
+    if (sectors.length === 0) {
+        if (!confirm('Rimuovere tutti i settori? Lo studente resterà senza settore assegnato.')) return;
+    }
+    saveSectors(studentId, sectors.length > 0 ? sectors : [sector]); // Keep at least one
+}
+
+// Toggle the add-sector dropdown
+function toggleSectorDropdown(studentId) {
+    closeSectorDropdowns();
+    const dd = document.getElementById('sector-dd-' + studentId);
+    if (dd) dd.classList.toggle('open');
+}
+
+// Close all dropdowns
+function closeSectorDropdowns() {
+    document.querySelectorAll('.sector-dropdown.open').forEach(d => d.classList.remove('open'));
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.sector-add-wrap')) {
+        closeSectorDropdowns();
+    }
+});
 </script>
 
 <?php
@@ -2354,10 +2957,10 @@ function render_view_compatta($students, $dashboard) {
                 </div>
                 <div class="student-name-cell">
                     <?php echo fullname($student); ?>
-                    <div class="email"><?php echo $student->email; ?></div>
+                    <div class="email"><a href="mailto:<?php echo $student->email; ?>" onclick="event.stopPropagation(); openOutlook('<?php echo $student->email; ?>'); return false;" title="Apri in Outlook"><?php echo $student->email; ?></a></div>
                 </div>
                 <div>
-                    <?php echo render_sector_badges($student); ?>
+                    <?php echo render_sector_selector($student); ?>
                 </div>
                 <div class="week-cell">
                     <?php echo $student->current_week ?? 1; ?>
@@ -2388,10 +2991,21 @@ function render_view_compatta($students, $dashboard) {
                             title="Valutazione Formatore">
                         &#128100;
                     </button>
+                    <button class="btn btn-info btn-sm"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/student_card.php?userid=<?php echo $student->id; ?>'"
+                            title="Profilo Studente"
+                            style="background: #475569 !important; color: #fff !important; border-color: #3d4a5c !important;">
+                        &#128203;
+                    </button>
                     <button class="btn btn-primary btn-sm"
-                            onclick="location.href='reports_v2.php?studentid=<?php echo $student->id; ?>'"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti'"
                             title="Colloquio">
                         &#128172;
+                    </button>
+                    <button class="btn btn-primary btn-sm"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/report.php?userid=<?php echo $student->id; ?>'"
+                            title="Rapporto CPURC">
+                        &#128209;
                     </button>
                     <?php if ($is_end6): ?>
                     <button class="btn btn-warning btn-sm"
@@ -2430,9 +3044,9 @@ function render_view_standard($students, $dashboard) {
 
         <div class="students-grid">
             <?php if (empty($students)): ?>
-            <div style="grid-column: 1/-1; text-align: center; padding: 60px; background: white; border-radius: 16px; border: 2px dashed #e0e0e0;">
+            <div style="grid-column: 1/-1; text-align: center; padding: 60px; background: white; border-radius: 16px; border: 2px dashed #b0b5c0;">
                 <div style="font-size: 48px; margin-bottom: 15px;">&#128101;</div>
-                <h3 style="color: #666;">Nessuno studente trovato</h3>
+                <h3 style="color: #555;">Nessuno studente trovato</h3>
                 <p style="color: #999;">Prova a modificare i filtri di ricerca</p>
             </div>
             <?php else: ?>
@@ -2450,7 +3064,7 @@ function render_view_standard($students, $dashboard) {
                 $week_activities = $dashboard->get_student_this_week_activities($student->id);
                 $absence_stats = $dashboard->get_student_absences($student->id);
             ?>
-            <div class="student-card <?php echo $card_class; ?>" id="student-<?php echo $student->id; ?>">
+            <div class="student-card collapsed <?php echo $card_class; ?>" id="student-<?php echo $student->id; ?>">
 
                 <!-- Card Header -->
                 <div class="student-card-header <?php echo $header_class; ?>" onclick="toggleCard('student-<?php echo $student->id; ?>')">
@@ -2458,7 +3072,8 @@ function render_view_standard($students, $dashboard) {
                         <div class="collapse-toggle">&#9660;</div>
                         <div>
                             <div class="student-name"><?php echo fullname($student); ?></div>
-                            <div class="student-email"><?php echo $student->email; ?></div>
+                            <div class="student-email"><a href="mailto:<?php echo $student->email; ?>" onclick="event.stopPropagation(); openOutlook('<?php echo $student->email; ?>'); return false;" title="Apri in Outlook"><?php echo $student->email; ?></a></div>
+                            <div class="student-sectors-row"><?php echo render_sector_selector($student); ?></div>
                         </div>
                     </div>
                     <div class="student-badges">
@@ -2468,7 +3083,6 @@ function render_view_standard($students, $dashboard) {
                         <?php if ($is_below): ?>
                         <span class="badge-below">SOTTO SOGLIA</span>
                         <?php endif; ?>
-                        <?php echo render_sector_badges($student); ?>
                         <span class="week-badge <?php echo $header_class; ?>">Sett. <?php echo $current_week; ?></span>
                     </div>
                 </div>
@@ -2483,13 +3097,17 @@ function render_view_standard($students, $dashboard) {
                        class="quick-btn eval" title="Valutazione Formatore">
                         &#128100; Valutazione
                     </a>
-                    <a href="<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_student_view.php?studentid=<?php echo $student->id; ?>"
-                       class="quick-btn profile" title="Profilo Studente">
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/student_card.php?userid=<?php echo $student->id; ?>"
+                       class="quick-btn qb-profile" title="Profilo Studente">
                         &#128203; Profilo
                     </a>
-                    <a href="reports_v2.php?studentid=<?php echo $student->id; ?>"
-                       class="quick-btn colloquio" title="Note Colloquio">
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti"
+                       class="quick-btn colloquio" title="Spunti Colloquio">
                         &#128172; Colloquio
+                    </a>
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/report.php?userid=<?php echo $student->id; ?>"
+                       class="quick-btn cpurc" title="Rapporto CPURC">
+                        &#128209; Rapporto CPURC
                     </a>
                     <?php if ($is_end6): ?>
                     <a href="#" onclick="exportWord(<?php echo $student->id; ?>); return false;"
@@ -2674,39 +3292,41 @@ function render_view_standard($students, $dashboard) {
                                 </div>
                                 <?php endforeach;
 
-                                // Available ateliers
+                                // Available ateliers - dropdown with dates from scheduler
                                 foreach ($student_ateliers['available'] as $atelier):
                                     $has_dates = !empty($atelier->next_dates);
                                     $is_mandatory = $atelier->is_mandatory;
+                                    $uid = $student->id . '-' . $atelier->id;
                                 ?>
                                 <div class="atelier-item <?php echo $is_mandatory ? 'mandatory' : ''; ?>">
-                                    <span class="atelier-name">
+                                    <div class="atelier-name">
                                         <?php echo $is_mandatory ? '&#9888;' : '&#9711;'; ?>
                                         <?php echo $atelier->name; ?>
                                         <?php if ($is_mandatory): ?>
-                                        <small style="color: #dc2626;">(Obbligatorio)</small>
+                                        <small style="color: #9b2c2c;">(Obbligatorio)</small>
                                         <?php endif; ?>
-                                    </span>
-                                    <?php if ($has_dates): ?>
-                                        <?php
-                                        $first_date = $atelier->next_dates[0];
-                                        if ($first_date->is_full): ?>
-                                        <span class="full-badge">Pieno - Prossimo: <?php
-                                            $next_available = null;
-                                            foreach ($atelier->next_dates as $d) {
-                                                if (!$d->is_full) { $next_available = $d; break; }
-                                            }
-                                            echo $next_available ? $next_available->date_formatted : 'N/D';
-                                        ?></span>
-                                        <?php else: ?>
+                                    </div>
+                                    <div class="atelier-date-selector" onclick="event.stopPropagation();">
+                                        <?php if ($has_dates): ?>
+                                        <select id="atelier-sel-<?php echo $uid; ?>" class="atelier-date-dropdown">
+                                            <option value="">-- Seleziona data --</option>
+                                            <?php foreach ($atelier->next_dates as $d):
+                                                $spots_text = $d->is_full ? '(PIENO)' : '(' . $d->available . ' posti)';
+                                                $room_text = !empty($d->room) ? ' - ' . $d->room : '';
+                                            ?>
+                                            <option value="<?php echo $d->activity_id; ?>" <?php echo $d->is_full ? 'disabled' : ''; ?>>
+                                                <?php echo $d->date_formatted . ' ' . $d->time_formatted . $room_text . ' ' . $spots_text; ?>
+                                            </option>
+                                            <?php endforeach; ?>
+                                        </select>
                                         <button class="btn-enroll"
-                                                onclick="openEnrollModal(<?php echo $student->id; ?>, <?php echo $atelier->id; ?>, '<?php echo addslashes($atelier->name); ?>')">
-                                            Iscrivimi
+                                                onclick="enrollAtelierFromDropdown(<?php echo $student->id; ?>, 'atelier-sel-<?php echo $uid; ?>', '<?php echo addslashes($atelier->name); ?>')">
+                                            Iscrivi
                                         </button>
+                                        <?php else: ?>
+                                        <span class="atelier-nodate">In attesa date dalla segreteria</span>
                                         <?php endif; ?>
-                                    <?php else: ?>
-                                    <span style="color: #666; font-size: 12px;">Nessuna data disponibile</span>
-                                    <?php endif; ?>
+                                    </div>
                                 </div>
                                 <?php endforeach; ?>
                             </div>
@@ -2773,7 +3393,8 @@ function render_view_standard($students, $dashboard) {
                     <!-- Card Footer -->
                     <div class="student-card-footer">
                         <button class="btn btn-info btn-sm"
-                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_student_view.php?studentid=<?php echo $student->id; ?>'">
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/student_card.php?userid=<?php echo $student->id; ?>'"
+                                style="background: #475569 !important; color: #fff !important; border-color: #3d4a5c !important;">
                             &#128203; Profilo
                         </button>
                         <button class="btn btn-secondary btn-sm"
@@ -2795,7 +3416,7 @@ function render_view_standard($students, $dashboard) {
                         </button>
                         <?php endif; ?>
                         <button class="btn btn-primary btn-sm"
-                                onclick="location.href='reports_v2.php?studentid=<?php echo $student->id; ?>'">
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti'">
                             &#128172; Colloquio
                         </button>
                         <?php if ($student->needs_choices ?? false): ?>
@@ -2821,11 +3442,22 @@ function render_view_dettagliata($students, $dashboard) {
     global $CFG, $USER;
     ?>
     <div class="view-dettagliata">
+
+        <!-- Expand/Collapse All -->
+        <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+            <button class="btn btn-secondary btn-sm" onclick="expandAllCards()">
+                &#9660; Espandi Tutto
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="collapseAllCards()">
+                &#9650; Comprimi Tutto
+            </button>
+        </div>
+
         <div class="students-list">
             <?php if (empty($students)): ?>
-            <div style="text-align: center; padding: 60px; background: white; border-radius: 16px; border: 2px dashed #e0e0e0;">
+            <div style="text-align: center; padding: 60px; background: white; border-radius: 16px; border: 2px dashed #b0b5c0;">
                 <div style="font-size: 48px; margin-bottom: 15px;">&#128101;</div>
-                <h3 style="color: #666;">Nessuno studente trovato</h3>
+                <h3 style="color: #555;">Nessuno studente trovato</h3>
                 <p style="color: #999;">Prova a modificare i filtri di ricerca</p>
             </div>
             <?php else: ?>
@@ -2839,26 +3471,29 @@ function render_view_dettagliata($students, $dashboard) {
                 $notes = get_student_notes($student->id, $USER->id);
                 $initials = strtoupper(substr($student->firstname, 0, 1) . substr($student->lastname, 0, 1));
             ?>
-            <div class="student-panel <?php echo $panel_class; ?>">
+            <div class="student-panel collapsed <?php echo $panel_class; ?>" id="panel-<?php echo $student->id; ?>">
 
                 <!-- Panel Header -->
-                <div class="panel-header <?php echo $header_class; ?>">
+                <div class="panel-header <?php echo $header_class; ?>" onclick="togglePanel('panel-<?php echo $student->id; ?>')">
                     <div class="student-main-info">
+                        <div class="panel-collapse-toggle">&#9660;</div>
                         <div class="student-avatar"><?php echo $initials; ?></div>
                         <div class="student-name-block">
                             <div class="name"><?php echo fullname($student); ?></div>
-                            <div class="email"><?php echo $student->email; ?></div>
+                            <div class="email"><a href="mailto:<?php echo $student->email; ?>" onclick="event.stopPropagation(); openOutlook('<?php echo $student->email; ?>'); return false;" title="Apri in Outlook"><?php echo $student->email; ?></a></div>
+                            <div class="student-sectors-row"><?php echo render_sector_selector($student); ?></div>
                         </div>
                     </div>
                     <div class="student-badges">
                         <?php if ($is_end6): ?>
                         <span class="badge-6-weeks">&#127937; FINE 6 SETTIMANE</span>
                         <?php endif; ?>
-                        <?php echo render_sector_badges($student); ?>
                         <span class="week-badge <?php echo $header_class; ?>">Settimana <?php echo $current_week; ?></span>
                     </div>
                 </div>
 
+                <!-- Collapsible Content -->
+                <div class="panel-collapsible">
                 <!-- Panel Body -->
                 <div class="panel-body">
                     <div class="panel-grid">
@@ -2883,7 +3518,7 @@ function render_view_dettagliata($students, $dashboard) {
                             </div>
 
                             <!-- Timeline -->
-                            <div class="timeline-section" style="margin: 0; padding: 18px; background: #f8f9fa; border-radius: 12px; border: 2px solid #e0e0e0;">
+                            <div class="timeline-section" style="margin: 0; padding: 18px; background: #f8f9fa; border-radius: 12px; border: 2px solid #b8bcc8;">
                                 <div class="timeline-title" style="color: #333;">
                                     &#128197; Timeline 6 Settimane
                                 </div>
@@ -2952,7 +3587,7 @@ function render_view_dettagliata($students, $dashboard) {
                             </div>
 
                             <!-- Status Summary -->
-                            <div style="padding: 18px; background: #f8f9fa; border-radius: 12px; border: 2px solid #e0e0e0;">
+                            <div style="padding: 18px; background: #f8f9fa; border-radius: 12px; border: 2px solid #b8bcc8;">
                                 <h4 style="margin: 0 0 12px 0; font-size: 15px;">&#128202; Stato Attività</h4>
                                 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                                     <?php if ($student->quiz_done ?? false): ?>
@@ -2983,7 +3618,8 @@ function render_view_dettagliata($students, $dashboard) {
                 <!-- Panel Footer -->
                 <div class="panel-footer">
                     <button class="btn btn-info"
-                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_student_view.php?studentid=<?php echo $student->id; ?>'">
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/student_card.php?userid=<?php echo $student->id; ?>'"
+                            style="background: #475569 !important; color: #fff !important; border-color: #3d4a5c !important;">
                         &#128203; Profilo Semplice
                     </button>
                     <button class="btn btn-secondary"
@@ -2995,8 +3631,12 @@ function render_view_dettagliata($students, $dashboard) {
                         &#128100; Valutazione Formatore
                     </button>
                     <button class="btn btn-primary"
-                            onclick="location.href='reports_v2.php?studentid=<?php echo $student->id; ?>'">
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti'">
                         &#128172; Colloquio
+                    </button>
+                    <button class="btn btn-primary"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/report.php?userid=<?php echo $student->id; ?>'">
+                        &#128209; Rapporto CPURC
                     </button>
                     <?php if ($is_end6): ?>
                     <button class="btn btn-warning"
@@ -3010,6 +3650,7 @@ function render_view_dettagliata($students, $dashboard) {
                     </button>
                     <?php endif; ?>
                 </div>
+                </div><!-- /panel-collapsible -->
             </div>
             <?php endforeach; ?>
 
@@ -3051,7 +3692,7 @@ function render_view_classica($students, $dashboard) {
                 $card_class = $is_end6 ? 'end-6-weeks' : ($is_below ? 'alert-border' : '');
                 $header_class = $student->group_color ?? 'giallo';
             ?>
-            <div class="student-card <?php echo $card_class; ?>"
+            <div class="student-card collapsed <?php echo $card_class; ?>"
                  id="student-<?php echo $student->id; ?>"
                  data-color="<?php echo $header_class; ?>">
 
@@ -3060,7 +3701,8 @@ function render_view_classica($students, $dashboard) {
                         <div class="collapse-toggle">&#9660;</div>
                         <div>
                             <div class="student-name"><?php echo fullname($student); ?></div>
-                            <div class="student-email"><?php echo $student->email; ?></div>
+                            <div class="student-email"><a href="mailto:<?php echo $student->email; ?>" onclick="event.stopPropagation(); openOutlook('<?php echo $student->email; ?>'); return false;" title="Apri in Outlook"><?php echo $student->email; ?></a></div>
+                            <div class="student-sectors-row"><?php echo render_sector_selector($student); ?></div>
                         </div>
                     </div>
                     <div class="student-badges">
@@ -3070,7 +3712,6 @@ function render_view_classica($students, $dashboard) {
                         <?php if ($is_below): ?>
                         <span class="badge-below">SOTTO SOGLIA</span>
                         <?php endif; ?>
-                        <?php echo render_sector_badges($student); ?>
                         <span class="week-badge <?php echo $header_class; ?>">Sett. <?php echo $student->current_week ?? 1; ?></span>
                     </div>
                 </div>
@@ -3129,7 +3770,8 @@ function render_view_classica($students, $dashboard) {
 
                     <div class="student-card-footer">
                         <button class="btn btn-info btn-sm"
-                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_student_view.php?studentid=<?php echo $student->id; ?>'">
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/student_card.php?userid=<?php echo $student->id; ?>'"
+                                style="background: #475569 !important; color: #fff !important; border-color: #3d4a5c !important;">
                             &#128203; Profilo
                         </button>
                         <button class="btn btn-secondary btn-sm"
@@ -3137,8 +3779,12 @@ function render_view_classica($students, $dashboard) {
                             Report
                         </button>
                         <button class="btn btn-primary btn-sm"
-                                onclick="location.href='reports_v2.php?studentid=<?php echo $student->id; ?>'">
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti'">
                             Colloquio
+                        </button>
+                        <button class="btn btn-primary btn-sm"
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/report.php?userid=<?php echo $student->id; ?>'">
+                            &#128209; CPURC
                         </button>
                     </div>
                 </div>

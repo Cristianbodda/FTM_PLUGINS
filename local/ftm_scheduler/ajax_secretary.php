@@ -131,6 +131,7 @@ try {
             $data->teacherid = $teacherid ?: null;
             $data->max_participants = $max_participants;
             $data->notes = $notes;
+            $data->atelierid = optional_param('atelierid', 0, PARAM_INT) ?: null;
 
             $activityid = $manager::create_activity($data);
 

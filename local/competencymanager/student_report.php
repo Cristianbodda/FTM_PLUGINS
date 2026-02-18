@@ -29,6 +29,7 @@ $userid = optional_param('userid', 0, PARAM_INT);
 $courseid = optional_param('courseid', 0, PARAM_INT);
 $area = optional_param('area', '', PARAM_TEXT);
 $tab = optional_param('tab', 'overview', PARAM_ALPHA);
+$openTab = optional_param('open_tab', '', PARAM_ALPHANUMEXT);
 $print = optional_param('print', 0, PARAM_INT);
 $selectedArea = optional_param('selectedarea', '', PARAM_TEXT);
 
@@ -572,34 +573,39 @@ function calculate_gap_analysis($autovalutazione, $performance, $soglia = 15) {
  */
 function generate_colloquio_hints($gapData, $competencyDescriptions, $sogliaCritico = 30) {
     $hints = ['critici' => [], 'attenzione' => [], 'positivi' => []];
-    
+
     foreach ($gapData as $code => $gap) {
         $compInfo = $competencyDescriptions[$code] ?? ['name' => $code, 'full_name' => $code];
         $displayName = $compInfo['full_name'] ?? $compInfo['name'] ?? $code;
-        
+
         $hint = ['competenza' => $displayName, 'codice' => $code, 'gap' => $gap];
         $diffAbs = abs($gap['differenza']);
-        
+
         if ($gap['tipo'] === 'sopravvalutazione') {
-            if ($diffAbs > $sogliaCritico) {  // ← USA PARAMETRO INVECE DI 30 HARDCODED
-                $hint['messaggio'] = "Lo studente si percepisce molto più competente di quanto dimostrato. Approfondire le lacune.";
-                $hint['domanda'] = "Come valuti le tue competenze in {$displayName}? Quali difficoltà hai incontrato?";
+            if ($diffAbs > $sogliaCritico) {
+                $hint['messaggio'] = "Lo studente si percepisce molto piu' competente di quanto dimostrato nei test. Potrebbe aver sviluppato questa competenza in un contesto diverso da quello testato.";
+                $hint['domanda'] = "In quali esperienze lavorative o formative ha sviluppato competenze in {$displayName}? Quali mansioni specifiche svolgeva?";
+                $hint['azione'] = "Verificare se la competenza e' stata sviluppata in un contesto diverso. Proporre esercitazioni pratiche per colmare il gap.";
                 $hints['critici'][] = $hint;
             } else {
-                $hint['messaggio'] = "Leggera sopravvalutazione. Consolidare con esercizi pratici.";
-                $hint['domanda'] = "Cosa potresti fare per migliorare in {$displayName}?";
+                $hint['messaggio'] = "Leggera sopravvalutazione. La competenza potrebbe essere parzialmente acquisita da esperienze pregresse.";
+                $hint['domanda'] = "Quali aspetti di {$displayName} sente di padroneggiare meglio? In quale ruolo li ha praticati?";
+                $hint['azione'] = "Consolidare con esercitazioni pratiche mirate sugli aspetti specifici meno solidi.";
                 $hints['attenzione'][] = $hint;
             }
         } else if ($gap['tipo'] === 'sottovalutazione') {
-            $hint['messaggio'] = "Lo studente si sottovaluta! Valorizzare i risultati positivi.";
-            $hint['domanda'] = "Hai notato che nei quiz hai ottenuto risultati migliori di quanto ti aspettassi?";
+            $hint['messaggio'] = "Lo studente si sottovaluta: i risultati dei test sono migliori della sua percezione. Valorizzare le competenze acquisite.";
+            $hint['domanda'] = "I suoi risultati in {$displayName} sono superiori a quanto si aspettava. Dove pensa di aver acquisito queste competenze senza rendersene conto?";
+            $hint['azione'] = "Punto di forza da evidenziare nel rapporto. Aiutare lo studente a prendere consapevolezza delle proprie capacita'.";
             $hints['positivi'][] = $hint;
         } else {
-            $hint['messaggio'] = "Buon allineamento tra percezione e realtà.";
+            $hint['messaggio'] = "Buon allineamento tra percezione personale e risultati oggettivi.";
+            $hint['domanda'] = "La sua autovalutazione in {$displayName} corrisponde ai risultati. Dove ha maturato questa consapevolezza?";
+            $hint['azione'] = "Competenza solida e consapevole. Valorizzare nel rapporto CPURC.";
             $hints['positivi'][] = $hint;
         }
     }
-    
+
     return $hints;
 }
 
@@ -636,6 +642,69 @@ function aggregate_autovalutazione_by_area($autovalutazione, $areaDescriptions, 
     }
     ksort($areas);
     return $areas;
+}
+
+/**
+ * Genera spunti colloquio basati sui soli risultati quiz (senza autovalutazione).
+ * Utile quando lo studente non ha ancora fatto l'autovalutazione.
+ * Contesto: utenti disoccupati con competenze professionali pregresse.
+ */
+function generate_quiz_based_hints($competencies, $competencyDescriptions) {
+    $hints = [
+        'critici' => [],
+        'attenzione' => [],
+        'positivi' => [],
+        'eccellenze' => []
+    ];
+
+    foreach ($competencies as $comp) {
+        $code = $comp['idnumber'] ?: $comp['name'];
+        $info = $competencyDescriptions[$code] ?? ['name' => $code, 'full_name' => $code];
+        $displayName = $info['full_name'] ?? $info['name'] ?? $code;
+        $pct = $comp['percentage'];
+        $correct = $comp['correct_questions'];
+        $total = $comp['total_questions'];
+
+        if ($total == 0) continue;
+
+        $hint = [
+            'competenza' => $displayName,
+            'codice' => $code,
+            'percentage' => $pct,
+            'correct' => $correct,
+            'total' => $total
+        ];
+
+        if ($pct < 30) {
+            $hint['messaggio'] = "Risultato molto basso ($correct/$total). Esplorare se questa competenza e' stata sviluppata nelle esperienze precedenti o se e' un ambito nuovo.";
+            $hint['domanda'] = "Nelle sue esperienze professionali o formative passate, ha mai avuto modo di occuparsi di aspetti legati a {$displayName}? In quale contesto?";
+            $hint['azione'] = "Valutare se proporre un percorso di formazione mirato o un affiancamento pratico in laboratorio.";
+            $hints['critici'][] = $hint;
+        } else if ($pct < 60) {
+            $hint['messaggio'] = "Risultato parziale ($correct/$total). Lo studente ha basi da consolidare.";
+            $hint['domanda'] = "In quale ruolo o mansione ha sviluppato le competenze legate a {$displayName}? Quali aspetti sente di padroneggiare meglio?";
+            $hint['azione'] = "Identificare i sotto-argomenti specifici dove lo studente ha lacune e proporre esercitazioni pratiche.";
+            $hints['attenzione'][] = $hint;
+        } else if ($pct < 80) {
+            $hint['messaggio'] = "Buon risultato ($correct/$total). Competenza acquisita con margine di miglioramento.";
+            $hint['domanda'] = "Dove ha acquisito questa competenza? Tramite quali mansioni o funzioni svolte in passato?";
+            $hint['azione'] = "Valorizzare l'esperienza pregressa e proporre approfondimenti per raggiungere l'eccellenza.";
+            $hints['positivi'][] = $hint;
+        } else {
+            $hint['messaggio'] = "Eccellente ($correct/$total). Padronanza solida della competenza.";
+            $hint['domanda'] = "Questa competenza e' chiaramente un suo punto di forza. In quale contesto lavorativo l'ha sviluppata maggiormente?";
+            $hint['azione'] = "Punto di forza da evidenziare nel rapporto CPURC. Valutare se puo' essere una risorsa per il futuro reinserimento.";
+            $hints['eccellenze'][] = $hint;
+        }
+    }
+
+    // Ordina per percentuale
+    usort($hints['critici'], fn($a, $b) => $a['percentage'] <=> $b['percentage']);
+    usort($hints['attenzione'], fn($a, $b) => $a['percentage'] <=> $b['percentage']);
+    usort($hints['positivi'], fn($a, $b) => $b['percentage'] <=> $a['percentage']);
+    usort($hints['eccellenze'], fn($a, $b) => $b['percentage'] <=> $a['percentage']);
+
+    return $hints;
 }
 
 // ============================================
@@ -907,6 +976,8 @@ $autovalutazioneData = null;
 $autovalutazioneTimestamp = null;
 $gapAnalysisData = null;
 $colloquioHints = null;
+$quizBasedHints = null;  // Spunti generati dai soli quiz (fallback senza autovalutazione)
+$spuntiSource = 'none';  // 'gap' = da gap analysis, 'quiz' = da solo quiz, 'none' = nessun dato
 $autovalutazioneAreas = null;
 
 // Carica solo se almeno una opzione è attivata (incluso overlay)
@@ -928,7 +999,15 @@ if ($showDualRadar || $showGapAnalysis || $showSpuntiColloquio || $showSuggerime
         
         // Genera spunti colloquio se richiesto - USA SOGLIE CONFIGURABILI
         if ($showSpuntiColloquio || $printSpuntiColloquio) {
-            $colloquioHints = generate_colloquio_hints($gapAnalysisData, $competencyDescriptions, $sogliaCritico);
+            if (!empty($gapAnalysisData)) {
+                $colloquioHints = generate_colloquio_hints($gapAnalysisData, $competencyDescriptions, $sogliaCritico);
+                $spuntiSource = 'gap';
+            }
+            // Fallback: se gap analysis vuoto, genera dai quiz
+            if (empty($colloquioHints) && !empty($competencies)) {
+                $quizBasedHints = generate_quiz_based_hints($competencies, $competencyDescriptions);
+                $spuntiSource = 'quiz';
+            }
         }
         
         // Aggrega autovalutazione per area (anche per overlay)
@@ -951,6 +1030,18 @@ if ($showDualRadar || $showGapAnalysis || $showSpuntiColloquio || $showSuggerime
             }
             $autovalutazioneAreas = aggregate_autovalutazione_by_area($autovalutazione_for_areas, $areaDescriptions, $sector);
         }
+    } else {
+        // Nessuna autovalutazione: genera spunti dai soli risultati quiz
+        if (($showSpuntiColloquio || $printSpuntiColloquio) && !empty($competencies)) {
+            $quizBasedHints = generate_quiz_based_hints($competencies, $competencyDescriptions);
+            $spuntiSource = 'quiz';
+        }
+    }
+} else {
+    // Nessuna opzione attivata ma spunti richiesti: genera comunque dai quiz
+    if (($showSpuntiColloquio || $printSpuntiColloquio) && !empty($competencies)) {
+        $quizBasedHints = generate_quiz_based_hints($competencies, $competencyDescriptions);
+        $spuntiSource = 'quiz';
     }
 }
 
@@ -1159,7 +1250,14 @@ include(__DIR__ . '/../coachmanager/coach_navigation.php');
 ?>
 
 <style>
+/* Scale all content +24% */
+#region-main, [role="main"] {
+    font-size: 124% !important;
+}
+
 .badge-orange { background-color: #fd7e14; color: white; }
+.spunti-clickable { cursor: pointer; transition: all 0.2s ease; }
+.spunti-clickable:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .radar-interactive-container { position: relative; }
 .radar-controls { margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; }
 .radar-controls .form-check { display: inline-block; margin-right: 15px; margin-bottom: 10px; }
@@ -1560,24 +1658,71 @@ include(__DIR__ . '/../coachmanager/coach_navigation.php');
 }
 
 .critical-value-box {
+    text-align: center;
+    padding: 10px 15px;
+    background: white;
+    border-radius: 8px;
+    min-width: 100px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.critical-value-box:hover {
+    background: #f8f9fa;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.critical-value-box .label { font-size: 0.7em; color: #7f8c8d; text-transform: uppercase; }
+.critical-value-box .value { font-size: 1.3em; font-weight: 700; }
+
+/* Self assessment card (clean style) */
+.self-assessment-card {
     background: #f8f9fa;
     border-radius: 10px;
-    padding: 12px 18px;
-    text-align: center;
-    min-width: 100px;
+    padding: 15px;
+    border-left: 4px solid #9b59b6;
 }
 
-.critical-value-box .label {
-    font-size: 0.75em;
-    color: #7f8c8d;
-    text-transform: uppercase;
-    margin-bottom: 4px;
+.level-badge {
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    font-weight: 600;
+    color: white;
+    display: inline-block;
 }
 
-.critical-value-box .value {
-    font-size: 1.3em;
-    font-weight: 700;
+.level-badge.level-1 { background: #e74c3c; }
+.level-badge.level-2 { background: #e67e22; }
+.level-badge.level-3 { background: #f1c40f; color: #333; }
+.level-badge.level-4 { background: #27ae60; }
+.level-badge.level-5 { background: #3498db; }
+.level-badge.level-6 { background: #9b59b6; }
+
+/* Gap analysis box */
+.gap-analysis-box {
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-top: 12px;
 }
+
+.gap-analysis-box.warning { background: #fff3cd; border-left: 4px solid #ffc107; color: #856404; }
+.gap-analysis-box.success { background: #d4edda; border-left: 4px solid #28a745; color: #155724; }
+.gap-analysis-box.info { background: #d1ecf1; border-left: 4px solid #17a2b8; color: #0c5460; }
+
+/* Gap indicator badge */
+.gap-indicator {
+    display: inline-block;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.gap-indicator.sopravvalutazione { background: #f8d7da; color: #721c24; }
+.gap-indicator.sottovalutazione { background: #d1ecf1; color: #0c5460; }
+.gap-indicator.allineato { background: #d4edda; color: #155724; }
 
 /* ============================================
    BARRA NAVIGAZIONE STUDENTE (Cascata)
@@ -1885,20 +2030,30 @@ if ($canManageSectors || !empty($quizComparison)):
 }
 
 /* Mini-accordion inside tab */
+/* Mini-accordion come tab orizzontali */
+.ftm-config-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 0;
+    border-bottom: 2px solid #dee2e6;
+}
+
 .ftm-mini-accordion {
-    margin-bottom: 12px;
+    margin-bottom: 0;
+    flex-shrink: 0;
 }
 
 .ftm-mini-accordion-header {
-    display: flex;
-    justify-content: space-between;
+    display: inline-flex;
     align-items: center;
-    padding: 12px 16px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    gap: 6px;
+    padding: 8px 16px;
     color: white;
-    border-radius: 8px;
+    border-radius: 8px 8px 0 0;
     cursor: pointer;
     transition: all 0.2s ease;
+    border: none;
+    margin-bottom: -2px;
 }
 
 .ftm-mini-accordion-header:hover {
@@ -1906,17 +2061,23 @@ if ($canManageSectors || !empty($quizComparison)):
 }
 
 .ftm-mini-accordion-header.collapsed {
-    border-radius: 8px;
+    opacity: 0.7;
 }
 
 .ftm-mini-accordion-header:not(.collapsed) {
-    border-radius: 8px 8px 0 0;
+    opacity: 1;
+    border-bottom: 2px solid white;
 }
 
 .ftm-mini-accordion-header h6 {
     margin: 0;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
+    white-space: nowrap;
+}
+
+.ftm-mini-accordion-header .toggle-icon {
+    font-size: 10px;
 }
 
 .ftm-mini-accordion-body {
@@ -2307,13 +2468,30 @@ if (!empty($quizComparison)) {
     // Parametro filtro tentativi
     $attemptFilter = optional_param('attempt_filter', 'all', PARAM_ALPHA);
     ?>
-    <!-- Mini-accordion 1: Filtra Quiz -->
-    <div class="ftm-mini-accordion" data-section="quiz-filter">
-        <div class="ftm-mini-accordion-header collapsed" onclick="toggleMiniAccordion(this)">
-            <h6>📊 Filtra Quiz per Analisi Radar</h6>
-            <span class="toggle-icon">▶</span>
+    <!-- Tab orizzontali configurazione -->
+    <div class="ftm-config-tabs">
+        <div class="ftm-mini-accordion" data-section="quiz-filter">
+            <div class="ftm-mini-accordion-header collapsed" onclick="toggleMiniAccordion(this)">
+                <h6>📊 Filtra Quiz</h6>
+                <span class="toggle-icon">▶</span>
+            </div>
         </div>
-        <div class="ftm-mini-accordion-body" id="quizFilterPanel">
+        <div class="ftm-mini-accordion" data-section="viz-options">
+            <div class="ftm-mini-accordion-header collapsed" onclick="toggleMiniAccordion(this)">
+                <h6>🔧 Opzioni Visualizzazione</h6>
+                <span class="toggle-icon">▶</span>
+            </div>
+        </div>
+        <div class="ftm-mini-accordion" data-section="weights" id="weights-tab-header" style="display: none;">
+            <div class="ftm-mini-accordion-header collapsed" onclick="toggleMiniAccordion(this)">
+                <h6>⚖️ Ponderazioni</h6>
+                <span class="toggle-icon">▶</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 1: Filtra Quiz -->
+    <div class="ftm-mini-accordion-body" id="quizFilterPanel" data-section="quiz-filter">
             <form method="get" id="quizFilterForm">
                 <input type="hidden" name="userid" value="<?php echo $userid; ?>">
                 <input type="hidden" name="courseid" value="<?php echo $courseid; ?>">
@@ -2326,6 +2504,7 @@ if (!empty($quizComparison)) {
                 <?php if ($showCoachEvaluation): ?><input type="hidden" name="show_coach_eval" value="1"><?php endif; ?>
                 <?php if ($showOverlayRadar): ?><input type="hidden" name="show_overlay" value="1"><?php endif; ?>
                 <?php if (!empty($currentSector)): ?><input type="hidden" name="cm_sector" value="<?php echo $currentSector; ?>"><?php endif; ?>
+                <?php if ($openTab): ?><input type="hidden" name="open_tab" value="<?php echo s($openTab); ?>"><?php endif; ?>
 
                 <!-- Filtro tentativi -->
                 <div class="alert alert-light border mb-3">
@@ -2462,8 +2641,7 @@ if (!empty($quizComparison)) {
                     </div>
                 </div>
             </form>
-        </div>
-    </div><!-- Fine mini-accordion 1: Filtra Quiz -->
+    </div><!-- Fine panel 1: Filtra Quiz -->
 
     <!-- Script per auto-attivazione opzioni quando si seleziona un quiz -->
     <script>
@@ -2638,6 +2816,18 @@ if (!empty($quizComparison)) {
                             form.appendChild(vizConfigInput);
                         }
                         vizConfigInput.value = '1';
+                        // Propaga open_tab se presente nell'URL
+                        var openTabParam = new URLSearchParams(window.location.search).get('open_tab');
+                        if (openTabParam) {
+                            var openTabInput = form.querySelector('input[name="open_tab"]');
+                            if (!openTabInput) {
+                                openTabInput = document.createElement('input');
+                                openTabInput.type = 'hidden';
+                                openTabInput.name = 'open_tab';
+                                form.appendChild(openTabInput);
+                            }
+                            openTabInput.value = openTabParam;
+                        }
                         form.submit();
                     }
                 }, 800); // 800ms di delay per permettere selezioni multiple
@@ -2683,6 +2873,18 @@ if (!empty($quizComparison)) {
                         form.querySelectorAll('input[name="quizids[]"]').forEach(function(inp) {
                             inp.remove();
                         });
+                        // Propaga open_tab se presente
+                        var openTabParam = new URLSearchParams(window.location.search).get('open_tab');
+                        if (openTabParam) {
+                            var openTabInput = form.querySelector('input[name="open_tab"]');
+                            if (!openTabInput) {
+                                openTabInput = document.createElement('input');
+                                openTabInput.type = 'hidden';
+                                openTabInput.name = 'open_tab';
+                                form.appendChild(openTabInput);
+                            }
+                            openTabInput.value = openTabParam;
+                        }
                         form.submit();
                     }
                 }, 500);
@@ -2703,6 +2905,37 @@ if (!empty($quizComparison)) {
                 setTimeout(updateQuizSelection, 50); // Attendi che le checkbox siano aggiornate
             });
         });
+
+        // SYNC QUIZ: Quando additiveOptionsForm viene inviato (manualmente o auto),
+        // sincronizza SEMPRE i quiz selezionati e il filtro tentativi
+        var additiveForm = document.getElementById('additiveOptionsForm');
+        if (additiveForm) {
+            additiveForm.addEventListener('submit', function() {
+                // Rimuovi tutti i hidden inputs dei quiz esistenti
+                this.querySelectorAll('input[name="quizids[]"]').forEach(function(inp) {
+                    inp.remove();
+                });
+                // Aggiungi i quiz attualmente selezionati dalle checkbox
+                document.querySelectorAll('.quiz-checkbox:checked').forEach(function(cb) {
+                    var hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'quizids[]';
+                    hidden.value = cb.value;
+                    additiveForm.appendChild(hidden);
+                });
+                // Sincronizza filtro tentativi
+                var attemptFilter = document.querySelector('#quizFilterForm input[name="attempt_filter"]:checked');
+                if (attemptFilter) {
+                    var existingFilter = additiveForm.querySelector('input[name="attempt_filter"]');
+                    if (existingFilter) existingFilter.remove();
+                    var hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'attempt_filter';
+                    hidden.value = attemptFilter.value;
+                    additiveForm.appendChild(hidden);
+                }
+            });
+        }
     });
     </script>
     <?php
@@ -2757,13 +2990,8 @@ if (!empty($selectedQuizzes) && empty($competencies)) {
 // PANNELLO OPZIONI ADDITIVE (CoachManager) - Mini-accordion 2
 // ============================================
 ?>
-<!-- Mini-accordion 2: Opzioni Visualizzazione -->
-<div class="ftm-mini-accordion" data-section="viz-options">
-    <div class="ftm-mini-accordion-header collapsed" onclick="toggleMiniAccordion(this)">
-        <h6>🔧 Opzioni Visualizzazione</h6>
-        <span class="toggle-icon">▶</span>
-    </div>
-    <div class="ftm-mini-accordion-body" id="optionsPanel">
+<!-- Panel 2: Opzioni Visualizzazione -->
+    <div class="ftm-mini-accordion-body" id="optionsPanel" data-section="viz-options">
         <form method="get" id="additiveOptionsForm">
             <input type="hidden" name="userid" value="<?php echo $userid; ?>">
             <input type="hidden" name="courseid" value="<?php echo $courseid; ?>">
@@ -2772,7 +3000,8 @@ if (!empty($selectedQuizzes) && empty($competencies)) {
             <?php foreach ($selectedQuizzes as $qid): ?>
             <input type="hidden" name="quizids[]" value="<?php echo $qid; ?>">
             <?php endforeach; ?>
-            
+            <?php if ($openTab): ?><input type="hidden" name="open_tab" value="<?php echo s($openTab); ?>"><?php endif; ?>
+
             <div class="row">
                 <div class="col-md-7">
                     <h6>🏭 Filtro Settore:</h6>
@@ -2891,10 +3120,14 @@ if (!empty($selectedQuizzes) && empty($competencies)) {
                     
                     <div class="custom-control custom-switch mb-2">
                         <input type="checkbox" class="custom-control-input" id="show_spunti"
-                               name="show_spunti" value="1" <?php echo $showSpuntiColloquio ? 'checked' : ''; ?>
-                               <?php echo !$hasAutovalutazione ? 'disabled' : ''; ?>>
+                               name="show_spunti" value="1" <?php echo $showSpuntiColloquio ? 'checked' : ''; ?>>
                         <label class="custom-control-label" for="show_spunti">
                             💬 <strong>Spunti Colloquio</strong> (Domande suggerite)
+                            <?php if ($hasAutovalutazione): ?>
+                                <small class="text-muted">- con Gap Analysis</small>
+                            <?php else: ?>
+                                <small class="text-muted">- basati sui quiz</small>
+                            <?php endif; ?>
                         </label>
                     </div>
 
@@ -3008,19 +3241,12 @@ if (!empty($selectedQuizzes) && empty($competencies)) {
             </div>
             
         </form>
-    </div>
-</div><!-- Fine mini-accordion 2: Opzioni Visualizzazione -->
+    </div><!-- Fine panel 2: Opzioni Visualizzazione -->
 
-<!-- Mini-accordion 3: Ponderazioni - Sarà popolato se showOverlayRadar è attivo -->
-<div class="ftm-mini-accordion" data-section="weights" id="weights-mini-accordion" style="display: none;">
-    <div class="ftm-mini-accordion-header collapsed" onclick="toggleMiniAccordion(this)">
-        <h6>⚖️ Configurazione Ponderazioni</h6>
-        <span class="toggle-icon">▶</span>
-    </div>
-    <div class="ftm-mini-accordion-body" id="weightsMiniAccordionBody">
+<!-- Panel 3: Ponderazioni -->
+    <div class="ftm-mini-accordion-body" id="weightsMiniAccordionBody" data-section="weights" style="display: none;">
         <!-- Contenuto caricato dinamicamente se overlay attivo -->
-    </div>
-</div>
+    </div><!-- Fine panel 3: Ponderazioni -->
 
 <!-- Pulsante Aggiorna Grafici (per tutto il tab Configurazione Report) -->
 <div class="text-center mt-4 mb-3 p-3" style="background: #e9ecef; border-radius: 8px;">
@@ -3064,7 +3290,13 @@ if (!empty($selectedQuizzes) && empty($competencies)) {
             <div id="spunti-content-placeholder">
                 <!-- Contenuto spostato via JavaScript -->
                 <div class="ftm-tab-empty">
-                    <p>💬 Seleziona le opzioni nella tab "Configurazione" e clicca "Aggiorna Grafici" per vedere gli Spunti Colloquio</p>
+                    <?php if (empty($competencies)): ?>
+                        <p>💬 <strong>Nessun quiz completato.</strong> Gli Spunti Colloquio richiedono almeno un quiz completato dallo studente. Seleziona i quiz nella tab "Configurazione".</p>
+                    <?php elseif (!$showSpuntiColloquio): ?>
+                        <p>💬 Attiva l'opzione <strong>"Spunti Colloquio"</strong> nella tab "Configurazione" e clicca "Aggiorna Grafici".</p>
+                    <?php else: ?>
+                        <p>💬 Caricamento spunti in corso...</p>
+                    <?php endif; ?>
                 </div>
             </div>
         </div><!-- Fine TAB 6: Spunti Colloquio -->
@@ -3097,16 +3329,41 @@ function toggleFtmTab(tabId) {
     saveFtmTabState();
 }
 
-// Toggle Mini-accordion
+// Toggle Mini-accordion (tab orizzontali con body separati)
 function toggleMiniAccordion(header) {
-    const body = header.nextElementSibling;
+    const section = header.closest('.ftm-mini-accordion')?.dataset.section;
+    // Trova il body corrispondente tramite data-section o id
+    let body = null;
+    if (section === 'quiz-filter') body = document.getElementById('quizFilterPanel');
+    else if (section === 'viz-options') body = document.getElementById('optionsPanel');
+    else if (section === 'weights') body = document.getElementById('weightsMiniAccordionBody');
+
+    if (!body) return;
+
     const icon = header.querySelector('.toggle-icon');
+    const isOpening = header.classList.contains('collapsed');
 
-    header.classList.toggle('collapsed');
-    body.classList.toggle('show');
+    // Chiudi tutti gli altri panel
+    document.querySelectorAll('.ftm-config-tabs .ftm-mini-accordion-header').forEach(function(h) {
+        if (h !== header) {
+            h.classList.add('collapsed');
+            var hIcon = h.querySelector('.toggle-icon');
+            if (hIcon) hIcon.textContent = '▶';
+        }
+    });
+    document.querySelectorAll('.ftm-mini-accordion-body[data-section], #quizFilterPanel, #optionsPanel, #weightsMiniAccordionBody').forEach(function(b) {
+        if (b !== body) b.classList.remove('show');
+    });
 
-    if (icon) {
-        icon.textContent = body.classList.contains('show') ? '▼' : '▶';
+    // Toggle il panel cliccato
+    if (isOpening) {
+        header.classList.remove('collapsed');
+        body.classList.add('show');
+        if (icon) icon.textContent = '▼';
+    } else {
+        header.classList.add('collapsed');
+        body.classList.remove('show');
+        if (icon) icon.textContent = '▶';
     }
 
     // Salva stato
@@ -3158,21 +3415,22 @@ function restoreFtmTabState() {
             });
         }
 
-        // Ripristina mini-accordion
+        // Ripristina mini-accordion (struttura tab con body separati)
         if (state.accordions) {
+            var bodyMap = {
+                'quiz-filter': document.getElementById('quizFilterPanel'),
+                'viz-options': document.getElementById('optionsPanel'),
+                'weights': document.getElementById('weightsMiniAccordionBody')
+            };
             Object.entries(state.accordions).forEach(([section, isOpen]) => {
-                if (isOpen) {
-                    const accordion = document.querySelector(`.ftm-mini-accordion[data-section="${section}"]`);
-                    if (accordion) {
-                        const header = accordion.querySelector('.ftm-mini-accordion-header');
-                        const body = accordion.querySelector('.ftm-mini-accordion-body');
-                        const icon = header?.querySelector('.toggle-icon');
-                        if (header && body) {
-                            header.classList.remove('collapsed');
-                            body.classList.add('show');
-                            if (icon) icon.textContent = '▼';
-                        }
-                    }
+                const accordion = document.querySelector(`.ftm-mini-accordion[data-section="${section}"]`);
+                const header = accordion?.querySelector('.ftm-mini-accordion-header');
+                const body = bodyMap[section];
+                const icon = header?.querySelector('.toggle-icon');
+                if (isOpen && header && body) {
+                    header.classList.remove('collapsed');
+                    body.classList.add('show');
+                    if (icon) icon.textContent = '▼';
                 }
             });
         }
@@ -3185,12 +3443,31 @@ function restoreFtmTabState() {
 document.addEventListener('DOMContentLoaded', function() {
     restoreFtmTabState();
 
-    // Sposta la sezione Ponderazioni nel mini-accordion (se esiste)
+    // Auto-apri tab da parametro URL open_tab (es. open_tab=spunti)
+    const urlParams = new URLSearchParams(window.location.search);
+    const openTab = urlParams.get('open_tab');
+    if (openTab) {
+        const btn = document.querySelector(`.ftm-tab-btn[data-tab="${openTab}"]`);
+        const panel = document.getElementById(`ftm-tab-${openTab}`);
+        if (btn && panel) {
+            // Forza apertura (override localStorage)
+            btn.classList.add('active');
+            panel.classList.add('active');
+            // Salva stato aggiornato nel localStorage
+            saveFtmTabState();
+            // Scrolla alla sezione del tab
+            setTimeout(function() {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 300);
+        }
+    }
+
+    // Sposta la sezione Ponderazioni nel panel tab (se esiste)
     const weightsSection = document.getElementById('weights-config-section');
-    const weightsMiniAccordion = document.getElementById('weights-mini-accordion');
+    const weightsTabHeader = document.getElementById('weights-tab-header');
     const weightsMiniBody = document.getElementById('weightsMiniAccordionBody');
 
-    if (weightsSection && weightsMiniAccordion && weightsMiniBody) {
+    if (weightsSection && weightsTabHeader && weightsMiniBody) {
         // Prendi il contenuto del body della sezione originale
         const originalBody = weightsSection.querySelector('.card-body');
         if (originalBody) {
@@ -3198,8 +3475,9 @@ document.addEventListener('DOMContentLoaded', function() {
             weightsMiniBody.innerHTML = originalBody.innerHTML;
             // Nascondi sezione originale
             weightsSection.style.display = 'none';
-            // Mostra mini-accordion
-            weightsMiniAccordion.style.display = 'block';
+            // Mostra tab header e panel
+            weightsTabHeader.style.display = '';
+            weightsMiniBody.style.display = '';
         }
     }
 
@@ -3593,7 +3871,7 @@ $tabs = [
     'selfassessment' => '📝 Autovalutazione ↗',
     'labeval' => '🔬 Laboratorio ↗',
     'progress' => '📈 Progressi',
-    'details' => '📋 Dettagli'
+    'details' => '📋 Dettagli',
 ];
 
 // URL esterni
@@ -4972,7 +5250,7 @@ if ($tab === 'overview') {
             <!-- Tabella Comparativa -->
             <h6 class="mt-4 mb-3">📋 Tabella Comparativa Dettagliata</h6>
             <div class="table-responsive">
-                <table class="table table-bordered table-hover table-sm" id="overlay-comparison-table">
+                <table class="table table-bordered table-hover table-sm" id="overlay-comparison-table" style="font-size: 115%;">
                     <thead>
                         <tr style="background: #34495e; color: white;">
                             <th style="min-width: 200px;">Area</th>
@@ -5880,76 +6158,7 @@ if ($tab === 'overview') {
             </table>
         </div>
     </div>
-    <?php endif; ?>
-    
-    <?php
-    // SPUNTI COLLOQUIO
-    if ($showSpuntiColloquio && !empty($colloquioHints)):
-    ?>
-    <div class="card mt-4" id="spunti-section-original">
-        <div class="card-header" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: #333;">
-            <h5 class="mb-0">💬 Spunti per il Colloquio</h5>
-        </div>
-        <div class="card-body">
-            <!-- INDICAZIONE SOGLIE CONFIGURATE -->
-            <div class="alert alert-secondary mb-3 py-2">
-                <small>
-                    <strong>⚙️ Classificazione:</strong>
-                    🔴 Gap Critico = > <strong><?php echo $sogliaCritico; ?>%</strong> | 
-                    ⚠️ Gap Moderato = <strong><?php echo $sogliaAllineamento; ?>% - <?php echo $sogliaCritico; ?>%</strong> | 
-                    ✅ Allineato = ≤ <strong><?php echo $sogliaAllineamento; ?>%</strong>
-                </small>
-            </div>
-            
-            <?php if (!empty($colloquioHints['critici'])): ?>
-            <div class="mb-4">
-                <h6 class="text-danger">🔴 Priorità Alta - Gap Critici</h6>
-                <?php foreach ($colloquioHints['critici'] as $hint): ?>
-                <div class="card mb-2 border-danger">
-                    <div class="card-body py-2">
-                        <strong><?php echo htmlspecialchars($hint['competenza']); ?></strong>
-                        <span class="badge badge-danger ml-2">Gap: <?php echo round($hint['gap']['differenza']); ?>%</span>
-                        <p class="mb-1 small"><?php echo $hint['messaggio']; ?></p>
-                        <p class="mb-0 small text-primary"><em>💡 "<?php echo $hint['domanda']; ?>"</em></p>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
-            
-            <?php if (!empty($colloquioHints['attenzione'])): ?>
-            <div class="mb-4">
-                <h6 class="text-warning">⚠️ Attenzione - Gap Moderati</h6>
-                <?php foreach ($colloquioHints['attenzione'] as $hint): ?>
-                <div class="card mb-2 border-warning">
-                    <div class="card-body py-2">
-                        <strong><?php echo htmlspecialchars($hint['competenza']); ?></strong>
-                        <span class="badge badge-warning ml-2">Gap: <?php echo round($hint['gap']['differenza']); ?>%</span>
-                        <p class="mb-1 small"><?php echo $hint['messaggio']; ?></p>
-                        <p class="mb-0 small text-primary"><em>💡 "<?php echo $hint['domanda']; ?>"</em></p>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
-            
-            <?php if (!empty($colloquioHints['positivi'])): ?>
-            <div class="mb-4">
-                <h6 class="text-success">✅ Punti di Forza</h6>
-                <?php foreach (array_slice($colloquioHints['positivi'], 0, 5) as $hint): ?>
-                <div class="card mb-2 border-success">
-                    <div class="card-body py-2">
-                        <strong><?php echo htmlspecialchars($hint['competenza']); ?></strong>
-                        <span class="badge badge-success ml-2"><?php echo $hint['gap']['icona']; ?></span>
-                        <p class="mb-0 small"><?php echo $hint['messaggio']; ?></p>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
-        </div>
-    </div>
-    <?php endif; ?>
+    <?php endif; // fine gap analysis table ?>
 
     <?php
     // ============================================
@@ -6183,329 +6392,231 @@ else if ($tab === 'details') {
         window.location.href = url;
     }
     </script>
-
-    <!-- ============================================
-         MAPPA COMPETENZE PER AREA
-         ============================================ -->
     <?php
-    // Se $areasData è vuoto, carica aree dal framework competenze (come reports_v2.php)
-    $mappaAreasData = $areasData;
+}
 
-    // Mappa icone per codice area (identica a reports_v2.php)
-    // Usa solo il codice area (A, B, C oppure LMB, CNC, 1C, etc.)
-    $area_icons = [
-        'A' => '📋', 'B' => '🔧', 'C' => '🛢️', 'D' => '💨', 'E' => '⚙️',
-        'F' => '🛞', 'G' => '💻', 'H' => '📡', 'I' => '❄️', 'J' => '🔋',
-        'K' => '🚗', 'L' => '🛡️', 'M' => '👤', 'N' => '✅',
-        // MECCANICA
-        'LMB' => '🔧', 'LMC' => '⚙️', 'CNC' => '🖥️', 'ASS' => '🔩',
-        'MIS' => '📏', 'GEN' => '🏭', 'MAN' => '🔨', 'DT' => '📐',
-        'AUT' => '🤖', 'PIAN' => '📋', 'SAQ' => '🛡️', 'CSP' => '🤝', 'PRG' => '💡',
-        'LAV' => '🏭', 'MAT' => '🧱', 'CQ' => '✅', 'AREA' => '📦',
-        // CHIMFARM
-        '1C' => '📜', '1G' => '📦', '1O' => '⚗️', '2M' => '📏',
-        '3C' => '🔬', '4S' => '🛡️', '5S' => '🧫', '6P' => '🏭',
-        '7S' => '🔧', '8T' => '💻', '9A' => '📊',
-        // AUTOMOBILE specifici
-        'MAu' => '🚗', 'MR' => '🔧',
-    ];
+// ========================================
+// SPUNTI COLLOQUIO - Renderizzato FUORI dai tab, il JS lo sposta nel tab Spunti
+// ========================================
+$hasSpuntiData = ($spuntiSource === 'gap' && !empty($colloquioHints)) || ($spuntiSource === 'quiz' && !empty($quizBasedHints));
+if ($showSpuntiColloquio && $hasSpuntiData):
+?>
+<div class="card mt-4" id="spunti-section-original" style="display:none;">
+    <div class="card-header" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: #333;">
+        <h5 class="mb-0">💬 Spunti per il Colloquio</h5>
+    </div>
+    <div class="card-body">
 
-    $area_colors = [
-        'A' => '#3498db', 'B' => '#e74c3c', 'C' => '#f39c12', 'D' => '#9b59b6',
-        'E' => '#1abc9c', 'F' => '#e67e22', 'G' => '#2ecc71', 'H' => '#00bcd4',
-        'I' => '#3f51b5', 'J' => '#ff5722', 'K' => '#795548', 'L' => '#607d8b',
-        'M' => '#8bc34a', 'N' => '#009688',
-        // MECCANICA
-        'LMB' => '#795548', 'LMC' => '#607d8b', 'CNC' => '#00bcd4', 'ASS' => '#f39c12',
-        'MIS' => '#1abc9c', 'GEN' => '#9e9e9e', 'MAN' => '#e67e22', 'DT' => '#3498db',
-        'AUT' => '#e74c3c', 'PIAN' => '#9b59b6', 'SAQ' => '#c0392b', 'CSP' => '#8e44ad', 'PRG' => '#2ecc71',
-        'LAV' => '#9e9e9e', 'MAT' => '#795548', 'CQ' => '#27ae60', 'AREA' => '#7f8c8d',
-        // CHIMFARM
-        '1C' => '#3498db', '1G' => '#e67e22', '1O' => '#9b59b6', '2M' => '#1abc9c',
-        '3C' => '#2ecc71', '4S' => '#e74c3c', '5S' => '#00bcd4', '6P' => '#f39c12',
-        '7S' => '#607d8b', '8T' => '#3f51b5', '9A' => '#8bc34a',
-        // AUTOMOBILE
-        'MAu' => '#3498db', 'MR' => '#e74c3c',
-    ];
-
-    // Funzione helper per trovare icona/colore (come reports_v2.php)
-    function get_area_icon_info($areaKey, $area_icons, $area_colors) {
-        // Estrai il codice area dalla key (es. MECCANICA_ASS -> ASS)
-        $parts = explode('_', $areaKey);
-        $area_code = $parts[1] ?? $areaKey;
-
-        $icon = $area_icons[$area_code] ?? '📁';
-        $color = $area_colors[$area_code] ?? '#95a5a6';
-
-        return [
-            'icona' => $icon,
-            'colore' => $color
-        ];
-    }
-
-    if (empty($mappaAreasData)) {
-        // Carica competenze dal framework FTM
-        $framework_competencies = $DB->get_records_sql("
-            SELECT c.id, c.shortname, c.description, c.idnumber
-            FROM {competency} c
-            JOIN {competency_framework} cf ON c.competencyframeworkid = cf.id
-            WHERE cf.shortname LIKE '%FTM%' OR cf.shortname LIKE '%Meccanica%'
-            ORDER BY c.idnumber
-        ");
-
-        // Organizza per area usando la key completa (SETTORE_AREA)
-        foreach ($framework_competencies as $comp) {
-            $areaInfo = get_area_info($comp->idnumber);
-            $areaKey = $areaInfo['key']; // Es. "MECCANICA_ASS", "AUTOMOBILE_MAu"
-            $iconInfo = get_area_icon_info($areaKey, $area_icons, $area_colors);
-
-            // Estrai settore e codice area dalla key
-            $keyParts = explode('_', $areaKey);
-            $areaSector = strtolower($keyParts[0] ?? 'altro');
-            $areaCode = $keyParts[1] ?? $areaKey;
-
-            // Usa il nome dall'area_info se disponibile, altrimenti il codice
-            $areaName = $areaInfo['name'] ?? $areaCode;
-
-            if (!isset($mappaAreasData[$areaKey])) {
-                $mappaAreasData[$areaKey] = [
-                    'code' => $areaKey,
-                    'area_code' => $areaCode,
-                    'name' => $areaName,
-                    'icon' => $iconInfo['icona'],
-                    'color' => $iconInfo['colore'],
-                    'sector' => $areaSector,
-                    'percentage' => 0,
-                    'count' => 0,
-                    'quiz_count' => 0,
-                    'autoval_count' => 0
-                ];
-            }
-            $mappaAreasData[$areaKey]['count']++;
-        }
-
-        // Carica risultati quiz per questo studente
-        $quiz_results = $DB->get_records_sql("
-            SELECT
-                qa.questionid,
-                qas.fraction,
-                q.name as questionname
-            FROM {quiz_attempts} quiza
-            JOIN {question_attempts} qa ON qa.questionusageid = quiza.uniqueid
-            JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
-            JOIN {question} q ON q.id = qa.questionid
-            WHERE quiza.userid = ?
-            AND quiza.state = 'finished'
-            AND qas.sequencenumber = (
-                SELECT MAX(qas2.sequencenumber)
-                FROM {question_attempt_steps} qas2
-                WHERE qas2.questionattemptid = qa.id
-            )
-        ", [$userid]);
-
-        // Mappa domande-competenze
-        $question_competencies = [];
-        if ($DB->get_manager()->table_exists('qbank_competenciesbyquestion')) {
-            $mappings = $DB->get_records('qbank_competenciesbyquestion');
-            foreach ($mappings as $map) {
-                $question_competencies[$map->questionid][] = $map->competencyid;
-            }
-        }
-
-        // Calcola punteggi per area
-        $area_scores = [];
-        foreach ($quiz_results as $result) {
-            if (!isset($question_competencies[$result->questionid])) continue;
-
-            foreach ($question_competencies[$result->questionid] as $compid) {
-                if (!isset($framework_competencies[$compid])) continue;
-                $comp = $framework_competencies[$compid];
-
-                $areaInfo = get_area_info($comp->idnumber);
-                $areaKey = $areaInfo['key']; // Usa la key completa
-
-                if (!isset($area_scores[$areaKey])) {
-                    $area_scores[$areaKey] = ['sum' => 0, 'count' => 0];
-                }
-
-                $score = ($result->fraction !== null) ? floatval($result->fraction) * 100 : 0;
-                $area_scores[$areaKey]['sum'] += $score;
-                $area_scores[$areaKey]['count']++;
-            }
-        }
-
-        // Applica punteggi alle aree
-        foreach ($area_scores as $areaKey => $scores) {
-            if (isset($mappaAreasData[$areaKey]) && $scores['count'] > 0) {
-                $mappaAreasData[$areaKey]['percentage'] = round($scores['sum'] / $scores['count'], 1);
-                $mappaAreasData[$areaKey]['quiz_count'] = $scores['count'];
-            }
-        }
-
-        ksort($mappaAreasData);
-    }
-    ?>
-    <div class="mappa-competenze-section">
-        <div class="mappa-header">
-            <h3>🎯 Mappa Competenze per Area</h3>
+        <!-- GUIDA COACH -->
+        <div class="alert mb-3 py-3" style="background: #f0f4ff; border: 1px solid #c3d4f7; border-radius: 8px;">
+            <h6 class="mb-2" style="color: #2c5282;">📋 Guida per il Coach</h6>
+            <p class="mb-1 small" style="color: #4a5568;">
+                Questa sezione ti aiuta a preparare il colloquio con lo studente. Per ogni competenza troverai:
+            </p>
+            <ul class="mb-1 small" style="color: #4a5568;">
+                <li><strong>Situazione</strong> - Analisi del livello attuale basata sui risultati</li>
+                <li><strong>Domanda suggerita</strong> - Una domanda da porre durante il colloquio per approfondire</li>
+                <li><strong>Azione consigliata</strong> - Cosa proporre come prossimo passo formativo</li>
+            </ul>
+            <p class="mb-0 small" style="color: #718096;">
+                <em>Ricorda: gli utenti sono persone disoccupate con competenze professionali pregresse.
+                Chiedi dove hanno sviluppato le competenze, tramite quali mansioni o funzioni svolte in passato.</em>
+            </p>
         </div>
-        <div class="mappa-body">
-            <!-- Filter Bar -->
-            <div class="filter-bar-mappa">
-                <span class="filter-label">Filtra per:</span>
-                <select id="filterMapSector" onchange="applyMapFilters()">
-                    <option value="all">Tutti i settori</option>
-                    <option value="meccanica">Meccanica</option>
-                    <option value="automobile">Automobile</option>
-                    <option value="automazione">Automazione</option>
-                    <option value="logistica">Logistica</option>
-                    <option value="elettricita">Elettricità</option>
-                    <option value="metalcostruzione">Metalcostruzione</option>
-                    <option value="chimfarm">Chimico-Farmaceutico</option>
-                </select>
-                <select id="filterMapStatus" onchange="applyMapFilters()">
-                    <option value="all">Tutti gli stati</option>
-                    <option value="critical">Solo critici</option>
-                    <option value="warning">Solo attenzione</option>
-                    <option value="good">Solo buoni</option>
-                    <option value="excellent">Solo eccellenti</option>
-                </select>
-                <button class="btn-reset" onclick="resetMapFilters()">🔄 Reset</button>
-            </div>
 
-            <!-- Legenda -->
-            <div class="mappa-legend">
-                <div class="mappa-legend-item">
-                    <div class="mappa-legend-dot" style="background: #28a745;"></div>
-                    <span>Eccellente (≥80%)</span>
-                </div>
-                <div class="mappa-legend-item">
-                    <div class="mappa-legend-dot" style="background: #17a2b8;"></div>
-                    <span>Buono (60-79%)</span>
-                </div>
-                <div class="mappa-legend-item">
-                    <div class="mappa-legend-dot" style="background: #ffc107;"></div>
-                    <span>Sufficiente (50-59%)</span>
-                </div>
-                <div class="mappa-legend-item">
-                    <div class="mappa-legend-dot" style="background: #dc3545;"></div>
-                    <span>Critico (<50%)</span>
-                </div>
-                <div class="mappa-legend-item">
-                    <div class="mappa-legend-dot" style="background: #e9ecef;"></div>
-                    <span>Non valutato</span>
-                </div>
-            </div>
+        <?php if ($spuntiSource === 'gap'): ?>
+        <!-- MODALITA' GAP ANALYSIS -->
+        <div class="alert alert-info mb-3 py-2">
+            <small>
+                <strong>📊 Fonte dati:</strong> Confronto tra autovalutazione e risultati quiz (Gap Analysis).
+                🔴 Gap Critico = > <strong><?php echo $sogliaCritico; ?>%</strong> |
+                ⚠️ Gap Moderato = <strong><?php echo $sogliaAllineamento; ?>% - <?php echo $sogliaCritico; ?>%</strong> |
+                ✅ Allineato = ≤ <strong><?php echo $sogliaAllineamento; ?>%</strong>
+            </small>
+        </div>
 
-            <!-- Grid Aree -->
-            <div class="areas-grid">
-                <?php foreach ($mappaAreasData as $areaCode => $areaData):
-                    $pct = $areaData['percentage'] ?? 0;
-                    $quiz_count = $areaData['quiz_count'] ?? 0;
-
-                    // Usa il settore salvato, oppure estrai dal codice area
-                    $card_sector = $areaData['sector'] ?? strtolower(explode('_', $areaCode)[0] ?? 'altro');
-
-                    if ($quiz_count == 0) {
-                        $status_class = 'nodata';
-                        $status_label = 'Non valutato';
-                        $status_color = '#adb5bd';
-                    } elseif ($pct >= 80) {
-                        $status_class = 'excellent';
-                        $status_label = 'Eccellente';
-                        $status_color = '#28a745';
-                    } elseif ($pct >= 60) {
-                        $status_class = 'good';
-                        $status_label = 'Buono';
-                        $status_color = '#17a2b8';
-                    } elseif ($pct >= 50) {
-                        $status_class = 'warning';
-                        $status_label = 'Sufficiente';
-                        $status_color = '#ffc107';
-                    } else {
-                        $status_class = 'critical';
-                        $status_label = 'Critico';
-                        $status_color = '#dc3545';
-                    }
-                ?>
-                <div class="area-card"
-                     data-area="<?php echo $areaCode; ?>"
-                     data-sector="<?php echo $card_sector; ?>"
-                     data-status="<?php echo $status_class; ?>"
-                     onclick="openAreaModal('<?php echo htmlspecialchars($areaCode, ENT_QUOTES); ?>')"
-                     style="border-left-color: <?php echo $areaData['color'] ?? '#95a5a6'; ?>; <?php echo $quiz_count == 0 ? 'opacity: 0.6;' : ''; ?>">
-                    <div class="area-icon"><?php echo $areaData['icon'] ?? '📁'; ?></div>
-                    <div class="area-name"><?php echo $areaData['name'] ?? $areaCode; ?></div>
-                    <div class="area-count"><?php echo $areaData['count'] ?? 0; ?> competenze</div>
-                    <div class="area-mini-comparison">
-                        <div class="mini-bar-container">
-                            <div class="mini-bar-label">Quiz <?php echo $quiz_count > 0 ? "($quiz_count)" : ''; ?></div>
-                            <div class="mini-bar"><div class="mini-bar-fill quiz" style="width: <?php echo $pct; ?>%;"></div></div>
-                        </div>
+        <?php if (!empty($colloquioHints['critici'])): ?>
+        <div class="mb-4">
+            <h6 class="text-danger">🔴 Priorita' Alta - Gap Critici</h6>
+            <?php foreach ($colloquioHints['critici'] as $hint): ?>
+            <div class="card mb-2 border-danger spunti-clickable" onclick="openCompetencyModal('<?php echo htmlspecialchars($hint['codice'], ENT_QUOTES); ?>')">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <strong><?php echo htmlspecialchars($hint['competenza']); ?></strong>
+                        <span class="badge badge-danger ml-2">Gap: <?php echo round($hint['gap']['differenza']); ?>%</span>
                     </div>
-                    <div class="area-stats">
-                        <span class="area-percentage" style="color: <?php echo $status_color; ?>;">
-                            <?php echo $quiz_count > 0 ? round($pct) . '%' : '-'; ?>
-                        </span>
-                        <span class="area-status status-<?php echo $status_class; ?>"><?php echo $status_label; ?></span>
-                    </div>
+                    <p class="mb-1 small"><?php echo $hint['messaggio']; ?></p>
+                    <p class="mb-1 small text-primary"><em>💡 "<?php echo $hint['domanda']; ?>"</em></p>
+                    <?php if (!empty($hint['azione'])): ?>
+                    <p class="mb-0 small text-secondary">🎯 <strong>Azione:</strong> <?php echo $hint['azione']; ?></p>
+                    <?php endif; ?>
+                    <p class="mb-0 mt-1 small" style="color: #adb5bd;">🔍 Clicca per vedere dettaglio quiz e autovalutazione</p>
                 </div>
-                <?php endforeach; ?>
             </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
 
-            <p style="margin-top: 15px; color: #6c757d; font-size: 0.85em;">
-                💡 Clicca su un'area per vedere il dettaglio delle competenze
+        <?php if (!empty($colloquioHints['attenzione'])): ?>
+        <div class="mb-4">
+            <h6 class="text-warning">⚠️ Attenzione - Gap Moderati</h6>
+            <?php foreach ($colloquioHints['attenzione'] as $hint): ?>
+            <div class="card mb-2 border-warning spunti-clickable" onclick="openCompetencyModal('<?php echo htmlspecialchars($hint['codice'], ENT_QUOTES); ?>')">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <strong><?php echo htmlspecialchars($hint['competenza']); ?></strong>
+                        <span class="badge badge-warning ml-2">Gap: <?php echo round($hint['gap']['differenza']); ?>%</span>
+                    </div>
+                    <p class="mb-1 small"><?php echo $hint['messaggio']; ?></p>
+                    <p class="mb-1 small text-primary"><em>💡 "<?php echo $hint['domanda']; ?>"</em></p>
+                    <?php if (!empty($hint['azione'])): ?>
+                    <p class="mb-0 small text-secondary">🎯 <strong>Azione:</strong> <?php echo $hint['azione']; ?></p>
+                    <?php endif; ?>
+                    <p class="mb-0 mt-1 small" style="color: #adb5bd;">🔍 Clicca per vedere dettaglio quiz e autovalutazione</p>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($colloquioHints['positivi'])): ?>
+        <div class="mb-4">
+            <h6 class="text-success">✅ Punti di Forza</h6>
+            <?php foreach (array_slice($colloquioHints['positivi'], 0, 5) as $hint): ?>
+            <div class="card mb-2 border-success spunti-clickable" onclick="openCompetencyModal('<?php echo htmlspecialchars($hint['codice'], ENT_QUOTES); ?>')">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <strong><?php echo htmlspecialchars($hint['competenza']); ?></strong>
+                        <span class="badge badge-success ml-2"><?php echo $hint['gap']['icona']; ?></span>
+                    </div>
+                    <p class="mb-1 small"><?php echo $hint['messaggio']; ?></p>
+                    <?php if (!empty($hint['domanda'])): ?>
+                    <p class="mb-1 small text-primary"><em>💡 "<?php echo $hint['domanda']; ?>"</em></p>
+                    <?php endif; ?>
+                    <?php if (!empty($hint['azione'])): ?>
+                    <p class="mb-0 small text-secondary">🎯 <strong>Azione:</strong> <?php echo $hint['azione']; ?></p>
+                    <?php endif; ?>
+                    <p class="mb-0 mt-1 small" style="color: #adb5bd;">🔍 Clicca per vedere dettaglio quiz e autovalutazione</p>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php else: ?>
+        <!-- MODALITA' SOLO QUIZ (senza autovalutazione) -->
+        <div class="alert alert-warning mb-3 py-2">
+            <small>
+                <strong>📊 Fonte dati:</strong> Basati sui soli risultati dei quiz (autovalutazione non ancora completata).
+                Quando lo studente completera' l'autovalutazione, gli spunti saranno arricchiti con l'analisi dei gap.
+            </small>
+        </div>
+
+        <?php if (!empty($quizBasedHints['critici'])): ?>
+        <div class="mb-4">
+            <h6 class="text-danger">🔴 Competenze Critiche (< 30%)</h6>
+            <p class="small text-muted mb-2">Aree che richiedono attenzione immediata. Indagare le esperienze pregresse dello studente.</p>
+            <?php foreach ($quizBasedHints['critici'] as $hint): ?>
+            <div class="card mb-2 border-danger spunti-clickable" onclick="openCompetencyModal('<?php echo htmlspecialchars($hint['codice'], ENT_QUOTES); ?>')">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <strong><?php echo htmlspecialchars($hint['competenza']); ?></strong>
+                        <span class="badge badge-danger ml-2"><?php echo round($hint['percentage']); ?>% (<?php echo $hint['correct']; ?>/<?php echo $hint['total']; ?>)</span>
+                    </div>
+                    <p class="mb-1 small"><?php echo $hint['messaggio']; ?></p>
+                    <p class="mb-1 small text-primary"><em>💡 "<?php echo $hint['domanda']; ?>"</em></p>
+                    <p class="mb-0 small text-secondary">🎯 <strong>Azione:</strong> <?php echo $hint['azione']; ?></p>
+                    <p class="mb-0 mt-1 small" style="color: #adb5bd;">🔍 Clicca per vedere dettaglio quiz e autovalutazione</p>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($quizBasedHints['attenzione'])): ?>
+        <div class="mb-4">
+            <h6 style="color: #e67e22;">⚠️ Competenze da Consolidare (30-60%)</h6>
+            <p class="small text-muted mb-2">Basi presenti ma da rafforzare. Esplorare le esperienze professionali correlate.</p>
+            <?php foreach ($quizBasedHints['attenzione'] as $hint): ?>
+            <div class="card mb-2 border-warning spunti-clickable" onclick="openCompetencyModal('<?php echo htmlspecialchars($hint['codice'], ENT_QUOTES); ?>')">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <strong><?php echo htmlspecialchars($hint['competenza']); ?></strong>
+                        <span class="badge badge-warning ml-2"><?php echo round($hint['percentage']); ?>% (<?php echo $hint['correct']; ?>/<?php echo $hint['total']; ?>)</span>
+                    </div>
+                    <p class="mb-1 small"><?php echo $hint['messaggio']; ?></p>
+                    <p class="mb-1 small text-primary"><em>💡 "<?php echo $hint['domanda']; ?>"</em></p>
+                    <p class="mb-0 small text-secondary">🎯 <strong>Azione:</strong> <?php echo $hint['azione']; ?></p>
+                    <p class="mb-0 mt-1 small" style="color: #adb5bd;">🔍 Clicca per vedere dettaglio quiz e autovalutazione</p>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($quizBasedHints['positivi'])): ?>
+        <div class="mb-4">
+            <h6 class="text-info">👍 Competenze Buone (60-80%)</h6>
+            <p class="small text-muted mb-2">Competenze acquisite con margine di miglioramento. Valorizzare le esperienze pregresse.</p>
+            <?php foreach ($quizBasedHints['positivi'] as $hint): ?>
+            <div class="card mb-2 border-info spunti-clickable" onclick="openCompetencyModal('<?php echo htmlspecialchars($hint['codice'], ENT_QUOTES); ?>')">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <strong><?php echo htmlspecialchars($hint['competenza']); ?></strong>
+                        <span class="badge badge-info ml-2"><?php echo round($hint['percentage']); ?>% (<?php echo $hint['correct']; ?>/<?php echo $hint['total']; ?>)</span>
+                    </div>
+                    <p class="mb-1 small"><?php echo $hint['messaggio']; ?></p>
+                    <p class="mb-1 small text-primary"><em>💡 "<?php echo $hint['domanda']; ?>"</em></p>
+                    <p class="mb-0 small text-secondary">🎯 <strong>Azione:</strong> <?php echo $hint['azione']; ?></p>
+                    <p class="mb-0 mt-1 small" style="color: #adb5bd;">🔍 Clicca per vedere dettaglio quiz e autovalutazione</p>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($quizBasedHints['eccellenze'])): ?>
+        <div class="mb-4">
+            <h6 class="text-success">🌟 Eccellenze (> 80%)</h6>
+            <p class="small text-muted mb-2">Punti di forza evidenti. Da valorizzare nel rapporto CPURC e nel percorso di reinserimento.</p>
+            <?php foreach ($quizBasedHints['eccellenze'] as $hint): ?>
+            <div class="card mb-2 border-success spunti-clickable" onclick="openCompetencyModal('<?php echo htmlspecialchars($hint['codice'], ENT_QUOTES); ?>')">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <strong><?php echo htmlspecialchars($hint['competenza']); ?></strong>
+                        <span class="badge badge-success ml-2"><?php echo round($hint['percentage']); ?>% (<?php echo $hint['correct']; ?>/<?php echo $hint['total']; ?>)</span>
+                    </div>
+                    <p class="mb-1 small"><?php echo $hint['messaggio']; ?></p>
+                    <p class="mb-1 small text-primary"><em>💡 "<?php echo $hint['domanda']; ?>"</em></p>
+                    <p class="mb-0 small text-secondary">🎯 <strong>Azione:</strong> <?php echo $hint['azione']; ?></p>
+                    <p class="mb-0 mt-1 small" style="color: #adb5bd;">🔍 Clicca per vedere dettaglio quiz e autovalutazione</p>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php endif; // fine spuntiSource ?>
+    </div>
+</div>
+<?php elseif ($showSpuntiColloquio && !$hasSpuntiData): ?>
+<div class="card mt-4" id="spunti-section-original" style="display:none;">
+    <div class="card-header" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: #333;">
+        <h5 class="mb-0">💬 Spunti per il Colloquio</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info mb-0">
+            <h6 class="mb-2">💬 Spunti non ancora disponibili</h6>
+            <p class="mb-1 small">Per generare gli spunti per il colloquio, lo studente deve aver completato almeno un quiz.</p>
+            <p class="mb-0 small">
+                <strong>Cosa fare:</strong> Verificare che lo studente abbia svolto i quiz assegnati per il settore selezionato,
+                poi tornare su questa pagina e attivare gli "Spunti Colloquio" dalla tab Configurazione.
             </p>
         </div>
     </div>
-
-    <script>
-    function filterByArea(areaCode) {
-        document.getElementById('filterAreaSelect').value = areaCode;
-        applyFilters();
-    }
-
-    // Filtri per la Mappa Competenze
-    function applyMapFilters() {
-        const statusFilter = document.getElementById('filterMapStatus').value;
-        const sectorFilter = document.getElementById('filterMapSector').value;
-
-        const cards = document.querySelectorAll('.mappa-competenze-section .area-card');
-        let visibleCount = 0;
-
-        cards.forEach(card => {
-            const cardStatus = card.dataset.status;
-            const cardSector = card.dataset.sector;
-
-            const matchStatus = (statusFilter === 'all' || cardStatus === statusFilter);
-            const matchSector = (sectorFilter === 'all' || cardSector === sectorFilter);
-
-            if (matchStatus && matchSector) {
-                card.style.display = 'block';
-                card.style.animation = 'fadeIn 0.3s ease';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
-            }
-        });
-
-        // Aggiorna contatore
-        console.log('🎯 ' + visibleCount + ' aree visualizzate');
-    }
-
-    function resetMapFilters() {
-        document.getElementById('filterMapStatus').value = 'all';
-        document.getElementById('filterMapSector').value = 'all';
-
-        document.querySelectorAll('.mappa-competenze-section .area-card').forEach(card => {
-            card.style.display = 'block';
-        });
-
-        console.log('🔄 Filtri resettati');
-    }
-    </script>
-    <?php
-}
+</div>
+<?php endif; ?>
+<?php
 
 echo '</div>'; // Fine tab-content
 
@@ -7496,6 +7607,22 @@ if (true) { // Carica sempre i dati per il modal
     }
     unset($aData);
 }
+
+// Costruisci indice competenze per codice (per popup da Spunti Colloquio)
+$modal_competency_data = [];
+foreach ($modal_areas_data as $aKey => $aData) {
+    foreach ($aData['competencies'] as $comp) {
+        $cKey = $comp['idnumber'];
+        if ($cKey) {
+            $modal_competency_data[$cKey] = $comp;
+            $modal_competency_data[$cKey]['area_key'] = $aKey;
+            $modal_competency_data[$cKey]['area_name'] = $aData['name'];
+            $modal_competency_data[$cKey]['area_icon'] = $aData['icon'];
+            $modal_competency_data[$cKey]['area_color'] = $aData['color'];
+            $modal_competency_data[$cKey]['area_sector'] = $aData['sector'];
+        }
+    }
+}
 ?>
 
 <!-- ============================================
@@ -7516,6 +7643,8 @@ if (true) { // Carica sempre i dati per il modal
 <script>
 // Dati aree per il modal
 const modalAreasData = <?php echo json_encode($modal_areas_data); ?>;
+// Dati competenze singole per modal da Spunti Colloquio
+const modalCompetencyData = <?php echo json_encode($modal_competency_data); ?>;
 // Debug autovalutazione
 const autovalDebug = <?php echo json_encode($autoval_debug); ?>;
 console.log('DEBUG Autovalutazione:', autovalDebug);
@@ -7532,28 +7661,28 @@ function openAreaModal(areaKey) {
 
     let bodyHtml = '';
 
-    // DEBUG: mostra info autovalutazione (rimuovere in produzione)
-    bodyHtml += '<div style="background: #fff3cd; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85rem;">';
-    bodyHtml += '⚙️ DEBUG: Tabella=' + autovalDebug.table + ', Autoval=' + autovalDebug.count + ', UserID=' + autovalDebug.userid + '<br>';
-    bodyHtml += '📊 Competenze framework=' + (autovalDebug.all_comp_ids ? autovalDebug.all_comp_ids.length : 0);
-    bodyHtml += ', MATCHES=' + (autovalDebug.matches || 0) + '<br>';
-    bodyHtml += '✅ <b>AREE CON AUTOVAL:</b> ' + (autovalDebug.areas_with_autoval ? autovalDebug.areas_with_autoval.join(', ') : 'nessuna');
-    bodyHtml += '<br>📍 <b>QUESTA AREA:</b> ' + areaKey + ' (autoval: ' + (area.autoval_count || 0) + ')';
-    bodyHtml += '</div>';
-
     // Header con statistiche area
     bodyHtml += '<p style="margin-bottom: 15px; color: #6c757d;">' + area.total + ' competenze - Settore: ' + area.sector.toUpperCase() + '</p>';
 
-    // Stats area
-    bodyHtml += '<div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">';
+    // Stats area compatte
+    bodyHtml += '<div style="display: flex; gap: 12px; margin-bottom: 25px; flex-wrap: wrap; align-items: center;">';
     bodyHtml += '<div class="critical-value-box"><div class="label">Quiz Media</div><div class="value" style="color: ' + getScoreColor(area.quiz_media) + ';">' + area.quiz_media + '%</div></div>';
     if (area.autoval_media !== null) {
-        bodyHtml += '<div class="critical-value-box"><div class="label">Autovalutazione</div><div class="value" style="color: ' + getScoreColor(area.autoval_media) + ';">' + area.autoval_media + '%</div></div>';
+        bodyHtml += '<div class="critical-value-box"><div class="label">Autovalutazione</div><div class="value" style="color: #9b59b6;">' + area.autoval_media + '%</div></div>';
+    }
+    // Gap badge compatto
+    if (area.autoval_media !== null && area.quiz_media > 0) {
+        const areaGap = area.autoval_media - area.quiz_media;
+        let gapClass = 'allineato';
+        let gapIcon = '✅';
+        if (areaGap > 15) { gapClass = 'sopravvalutazione'; gapIcon = '⚠️ +'; }
+        else if (areaGap < -15) { gapClass = 'sottovalutazione'; gapIcon = '📈 '; }
+        bodyHtml += '<span class="gap-indicator ' + gapClass + '">' + gapIcon + Math.round(areaGap) + '% Gap</span>';
     }
     bodyHtml += '</div>';
 
     // Lista competenze
-    bodyHtml += '<h4 style="margin-bottom: 15px;">📋 Competenze in quest\'area:</h4>';
+    bodyHtml += '<h4 style="margin-bottom: 15px; font-size: 1.05em; color: #2c3e50;">📋 Competenze in quest\'area:</h4>';
 
     if (area.competencies && area.competencies.length > 0) {
         area.competencies.forEach((comp, idx) => {
@@ -7566,22 +7695,21 @@ function openAreaModal(areaKey) {
             // HEADER COMPETENZA
             bodyHtml += '<div class="competency-header" onclick="toggleCompetency(\'' + compId + '\')">';
             bodyHtml += '<div class="competency-info">';
-            // Nome completo (description) sopra, codice (idnumber) sotto
             const fullName = comp.description || comp.shortname || comp.idnumber;
             bodyHtml += '<div class="competency-name">' + fullName + '</div>';
-            bodyHtml += '<div class="competency-code" style="font-size: 0.8rem; color: #6c757d; margin-top: 2px;">' + comp.idnumber + '</div>';
+            bodyHtml += '<div class="competency-code">' + comp.idnumber + '</div>';
             bodyHtml += '</div>';
 
             // Values boxes
             bodyHtml += '<div class="competency-values">';
+            if (comp.autoval) {
+                bodyHtml += '<div class="value-box"><div class="label">Autoval.</div><div class="value" style="color: #9b59b6;">' + comp.autoval.percentage + '%</div></div>';
+            }
             if (hasQuiz) {
                 bodyHtml += '<div class="value-box"><div class="label">Quiz</div><div class="value" style="color: ' + getScoreColor(quizMedia) + ';">' + quizMedia + '%</div></div>';
-            } else {
-                bodyHtml += '<div class="value-box"><div class="label">Quiz</div><div class="value" style="color: #6c757d;">-</div></div>';
             }
-            // Autovalutazione box
-            if (comp.autoval) {
-                bodyHtml += '<div class="value-box"><div class="label">Autoval.</div><div class="value" style="color: ' + getScoreColor(comp.autoval.percentage) + ';">' + comp.autoval.percentage + '%</div></div>';
+            if (!comp.autoval && !hasQuiz) {
+                bodyHtml += '<div class="value-box"><div class="label">Stato</div><div class="value" style="color: #6c757d;">-</div></div>';
             }
             bodyHtml += '</div>';
 
@@ -7591,29 +7719,27 @@ function openAreaModal(areaKey) {
             // DETTAGLI COMPETENZA (espandibile)
             bodyHtml += '<div class="competency-details">';
 
-            // Sezione Autovalutazione (se presente)
+            // Sezione Autovalutazione
             if (comp.autoval) {
-                bodyHtml += '<div class="detail-section autoval-section" style="background: linear-gradient(135deg, ' + comp.autoval.bloom_colore + '15, transparent); border-left: 4px solid ' + comp.autoval.bloom_colore + ';">';
+                bodyHtml += '<div class="detail-section">';
                 bodyHtml += '<div class="detail-section-title">🧑 Autovalutazione</div>';
-                bodyHtml += '<div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">';
-                bodyHtml += '<span class="bloom-badge" style="background: ' + comp.autoval.bloom_colore + '; color: white; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 0.9rem;">Livello ' + comp.autoval.level + ' - ' + comp.autoval.bloom_nome + '</span>';
-                bodyHtml += '<span style="color: #495057; font-style: italic;">"' + comp.autoval.bloom_desc + '"</span>';
-                bodyHtml += '</div>';
-                // Gap analysis
+                bodyHtml += '<div class="self-assessment-card">';
+                bodyHtml += '<span class="level-badge level-' + comp.autoval.level + '">Livello ' + comp.autoval.level + ' - ' + comp.autoval.bloom_nome + '</span>';
+                bodyHtml += '<p style="margin-top: 10px; color: #6c757d; font-style: italic;">"' + comp.autoval.bloom_desc + '"</p>';
+                // Gap analysis box
                 if (comp.gap !== null) {
-                    let gapColor = comp.gap > 15 ? '#e74c3c' : (comp.gap < -15 ? '#27ae60' : '#6c757d');
-                    let gapIcon = comp.gap > 15 ? '⚠️' : (comp.gap < -15 ? '✅' : '➖');
-                    let gapText = comp.gap > 0 ? '+' + comp.gap : comp.gap;
-                    bodyHtml += '<div style="margin-top: 12px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 6px;">';
-                    bodyHtml += '<span style="font-weight: 600;">Gap Autoval/Quiz:</span> ';
-                    bodyHtml += '<span style="color: ' + gapColor + '; font-weight: 600;">' + gapIcon + ' ' + gapText + '%</span>';
+                    let gapBoxClass = 'info';
+                    let gapText = '✅ Allineato con i quiz';
                     if (comp.gap > 15) {
-                        bodyHtml += '<span style="margin-left: 10px; font-size: 0.85rem; color: #e74c3c;">Autopercezione superiore ai risultati</span>';
+                        gapBoxClass = 'warning';
+                        gapText = '⚠️ Scostamento: +' + Math.round(comp.gap) + '% sopravvalutazione';
                     } else if (comp.gap < -15) {
-                        bodyHtml += '<span style="margin-left: 10px; font-size: 0.85rem; color: #27ae60;">Risultati migliori dell\'autopercezione</span>';
+                        gapBoxClass = 'success';
+                        gapText = '📈 Scostamento: ' + Math.round(comp.gap) + '% sottovalutazione';
                     }
-                    bodyHtml += '</div>';
+                    bodyHtml += '<div class="gap-analysis-box ' + gapBoxClass + '">' + gapText + '</div>';
                 }
+                bodyHtml += '</div>';
                 bodyHtml += '</div>';
             }
 
@@ -7674,6 +7800,105 @@ function getScoreColor(score) {
     if (score >= 60) return '#17a2b8';
     if (score >= 50) return '#ffc107';
     return '#dc3545';
+}
+
+// ============================================
+// MODAL SINGOLA COMPETENZA (da Spunti Colloquio)
+// ============================================
+function openCompetencyModal(compCode) {
+    const comp = modalCompetencyData[compCode];
+    if (!comp) {
+        console.error('Competenza non trovata:', compCode);
+        return;
+    }
+
+    const fullName = comp.description || comp.shortname || comp.idnumber;
+    document.getElementById('modalTitle').innerHTML = (comp.area_icon || '📁') + ' ' + fullName;
+    document.getElementById('modalHeader').style.background = 'linear-gradient(135deg, ' + (comp.area_color || '#667eea') + ', ' + (comp.area_color || '#667eea') + 'cc)';
+
+    let bodyHtml = '';
+
+    // Info area compatta
+    bodyHtml += '<p style="margin-bottom: 15px; color: #6c757d; font-size: 0.9em;">';
+    bodyHtml += (comp.area_icon || '') + ' ' + (comp.area_name || '') + ' — Settore: ' + (comp.area_sector || '').toUpperCase() + ' — ' + comp.idnumber;
+    bodyHtml += '</p>';
+
+    // Stats compatte + Gap badge
+    const hasQuiz = comp.quizzes && comp.quizzes.length > 0;
+    const quizMedia = comp.quiz_media || 0;
+
+    bodyHtml += '<div style="display: flex; gap: 12px; margin-bottom: 25px; flex-wrap: wrap; align-items: center;">';
+    bodyHtml += '<div class="critical-value-box"><div class="label">Quiz Media</div><div class="value" style="color: ' + (hasQuiz ? getScoreColor(quizMedia) : '#6c757d') + ';">' + (hasQuiz ? quizMedia + '%' : '-') + '</div></div>';
+    if (comp.autoval) {
+        bodyHtml += '<div class="critical-value-box"><div class="label">Autovalutazione</div><div class="value" style="color: #9b59b6;">' + comp.autoval.percentage + '%</div></div>';
+    }
+    if (comp.gap !== null && comp.gap !== undefined) {
+        let gapClass = 'allineato';
+        let gapIcon = '✅';
+        if (comp.gap > 15) { gapClass = 'sopravvalutazione'; gapIcon = '⚠️ +'; }
+        else if (comp.gap < -15) { gapClass = 'sottovalutazione'; gapIcon = '📈 '; }
+        bodyHtml += '<span class="gap-indicator ' + gapClass + '">' + gapIcon + Math.round(comp.gap) + '% Gap</span>';
+    }
+    bodyHtml += '</div>';
+
+    // Sezione Autovalutazione
+    bodyHtml += '<div class="detail-section">';
+    bodyHtml += '<div class="detail-section-title" style="display: flex; justify-content: space-between; align-items: center;">🧑 Autovalutazione dello Studente';
+    bodyHtml += '<a href="/local/selfassessment/student_report.php?userid=' + currentUserId + '&courseid=' + currentCourseid + '" class="quiz-link" target="_blank" style="font-size: 0.85rem;">🔍 Vedi autovalutazione completa</a>';
+    bodyHtml += '</div>';
+
+    if (comp.autoval) {
+        bodyHtml += '<div class="self-assessment-card">';
+        bodyHtml += '<span class="level-badge level-' + comp.autoval.level + '">Livello ' + comp.autoval.level + ' - ' + comp.autoval.bloom_nome + '</span>';
+        bodyHtml += '<p style="margin-top: 10px; color: #6c757d; font-style: italic;">"' + comp.autoval.bloom_desc + '"</p>';
+        // Gap analysis box
+        if (comp.gap !== null && comp.gap !== undefined) {
+            let gapBoxClass = 'info';
+            let gapText = '✅ Allineato con i quiz';
+            if (comp.gap > 15) {
+                gapBoxClass = 'warning';
+                gapText = '⚠️ Scostamento: +' + Math.round(comp.gap) + '% sopravvalutazione';
+            } else if (comp.gap < -15) {
+                gapBoxClass = 'success';
+                gapText = '📈 Scostamento: ' + Math.round(comp.gap) + '% sottovalutazione';
+            }
+            bodyHtml += '<div class="gap-analysis-box ' + gapBoxClass + '">' + gapText + '</div>';
+        }
+        bodyHtml += '</div>';
+    } else {
+        bodyHtml += '<div class="no-data-message" style="padding: 15px;">📭 Lo studente non ha ancora compilato l\'autovalutazione per questa competenza</div>';
+    }
+    bodyHtml += '</div>';
+
+    // Sezione Quiz
+    bodyHtml += '<div class="detail-section">';
+    bodyHtml += '<div class="detail-section-title">📝 Quiz Tecnici</div>';
+
+    if (hasQuiz) {
+        comp.quizzes.forEach(quiz => {
+            let scoreClass = 'good';
+            if (quiz.score < 50) scoreClass = 'bad';
+            else if (quiz.score < 70) scoreClass = 'warning';
+
+            bodyHtml += '<div class="quiz-item">';
+            bodyHtml += '<div class="quiz-header">';
+            bodyHtml += '<span class="quiz-name">' + quiz.quiz_name + '</span>';
+            bodyHtml += '<span class="quiz-score ' + scoreClass + '">' + quiz.score + '%</span>';
+            bodyHtml += '</div>';
+            bodyHtml += '<div class="quiz-details">';
+            bodyHtml += '<span>📅 ' + quiz.date + '</span>';
+            bodyHtml += '<a href="/mod/quiz/review.php?attempt=' + quiz.attempt_id + '" class="quiz-link" target="_blank">🔍 Vedi tentativo</a>';
+            bodyHtml += '</div>';
+            bodyHtml += '</div>';
+        });
+    } else {
+        bodyHtml += '<div class="no-data-message" style="padding: 15px;">📭 Nessun quiz svolto per questa competenza</div>';
+    }
+    bodyHtml += '</div>';
+
+    document.getElementById('modalBody').innerHTML = bodyHtml;
+    document.getElementById('areaModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
 
 // ============================================

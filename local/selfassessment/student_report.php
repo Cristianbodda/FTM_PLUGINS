@@ -226,6 +226,45 @@ $area_names = [
     'altro' => ['nome' => 'Altro', 'icona' => '📁', 'colore' => '#95a5a6'],
 ];
 
+// Prepara dati competenze per area (per modal)
+$area_competencies_json = [];
+foreach ($assessments_by_area as $area_key => $area_data) {
+    $area_info = $area_names[$area_key] ?? $area_names['altro'];
+    $comps = [];
+    foreach ($area_data['assessments'] as $a) {
+        $comp = $competencies_info[$a->competencyid] ?? null;
+        $code = $comp ? $comp->idnumber : '';
+        if ($comp) {
+            if (!empty($comp->description)) {
+                $desc = strip_tags($comp->description);
+                $name = mb_strlen($desc) > 120 ? mb_substr($desc, 0, 120) . '...' : $desc;
+            } elseif (!empty($comp->shortname) && $comp->shortname !== $comp->idnumber) {
+                $name = $comp->shortname;
+            } else {
+                $name = str_replace('_', ' ', $comp->idnumber);
+            }
+        } else {
+            $name = 'Competenza #' . $a->competencyid;
+        }
+        $comps[] = [
+            'name' => $name,
+            'code' => $code,
+            'level' => (int)$a->level,
+            'date' => date('d/m/Y', $a->timemodified),
+            'comment' => $a->comment ?? '',
+        ];
+    }
+    $area_competencies_json[$area_key] = [
+        'name' => $area_info['nome'],
+        'icon' => $area_info['icona'],
+        'color' => $area_info['colore'],
+        'count' => $area_data['count'],
+        'average_level' => $area_data['average_level'],
+        'average_percent' => $area_data['average_percent'],
+        'competencies' => $comps,
+    ];
+}
+
 // Setup pagina
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/selfassessment/student_report.php', ['userid' => $userid]));
@@ -241,7 +280,7 @@ echo $OUTPUT->header();
    STUDENT REPORT STYLES
    ============================================ */
 .report-container {
-    max-width: 1200px;
+    max-width: 100%;
     margin: 0 auto;
     padding: 20px;
 }
@@ -347,16 +386,10 @@ echo $OUTPUT->header();
 
 /* Content Grid */
 .content-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 25px;
     margin-bottom: 25px;
-}
-
-@media (max-width: 900px) {
-    .content-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 /* Cards */
@@ -386,7 +419,7 @@ echo $OUTPUT->header();
 
 /* Radar Chart */
 .radar-container {
-    max-width: 400px;
+    width: 60%;
     margin: 0 auto;
 }
 
@@ -568,6 +601,174 @@ echo $OUTPUT->header();
 .level-badge.level-4 { background: #3498db; }
 .level-badge.level-5 { background: #27ae60; }
 .level-badge.level-6 { background: #2ecc71; }
+
+/* Modal Area Detail */
+.area-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+.area-modal-overlay.active { display: flex; }
+
+.area-modal {
+    background: white;
+    border-radius: 16px;
+    max-width: 850px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.area-modal-header {
+    padding: 20px 25px;
+    color: white;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.area-modal-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.3em;
+    margin: 0;
+}
+.area-modal-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.area-modal-close:hover { background: rgba(255,255,255,0.3); }
+
+.area-modal-body { padding: 20px 25px; }
+
+/* Modal summary stats */
+.modal-summary {
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #e9ecef;
+}
+.modal-summary .summary-subtitle {
+    color: #7f8c8d;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+.modal-summary .summary-stats {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.modal-summary .stat-item .label {
+    font-size: 0.7em;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+.modal-summary .stat-item .value {
+    font-size: 1.3em;
+    font-weight: 700;
+}
+
+/* Competency item (expandable) */
+.competency-item {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+.competency-header {
+    padding: 15px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    transition: background 0.2s;
+}
+.competency-header:hover { background: #e9ecef; }
+.competency-info { flex: 1; }
+.competency-name { font-weight: 600; font-size: 0.95em; color: #2c3e50; margin-bottom: 3px; }
+.competency-code { font-size: 0.8em; color: #7f8c8d; }
+.competency-values { display: flex; gap: 12px; align-items: center; }
+.value-box {
+    text-align: center;
+    min-width: 65px;
+    padding: 6px 10px;
+    background: white;
+    border-radius: 8px;
+}
+.value-box .label { font-size: 0.65em; color: #7f8c8d; text-transform: uppercase; }
+.value-box .value { font-size: 1em; font-weight: 600; }
+.competency-toggle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 12px;
+    transition: all 0.3s ease;
+    font-size: 0.85em;
+}
+.competency-item.open .competency-toggle {
+    background: #3498db;
+    color: white;
+    transform: rotate(180deg);
+}
+
+/* Competency details (expanded) */
+.competency-details {
+    display: none;
+    padding: 20px;
+    background: white;
+    border-top: 1px solid #e9ecef;
+}
+.competency-item.open .competency-details { display: block; }
+.detail-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed #e9ecef;
+}
+.detail-section:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.detail-section-title {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.self-assessment-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    border-left: 4px solid #9b59b6;
+}
+.self-assessment-card .comment-text {
+    font-style: italic;
+    color: #555;
+    margin-top: 8px;
+}
 </style>
 
 <div class="report-container">
@@ -697,6 +898,9 @@ echo $OUTPUT->header();
                     <span style="background: #f39c12; color: white;">3 Intermedio</span>
                     <span style="background: #2ecc71; color: white;">6 Esperto</span>
                 </div>
+                <p style="text-align:center; color:#999; font-size:0.85em; margin-top:10px;">
+                    👆 Clicca su un'area nel radar per vedere le competenze
+                </p>
             </div>
         </div>
 
@@ -711,7 +915,7 @@ echo $OUTPUT->header();
                     $percent = $area_data['average_percent'];
                     $color = $area_info['colore'];
                 ?>
-                <div class="area-card">
+                <div class="area-card" style="cursor: pointer;" onclick="openAreaDetail('<?php echo $area_key; ?>')">
                     <div class="area-icon" style="background: <?php echo $color; ?>20; color: <?php echo $color; ?>;">
                         <?php echo $area_info['icona']; ?>
                     </div>
@@ -789,6 +993,17 @@ echo $OUTPUT->header();
     <?php endif; ?>
 </div>
 
+<!-- Modal Area Detail -->
+<div class="area-modal-overlay" id="areaModalOverlay" onclick="closeAreaModal(event)">
+    <div class="area-modal" onclick="event.stopPropagation()">
+        <div class="area-modal-header" id="modalHeader">
+            <h2 id="modalTitle">Dettaglio Area</h2>
+            <button class="area-modal-close" onclick="closeAreaModal()">×</button>
+        </div>
+        <div class="area-modal-body" id="modalBody"></div>
+    </div>
+</div>
+
 <?php if (!empty($assessments_by_area)): ?>
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -813,7 +1028,10 @@ document.addEventListener('DOMContentLoaded', function() {
         ]);
     ?>;
 
-    new Chart(ctx, {
+    var areaCompData = <?php echo json_encode($area_competencies_json); ?>;
+    var areaKeys = <?php echo json_encode(array_keys($assessments_by_area)); ?>;
+
+    var radarChart = new Chart(ctx, {
         type: 'radar',
         data: {
             labels: areaData.labels,
@@ -842,7 +1060,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     pointLabels: {
                         font: {
-                            size: 11
+                            size: 14
                         }
                     }
                 }
@@ -851,7 +1069,109 @@ document.addEventListener('DOMContentLoaded', function() {
                 legend: {
                     display: false
                 }
+            },
+            onClick: function(evt) {
+                var points = radarChart.getElementsAtEventForMode(evt, 'nearest', {intersect: true}, false);
+                if (points.length > 0) {
+                    var index = points[0].index;
+                    var areaKey = areaKeys[index];
+                    openAreaDetail(areaKey);
+                }
             }
+        }
+    });
+
+    var levelNames = {1: 'RICORDO', 2: 'COMPRENDO', 3: 'APPLICO', 4: 'ANALIZZO', 5: 'VALUTO', 6: 'CREO'};
+
+    window.openAreaDetail = function(areaKey) {
+        var data = areaCompData[areaKey];
+        if (!data) return;
+
+        // Header con gradiente colorato
+        document.getElementById('modalTitle').innerHTML = data.icon + ' ' + data.name;
+        document.getElementById('modalHeader').style.background =
+            'linear-gradient(135deg, ' + data.color + ', ' + data.color + 'cc)';
+
+        // Body
+        var html = '';
+
+        // Summary stats
+        html += '<div class="modal-summary">';
+        html += '<div class="summary-subtitle">' + data.count + ' competenze</div>';
+        html += '<div class="summary-stats">';
+        html += '<div class="stat-item"><div class="label">Media Livello</div>';
+        html += '<div class="value" style="color:' + data.color + ';">' + data.average_level + '/6</div></div>';
+        html += '<div class="stat-item"><div class="label">Percentuale</div>';
+        html += '<div class="value" style="color:' + data.color + ';">' + data.average_percent + '%</div></div>';
+        html += '</div></div>';
+
+        // Section title
+        html += '<div class="detail-section-title">📋 Competenze in quest\'area:</div>';
+
+        // Competency items (expandable)
+        data.competencies.forEach(function(c, i) {
+            var compId = 'comp-sa-' + areaKey + '-' + i;
+            var levelClass = 'level-' + c.level;
+            var levelPercent = Math.round(c.level / 6 * 100);
+            var levelColor = c.level <= 2 ? '#e74c3c' : (c.level <= 4 ? '#f39c12' : '#27ae60');
+
+            html += '<div class="competency-item" id="' + compId + '">';
+
+            // Header
+            html += '<div class="competency-header" onclick="toggleCompetency(\'' + compId + '\')">';
+            html += '<div class="competency-info">';
+            html += '<div class="competency-name">' + (c.code || c.name) + '</div>';
+            html += '<div class="competency-code">' + c.name + '</div>';
+            html += '</div>';
+            html += '<div class="competency-values">';
+            html += '<div class="value-box"><div class="label">Livello</div>';
+            html += '<div class="value" style="color:' + levelColor + ';">' + c.level + '/6</div></div>';
+            html += '<div class="value-box"><div class="label">Bloom</div>';
+            html += '<div class="value" style="color:' + levelColor + ';">' + levelPercent + '%</div></div>';
+            html += '<div class="competency-toggle">▼</div>';
+            html += '</div></div>';
+
+            // Details (expanded)
+            html += '<div class="competency-details">';
+            html += '<div class="detail-section">';
+            html += '<div class="detail-section-title">🎯 Autovalutazione</div>';
+            html += '<div class="self-assessment-card">';
+            html += '<span class="level-badge ' + levelClass + '">Livello ' + c.level + ' - ' + (levelNames[c.level] || '') + '</span>';
+            if (c.comment) {
+                html += '<div class="comment-text">"' + c.comment + '"</div>';
+            }
+            html += '</div></div>';
+
+            html += '<div class="detail-section">';
+            html += '<div class="detail-section-title">📅 Data valutazione</div>';
+            html += '<div style="color:#6c757d;font-size:0.9em;">🗓️ ' + c.date + '</div>';
+            html += '</div>';
+
+            html += '</div>'; // competency-details
+            html += '</div>'; // competency-item
+        });
+
+        document.getElementById('modalBody').innerHTML = html;
+        document.getElementById('areaModalOverlay').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.toggleCompetency = function(id) {
+        document.getElementById(id).classList.toggle('open');
+    };
+
+    window.closeAreaModal = function(event) {
+        if (!event || event.target.classList.contains('area-modal-overlay')) {
+            document.getElementById('areaModalOverlay').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    };
+
+    // Chiudi con ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.getElementById('areaModalOverlay').classList.remove('active');
+            document.body.style.overflow = '';
         }
     });
 });

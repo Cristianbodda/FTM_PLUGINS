@@ -40,23 +40,25 @@ class dashboard_helper {
     public function get_my_students($courseid = 0, $colorfilter = '', $weekfilter = 0, $statusfilter = '', $search = '') {
         global $CFG;
 
-        // Base query - students with quiz attempts
+        // Base query - students assigned to this coach via local_student_coaching
         $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, u.email,
                        u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename
                 FROM {user} u
-                JOIN {quiz_attempts} qa ON qa.userid = u.id
-                WHERE qa.state = 'finished'
+                JOIN {local_student_coaching} sc ON sc.userid = u.id
+                WHERE sc.coachid = ?
+                AND sc.status = 'active'
                 AND u.deleted = 0";
 
-        $params = [];
+        $params = [$this->coachid];
 
         // Course filter
         if ($courseid > 0) {
-            $sql .= " AND EXISTS (
+            $sql .= " AND (sc.courseid = ? OR EXISTS (
                 SELECT 1 FROM {quiz_attempts} qa2
                 JOIN {quiz} q ON qa2.quiz = q.id
                 WHERE qa2.userid = u.id AND q.course = ?
-            )";
+            ))";
+            $params[] = $courseid;
             $params[] = $courseid;
         }
 
@@ -164,7 +166,7 @@ class dashboard_helper {
                 ) subq";
 
         $result = $this->db->get_record_sql($sql, [$userid]);
-        return $result ? round($result->avg_score, 1) : 0;
+        return ($result && $result->avg_score !== null) ? round($result->avg_score, 1) : 0;
     }
 
     /**
@@ -852,8 +854,8 @@ class dashboard_helper {
                 // Check if atelier is available for this week
                 if ($current_week >= $atelier->typical_week_start &&
                     $current_week <= $atelier->typical_week_end) {
-                    // Get available dates for this atelier
-                    $atelier_data->next_dates = $this->get_atelier_next_dates($atelier->id);
+                    // Get available dates for this atelier (search by id, fallback by name)
+                    $atelier_data->next_dates = $this->get_atelier_next_dates($atelier->id, 10, $atelier->name);
                     $result['available'][] = $atelier_data;
                 }
 
@@ -873,13 +875,14 @@ class dashboard_helper {
      * @param int $limit
      * @return array
      */
-    public function get_atelier_next_dates($atelierid, $limit = 3) {
+    public function get_atelier_next_dates($atelierid, $limit = 10, $atelier_name = '') {
         $dates = [];
 
         if (!$this->db->get_manager()->table_exists('local_ftm_activities')) {
             return $dates;
         }
 
+        // Strategy 1: Search by exact atelierid
         $sql = "SELECT a.id, a.name, a.date_start, a.date_end, a.max_participants, a.roomid,
                        r.name as room_name,
                        (SELECT COUNT(*) FROM {local_ftm_enrollments} e
@@ -894,9 +897,43 @@ class dashboard_helper {
 
         $activities = $this->db->get_records_sql($sql, [$atelierid, time()]);
 
+        // Strategy 2: If no results by atelierid, search by name similarity
+        if (empty($activities) && !empty($atelier_name)) {
+            // Extract keywords from atelier name for matching
+            $keywords = array_filter(explode(' ', strtolower($atelier_name)), function($w) {
+                return strlen($w) > 3 && !in_array($w, ['della', 'delle', 'dello', 'degli', 'nella', 'nelle', 'nello']);
+            });
+
+            if (!empty($keywords)) {
+                $like_conditions = [];
+                $params = [];
+                foreach ($keywords as $kw) {
+                    $like_conditions[] = $this->db->sql_like('LOWER(a.name)', '?', false);
+                    $params[] = '%' . $this->db->sql_like_escape(strtolower($kw)) . '%';
+                }
+                $params[] = time();
+
+                $sql2 = "SELECT a.id, a.name, a.date_start, a.date_end, a.max_participants, a.roomid,
+                               r.name as room_name,
+                               (SELECT COUNT(*) FROM {local_ftm_enrollments} e
+                                WHERE e.activityid = a.id AND e.status IN ('enrolled', 'attended')) as enrolled_count
+                        FROM {local_ftm_activities} a
+                        LEFT JOIN {local_ftm_rooms} r ON a.roomid = r.id
+                        WHERE (" . implode(' OR ', $like_conditions) . ")
+                        AND a.activity_type = 'atelier'
+                        AND a.date_start > ?
+                        AND a.status = 'scheduled'
+                        ORDER BY a.date_start
+                        LIMIT " . intval($limit);
+
+                $activities = $this->db->get_records_sql($sql2, $params);
+            }
+        }
+
         foreach ($activities as $activity) {
             $dates[] = (object)[
                 'activity_id' => $activity->id,
+                'activity_name' => $activity->name,
                 'date' => $activity->date_start,
                 'date_formatted' => userdate($activity->date_start, '%d %b %Y'),
                 'time_formatted' => userdate($activity->date_start, '%H:%M'),

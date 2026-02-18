@@ -30,8 +30,29 @@ require_login();
 $context = context_system::instance();
 require_capability('local/ftm_cpurc:view', $context);
 
-$id = required_param('id', PARAM_INT);
+$id = optional_param('id', 0, PARAM_INT);
+$userid = optional_param('userid', 0, PARAM_INT);
 $tab = optional_param('tab', 'anagrafica', PARAM_ALPHA);
+
+// Support lookup by Moodle userid (from coach dashboard).
+if (!$id && $userid) {
+    $cpurc_student = \local_ftm_cpurc\cpurc_manager::get_student_by_userid($userid);
+    if ($cpurc_student) {
+        $id = $cpurc_student->id;
+    } else {
+        // Auto-create CPURC record for this user.
+        $moodle_user = $DB->get_record('user', ['id' => $userid], '*', MUST_EXIST);
+        $newstudent = new stdClass();
+        $newstudent->userid = $userid;
+        $newstudent->timecreated = time();
+        $newstudent->timemodified = time();
+        $id = $DB->insert_record('local_ftm_cpurc_students', $newstudent);
+    }
+}
+
+if (!$id) {
+    throw new moodle_exception('Missing id or userid parameter');
+}
 
 // Get student data.
 $student = \local_ftm_cpurc\cpurc_manager::get_student($id);
