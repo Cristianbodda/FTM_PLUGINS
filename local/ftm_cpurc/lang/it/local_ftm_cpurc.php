@@ -184,3 +184,8 @@ $string['cannotcreatetempdir'] = 'Impossibile creare cartella temporanea';
 $string['cannotopentempate'] = 'Impossibile aprire il file template';
 $string['invaliddocument'] = 'Struttura documento non valida';
 $string['cannotcreateoutput'] = 'Impossibile creare file di output';
+
+// Inline editing.
+$string['field_saved'] = 'Campo salvato con successo';
+$string['field_save_error'] = 'Errore nel salvataggio';
+$string['click_to_edit'] = 'Clicca per modificare';

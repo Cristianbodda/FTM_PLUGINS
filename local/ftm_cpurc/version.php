@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_ftm_cpurc';
-$plugin->version = 2026012305;  // Add coach observation fields to reports.
+$plugin->version = 2026022003;  // Inline editing for student card fields.
 $plugin->requires = 2024042200; // Moodle 4.4+
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = 'v1.1.0';
+$plugin->release = 'v1.2.0';
 $plugin->dependencies = [
     'local_competencymanager' => ANY_VERSION,
     'local_ftm_scheduler' => ANY_VERSION,

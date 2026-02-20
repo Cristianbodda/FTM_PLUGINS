@@ -184,3 +184,8 @@ $string['cannotcreatetempdir'] = 'Cannot create temporary directory';
 $string['cannotopentempate'] = 'Cannot open template file';
 $string['invaliddocument'] = 'Invalid document structure';
 $string['cannotcreateoutput'] = 'Cannot create output file';
+
+// Inline editing.
+$string['field_saved'] = 'Field saved successfully';
+$string['field_save_error'] = 'Error saving field';
+$string['click_to_edit'] = 'Click to edit';
