@@ -2043,7 +2043,7 @@ $current_sector_filter = json_encode($sector_filter);
          ============================================ -->
     <div class="nav-tabs">
         <a href="#" class="nav-tab <?php echo $tab == 'panoramica' ? 'active' : ''; ?>" onclick="showTab('panoramica'); return false;">📋 Panoramica</a>
-        <a href="#" class="nav-tab <?php echo $tab == 'radar' ? 'active' : ''; ?>" onclick="showTab('radar'); return false;">📊 Radar Confronto</a>
+        <a href="#" class="nav-tab" onclick="goToAutovalutazione(); return false;" title="Apri Student Report con grafico overlay">📊 Radar Confronto ↗</a>
         <a href="#" class="nav-tab <?php echo $tab == 'competenze' ? 'active' : ''; ?>" onclick="showTab('competenze'); return false;">🎯 Mappa Competenze</a>
         <a href="#" class="nav-tab <?php echo $tab == 'confronta' ? 'active' : ''; ?>" onclick="showTab('confronta'); return false;">👥 Confronta Studenti</a>
         <a href="#" class="nav-tab <?php echo $tab == 'colloquio' ? 'active' : ''; ?>" onclick="showTab('colloquio'); return false;">💬 Colloquio</a>

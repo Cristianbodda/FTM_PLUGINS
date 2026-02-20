@@ -1,7 +1,7 @@
 # CoachManager - Project Status
 
-**Ultimo aggiornamento:** 19 Febbraio 2026
-**Versione plugin:** 2.2.1
+**Ultimo aggiornamento:** 20 Febbraio 2026
+**Versione plugin:** 2.4.0
 **Stato:** FUNZIONANTE
 
 ---
@@ -126,4 +126,12 @@ local_coachmanager_notes
 - Reports V2: card Autovalutazione apre Student Report in nuova tab
 - Caricamento settore primario per parametri URL preimpostati
 
-*Generato: 19 Febbraio 2026*
+### 20/02/2026 - Week Planner Modal (v2.4.0)
+- Modale pianificazione attivita settimanale per studenti
+- Timeline cliccabile in tutte le 4 viste (Standard, Dettagliata, Classica, Compatta)
+- Gestione: Atelier (con date/posti), Test Teoria, Laboratorio, Attivita Esterna
+- Nuovo endpoint AJAX `ajax_week_planner.php` con 5 azioni
+- 4 nuovi metodi in `dashboard_helper.php`
+- Stesse modifiche applicate a `course_students.php`
+
+*Generato: 20 Febbraio 2026*

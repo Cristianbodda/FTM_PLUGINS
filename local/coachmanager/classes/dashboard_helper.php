@@ -40,16 +40,27 @@ class dashboard_helper {
     public function get_my_students($courseid = 0, $colorfilter = '', $weekfilter = 0, $statusfilter = '', $search = '') {
         global $CFG;
 
-        // Base query - students assigned to this coach via local_student_coaching
-        $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, u.email,
-                       u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename
-                FROM {user} u
-                JOIN {local_student_coaching} sc ON sc.userid = u.id
-                WHERE sc.coachid = ?
-                AND sc.status = 'active'
-                AND u.deleted = 0";
+        // Site admins see ALL students from all coaches
+        $is_admin = is_siteadmin($this->coachid);
 
-        $params = [$this->coachid];
+        if ($is_admin) {
+            $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, u.email,
+                           u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename
+                    FROM {user} u
+                    JOIN {local_student_coaching} sc ON sc.userid = u.id
+                    WHERE sc.status = 'active'
+                    AND u.deleted = 0";
+            $params = [];
+        } else {
+            $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, u.email,
+                           u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename
+                    FROM {user} u
+                    JOIN {local_student_coaching} sc ON sc.userid = u.id
+                    WHERE sc.coachid = ?
+                    AND sc.status = 'active'
+                    AND u.deleted = 0";
+            $params = [$this->coachid];
+        }
 
         // Course filter
         if ($courseid > 0) {
@@ -785,6 +796,98 @@ class dashboard_helper {
     }
 
     // ============================================
+    // COURSE STUDENTS (ALL ENROLLED)
+    // ============================================
+
+    /**
+     * Get ALL students enrolled in a course (not just coach-assigned)
+     * @param int $courseid Course ID (required)
+     * @param string $colorfilter Filter by group color
+     * @param int $weekfilter Filter by week
+     * @param string $statusfilter Filter by status
+     * @param string $search Search term
+     * @return array Array of student objects with coach info
+     */
+    public function get_course_students($courseid, $colorfilter = '', $weekfilter = 0, $statusfilter = '', $search = '') {
+        $coursecontext = \context_course::instance($courseid);
+
+        // Get all enrolled users who can attempt quizzes (= students)
+        $enrolled = get_enrolled_users($coursecontext, 'mod/quiz:attempt', 0, 'u.id, u.firstname, u.lastname, u.email, u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename', 'u.lastname, u.firstname');
+
+        if (empty($enrolled)) {
+            return [];
+        }
+
+        // Search filter
+        if (!empty($search)) {
+            $search_lower = strtolower($search);
+            $enrolled = array_filter($enrolled, function($u) use ($search_lower) {
+                return strpos(strtolower($u->firstname), $search_lower) !== false
+                    || strpos(strtolower($u->lastname), $search_lower) !== false
+                    || strpos(strtolower($u->email), $search_lower) !== false;
+            });
+        }
+
+        // Enrich with additional data + coach info
+        foreach ($enrolled as &$student) {
+            $this->enrich_student_data($student);
+            $coach = $this->get_student_coach($student->id);
+            $student->coach_name = $coach['name'];
+            $student->coach_id = $coach['id'];
+        }
+
+        // Apply post-enrichment filters
+        if (!empty($colorfilter)) {
+            $enrolled = array_filter($enrolled, function($s) use ($colorfilter) {
+                return ($s->group_color ?? '') === $colorfilter;
+            });
+        }
+
+        if ($weekfilter > 0) {
+            $enrolled = array_filter($enrolled, function($s) use ($weekfilter) {
+                return ($s->current_week ?? 0) == $weekfilter;
+            });
+        }
+
+        if (!empty($statusfilter)) {
+            $enrolled = $this->filter_by_status($enrolled, $statusfilter);
+        }
+
+        return $enrolled;
+    }
+
+    /**
+     * Get the coach assigned to a student
+     * @param int $userid
+     * @return array ['id' => int, 'name' => string]
+     */
+    private function get_student_coach($userid) {
+        $result = ['id' => 0, 'name' => ''];
+
+        if (!$this->db->get_manager()->table_exists('local_student_coaching')) {
+            return $result;
+        }
+
+        $sql = "SELECT sc.coachid, u.firstname, u.lastname,
+                       u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename
+                FROM {local_student_coaching} sc
+                JOIN {user} u ON u.id = sc.coachid
+                WHERE sc.userid = ?
+                AND sc.status = 'active'
+                ORDER BY sc.timecreated DESC
+                LIMIT 1";
+
+        $coach = $this->db->get_record_sql($sql, [$userid]);
+
+        if ($coach) {
+            $result['id'] = (int)$coach->coachid;
+            $result['name'] = fullname($coach);
+        }
+
+        return $result;
+    }
+
+    // ============================================
     // NEW METHODS FOR ATELIER AND ATTENDANCE
     // ============================================
 
@@ -1051,6 +1154,218 @@ class dashboard_helper {
         }
 
         return $result;
+    }
+
+    // ============================================
+    // WEEK PLANNER METHODS
+    // ============================================
+
+    /**
+     * Get week plan for a student (all activities assigned to a specific week)
+     * @param int $userid Student user ID
+     * @param int $week Week number (1-6)
+     * @return array ['ateliers' => [...], 'tests' => [...], 'labs' => [...], 'external' => [...]]
+     */
+    public function get_week_plan($userid, $week) {
+        $plan = [
+            'ateliers' => [],
+            'tests' => [],
+            'labs' => [],
+            'external' => []
+        ];
+
+        // 1. Ateliers from enrollments + activities + catalog
+        if ($this->db->get_manager()->table_exists('local_ftm_enrollments') &&
+            $this->db->get_manager()->table_exists('local_ftm_activities') &&
+            $this->db->get_manager()->table_exists('local_ftm_atelier_catalog')) {
+
+            $sql = "SELECT e.id as enrollment_id, e.status as enrollment_status,
+                           a.id as activity_id, a.name as activity_name, a.date_start, a.date_end,
+                           a.roomid, r.name as room_name,
+                           ac.id as catalog_id, ac.name as atelier_name, ac.shortname
+                    FROM {local_ftm_enrollments} e
+                    JOIN {local_ftm_activities} a ON e.activityid = a.id
+                    LEFT JOIN {local_ftm_rooms} r ON a.roomid = r.id
+                    LEFT JOIN {local_ftm_atelier_catalog} ac ON a.atelierid = ac.id
+                    WHERE e.userid = ?
+                    AND e.status IN ('enrolled', 'attended')
+                    AND a.activity_type = 'atelier'
+                    AND ac.typical_week_start <= ?
+                    AND ac.typical_week_end >= ?
+                    ORDER BY a.date_start";
+
+            $records = $this->db->get_records_sql($sql, [$userid, $week, $week]);
+
+            foreach ($records as $rec) {
+                $plan['ateliers'][] = (object)[
+                    'id' => $rec->enrollment_id,
+                    'activity_id' => $rec->activity_id,
+                    'name' => $rec->atelier_name ?: $rec->activity_name,
+                    'shortname' => $rec->shortname,
+                    'date' => $rec->date_start ? userdate($rec->date_start, '%d %b %Y') : '',
+                    'time' => $rec->date_start ? userdate($rec->date_start, '%H:%M') : '',
+                    'room' => $rec->room_name ?: '',
+                    'status' => $rec->enrollment_status,
+                    'type' => 'atelier'
+                ];
+            }
+        }
+
+        // 2. Test/Lab/External from student_program
+        if ($this->db->get_manager()->table_exists('local_ftm_student_program')) {
+            $records = $this->db->get_records_select(
+                'local_ftm_student_program',
+                'userid = ? AND week_number = ? AND status != ?',
+                [$userid, $week, 'cancelled'],
+                'activity_type, activity_name'
+            );
+
+            foreach ($records as $rec) {
+                $item = (object)[
+                    'id' => $rec->id,
+                    'name' => $rec->activity_name ?: $rec->activity_type,
+                    'details' => $rec->activity_details ?: '',
+                    'day' => $rec->day_of_week,
+                    'slot' => $rec->time_slot,
+                    'location' => $rec->location ?: '',
+                    'status' => $rec->status,
+                    'type' => $rec->activity_type
+                ];
+
+                if (in_array($rec->activity_type, ['test_teoria', 'test'])) {
+                    $plan['tests'][] = $item;
+                } else if (in_array($rec->activity_type, ['laboratorio', 'lab'])) {
+                    $plan['labs'][] = $item;
+                } else if ($rec->activity_type === 'external') {
+                    $plan['external'][] = $item;
+                }
+            }
+        }
+
+        return $plan;
+    }
+
+    /**
+     * Get available activities for dropdown selection in week planner
+     * @param int $week Week number (1-6)
+     * @return array ['ateliers' => [...], 'tests' => [...], 'labs' => [...]]
+     */
+    public function get_available_activities_for_week($week) {
+        $available = [
+            'ateliers' => [],
+            'tests' => [],
+            'labs' => []
+        ];
+
+        // Ateliers from catalog matching this week
+        if ($this->db->get_manager()->table_exists('local_ftm_atelier_catalog')) {
+            $sql = "SELECT id, name, shortname, max_participants
+                    FROM {local_ftm_atelier_catalog}
+                    WHERE active = 1
+                    AND typical_week_start <= ?
+                    AND typical_week_end >= ?
+                    ORDER BY sortorder, name";
+            $ateliers = $this->db->get_records_sql($sql, [$week, $week]);
+
+            foreach ($ateliers as $at) {
+                $available['ateliers'][] = (object)[
+                    'id' => $at->id,
+                    'name' => $at->name,
+                    'shortname' => $at->shortname,
+                    'max_participants' => $at->max_participants
+                ];
+            }
+        }
+
+        // Tests: all available quizzes
+        $available['tests'] = array_values($this->get_available_tests(''));
+
+        // Labs: all available labs
+        $available['labs'] = array_values($this->get_available_labs(''));
+
+        return $available;
+    }
+
+    /**
+     * Assign a test/lab/external activity to a student's week
+     * @param int $userid Student ID
+     * @param int $week Week number (1-6)
+     * @param string $type Activity type: test_teoria, laboratorio, external
+     * @param array $activity_data ['name' => string, 'details' => string, 'day' => int, 'slot' => string]
+     * @param int $assignedby Coach user ID
+     * @return array Result with success status
+     */
+    public function assign_week_activity($userid, $week, $type, $activity_data, $assignedby) {
+        if (!$this->db->get_manager()->table_exists('local_ftm_student_program')) {
+            return ['success' => false, 'message' => 'Tabella student_program non disponibile'];
+        }
+
+        // Validate type
+        $valid_types = ['test_teoria', 'laboratorio', 'external'];
+        if (!in_array($type, $valid_types)) {
+            return ['success' => false, 'message' => 'Tipo attività non valido'];
+        }
+
+        // Validate week
+        if ($week < 1 || $week > 6) {
+            return ['success' => false, 'message' => 'Settimana non valida (1-6)'];
+        }
+
+        $record = new \stdClass();
+        $record->userid = $userid;
+        $record->groupid = 0;
+        $record->week_number = $week;
+        $record->day_of_week = !empty($activity_data['day']) ? (int)$activity_data['day'] : 1;
+        $record->time_slot = !empty($activity_data['slot']) ? $activity_data['slot'] : 'matt';
+        $record->activity_type = $type;
+        $record->activity_name = !empty($activity_data['name']) ? $activity_data['name'] : '';
+        $record->activity_details = !empty($activity_data['details']) ? $activity_data['details'] : '';
+        $record->location = !empty($activity_data['location']) ? $activity_data['location'] : '';
+        $record->coachid = $assignedby;
+        $record->is_editable = 1;
+        $record->status = 'pending';
+        $record->assigned_by = $assignedby;
+        $record->timecreated = time();
+        $record->timemodified = time();
+
+        try {
+            $record->id = $this->db->insert_record('local_ftm_student_program', $record);
+            return [
+                'success' => true,
+                'message' => 'Attività assegnata con successo',
+                'id' => $record->id
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => 'Errore: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Remove a non-atelier activity from student's week
+     * @param int $programid Record ID in student_program
+     * @param int $userid Student user ID (for ownership check)
+     * @return array Result with success status
+     */
+    public function remove_week_activity($programid, $userid) {
+        if (!$this->db->get_manager()->table_exists('local_ftm_student_program')) {
+            return ['success' => false, 'message' => 'Tabella student_program non disponibile'];
+        }
+
+        $record = $this->db->get_record('local_ftm_student_program', [
+            'id' => $programid,
+            'userid' => $userid
+        ]);
+
+        if (!$record) {
+            return ['success' => false, 'message' => 'Attività non trovata'];
+        }
+
+        try {
+            $this->db->delete_records('local_ftm_student_program', ['id' => $programid]);
+            return ['success' => true, 'message' => 'Attività rimossa'];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => 'Errore: ' . $e->getMessage()];
+        }
     }
 
     /**

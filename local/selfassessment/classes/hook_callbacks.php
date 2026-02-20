@@ -29,21 +29,42 @@ class hook_callbacks {
             return;
         }
 
+        // Mai per admin del sito (non hanno bisogno di autovalutazione)
+        if (is_siteadmin()) {
+            return;
+        }
+
+        // Mai durante CLI o AJAX di sistema
+        if (defined('CLI_SCRIPT') || defined('ABORT_AFTER_CONFIG')) {
+            return;
+        }
+
+        // Protezione: se $PAGE->url non è impostata, non fare nulla
+        try {
+            $current_url = $PAGE->url->out_omit_querystring();
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        // Non mostrare nelle pagine admin (upgrade, settings, ecc.)
+        if (strpos($current_url, '/admin/') !== false || strpos($current_url, '/admin.php') !== false) {
+            return;
+        }
+
+        // Non mostrare durante installazione/upgrade
+        if (during_initial_install() || !empty($CFG->upgraderunning)) {
+            return;
+        }
+
         // Carica lib.php per le funzioni helper
         require_once($CFG->dirroot . '/local/selfassessment/lib.php');
 
         // Non mostrare nella pagina compile.php (già gestita lì)
-        $current_url = $PAGE->url->out_omit_querystring();
         if (strpos($current_url, '/local/selfassessment/compile.php') !== false) {
             // Se c'è un redirect pending, resettalo (siamo già su compile.php)
             if (!empty($SESSION->selfassessment_redirect_pending)) {
                 unset($SESSION->selfassessment_redirect_pending);
             }
-            return;
-        }
-
-        // Non mostrare nelle pagine admin
-        if (strpos($current_url, '/admin/') !== false) {
             return;
         }
 

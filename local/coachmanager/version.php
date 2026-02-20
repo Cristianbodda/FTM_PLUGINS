@@ -8,10 +8,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_coachmanager';
-$plugin->version = 2026021102;           // YYYYMMDDXX - Multi-settore con badge 🥇🥈🥉
+$plugin->version = 2026022002;           // YYYYMMDDXX - Week Planner modal
 $plugin->requires = 2022041900;          // Moodle 4.0+
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '2.1.2';              // Multi-settore: visualizza primario, secondario, terziario con medaglie
+$plugin->release = '2.4.0';              // Week Planner: pianificazione attivita settimanale per studenti
 
 // Dipendenze
 $plugin->dependencies = [

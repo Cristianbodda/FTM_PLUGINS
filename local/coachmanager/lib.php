@@ -39,11 +39,12 @@ function local_coachmanager_extend_navigation(global_navigation $navigation) {
     );
 
     $node->add(
-        get_string('bilancio_competenze', 'local_coachmanager'),
-        new moodle_url('/local/coachmanager/index.php'),
+        get_string('course_students', 'local_coachmanager'),
+        new moodle_url('/local/coachmanager/course_students.php', ['courseid' => 2]),
         navigation_node::TYPE_CUSTOM,
         null,
-        'coachmanager_bilancio'
+        'coachmanager_all_students',
+        new pix_icon('i/users', '')
     );
 }
 
@@ -62,6 +63,15 @@ function local_coachmanager_extend_navigation_course($navigation, $course, $cont
         null,
         'coachmanager_course',
         new pix_icon('i/dashboard', '')
+    );
+
+    $navigation->add(
+        get_string('course_students', 'local_coachmanager'),
+        new moodle_url('/local/coachmanager/course_students.php', ['courseid' => $course->id]),
+        navigation_node::TYPE_CUSTOM,
+        null,
+        'coachmanager_course_students',
+        new pix_icon('i/users', '')
     );
 }
 

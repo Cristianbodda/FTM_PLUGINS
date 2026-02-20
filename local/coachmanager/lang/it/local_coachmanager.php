@@ -215,3 +215,22 @@ $string['choose_tests_description'] = 'Devi scegliere i test di approfondimento 
 // Reminder
 $string['reminder_autoval_subject'] = 'Promemoria: Completa la tua Autovalutazione';
 $string['reminder_autoval_body'] = 'Ciao {$a}, ti ricordiamo di completare la tua autovalutazione delle competenze.';
+
+// Pagina Studenti del Corso
+$string['course_students'] = 'Studenti del Corso';
+$string['all_enrolled_students'] = 'studenti iscritti';
+$string['assigned_coach'] = 'Coach Assegnato';
+$string['no_coach_assigned'] = 'Nessun coach';
+
+// Pianificazione Settimana
+$string['week_planner'] = 'Pianificazione Settimana';
+$string['current_activities'] = 'Attivita Attuali';
+$string['add_activity'] = 'Aggiungi Attivita';
+$string['assign_test'] = 'Assegna Test';
+$string['assign_lab'] = 'Assegna Laboratorio';
+$string['add_external'] = 'Aggiungi Attivita Esterna';
+$string['no_activities'] = 'Nessuna attivita assegnata';
+$string['activity_assigned'] = 'Attivita assegnata con successo';
+$string['activity_removed'] = 'Attivita rimossa';
+$string['external_activity_name'] = 'Nome attivita';
+$string['plan_week'] = 'Pianifica Settimana';

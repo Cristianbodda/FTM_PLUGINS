@@ -2055,6 +2055,279 @@ echo $OUTPUT->header();
 }
 
 /* =============================================
+   WEEK PLANNER MODAL
+   ============================================= */
+
+/* Clickable timeline weeks */
+.view-standard .timeline-week,
+.view-dettagliata .timeline-week {
+    cursor: pointer;
+}
+.view-standard .timeline-week:hover,
+.view-dettagliata .timeline-week:hover {
+    transform: scale(1.05);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+    z-index: 2;
+}
+
+/* Week planner buttons for Classica view */
+.week-planner-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e4e8;
+}
+.week-planner-btn {
+    flex: 1;
+    padding: 4px 2px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid #c0c5d0;
+    border-radius: 5px;
+    background: #f8f9fa;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    color: #555;
+}
+.week-planner-btn:hover {
+    background: #e8ecf0;
+    border-color: #475569;
+    color: #333;
+}
+.week-planner-btn.completed { background: #e4f0e8; border-color: #5a8a68; color: #2d6a4e; }
+.week-planner-btn.current { background: #f5edd0; border-color: #a09030; color: #6d5010; }
+
+/* Week planner mini-badges for Compatta view */
+.week-planner-mini {
+    display: inline-flex;
+    gap: 3px;
+    margin-left: 6px;
+}
+.week-planner-mini .wp-mini-btn {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+    font-weight: 700;
+    border: 1px solid #c0c5d0;
+    border-radius: 4px;
+    background: #f0f2f4;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    color: #666;
+    transition: all 0.15s;
+}
+.week-planner-mini .wp-mini-btn:hover {
+    background: #dde0e4;
+    border-color: #475569;
+    transform: scale(1.15);
+}
+.week-planner-mini .wp-mini-btn.completed { background: #d4edda; border-color: #5a8a68; color: #2d6a4e; }
+.week-planner-mini .wp-mini-btn.current { background: #f5edd0; border-color: #a09030; color: #6d5010; }
+
+/* Week Planner Modal */
+.wp-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1050;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 50px;
+    overflow-y: auto;
+}
+.wp-modal.active {
+    display: flex;
+}
+.wp-modal-content {
+    background: white;
+    border-radius: 14px;
+    width: 95%;
+    max-width: 600px;
+    box-shadow: 0 10px 50px rgba(0,0,0,0.25);
+    margin-bottom: 50px;
+}
+.wp-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 2px solid #e2e4e8;
+    background: #f8f9fb;
+    border-radius: 14px 14px 0 0;
+}
+.wp-modal-header h3 {
+    margin: 0;
+    font-size: 17px;
+    color: #333;
+}
+.wp-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0 4px;
+    line-height: 1;
+}
+.wp-modal-close:hover { color: #dc3545; }
+.wp-modal-body {
+    padding: 20px 24px;
+}
+
+/* Current activities section */
+.wp-current-section {
+    margin-bottom: 20px;
+}
+.wp-current-section h4 {
+    font-size: 14px;
+    color: #475569;
+    margin: 0 0 10px;
+    font-weight: 600;
+}
+.wp-activity-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border: 1px solid #d8dce4;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    background: #fafbfc;
+}
+.wp-activity-item .wp-act-info {
+    flex: 1;
+}
+.wp-activity-item .wp-act-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #333;
+}
+.wp-activity-item .wp-act-detail {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+}
+.wp-activity-item .wp-act-type {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-right: 8px;
+}
+.wp-act-type.atelier { background: #dbeafe; color: #1e40af; }
+.wp-act-type.test { background: #fef3c7; color: #92400e; }
+.wp-act-type.lab { background: #d1fae5; color: #065f46; }
+.wp-act-type.external { background: #ede9fe; color: #5b21b6; }
+.wp-remove-btn {
+    background: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #dc3545;
+    transition: all 0.15s;
+}
+.wp-remove-btn:hover {
+    background: #fee2e2;
+    border-color: #dc3545;
+}
+.wp-no-activities {
+    text-align: center;
+    padding: 15px;
+    color: #999;
+    font-style: italic;
+    font-size: 13px;
+}
+
+/* Add activity section */
+.wp-add-section {
+    border-top: 2px solid #e2e4e8;
+    padding-top: 18px;
+}
+.wp-add-section h4 {
+    font-size: 14px;
+    color: #475569;
+    margin: 0 0 14px;
+    font-weight: 600;
+}
+.wp-add-group {
+    margin-bottom: 14px;
+    padding: 14px;
+    border: 1px solid #e2e4e8;
+    border-radius: 10px;
+    background: #fafbfc;
+}
+.wp-add-group-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.wp-add-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.wp-add-row select,
+.wp-add-row input {
+    flex: 1;
+    min-width: 120px;
+    padding: 8px 10px;
+    border: 1px solid #c0c5d0;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #333;
+}
+.wp-add-row select:focus,
+.wp-add-row input:focus {
+    border-color: #0066cc;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,102,204,0.15);
+}
+.wp-assign-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.wp-assign-btn.atelier { background: #0066cc; color: white; }
+.wp-assign-btn.atelier:hover { background: #0052a3; }
+.wp-assign-btn.test { background: #d97706; color: white; }
+.wp-assign-btn.test:hover { background: #b45309; }
+.wp-assign-btn.lab { background: #059669; color: white; }
+.wp-assign-btn.lab:hover { background: #047857; }
+.wp-assign-btn.external { background: #7c3aed; color: white; }
+.wp-assign-btn.external:hover { background: #6d28d9; }
+
+/* Atelier dates sub-dropdown */
+.wp-atelier-dates {
+    display: none;
+    margin-top: 8px;
+}
+.wp-atelier-dates.visible {
+    display: block;
+}
+
+/* =============================================
    SECTOR MULTI-SELECT CHIPS
    ============================================= */
 .sector-chips-wrap {
@@ -2866,6 +3139,372 @@ document.addEventListener('click', function(e) {
         closeSectorDropdowns();
     }
 });
+
+// ============================================
+// WEEK PLANNER FUNCTIONS
+// ============================================
+
+let wpStudentId = null;
+let wpWeek = null;
+let wpStudentName = '';
+
+function openWeekPlanner(studentId, week, studentName) {
+    wpStudentId = studentId;
+    wpWeek = week;
+    wpStudentName = studentName;
+
+    // Create modal if not exists
+    let modal = document.getElementById('wpModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'wpModal';
+        modal.className = 'wp-modal';
+        modal.innerHTML = `
+            <div class="wp-modal-content">
+                <div class="wp-modal-header">
+                    <h3 id="wpTitle">Pianificazione Settimana</h3>
+                    <button class="wp-modal-close" onclick="closeWeekPlanner()">&times;</button>
+                </div>
+                <div class="wp-modal-body">
+                    <div class="wp-current-section">
+                        <h4>&#128203; Attivit&agrave; Attuali</h4>
+                        <div id="wpCurrentActivities">
+                            <div style="text-align:center;padding:20px;color:#999;">Caricamento...</div>
+                        </div>
+                    </div>
+                    <div class="wp-add-section">
+                        <h4>&#10133; Aggiungi Attivit&agrave;</h4>
+                        <div class="wp-add-group">
+                            <div class="wp-add-group-title">Atelier</div>
+                            <div class="wp-add-row">
+                                <select id="wpAtelierSelect" onchange="wpLoadAtelierDates()">
+                                    <option value="">-- Seleziona Atelier --</option>
+                                </select>
+                                <button class="wp-assign-btn atelier" onclick="wpAssignAtelier()" id="wpAtelierBtn" disabled>Iscrivi</button>
+                            </div>
+                            <div id="wpAtelierDates" class="wp-atelier-dates"></div>
+                        </div>
+                        <div class="wp-add-group">
+                            <div class="wp-add-group-title">Test Teoria</div>
+                            <div class="wp-add-row">
+                                <select id="wpTestSelect">
+                                    <option value="">-- Seleziona Test --</option>
+                                </select>
+                                <button class="wp-assign-btn test" onclick="wpAssignActivity('test_teoria')">Assegna</button>
+                            </div>
+                        </div>
+                        <div class="wp-add-group">
+                            <div class="wp-add-group-title">Laboratorio</div>
+                            <div class="wp-add-row">
+                                <select id="wpLabSelect">
+                                    <option value="">-- Seleziona Lab --</option>
+                                </select>
+                                <button class="wp-assign-btn lab" onclick="wpAssignActivity('laboratorio')">Assegna</button>
+                            </div>
+                        </div>
+                        <div class="wp-add-group">
+                            <div class="wp-add-group-title">Attivit&agrave; Esterna</div>
+                            <div class="wp-add-row">
+                                <input type="text" id="wpExternalName" placeholder="Nome attivit&agrave;...">
+                                <button class="wp-assign-btn external" onclick="wpAddExternal()">Aggiungi</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Close on outside click
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeWeekPlanner();
+        });
+    }
+
+    // Update title
+    document.getElementById('wpTitle').textContent = 'Settimana ' + week + ' - ' + studentName;
+
+    // Show modal
+    modal.classList.add('active');
+
+    // Load data
+    wpLoadPlan();
+}
+
+function closeWeekPlanner() {
+    const modal = document.getElementById('wpModal');
+    if (modal) modal.classList.remove('active');
+    wpStudentId = null;
+    wpWeek = null;
+}
+
+function wpLoadPlan() {
+    const url = 'ajax_week_planner.php?action=getplan&studentid=' + wpStudentId +
+                '&week=' + wpWeek + '&sesskey=<?php echo sesskey(); ?>';
+
+    fetch(url)
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            wpRenderCurrentActivities(data.plan);
+            wpPopulateDropdowns(data.available);
+        } else {
+            document.getElementById('wpCurrentActivities').innerHTML =
+                '<div class="wp-no-activities">Errore: ' + (data.message || 'Caricamento fallito') + '</div>';
+        }
+    })
+    .catch(err => {
+        document.getElementById('wpCurrentActivities').innerHTML =
+            '<div class="wp-no-activities">Errore di connessione</div>';
+    });
+}
+
+function wpRenderCurrentActivities(plan) {
+    const container = document.getElementById('wpCurrentActivities');
+    let html = '';
+    let hasActivities = false;
+
+    // Ateliers
+    if (plan.ateliers && plan.ateliers.length > 0) {
+        hasActivities = true;
+        plan.ateliers.forEach(a => {
+            const canRemove = a.status !== 'attended';
+            html += `<div class="wp-activity-item">
+                <div class="wp-act-info">
+                    <span class="wp-act-type atelier">ATELIER</span>
+                    <span class="wp-act-name">${a.name}</span>
+                    <div class="wp-act-detail">${a.date ? a.date + ' ' + a.time : ''} ${a.room ? '- ' + a.room : ''} ${a.status === 'attended' ? '(Frequentato)' : ''}</div>
+                </div>
+                ${canRemove ? '<button class="wp-remove-btn" onclick="wpRemoveActivity(\'atelier\',' + a.id + ')">&#10005;</button>' : '<span style="color:#2d6a4e;font-size:13px;">&#10004;</span>'}
+            </div>`;
+        });
+    }
+
+    // Tests
+    if (plan.tests && plan.tests.length > 0) {
+        hasActivities = true;
+        plan.tests.forEach(a => {
+            html += `<div class="wp-activity-item">
+                <div class="wp-act-info">
+                    <span class="wp-act-type test">TEST</span>
+                    <span class="wp-act-name">${a.name}</span>
+                    <div class="wp-act-detail">${a.details || ''}</div>
+                </div>
+                <button class="wp-remove-btn" onclick="wpRemoveActivity('test_teoria',${a.id})">&#10005;</button>
+            </div>`;
+        });
+    }
+
+    // Labs
+    if (plan.labs && plan.labs.length > 0) {
+        hasActivities = true;
+        plan.labs.forEach(a => {
+            html += `<div class="wp-activity-item">
+                <div class="wp-act-info">
+                    <span class="wp-act-type lab">LAB</span>
+                    <span class="wp-act-name">${a.name}</span>
+                    <div class="wp-act-detail">${a.details || ''}</div>
+                </div>
+                <button class="wp-remove-btn" onclick="wpRemoveActivity('laboratorio',${a.id})">&#10005;</button>
+            </div>`;
+        });
+    }
+
+    // External
+    if (plan.external && plan.external.length > 0) {
+        hasActivities = true;
+        plan.external.forEach(a => {
+            html += `<div class="wp-activity-item">
+                <div class="wp-act-info">
+                    <span class="wp-act-type external">ESTERNA</span>
+                    <span class="wp-act-name">${a.name}</span>
+                    <div class="wp-act-detail">${a.details || ''}</div>
+                </div>
+                <button class="wp-remove-btn" onclick="wpRemoveActivity('external',${a.id})">&#10005;</button>
+            </div>`;
+        });
+    }
+
+    if (!hasActivities) {
+        html = '<div class="wp-no-activities">Nessuna attivit&agrave; assegnata per questa settimana</div>';
+    }
+
+    container.innerHTML = html;
+}
+
+function wpPopulateDropdowns(available) {
+    // Ateliers
+    const atelierSel = document.getElementById('wpAtelierSelect');
+    atelierSel.innerHTML = '<option value="">-- Seleziona Atelier --</option>';
+    if (available.ateliers) {
+        available.ateliers.forEach(a => {
+            atelierSel.innerHTML += '<option value="' + a.id + '">' + a.name + '</option>';
+        });
+    }
+
+    // Tests
+    const testSel = document.getElementById('wpTestSelect');
+    testSel.innerHTML = '<option value="">-- Seleziona Test --</option>';
+    if (available.tests) {
+        available.tests.forEach(t => {
+            testSel.innerHTML += '<option value="' + t.id + '" data-name="' + t.name.replace(/"/g, '&quot;') + '">' + t.name + '</option>';
+        });
+    }
+
+    // Labs
+    const labSel = document.getElementById('wpLabSelect');
+    labSel.innerHTML = '<option value="">-- Seleziona Lab --</option>';
+    if (available.labs) {
+        available.labs.forEach(l => {
+            labSel.innerHTML += '<option value="' + l.id + '" data-name="' + l.name.replace(/"/g, '&quot;') + '">' + l.name + '</option>';
+        });
+    }
+}
+
+function wpLoadAtelierDates() {
+    const atelierSel = document.getElementById('wpAtelierSelect');
+    const atelierId = atelierSel.value;
+    const datesDiv = document.getElementById('wpAtelierDates');
+    const btn = document.getElementById('wpAtelierBtn');
+
+    if (!atelierId) {
+        datesDiv.classList.remove('visible');
+        datesDiv.innerHTML = '';
+        btn.disabled = true;
+        return;
+    }
+
+    datesDiv.innerHTML = '<div style="padding:10px;color:#999;font-size:12px;">Caricamento date...</div>';
+    datesDiv.classList.add('visible');
+
+    fetch('ajax_week_planner.php?action=getatelierdates&atelierid=' + atelierId + '&sesskey=<?php echo sesskey(); ?>')
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.dates && data.dates.length > 0) {
+            let html = '<div style="display:flex;flex-direction:column;gap:4px;margin-top:8px;">';
+            data.dates.forEach(d => {
+                const full = d.is_full;
+                html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid ${full ? '#e5e7eb' : '#c0c5d0'};border-radius:6px;cursor:${full ? 'not-allowed' : 'pointer'};background:${full ? '#f3f4f6' : 'white'};opacity:${full ? '0.6' : '1'};">
+                    <input type="radio" name="wpAtelierDate" value="${d.activity_id}" ${full ? 'disabled' : ''} onchange="document.getElementById('wpAtelierBtn').disabled=false">
+                    <span style="flex:1;font-size:12px;"><strong>${d.date_formatted}</strong> ${d.time_formatted} ${d.room ? '- ' + d.room : ''}</span>
+                    <span style="font-size:11px;color:${full ? '#dc3545' : '#2d6a4e'};">${full ? 'PIENO' : d.available + ' posti'}</span>
+                </label>`;
+            });
+            html += '</div>';
+            datesDiv.innerHTML = html;
+            btn.disabled = true; // Will enable when radio selected
+        } else {
+            datesDiv.innerHTML = '<div style="padding:10px;color:#999;font-size:12px;">Nessuna data disponibile</div>';
+            btn.disabled = true;
+        }
+    })
+    .catch(() => {
+        datesDiv.innerHTML = '<div style="padding:10px;color:#dc3545;font-size:12px;">Errore caricamento date</div>';
+    });
+}
+
+function wpAssignAtelier() {
+    const radio = document.querySelector('input[name="wpAtelierDate"]:checked');
+    if (!radio) { alert('Seleziona una data'); return; }
+
+    const activityId = radio.value;
+    const formData = new URLSearchParams();
+    formData.append('action', 'assignatelier');
+    formData.append('studentid', wpStudentId);
+    formData.append('activityid', activityId);
+    formData.append('sesskey', '<?php echo sesskey(); ?>');
+
+    fetch('ajax_week_planner.php', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            wpLoadPlan(); // Refresh
+            document.getElementById('wpAtelierSelect').value = '';
+            document.getElementById('wpAtelierDates').classList.remove('visible');
+            document.getElementById('wpAtelierBtn').disabled = true;
+        } else {
+            alert(data.message || 'Errore');
+        }
+    })
+    .catch(() => alert('Errore di connessione'));
+}
+
+function wpAssignActivity(type) {
+    const selId = type === 'test_teoria' ? 'wpTestSelect' : 'wpLabSelect';
+    const sel = document.getElementById(selId);
+    if (!sel.value) { alert('Seleziona un\'attivit\u00e0'); return; }
+
+    const name = sel.options[sel.selectedIndex].getAttribute('data-name') || sel.options[sel.selectedIndex].textContent;
+
+    const formData = new URLSearchParams();
+    formData.append('action', 'assignactivity');
+    formData.append('studentid', wpStudentId);
+    formData.append('week', wpWeek);
+    formData.append('type', type);
+    formData.append('activityname', name);
+    formData.append('sesskey', '<?php echo sesskey(); ?>');
+
+    fetch('ajax_week_planner.php', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            wpLoadPlan();
+            sel.value = '';
+        } else {
+            alert(data.message || 'Errore');
+        }
+    })
+    .catch(() => alert('Errore di connessione'));
+}
+
+function wpAddExternal() {
+    const nameInput = document.getElementById('wpExternalName');
+    const name = nameInput.value.trim();
+    if (!name) { alert('Inserisci il nome dell\'attivit\u00e0'); return; }
+
+    const formData = new URLSearchParams();
+    formData.append('action', 'assignactivity');
+    formData.append('studentid', wpStudentId);
+    formData.append('week', wpWeek);
+    formData.append('type', 'external');
+    formData.append('activityname', name);
+    formData.append('sesskey', '<?php echo sesskey(); ?>');
+
+    fetch('ajax_week_planner.php', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            wpLoadPlan();
+            nameInput.value = '';
+        } else {
+            alert(data.message || 'Errore');
+        }
+    })
+    .catch(() => alert('Errore di connessione'));
+}
+
+function wpRemoveActivity(type, recordId) {
+    if (!confirm('Rimuovere questa attivit\u00e0?')) return;
+
+    const formData = new URLSearchParams();
+    formData.append('action', 'removeactivity');
+    formData.append('studentid', wpStudentId);
+    formData.append('type', type);
+    formData.append('recordid', recordId);
+    formData.append('sesskey', '<?php echo sesskey(); ?>');
+
+    fetch('ajax_week_planner.php', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            wpLoadPlan();
+        } else {
+            alert(data.message || 'Errore');
+        }
+    })
+    .catch(() => alert('Errore di connessione'));
+}
+
 </script>
 
 <?php
@@ -2964,6 +3603,19 @@ function render_view_compatta($students, $dashboard) {
                 </div>
                 <div class="week-cell">
                     <?php echo $student->current_week ?? 1; ?>
+                    <div class="week-planner-mini">
+                        <?php
+                        $compatta_cw = $student->current_week ?? 1;
+                        for ($wp_w = 1; $wp_w <= 6; $wp_w++):
+                            $wp_c = 'future';
+                            if ($wp_w < $compatta_cw) $wp_c = 'completed';
+                            elseif ($wp_w == $compatta_cw) $wp_c = 'current';
+                        ?>
+                        <button class="wp-mini-btn <?php echo $wp_c; ?>"
+                                onclick="event.stopPropagation(); openWeekPlanner(<?php echo $student->id; ?>, <?php echo $wp_w; ?>, '<?php echo s(fullname($student)); ?>')"
+                                title="S<?php echo $wp_w; ?>"><?php echo $wp_w; ?></button>
+                        <?php endfor; ?>
+                    </div>
                 </div>
                 <div class="competency-cell <?php echo $is_below ? 'danger' : 'success'; ?>">
                     <?php echo round($student->competency_avg ?? 0); ?>%
@@ -3204,7 +3856,9 @@ function render_view_standard($students, $dashboard) {
                                         $week_icon = '&#9679;'; // Filled circle
                                     }
                                 ?>
-                                <div class="timeline-week <?php echo $week_class; ?>">
+                                <div class="timeline-week <?php echo $week_class; ?>"
+                                     onclick="openWeekPlanner(<?php echo $student->id; ?>, <?php echo $week; ?>, '<?php echo s(fullname($student)); ?>')"
+                                     title="Pianifica Settimana <?php echo $week; ?>">
                                     <div class="week-icon"><?php echo $week_icon; ?></div>
                                     <div class="week-num">Sett. <?php echo $week; ?></div>
                                     <div class="week-detail">
@@ -3534,7 +4188,9 @@ function render_view_dettagliata($students, $dashboard) {
                                             $week_icon = '&#9679;';
                                         }
                                     ?>
-                                    <div class="timeline-week <?php echo $week_class; ?>" style="flex: 1; min-width: 60px;">
+                                    <div class="timeline-week <?php echo $week_class; ?>" style="flex: 1; min-width: 60px; cursor: pointer;"
+                                         onclick="openWeekPlanner(<?php echo $student->id; ?>, <?php echo $week; ?>, '<?php echo s(fullname($student)); ?>')"
+                                         title="Pianifica Settimana <?php echo $week; ?>">
                                         <div class="week-icon"><?php echo $week_icon; ?></div>
                                         <div class="week-num">S<?php echo $week; ?></div>
                                     </div>
@@ -3765,6 +4421,23 @@ function render_view_classica($students, $dashboard) {
                             <?php else: ?>
                             <span class="status-badge missing">Lab &#10008;</span>
                             <?php endif; ?>
+                        </div>
+
+                        <!-- Week Planner Row (Classica view) -->
+                        <div class="week-planner-row">
+                            <?php
+                            $classica_current_week = $student->current_week ?? 1;
+                            for ($wp_week = 1; $wp_week <= 6; $wp_week++):
+                                $wp_class = 'future';
+                                if ($wp_week < $classica_current_week) $wp_class = 'completed';
+                                elseif ($wp_week == $classica_current_week) $wp_class = 'current';
+                            ?>
+                            <button class="week-planner-btn <?php echo $wp_class; ?>"
+                                    onclick="event.stopPropagation(); openWeekPlanner(<?php echo $student->id; ?>, <?php echo $wp_week; ?>, '<?php echo s(fullname($student)); ?>')"
+                                    title="Pianifica Settimana <?php echo $wp_week; ?>">
+                                S<?php echo $wp_week; ?>
+                            </button>
+                            <?php endfor; ?>
                         </div>
                     </div>
 

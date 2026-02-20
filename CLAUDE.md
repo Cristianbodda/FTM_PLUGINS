@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida per Claude
 
-**Ultimo aggiornamento:** 19 Febbraio 2026
+**Ultimo aggiornamento:** 20 Febbraio 2026
 
 ## Panoramica Progetto
 
@@ -8,11 +8,11 @@ Ecosistema di 13 plugin Moodle per gestione competenze professionali.
 
 Target: Moodle 4.5+ / 5.0 | Licenza: GPL-3.0
 
-Server Test: https://test-urc.hizuvala.myhostpoint.ch
+Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (19/02/2026)
+## STATO ATTUALE SVILUPPO (20/02/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -56,10 +56,11 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 - Quiz Export Tool (CSV/Excel), Excel/CSV Quiz Import (.xlsx/.xlsb/.csv)
 - CSV Import: supporta file esportati dal Quiz Export Tool (semicolon, UTF-8 BOM)
 
-#### 6. Coach Dashboard V2 (local_coachmanager) - 19/02/2026
+#### 6. Coach Dashboard V2 (local_coachmanager) - 20/02/2026
 - 4 Viste, Zoom accessibilita, Filtri, Timeline, Note Coach, Export Word
 - Navigazione dentro corsi (sidebar link)
 - Reports V2: link diretto a Student Report con parametri preimpostati
+- **Week Planner Modal:** Pianificazione attivita settimanale (atelier, test, lab, esterne) da timeline cliccabile
 - Dettagli: `docs/DETAILS_COACH_DASHBOARD.md`
 
 #### 7. Sistema CPURC (local_ftm_cpurc) - 24/01/2026
@@ -295,7 +296,7 @@ Tabelle Condivise:
 
 ## RISORSE
 
-- Server Test: https://test-urc.hizuvala.myhostpoint.ch
+- Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - Dashboard Segreteria: /local/ftm_scheduler/secretary_dashboard.php
 - CPURC Dashboard: /local/ftm_cpurc/index.php
 - Coach Dashboard V2: /local/coachmanager/coach_dashboard_v2.php

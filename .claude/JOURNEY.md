@@ -1,5 +1,34 @@
 # FTM Plugins - Development Journey
 
+## 20 Febbraio 2026
+
+### Week Planner Modal (local_coachmanager v2.4.0)
+- **Funzionalita:** Pianificazione attivita settimanale per studenti dalla Coach Dashboard
+- **UI:** Cliccando su una settimana (Sett. 1-6) nella timeline si apre un modale con:
+  - Attivita attuali assegnate (ateliers, test, lab, esterne) con bottone rimuovi
+  - Aggiungi: Atelier (dropdown catalogo + selezione date con posti), Test Teoria, Laboratorio, Attivita Esterna
+- **Viste supportate:**
+  - Standard/Dettagliata: timeline-week cliccabile con hover scale effect
+  - Classica: riga di 6 mini-bottoni S1-S6 dopo status-row
+  - Compatta: 6 micro-badges numerici nella colonna Settimana
+- **Backend:**
+  - `dashboard_helper.php`: 4 nuovi metodi (`get_week_plan`, `get_available_activities_for_week`, `assign_week_activity`, `remove_week_activity`)
+  - `ajax_week_planner.php` (NUOVO): endpoint AJAX con 5 azioni (getplan, assignatelier, assignactivity, removeactivity, getatelierdates)
+- **Data model:**
+  - Ateliers: `local_ftm_activities` + `local_ftm_enrollments` (capacita condivisa)
+  - Test/Lab/External: `local_ftm_student_program` (calendario individuale)
+  - Rimozione: `status='cancelled'` per atelier, DELETE per student_program
+- **File modificati:**
+  - `classes/dashboard_helper.php` (+212 righe)
+  - `ajax_week_planner.php` (NUOVO, 121 righe)
+  - `coach_dashboard_v2.php` (+677 righe CSS/HTML/JS)
+  - `course_students.php` (stesse modifiche)
+  - `lang/en/local_coachmanager.php` (+11 stringhe)
+  - `lang/it/local_coachmanager.php` (+11 stringhe)
+  - `version.php` → v2.4.0 (2026022002)
+
+---
+
 ## 19 Febbraio 2026
 
 ### Coach Manager - Navigazione dentro Corsi
@@ -478,24 +507,29 @@
 
 ## TODO per prossime sessioni
 
-1. **Student Report:**
+1. **Week Planner:**
+   - ✅ Modal implementato in tutte le 4 viste
+   - Testare su server con dati reali (atelier catalog, activities)
+   - Verificare capacita atelier e date disponibili
+
+2. **Student Report:**
    - ✅ Grafico Overlay Multi-Fonte completato
    - Testare stampa PDF con overlay
    - Rimuovere pannello debug in produzione
 
-2. **Coach Evaluation:**
+3. **Coach Evaluation:**
    - ✅ Fix UI completato
    - Testare con tutti i settori
 
-3. **Selfassessment:**
+4. **Selfassessment:**
    - Verificare funzionamento hook su produzione
    - Testare con tutti gli utenti di test
 
-4. **Quiz Analysis:**
+5. **Quiz Analysis:**
    - Pulire domande duplicate Chimica 23
    - Rimuovere "AREA F2" dalle risposte
    - Verificare altri corsi per problemi simili
 
-5. **FTM AI:**
+6. **FTM AI:**
    - Ancora in STANDBY
    - Pronto per integrazione quando Azure disponibile

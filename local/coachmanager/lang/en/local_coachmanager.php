@@ -216,3 +216,22 @@ $string['choose_tests_description'] = 'You need to choose the in-depth tests for
 // Reminder
 $string['reminder_autoval_subject'] = 'Reminder: Complete your Self-Assessment';
 $string['reminder_autoval_body'] = 'Hello {$a}, we remind you to complete your competency self-assessment.';
+
+// Course Students page
+$string['course_students'] = 'Course Students';
+$string['all_enrolled_students'] = 'enrolled students';
+$string['assigned_coach'] = 'Assigned Coach';
+$string['no_coach_assigned'] = 'No coach';
+
+// Week Planner
+$string['week_planner'] = 'Week Planner';
+$string['current_activities'] = 'Current Activities';
+$string['add_activity'] = 'Add Activity';
+$string['assign_test'] = 'Assign Test';
+$string['assign_lab'] = 'Assign Lab';
+$string['add_external'] = 'Add External Activity';
+$string['no_activities'] = 'No activities assigned';
+$string['activity_assigned'] = 'Activity assigned successfully';
+$string['activity_removed'] = 'Activity removed';
+$string['external_activity_name'] = 'Activity name';
+$string['plan_week'] = 'Plan Week';
