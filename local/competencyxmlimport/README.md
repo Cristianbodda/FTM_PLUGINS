@@ -1,16 +1,17 @@
 # local_competencyxmlimport
 
-Plugin Moodle per import quiz da XML, Word e Excel con assegnazione automatica competenze.
+Plugin Moodle per import quiz da XML, Word, Excel e CSV con assegnazione automatica competenze.
 
-**Versione:** 5.2 | **Word Parser:** v5.0 (20 formati) | **Ultimo aggiornamento:** 19/01/2026
+**Versione:** 5.3 | **Word Parser:** v5.0 (20 formati) | **Ultimo aggiornamento:** 19/02/2026
 
 ---
 
-## Setup Universale (AGGIORNATO 19/01/2026)
+## Setup Universale (AGGIORNATO 19/02/2026)
 
 Strumento completo per import quiz e assegnazione competenze automatica.
 
 ### Nuove Funzionalita
+- **Import CSV** da Quiz Export Tool (semicolon-separated, UTF-8 BOM) - NUOVO 19/02/2026
 - **Regex flessibile** per codici competenza (`[A-Za-z0-9]+` invece di `[A-Za-z]+`)
 - **Supporto caratteri accentati** (ELETTRICITA -> ELETTRICITÀ)
 - **Alias settori** automatici (AUTOVEICOLO -> AUTOMOBILE, MECC -> MECCANICA)
@@ -19,6 +20,8 @@ Strumento completo per import quiz e assegnazione competenze automatica.
 - **Debug integrato** con esempi codici DB e prime domande processate
 - **Statistiche finali** con contatori dettagliati
 - **Tabella riepilogo** con colonna Livello per ogni quiz
+- **Robustezza CSV:** Strip BOM, rimozione debug HTML Moodle, header detection
+- **Sicurezza:** strip_tags() su nomi quiz, truncate categorie a 255 chars
 
 ### Livelli Difficolta
 | Livello | Valore | Icona |
@@ -97,7 +100,7 @@ Settori: GENERICO
 ```
 1. Seleziona Framework (FTM-01 o FTM_GEN)
 2. Seleziona Settore (rilevato automaticamente)
-3. Upload File Word/XML
+3. Upload File Word/XML/CSV
 4. Revisione (correzione interattiva)
 5. Verifica Excel (opzionale)
 6. Configura Quiz (nome, livello, categoria)
@@ -117,6 +120,8 @@ Settori: GENERICO
 | `debug_word.php` | Debug formati Word |
 | `classes/word_parser.php` | Parser Word v4.0 |
 | `classes/word_import_helper.php` | Helper import Word |
+| `classes/excel_quiz_importer.php` | Import Excel/CSV multi-quiz |
+| `classes/quiz_exporter.php` | Export quiz con competenze |
 | `classes/excel_reader.php` | Lettore Excel |
 | `classes/excel_verifier.php` | Verificatore Word vs Excel |
 | `ajax/word_import.php` | AJAX Word |
@@ -147,4 +152,4 @@ Durante import setup_universale.php:
 
 ---
 
-*Versione 5.1 - 19 Gennaio 2026*
+*Versione 5.3 - 19 Febbraio 2026*

@@ -6,18 +6,18 @@ Ecosistema di 13 plugin Moodle per la gestione delle competenze professionali.
 
 ---
 
-## Stato Sviluppo (28 Gennaio 2026)
+## Stato Sviluppo (19 Febbraio 2026)
 
 | Plugin | Versione | Stato |
 |--------|----------|-------|
 | ftm_scheduler | 1.0 | **Attivo** - Vista Settimana + Mese + Gestione Coach |
-| competencymanager | 2.5.0 | **Attivo** - Sector Manager + Gap Comments + Student Report |
-| selfassessment | 1.2.0 | **Attivo** - Popup + rilevazione settori + filtro primario |
-| coachmanager | 2.2.0 | **Attivo** - Dashboard V2 con zoom accessibilita |
-| competencyxmlimport | 4.1 | **Attivo** - Setup Universale migliorato |
+| competencymanager | 2.6.4 | **Attivo** - Sector Manager + Gap Comments + Student Report + Overlay 4 fonti |
+| selfassessment | 1.3.1 | **Attivo** - Popup + rilevazione settori + hook Moodle 4.3+ |
+| coachmanager | 2.2.1 | **Attivo** - Dashboard V2 + navigazione corsi + link Student Report |
+| competencyxmlimport | 5.2 | **Attivo** - Setup Universale + Import CSV + Excel Quiz Import |
 | ftm_cpurc | 1.0.0 | **Attivo** - Gestione CPURC completa |
 | ftm_ai | 1.0.0-alpha | **STANDBY** - Azure OpenAI con anonimizzazione |
-| ftm_testsuite | 1.0 | **Attivo** - 58 test automatizzati |
+| ftm_testsuite | 1.2.0 | **Attivo** - 58 test + Demo Coach + Quiz Tester |
 | Altri plugin | - | Stabili |
 
 ---
@@ -197,4 +197,4 @@ https://test-urc.hizuvala.myhostpoint.ch
 ---
 
 *Sviluppato per FTM - Fondazione Terzo Millennio*
-*Ultimo aggiornamento: 28 Gennaio 2026*
+*Ultimo aggiornamento: 19 Febbraio 2026*

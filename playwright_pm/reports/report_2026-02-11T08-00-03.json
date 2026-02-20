@@ -1,0 +1,38 @@
+{
+  "timestamp": "11/02/2026, 09:00:03",
+  "checks": [
+    {
+      "name": "Coach Dashboard V2",
+      "status": "OK",
+      "found": "3/3",
+      "hasErrors": false,
+      "screenshot": "2026-02-11T08-00-03_coach_dashboard_v2.png"
+    },
+    {
+      "name": "Coach Dashboard",
+      "status": "OK",
+      "found": "2/2",
+      "hasErrors": false,
+      "screenshot": "2026-02-11T08-00-03_coach_dashboard.png"
+    },
+    {
+      "name": "FTM Scheduler",
+      "status": "OK",
+      "found": "1/1",
+      "hasErrors": false,
+      "screenshot": "2026-02-11T08-00-03_ftm_scheduler.png"
+    },
+    {
+      "name": "Setup Universale",
+      "status": "WARN",
+      "found": "0/1",
+      "hasErrors": true,
+      "screenshot": "2026-02-11T08-00-03_setup_universale.png"
+    }
+  ],
+  "summary": {
+    "ok": 3,
+    "warn": 1,
+    "error": 0
+  }
+}

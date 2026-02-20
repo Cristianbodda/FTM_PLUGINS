@@ -99,6 +99,13 @@ if ($studentid == 0) {
 $student = $DB->get_record('user', array('id' => $studentid), '*', MUST_EXIST);
 $fullname = fullname($student);
 
+// Carica settore primario studente (per link a student_report).
+$student_primary_sector = '';
+$primary_sector_rec = $DB->get_record('local_student_sectors', ['userid' => $studentid, 'is_primary' => 1]);
+if ($primary_sector_rec) {
+    $student_primary_sector = strtolower($primary_sector_rec->sector);
+}
+
 // ============================================
 // FUNZIONI HELPER
 // ============================================
@@ -2055,11 +2062,11 @@ $current_sector_filter = json_encode($sector_filter);
             </div>
             <div class="section-body">
                 <div class="stats-grid">
-                    <div class="stat-card purple" onclick="goToAutovalutazione()" title="Clicca per vedere l'autovalutazione">
+                    <div class="stat-card purple" onclick="goToAutovalutazione()" title="Apri Student Report - Grafico Autovalutazione" style="cursor: pointer;">
                         <div class="stat-icon">🧑</div>
                         <div class="stat-value"><?php echo $has_autovalutazione ? '✅' : '❌'; ?></div>
                         <div class="stat-label">Autovalutazione</div>
-                        <div class="click-hint">Clicca per vedere dettagli</div>
+                        <div class="click-hint">Apri grafico ↗</div>
                     </div>
                     <div class="stat-card blue" onclick="showTab('competenze')" title="Clicca per vedere i quiz">
                         <div class="stat-icon">📝</div>
@@ -2878,13 +2885,19 @@ function updateRadar() {
 // NAVIGAZIONE DA CARD
 // ============================================
 function goToAutovalutazione() {
-    showTab('radar');
-    showNotification('📊 Visualizzazione: Radar Confronto');
+    var url = '/local/competencymanager/student_report.php?userid=<?php echo $studentid; ?>&courseid=0&tab=overview&viz_configured=1'
+        + '&cm_sector=<?php echo urlencode($student_primary_sector); ?>'
+        + '&show_dual_radar=1&show_gap=1&show_spunti=1&show_coach_eval=1&show_overlay=1'
+        + '&soglia_allineamento=10&soglia_critico=30&attempt_filter=all'
+        <?php if (!empty($quiz_ids)): ?>
+        + '<?php foreach ($quiz_ids as $qid) { echo "&quizids%5B%5D=" . intval($qid); } ?>'
+        <?php endif; ?>
+        + '#overlay-radar-section';
+    window.open(url, '_blank');
 }
 
 function goToAutovalutazioneArea(area) {
-    showTab('radar');
-    showNotification('📊 Confronto area: ' + area);
+    goToAutovalutazione();
 }
 
 function goToQuizArea(area) {

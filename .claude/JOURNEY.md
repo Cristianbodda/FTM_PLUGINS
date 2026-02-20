@@ -1,5 +1,61 @@
 # FTM Plugins - Development Journey
 
+## 19 Febbraio 2026
+
+### Coach Manager - Navigazione dentro Corsi
+- **Funzionalità:** Link "Coach Dashboard" aggiunto nella sidebar di navigazione dentro ogni corso
+- **Implementazione:** Nuova funzione `local_coachmanager_extend_navigation_course()` in `lib.php`
+- **Capability:** Solo utenti con `local/coachmanager:view` vedono il link
+- **File:** `local/coachmanager/lib.php`
+
+### Reports V2 - Link diretto a Student Report
+- **Modifica:** La card "Autovalutazione" nella vista studente ora apre Student Report in una nuova tab
+- **Prima:** `showTab('radar')` (tab interna)
+- **Dopo:** `window.open()` verso `student_report.php` con parametri preimpostati:
+  - `viz_configured=1`, `show_dual_radar=1`, `show_gap=1`, `show_spunti=1`, `show_coach_eval=1`, `show_overlay=1`
+  - Anchor `#overlay-radar-section` per scroll diretto al grafico overlay
+- **Settore:** Carica settore primario da `local_student_sectors` per il link
+- **File:** `local/coachmanager/reports_v2.php`
+
+### Excel Quiz Importer - Supporto CSV
+- **Funzionalità:** Nuovo metodo `load_csv_file()` per importare file CSV dal Quiz Export Tool
+- **Formato CSV:** Semicolon-separated, UTF-8 BOM, stesse 12 colonne dell'Excel
+- **Robustezza:**
+  - Strip BOM dalla prima riga
+  - Skip righe vuote
+  - Rimozione automatica debug HTML Moodle (`<div class="notifytiny debuggingmessage">`)
+  - Header detection (salta riga se contiene "Quiz", "#", "Domanda")
+- **Sicurezza:** `strip_tags()` su nomi quiz, truncate nomi categorie a 255 chars (limite DB)
+- **Error handling:** Catch separati per `dml_write_exception`, `dml_exception`, `Exception` con debuginfo
+- **File:** `local/competencyxmlimport/classes/excel_quiz_importer.php` (+184 righe)
+
+### Quiz Exporter - Fix Duplicate Key Warning
+- **Problema:** Warning "duplicate key" con `get_records_sql` quando domande hanno versioni/competenze multiple
+- **Soluzione:** Cambiato a `get_recordset_sql` con iterazione manuale e key by slot
+- **File:** `local/competencyxmlimport/classes/quiz_exporter.php`
+
+### Setup Universale - Accetta CSV
+- **Modifica:** Aggiunto `.csv` ai formati accettati nel drag&drop e file input
+- **UI:** Label dinamiche "Excel" o "CSV" in base all'estensione del file caricato
+- **Messaggi:** Aggiornati messaggi upload, errore, log import per supportare entrambi i formati
+- **File:** `local/competencyxmlimport/setup_universale.php`
+
+### Test Suite - Fix Tentativi Quiz
+- **Problema 1:** Layout attempt usava array keys invece di slot numbers
+- **Soluzione 1:** Usa `$q->slot` con `sort()` e trailing `,0` come Moodle si aspetta
+- **Problema 2:** Multichoice con shuffle: la risposta veniva inviata con answer ID invece dell'indice shuffled
+- **Soluzione 2:** Legge `_order` dal question attempt step per trovare l'indice corretto della risposta
+- **File:** `local/ftm_testsuite/classes/data_generator.php`
+
+### Test Suite Index - Sezione Demo Coach
+- **Nuova card:** "Demo Coach e Quiz Tester" con 3 link:
+  - **Genera Demo Coach** (`generate_coach_demo.php`) - Crea 3 coach con 21 studenti demo (7 per coach, uno per settore)
+  - **Admin Quiz Tester** (`admin_quiz_tester.php`) - Seleziona studente/quiz/percentuale target
+  - **Assegna Ruolo Coach** (`grant_coach_role.php`) - Assegna editingteacher a livello sistema
+- **File:** `local/ftm_testsuite/index.php`
+
+---
+
 ## 12 Febbraio 2026 (Sessione 2)
 
 ### Sezione Confronto 4 Fonti Collapsabile

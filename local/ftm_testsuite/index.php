@@ -550,6 +550,37 @@ $header_class = $is_new_design ? 'ftm-header' : 'ftm-header-classic';
         </div>
     </div>
 
+    <!-- Demo Coach e Quiz Tester -->
+    <div class="card">
+        <div class="card-header" style="background: linear-gradient(135deg, #6f42c1 0%, #9b59b6 100%); color: white;">
+            <h3 style="color: white;">👨‍🏫 Demo Coach e Quiz Tester</h3>
+        </div>
+        <div class="card-body">
+            <div class="action-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <a href="generate_coach_demo.php" class="action-card" style="border: 3px solid #6f42c1;">
+                    <div class="icon">🎓</div>
+                    <h4>Genera Demo Coach</h4>
+                    <p>Crea 3 coach (Roberto Bravo, Fabio Marinoni, Graziano Margonar) con 21 studenti demo (7 per coach, uno per settore). Include quiz solo del settore assegnato, autovalutazioni, CPURC, settore primario e assegnazione coach.</p>
+                    <span class="btn" style="background: #6f42c1; color: white;">Genera Demo</span>
+                </a>
+
+                <a href="admin_quiz_tester.php" class="action-card" style="border: 3px solid #9b59b6;">
+                    <div class="icon">🎯</div>
+                    <h4>Admin Quiz Tester</h4>
+                    <p>Seleziona uno studente specifico, scegli quali quiz fargli fare e imposta la percentuale target. Utile per rigenerare singoli tentativi o testare quiz appena importati con un punteggio a tua scelta.</p>
+                    <span class="btn" style="background: #9b59b6; color: white;">Quiz Tester</span>
+                </a>
+
+                <a href="../coachmanager/grant_coach_role.php" class="action-card" style="border: 3px solid #0066cc;">
+                    <div class="icon">🔑</div>
+                    <h4>Assegna Ruolo Coach</h4>
+                    <p>Assegna la capability <strong>editingteacher a livello sistema</strong> a un utente. Necessario per accedere a: Coach Dashboard V2, Student Report, Export Word, confronto studenti e note coach.</p>
+                    <span class="btn" style="background: #0066cc; color: white;">Assegna Ruolo</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Tool Import/Export Quiz -->
     <div class="card">
         <div class="card-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">

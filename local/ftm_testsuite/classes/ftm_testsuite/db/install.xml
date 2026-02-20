@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/ftm_testsuite/db" VERSION="20260102" COMMENT="Tables for FTM Test Suite">
+  <TABLES>
+    
+    <!-- Esecuzioni test (una riga per ogni run completo) -->
+    <TABLE NAME="local_ftm_testsuite_runs" COMMENT="Test suite execution runs">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Nome descrittivo del run"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Corso testato (0=tutti)"/>
+        <FIELD NAME="testuserid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID utente test utilizzato"/>
+        <FIELD NAME="executedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Admin che ha eseguito"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="running" SEQUENCE="false" COMMENT="running, completed, failed"/>
+        <FIELD NAME="total_tests" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="passed_tests" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="failed_tests" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="warning_tests" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="success_rate" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="hash_integrity" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="SHA256 hash per certificazione"/>
+        <FIELD NAME="system_version" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" COMMENT="Versioni plugin al momento del test"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecompleted" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="executedby_fk" TYPE="foreign" FIELDS="executedby" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="testuserid_fk" TYPE="foreign" FIELDS="testuserid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="timecreated_idx" UNIQUE="false" FIELDS="timecreated"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Risultati singoli test -->
+    <TABLE NAME="local_ftm_testsuite_results" COMMENT="Individual test results within a run">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="runid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to runs table"/>
+        <FIELD NAME="module" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="quiz, selfassessment, labeval, radar, report"/>
+        <FIELD NAME="testcode" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="Codice test es: 1.1, 2.3"/>
+        <FIELD NAME="testname" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Nome descrittivo"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="passed, failed, warning, skipped"/>
+        <FIELD NAME="expected_value" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Valore atteso"/>
+        <FIELD NAME="actual_value" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Valore ottenuto"/>
+        <FIELD NAME="details" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Spiegazione dettagliata"/>
+        <FIELD NAME="sql_query" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Query SQL eseguita"/>
+        <FIELD NAME="trace_data" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON con trace completo calcolo"/>
+        <FIELD NAME="execution_time" TYPE="number" LENGTH="10" DECIMALS="4" NOTNULL="false" SEQUENCE="false" COMMENT="Tempo esecuzione in secondi"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="runid_fk" TYPE="foreign" FIELDS="runid" REFTABLE="local_ftm_testsuite_runs" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="runid_module_idx" UNIQUE="false" FIELDS="runid, module"/>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="testcode_idx" UNIQUE="false" FIELDS="testcode"/>
+      </INDEXES>
+    </TABLE>
+    
+    <!-- Utenti test gestiti dal sistema -->
+    <TABLE NAME="local_ftm_testsuite_users" COMMENT="Test users created by the system">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to user table"/>
+        <FIELD NAME="username" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="testprofile" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="low30, medium65, high95"/>
+        <FIELD NAME="quiz_percentage" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="70" SEQUENCE="false" COMMENT="Target % risposte corrette"/>
+        <FIELD NAME="description" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="createdby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="lastused" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="createdby_fk" TYPE="foreign" FIELDS="createdby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_unique" UNIQUE="true" FIELDS="userid"/>
+        <INDEX NAME="testprofile_idx" UNIQUE="false" FIELDS="testprofile"/>
+      </INDEXES>
+    </TABLE>
+    
+  </TABLES>
+</XMLDB>

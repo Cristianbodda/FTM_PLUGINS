@@ -5,6 +5,7 @@
  * @package    local_competencyxmlimport
  * @copyright  2026 FTM
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @version    2026021901 - Fixed get_recordset_sql for duplicate slot warning
  */
 
 namespace local_competencyxmlimport;
@@ -71,7 +72,14 @@ class quiz_exporter {
                 WHERE qs.quizid = :quizid
                 ORDER BY qs.slot";
 
-        $questions = $DB->get_records_sql($sql, ['quizid' => $quizid]);
+        // Use get_recordset_sql to avoid "duplicate key" warning when
+        // questions have multiple versions or competencies.
+        $rs = $DB->get_recordset_sql($sql, ['quizid' => $quizid]);
+        $questions = [];
+        foreach ($rs as $record) {
+            $questions[$record->slot] = $record;
+        }
+        $rs->close();
 
         // Get answers for each question.
         foreach ($questions as $question) {

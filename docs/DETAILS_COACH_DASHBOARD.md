@@ -1,4 +1,4 @@
-# COACH DASHBOARD V2 - DETTAGLI TECNICI (22/01/2026)
+# COACH DASHBOARD V2 - DETTAGLI TECNICI (19/02/2026)
 
 ## Viste Disponibili
 
@@ -31,3 +31,15 @@
 - File: `export_word.php`
 - Libreria: PHPWord (se disponibile) oppure HTML Word-compatible (fallback)
 - Contenuto: Info studente, progressi, timeline, note coach
+
+## Navigazione dentro Corsi (19/02/2026)
+- Funzione: `local_coachmanager_extend_navigation_course()` in `lib.php`
+- Aggiunge link "Coach Dashboard" nella sidebar di navigazione del corso
+- Capability: `local/coachmanager:view`
+- Parametro: `courseid` passato automaticamente
+
+## Reports V2 - Link Student Report (19/02/2026)
+- Card "Autovalutazione" apre Student Report in nuova tab (`window.open`)
+- Carica settore primario da `local_student_sectors`
+- Parametri preimpostati: `viz_configured=1`, tutte le opzioni visualizzazione attive
+- Anchor: `#overlay-radar-section` per scroll al grafico overlay

@@ -983,8 +983,8 @@ if ($step == 3):
                     continue;
                 }
 
-                // === GESTIONE FILE EXCEL (.xlsx, .xlsb) ===
-                if (in_array($ext, ['xlsx', 'xlsb', 'xls'])) {
+                // === GESTIONE FILE EXCEL/CSV (.xlsx, .xlsb, .csv) ===
+                if (in_array($ext, ['xlsx', 'xlsb', 'xls', 'csv'])) {
                     // Pulisci sessione precedente
                     if (isset($SESSION->excel_import_file) && file_exists($SESSION->excel_import_file)) {
                         @unlink($SESSION->excel_import_file);
@@ -999,16 +999,17 @@ if ($step == 3):
                         $SESSION->excel_import_file = $excel_tmp_path;
                         $SESSION->excel_import_filename = $filename;
 
-                        $upload_message = '📊 File Excel caricato: ' . $filename . '. Analisi in corso...';
+                        $fileTypeLabel = ($ext === 'csv') ? 'CSV' : 'Excel';
+                        $upload_message = "📊 File $fileTypeLabel caricato: " . $filename . '. Analisi in corso...';
                     } else {
-                        $upload_error .= "❌ Errore caricamento Excel: $filename<br>";
+                        $upload_error .= "❌ Errore caricamento: $filename<br>";
                     }
                     continue;
                 }
 
                 // === GESTIONE FILE XML (codice esistente) ===
                 if ($ext !== 'xml') {
-                    $upload_error .= "⚠️ File ignorato (usa .xml, .docx o .xlsx): $filename<br>";
+                    $upload_error .= "⚠️ File ignorato (usa .xml, .docx, .xlsx o .csv): $filename<br>";
                     continue;
                 }
                 
@@ -1173,9 +1174,9 @@ if ($step == 3):
                 <p><strong>Trascina qui i file</strong></p>
                 <p style="font-size: 14px; color: #888;">oppure clicca per selezionare</p>
                 <p style="font-size: 12px; color: #666; margin-top: 10px;">
-                    📄 <strong>.xml</strong> (Moodle XML) &nbsp;|&nbsp; 📝 <strong>.docx</strong> (Word)
+                    📄 <strong>.xml</strong> (Moodle XML) &nbsp;|&nbsp; 📝 <strong>.docx</strong> (Word) &nbsp;|&nbsp; 📊 <strong>.csv</strong> (Export Quiz)
                 </p>
-                <input type="file" name="xmlfiles[]" id="xmlfiles" multiple accept=".xml,.docx" style="display:none;" onchange="this.form.submit();">
+                <input type="file" name="xmlfiles[]" id="xmlfiles" multiple accept=".xml,.docx,.csv" style="display:none;" onchange="this.form.submit();">
             </div>
         </form>
         
@@ -1861,7 +1862,7 @@ if ($step == 3):
     <?php endif; ?>
 
     <?php
-    // === SEZIONE REVISIONE EXCEL ===
+    // === SEZIONE REVISIONE EXCEL/CSV ===
     $show_excel_review = isset($SESSION->excel_import_file) && file_exists($SESSION->excel_import_file);
     if ($show_excel_review):
         $excelImporter = new \local_competencyxmlimport\excel_quiz_importer($frameworkid, $sector);
@@ -1869,9 +1870,11 @@ if ($step == 3):
         $excelSummary = $excelImporter->get_summary();
         $quizCount = $excelSummary['quiz_count'];
         $totalQuestions = $excelSummary['total_questions'];
+        $importFileExt = strtolower(pathinfo($SESSION->excel_import_filename, PATHINFO_EXTENSION));
+        $importTypeLabel = ($importFileExt === 'csv') ? 'CSV' : 'Excel';
     ?>
     <div class="panel" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; margin-bottom: 20px;">
-        <h3 style="color: white; margin-bottom: 15px;"><span class="icon">📊</span> Import Excel Multi-Quiz: <?php echo htmlspecialchars($SESSION->excel_import_filename); ?></h3>
+        <h3 style="color: white; margin-bottom: 15px;"><span class="icon">📊</span> Import <?php echo $importTypeLabel; ?> Multi-Quiz: <?php echo htmlspecialchars($SESSION->excel_import_filename); ?></h3>
 
         <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px;">
             <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; text-align: center;">
@@ -2312,12 +2315,13 @@ if ($step == 5 && $action === 'executeexcel'):
     </div>
 
     <div class="panel">
-        <h3><span class="icon">📋</span> Log Import Excel Multi-Quiz</h3>
+        <?php $execTypeLabel = (strtolower(pathinfo($SESSION->excel_import_filename, PATHINFO_EXTENSION)) === 'csv') ? 'CSV' : 'Excel'; ?>
+        <h3><span class="icon">📋</span> Log Import <?php echo $execTypeLabel; ?> Multi-Quiz</h3>
         <div class="progress-log">
 <?php
     ob_implicit_flush(true);
 
-    echo '<div class="log-line info">🔄 Inizio import Excel multi-quiz...</div>';
+    echo '<div class="log-line info">🔄 Inizio import ' . $execTypeLabel . ' multi-quiz...</div>';
 
     // Create importer and load file
     $importer = new \local_competencyxmlimport\excel_quiz_importer($frameworkid, $sector);
@@ -2325,7 +2329,7 @@ if ($step == 5 && $action === 'executeexcel'):
 
     $quizCount = $importer->get_quiz_count();
     $questionCount = $importer->get_total_questions();
-    echo '<div class="log-line">📊 Trovati ' . $quizCount . ' quiz con ' . $questionCount . ' domande totali nel file Excel</div>';
+    echo '<div class="log-line">📊 Trovati ' . $quizCount . ' quiz con ' . $questionCount . ' domande totali</div>';
 
     // Debug: show validation stats
     $summary = $importer->get_summary();

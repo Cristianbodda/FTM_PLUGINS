@@ -48,6 +48,24 @@ function local_coachmanager_extend_navigation(global_navigation $navigation) {
 }
 
 /**
+ * Aggiunge link alla navigazione del corso (sidebar dentro un corso)
+ */
+function local_coachmanager_extend_navigation_course($navigation, $course, $context) {
+    if (!has_capability('local/coachmanager:view', $context)) {
+        return;
+    }
+
+    $navigation->add(
+        get_string('coach_dashboard', 'local_coachmanager'),
+        new moodle_url('/local/coachmanager/coach_dashboard_v2.php', ['courseid' => $course->id]),
+        navigation_node::TYPE_CUSTOM,
+        null,
+        'coachmanager_course',
+        new pix_icon('i/dashboard', '')
+    );
+}
+
+/**
  * Aggiunge link alle impostazioni del sito
  */
 function local_coachmanager_extend_settings_navigation($settingsnav, $context) {

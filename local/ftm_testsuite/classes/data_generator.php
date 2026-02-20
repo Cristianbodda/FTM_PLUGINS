@@ -285,7 +285,12 @@ class data_generator {
             $attempt->userid = $testuser->userid;
             $attempt->attempt = 1;
             $attempt->uniqueid = $quba->get_id();
-            $attempt->layout = implode(',', array_keys($questions));
+            $layout_slots = [];
+            foreach ($questions as $q) {
+                $layout_slots[] = $q->slot;
+            }
+            sort($layout_slots);
+            $attempt->layout = implode(',', $layout_slots) . ',0';
             $attempt->currentpage = 0;
             $attempt->preview = 0;
             $attempt->state = 'inprogress';
@@ -300,14 +305,14 @@ class data_generator {
             // Simula risposte basate sulla percentuale target
             $target_correct = $testuser->quiz_percentage / 100;
             $slot = 1;
-            
+
             foreach ($questions as $q) {
                 $rand = mt_rand(1, 100) / 100;
                 $is_correct = ($rand <= $target_correct);
-                
+
                 // Genera risposta basata sul tipo di domanda
-                $response = $this->generate_question_response($q, $is_correct);
-                
+                $response = $this->generate_question_response($q, $is_correct, $quba, $slot);
+
                 if ($response !== null) {
                     $quba->process_action($slot, $response);
                 }
@@ -339,23 +344,51 @@ class data_generator {
      * Genera una risposta per una domanda
      * @param object $question
      * @param bool $correct
+     * @param \question_usage_by_activity $quba Question usage (for shuffled order)
+     * @param int $slot Slot number
      * @return array|null
      */
-    private function generate_question_response($question, $correct) {
+    private function generate_question_response($question, $correct, $quba = null, $slot = 0) {
         global $DB;
-        
+
         switch ($question->qtype) {
             case 'multichoice':
-                // Trova risposte
+                // Find the correct or incorrect answer ID.
                 $answers = $DB->get_records('question_answers', ['question' => $question->questionid]);
+                $target_id = null;
+                $fallback_id = null;
                 foreach ($answers as $a) {
-                    if (($correct && $a->fraction > 0) || (!$correct && $a->fraction == 0)) {
-                        return ['answer' => $a->id];
+                    if ($correct && $a->fraction > 0) {
+                        $target_id = $a->id;
+                        break;
+                    } else if (!$correct && $a->fraction == 0) {
+                        $target_id = $a->id;
+                        break;
+                    }
+                    $fallback_id = $a->id;
+                }
+                if (!$target_id) {
+                    $target_id = $fallback_id;
+                }
+
+                // Get the shuffled order from the question attempt to find the choice index.
+                if ($quba && $slot > 0) {
+                    $qa = $quba->get_question_attempt($slot);
+                    $order = $qa->get_step(0)->get_qt_data();
+                    if (isset($order['_order'])) {
+                        $order_ids = explode(',', $order['_order']);
+                        $choice_index = array_search($target_id, $order_ids);
+                        if ($choice_index !== false) {
+                            return ['answer' => $choice_index];
+                        }
                     }
                 }
-                break;
-                
+
+                // Fallback: try answer ID directly (truefalse-style).
+                return ['answer' => $target_id];
+
             case 'truefalse':
+                // True/false uses answer ID directly (not shuffled).
                 $answers = $DB->get_records('question_answers', ['question' => $question->questionid]);
                 foreach ($answers as $a) {
                     if (($correct && $a->fraction > 0) || (!$correct && $a->fraction == 0)) {
@@ -363,7 +396,7 @@ class data_generator {
                     }
                 }
                 break;
-                
+
             case 'shortanswer':
                 if ($correct) {
                     $answer = $DB->get_record_sql(
@@ -373,7 +406,7 @@ class data_generator {
                     return $answer ? ['answer' => $answer->answer] : ['answer' => 'risposta_errata'];
                 }
                 return ['answer' => 'risposta_errata_' . rand(1000, 9999)];
-                
+
             case 'numerical':
                 if ($correct) {
                     $answer = $DB->get_record_sql(
@@ -384,7 +417,7 @@ class data_generator {
                 }
                 return ['answer' => '-999999'];
         }
-        
+
         return ['-submit' => 1];
     }
     

@@ -5,6 +5,9 @@
  * Supports .xlsx files with the following column structure:
  * A: Quiz name, B: #, C: Question, D-G: Answers A-D, H: Correct, I: Sector, J: Competency Code, K: Description, L: Difficulty
  *
+ * Also supports .csv files (semicolon-separated, UTF-8 BOM) from Quiz Export Tool:
+ * Quiz;#;Domanda;Risposta A;Risposta B;Risposta C;Risposta D;Corretta;Settore;Codice Competenza;Descrizione;Difficolta
+ *
  * @package    local_competencyxmlimport
  * @copyright  2026 FTM
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -17,8 +20,8 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Class excel_quiz_importer
  *
- * Imports multiple quiz questions with competencies and difficulty levels from Excel files.
- * Groups questions by Quiz name (column A) and creates separate quizzes for each.
+ * Imports multiple quiz questions with competencies and difficulty levels from Excel or CSV files.
+ * Groups questions by Quiz name (column A in Excel, filename in CSV) and creates separate quizzes for each.
  */
 class excel_quiz_importer {
 
@@ -118,9 +121,14 @@ class excel_quiz_importer {
 
         $ext = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
 
-        // Only xlsx is supported
+        // CSV support
+        if ($ext === 'csv') {
+            return $this->load_csv_file($filepath);
+        }
+
+        // Excel support
         if ($ext !== 'xlsx') {
-            $this->errors[] = 'Formato non supportato: .' . $ext . '. Usa il formato .xlsx (Salva con nome in Excel).';
+            $this->errors[] = 'Formato non supportato: .' . $ext . '. Usa .xlsx o .csv';
             return false;
         }
 
@@ -137,6 +145,190 @@ class excel_quiz_importer {
             $this->errors[] = 'Errore lettura Excel: ' . $e->getMessage();
             return false;
         }
+    }
+
+    /**
+     * Load and parse CSV file (from Quiz Export Tool)
+     *
+     * CSV has same 12 columns as Excel: Quiz;#;Domanda;A;B;C;D;Corretta;Settore;Codice Competenza;Descrizione;Difficolta
+     *
+     * @param string $filepath Path to CSV file
+     * @return bool Success status
+     */
+    private function load_csv_file($filepath) {
+        $handle = fopen($filepath, 'r');
+        if (!$handle) {
+            $this->errors[] = 'Impossibile aprire il file CSV.';
+            return false;
+        }
+
+        // Read all lines, stripping BOM, blank lines, and debug HTML.
+        $rows = [];
+        $lineNum = 0;
+        while (($rawLine = fgets($handle)) !== false) {
+            $lineNum++;
+            if ($lineNum === 1) {
+                $rawLine = preg_replace('/^\xEF\xBB\xBF/', '', $rawLine);
+            }
+            $rawLine = rtrim($rawLine, "\r\n");
+            if (trim($rawLine) === '') {
+                continue;
+            }
+
+            // Strip Moodle debugging HTML output that may be injected in exported CSV files.
+            // Debug output looks like: <div class="notifytiny debuggingmessage"...>...</div>
+            // It can contain nested <ul>/<li> tags. We find the last </div> and take everything after it.
+            if (strpos($rawLine, '<div') !== false) {
+                $lastDivClose = strrpos($rawLine, '</div>');
+                if ($lastDivClose !== false) {
+                    $cleanLine = trim(substr($rawLine, $lastDivClose + 6));
+                    if (empty($cleanLine)) {
+                        $this->warnings[] = "Riga $lineNum: rimossa riga di debug HTML (output Moodle debugging)";
+                        continue; // Entire line was debug HTML, skip it.
+                    }
+                    $rawLine = $cleanLine;
+                    $this->warnings[] = "Riga $lineNum: rimosso debug HTML dal contenuto";
+                }
+            }
+
+            $fields = str_getcsv($rawLine, ';', '"');
+            $rows[] = ['line' => $lineNum, 'fields' => $fields];
+        }
+        fclose($handle);
+
+        if (empty($rows)) {
+            $this->errors[] = 'Il file CSV è vuoto.';
+            return false;
+        }
+
+        // Detect header row: check if first cell contains "Quiz" or "Domanda" or "#"
+        $startIdx = 0;
+        $firstCell = trim($rows[0]['fields'][0] ?? '');
+        if (mb_stripos($firstCell, 'quiz') !== false || $firstCell === '#' || mb_stripos($firstCell, 'domanda') !== false) {
+            $startIdx = 1;
+        }
+
+        // CSV uses same 12-column layout as Excel (COLUMN_MAP):
+        // 0:Quiz, 1:#, 2:Domanda, 3:A, 4:B, 5:C, 6:D, 7:Corretta, 8:Settore, 9:Codice, 10:Descrizione, 11:Difficolta
+        for ($i = $startIdx; $i < count($rows); $i++) {
+            $fields = $rows[$i]['fields'];
+            $row = $rows[$i]['line'];
+
+            $quizName = trim($fields[self::COLUMN_MAP['quiz_name']] ?? '');
+            // Strip any HTML tags that may have been injected by debug output in exported files.
+            $quizName = strip_tags($quizName);
+            $quizName = trim($quizName);
+            if (empty($quizName)) {
+                continue;
+            }
+
+            $questionText = trim($fields[self::COLUMN_MAP['question']] ?? '');
+            if (empty($questionText)) {
+                continue;
+            }
+
+            $number = $fields[self::COLUMN_MAP['number']] ?? '';
+            if (empty($number)) {
+                $number = $this->total_questions + 1;
+            }
+
+            $answerA = trim($fields[self::COLUMN_MAP['answer_a']] ?? '');
+            $answerB = trim($fields[self::COLUMN_MAP['answer_b']] ?? '');
+            $answerC = trim($fields[self::COLUMN_MAP['answer_c']] ?? '');
+            $answerD = trim($fields[self::COLUMN_MAP['answer_d']] ?? '');
+
+            $answersCount = count(array_filter([$answerA, $answerB, $answerC, $answerD], function($a) {
+                return !empty($a);
+            }));
+            if ($answersCount < 2) {
+                $this->warnings[] = "Riga $row: meno di 2 risposte valide";
+            }
+
+            $correctLetter = strtoupper(trim($fields[self::COLUMN_MAP['correct']] ?? ''));
+            if (!in_array($correctLetter, ['A', 'B', 'C', 'D'])) {
+                $this->warnings[] = "Riga $row: risposta corretta non valida '$correctLetter', uso A come default";
+                $correctLetter = 'A';
+            }
+
+            $sector = trim($fields[self::COLUMN_MAP['sector']] ?? '');
+            $competencyCode = trim($fields[self::COLUMN_MAP['competency_code']] ?? '');
+            $competencyCodeUpper = mb_strtoupper($competencyCode, 'UTF-8');
+            $competencyDesc = trim($fields[self::COLUMN_MAP['competency_desc']] ?? '');
+
+            $difficulty = (int) ($fields[self::COLUMN_MAP['difficulty']] ?? 0);
+            if ($difficulty < 1 || $difficulty > 3) {
+                $difficulty = 2;
+            }
+
+            // Validate competency.
+            $competencyValid = false;
+            $competencyId = null;
+
+            if (!empty($competencyCode) && !empty($this->competency_lookup)) {
+                if (isset($this->competency_lookup[$competencyCodeUpper])) {
+                    $competencyValid = true;
+                    $competencyId = $this->competency_lookup[$competencyCodeUpper]->id;
+                } else {
+                    $suggested = $this->find_similar_competency($competencyCodeUpper);
+                    if ($suggested) {
+                        $this->warnings[] = "Riga $row: '$competencyCode' non trovato. Simile: $suggested";
+                    }
+                }
+            }
+
+            // Group by quiz name (same as Excel parser).
+            if (!isset($this->quizzes[$quizName])) {
+                $this->quizzes[$quizName] = [
+                    'name' => $quizName,
+                    'short_name' => $this->extract_short_name($quizName),
+                    'questions' => [],
+                    'sector' => $sector,
+                    'valid_competencies' => 0,
+                    'invalid_competencies' => 0,
+                    'difficulty_distribution' => [1 => 0, 2 => 0, 3 => 0]
+                ];
+            }
+
+            $qdata = [
+                'row' => $row,
+                'quiz_name' => $quizName,
+                'number' => $number,
+                'name' => $this->generate_question_name($number, $competencyCode),
+                'questiontext' => $questionText,
+                'answers' => [
+                    ['text' => $answerA, 'fraction' => ($correctLetter === 'A') ? 1 : 0],
+                    ['text' => $answerB, 'fraction' => ($correctLetter === 'B') ? 1 : 0],
+                    ['text' => $answerC, 'fraction' => ($correctLetter === 'C') ? 1 : 0],
+                    ['text' => $answerD, 'fraction' => ($correctLetter === 'D') ? 1 : 0],
+                ],
+                'correct_letter' => $correctLetter,
+                'sector' => $sector,
+                'competency_code' => $competencyCode,
+                'competency_code_upper' => $competencyCodeUpper,
+                'competency_description' => $competencyDesc,
+                'difficulty' => $difficulty,
+                'competency_valid' => $competencyValid,
+                'competency_id' => $competencyId
+            ];
+
+            $this->quizzes[$quizName]['questions'][] = $qdata;
+            $this->quizzes[$quizName]['difficulty_distribution'][$difficulty]++;
+
+            if ($competencyValid) {
+                $this->quizzes[$quizName]['valid_competencies']++;
+            } else if (!empty($competencyCode)) {
+                $this->quizzes[$quizName]['invalid_competencies']++;
+            }
+
+            $this->total_questions++;
+        }
+
+        if (empty($this->quizzes)) {
+            $this->errors[] = 'Nessuna domanda trovata nel file CSV.';
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -220,6 +412,9 @@ class excel_quiz_importer {
     private function parse_row($sheet, $row) {
         // Get quiz name (required - column A)
         $quizName = trim($this->get_cell_value($sheet, self::COLUMN_MAP['quiz_name'], $row));
+        // Strip any HTML tags that may have been injected by debug output in exported files.
+        $quizName = strip_tags($quizName);
+        $quizName = trim($quizName);
         if (empty($quizName)) {
             return null; // Skip empty rows
         }
@@ -611,8 +806,19 @@ class excel_quiz_importer {
 
             $result['success'] = true;
 
+        } catch (\dml_write_exception $e) {
+            $result['errors'][] = $e->getMessage();
+            $result['errors'][] = 'SQL Error: ' . $e->debuginfo;
+        } catch (\dml_exception $e) {
+            $result['errors'][] = $e->getMessage();
+            if (!empty($e->debuginfo)) {
+                $result['errors'][] = 'DB Debug: ' . $e->debuginfo;
+            }
         } catch (\Exception $e) {
             $result['errors'][] = $e->getMessage();
+            if (method_exists($e, 'debuginfo') || property_exists($e, 'debuginfo')) {
+                $result['errors'][] = 'Debug: ' . $e->debuginfo;
+            }
         }
 
         return $result;
@@ -628,6 +834,13 @@ class excel_quiz_importer {
      */
     private function get_or_create_category($contextid, $name, $parentid) {
         global $DB;
+
+        // Safety: strip HTML and truncate to 255 chars (DB column limit).
+        $name = strip_tags($name);
+        $name = trim($name);
+        if (mb_strlen($name) > 255) {
+            $name = mb_substr($name, 0, 252) . '...';
+        }
 
         $category = $DB->get_record('question_categories', [
             'contextid' => $contextid,

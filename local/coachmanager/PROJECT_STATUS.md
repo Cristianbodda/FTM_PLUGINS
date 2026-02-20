@@ -1,7 +1,7 @@
 # CoachManager - Project Status
 
-**Ultimo aggiornamento:** 22 Gennaio 2026
-**Versione plugin:** 2.2.0 (2026012201)
+**Ultimo aggiornamento:** 19 Febbraio 2026
+**Versione plugin:** 2.2.1
 **Stato:** FUNZIONANTE
 
 ---
@@ -120,4 +120,10 @@ local_coachmanager_notes
 
 ---
 
-*Generato: 22 Gennaio 2026*
+### 19/02/2026 - Navigazione Corsi + Link Student Report
+- Aggiunta `local_coachmanager_extend_navigation_course()` in lib.php
+- Link Coach Dashboard nella sidebar dentro ogni corso
+- Reports V2: card Autovalutazione apre Student Report in nuova tab
+- Caricamento settore primario per parametri URL preimpostati
+
+*Generato: 19 Febbraio 2026*

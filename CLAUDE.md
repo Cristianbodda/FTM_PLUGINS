@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida per Claude
 
-**Ultimo aggiornamento:** 17 Febbraio 2026
+**Ultimo aggiornamento:** 19 Febbraio 2026
 
 ## Panoramica Progetto
 
@@ -12,7 +12,7 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (12/02/2026)
+## STATO ATTUALE SVILUPPO (19/02/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -41,19 +41,25 @@ Server Test: https://test-urc.hizuvala.myhostpoint.ch
 #### 2d. FTM AI Integration (STANDBY - local_ftm_ai)
 - Azure OpenAI con anonimizzazione PII - Dettagli: `docs/DETAILS_FTM_AI.md`
 
-#### 3. Test Suite (local_ftm_testsuite) - v1.1.0
+#### 3. Test Suite (local_ftm_testsuite) - v1.2.0
 - 5 Agenti, 58 test, interfaccia web agent_tests.php
+- Demo Coach Generator (3 coach, 21 studenti demo)
+- Admin Quiz Tester (selezione studente/quiz/percentuale)
+- Fix quiz attempts: layout slot e multichoice shuffle
 
 #### 4. Self Assessment (local_selfassessment) - v1.3.1
 - Popup bloccante, doppia password skip (6807/FTM)
 - Hook System Moodle 4.3+, Bloom Legend, Area Mapping completo
 
-#### 5. Setup Universale Quiz (local_competencyxmlimport) - v1.4
-- Import XML/Word/Excel, assegnazione competenze, debug integrato
-- Quiz Export Tool (CSV/Excel), Excel Quiz Import (.xlsx/.xlsb)
+#### 5. Setup Universale Quiz (local_competencyxmlimport) - v1.5
+- Import XML/Word/Excel/CSV, assegnazione competenze, debug integrato
+- Quiz Export Tool (CSV/Excel), Excel/CSV Quiz Import (.xlsx/.xlsb/.csv)
+- CSV Import: supporta file esportati dal Quiz Export Tool (semicolon, UTF-8 BOM)
 
-#### 6. Coach Dashboard V2 (local_coachmanager) - 29/01/2026
+#### 6. Coach Dashboard V2 (local_coachmanager) - 19/02/2026
 - 4 Viste, Zoom accessibilita, Filtri, Timeline, Note Coach, Export Word
+- Navigazione dentro corsi (sidebar link)
+- Reports V2: link diretto a Student Report con parametri preimpostati
 - Dettagli: `docs/DETAILS_COACH_DASHBOARD.md`
 
 #### 7. Sistema CPURC (local_ftm_cpurc) - 24/01/2026
