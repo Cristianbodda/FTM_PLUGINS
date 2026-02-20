@@ -258,9 +258,12 @@ class dashboard_helper {
      * @return array
      */
     private function get_student_group($userid) {
-        // Try to get from scheduler data
+        $color = null;
+        $week = 1;
+
+        // Get color from scheduler assignments.
         if ($this->db->get_manager()->table_exists('local_ftm_scheduler_assignments')) {
-            $sql = "SELECT g.color, a.current_week
+            $sql = "SELECT g.color, g.entry_date
                     FROM {local_ftm_scheduler_assignments} a
                     JOIN {local_ftm_scheduler_groups} g ON a.groupid = g.id
                     WHERE a.userid = ?
@@ -268,30 +271,44 @@ class dashboard_helper {
                     LIMIT 1";
             $data = $this->db->get_record_sql($sql, [$userid]);
             if ($data) {
-                return ['color' => $data->color, 'week' => $data->current_week];
+                $color = $data->color;
+                // Calculate week from group entry_date as fallback.
+                if (!empty($data->entry_date) && $data->entry_date <= time()) {
+                    $days = floor((time() - $data->entry_date) / 86400);
+                    $week = min(6, max(1, ceil(($days + 1) / 7)));
+                }
             }
         }
 
-        // Default: assign based on enrollment date (demo)
-        $enrollments = $this->db->get_records_sql(
-            "SELECT ue.timecreated FROM {user_enrolments} ue
-             JOIN {enrol} e ON ue.enrolid = e.id
-             WHERE ue.userid = ?
-             ORDER BY ue.timecreated ASC LIMIT 1",
-            [$userid]
-        );
-
-        if (!empty($enrollments)) {
-            $first = reset($enrollments);
-            $weeks_enrolled = floor((time() - $first->timecreated) / (7 * 24 * 60 * 60));
-            $week = min(6, max(1, $weeks_enrolled + 1));
-        } else {
-            $week = 1;
+        // Override week with CPURC date_start if available (editable by coach).
+        if ($this->db->get_manager()->table_exists('local_ftm_cpurc_students')) {
+            $cpurc = $this->db->get_record('local_ftm_cpurc_students', ['userid' => $userid], 'date_start');
+            if ($cpurc && !empty($cpurc->date_start)) {
+                $days = floor((time() - $cpurc->date_start) / 86400);
+                $week = min(6, max(1, ceil(($days + 1) / 7)));
+            }
         }
 
-        // Assign color based on user ID (demo)
-        $colors = ['giallo', 'blu', 'verde', 'arancione', 'rosso', 'viola', 'grigio'];
-        $color = $colors[$userid % count($colors)];
+        // Fallback color if no scheduler assignment.
+        if ($color === null) {
+            $colors = ['giallo', 'blu', 'verde', 'arancione', 'rosso', 'viola', 'grigio'];
+            $color = $colors[$userid % count($colors)];
+
+            // If still week 1 and no CPURC date, use enrollment date.
+            if ($week === 1) {
+                $enrollment = $this->db->get_record_sql(
+                    "SELECT ue.timecreated FROM {user_enrolments} ue
+                     JOIN {enrol} e ON ue.enrolid = e.id
+                     WHERE ue.userid = ?
+                     ORDER BY ue.timecreated ASC LIMIT 1",
+                    [$userid]
+                );
+                if ($enrollment) {
+                    $weeks_enrolled = floor((time() - $enrollment->timecreated) / (7 * 24 * 60 * 60));
+                    $week = min(6, max(1, $weeks_enrolled + 1));
+                }
+            }
+        }
 
         return ['color' => $color, 'week' => $week];
     }

@@ -100,7 +100,19 @@ try {
     $student->timemodified = time();
     $DB->update_record('local_ftm_cpurc_students', $student);
 
-    echo json_encode(['success' => true, 'display_value' => $display_value, 'field' => $field]);
+    $result = ['success' => true, 'display_value' => $display_value, 'field' => $field];
+
+    // When date_start changes, recalculate week number and status.
+    if ($field === 'date_start') {
+        $week = \local_ftm_cpurc\cpurc_manager::calculate_week_number($value);
+        $weekstatus = \local_ftm_cpurc\cpurc_manager::get_week_status($week);
+        $result['week'] = $week;
+        $result['week_class'] = $weekstatus['class'];
+        $result['week_icon'] = $weekstatus['icon'];
+        $result['week_label'] = $weekstatus['label'];
+    }
+
+    echo json_encode($result);
 } catch (Exception $e) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);

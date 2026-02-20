@@ -416,7 +416,7 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
             </div>
         </div>
         <div class="header-buttons">
-            <span class="status-badge <?php echo $weekstatus['class']; ?>">
+            <span id="week-badge" class="status-badge <?php echo $weekstatus['class']; ?>">
                 <?php echo $weekstatus['icon']; ?> Settimana <?php echo $week > 0 ? $week : '-'; ?>
             </span>
             <?php if (!empty($student->sector_detected)): ?>
@@ -1265,6 +1265,14 @@ function saveField(el, sid, field, type, newValue, oldDisplay) {
             bindPencil(el);
             el.style.background = '#d4edda';
             setTimeout(function() { el.style.background = ''; }, 1500);
+            // Update week badge when date_start changes.
+            if (field === 'date_start' && data.week !== undefined) {
+                var badge = document.getElementById('week-badge');
+                if (badge) {
+                    badge.className = 'status-badge ' + data.week_class;
+                    badge.innerHTML = data.week_icon + ' Settimana ' + (data.week > 0 ? data.week : '-');
+                }
+            }
         } else {
             el.innerHTML = escapeHtml(oldDisplay) + '<span class="edit-pencil">\u270E</span>';
             bindPencil(el);
