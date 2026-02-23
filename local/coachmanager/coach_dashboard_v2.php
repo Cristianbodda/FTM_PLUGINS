@@ -448,18 +448,18 @@ echo $OUTPUT->header();
     transform: rotate(-90deg);
 }
 
-.filters-section.collapsed .filters-body {
-    display: none;
-}
-
 .filters-body {
-    display: flex !important; /* FORZA orizzontale */
-    flex-direction: row !important;
+    display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
     gap: 20px;
     margin-top: 20px;
     padding-top: 20px;
     border-top: 1px solid #c5c9d4;
+}
+
+.filters-section.collapsed .filters-body {
+    display: none !important;
 }
 
 .filters-body .filter-group {
@@ -620,18 +620,25 @@ echo $OUTPUT->header();
     background: white;
     border-radius: 12px;
     border: 2px solid #b8bcc8;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     box-shadow: 0 2px 10px rgba(0,0,0,0.08);
 }
 
 .view-compatta .student-row {
     display: grid;
-    grid-template-columns: 40px 250px 120px 80px 100px 100px 100px 1fr;
+    grid-template-columns: 36px 200px 120px 110px 65px 45px 45px 1fr;
     align-items: center;
-    padding: 15px 20px;
+    padding: 12px 16px;
+    min-height: 56px;
+    min-width: 850px;
     border-bottom: 1px solid #c5c9d4;
     transition: background 0.2s;
-    gap: 15px;
+    gap: 8px;
+}
+
+.view-compatta .student-row > div {
+    overflow: hidden;
 }
 
 .view-compatta .student-row:hover {
@@ -671,39 +678,66 @@ echo $OUTPUT->header();
 
 .view-compatta .student-name-cell {
     font-weight: 600;
-    font-size: 15px;
+    font-size: 14px;
+    overflow: hidden;
 }
 
 .view-compatta .student-name-cell .email {
-    font-size: 12px;
+    font-size: 11px;
     color: #4a4a4a;
     font-weight: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .view-compatta .settore-badge {
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
     font-weight: 600;
     background: #475569;
     color: white;
     text-align: center;
     display: inline-block;
     margin: 1px 0;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .view-compatta .settore-secondary { background: #78808d; }
 .view-compatta .settore-tertiary { background: #94979d; }
-.view-compatta .sector-badges-container { flex-direction: column; align-items: flex-start; }
+.view-compatta .sector-badges-container { flex-direction: column; align-items: flex-start; gap: 2px; }
+.view-compatta .sector-chips-wrap { gap: 3px !important; }
+.view-compatta .sector-chip { font-size: 10px !important; padding: 2px 6px !important; white-space: nowrap; }
 
 .view-compatta .week-cell {
     font-weight: 600;
     text-align: center;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.view-compatta .week-planner-mini {
+    display: flex;
+    gap: 1px;
+    justify-content: center;
+    margin-top: 2px;
+}
+
+.view-compatta .week-planner-mini .wp-mini-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
+    padding: 0;
 }
 
 .view-compatta .competency-cell {
     font-weight: 700;
-    font-size: 18px;
+    font-size: 15px;
+    text-align: center;
 }
 
 .view-compatta .competency-cell.danger {
@@ -716,17 +750,18 @@ echo $OUTPUT->header();
 
 .view-compatta .status-cell {
     display: flex;
-    gap: 5px;
+    gap: 3px;
+    justify-content: center;
 }
 
 .view-compatta .status-icon {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .view-compatta .status-icon.done {
@@ -741,8 +776,15 @@ echo $OUTPUT->header();
 
 .view-compatta .actions-cell {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.view-compatta .actions-cell .btn-sm {
+    padding: 4px 6px;
+    font-size: 13px;
+    min-width: 30px;
 }
 
 /* Row color indicators */
@@ -1672,10 +1714,13 @@ echo $OUTPUT->header();
         grid-template-columns: 1fr;
     }
     .view-compatta .student-row {
-        grid-template-columns: 40px 1fr 80px;
+        grid-template-columns: 36px 1fr 80px;
+        min-width: auto;
     }
     .view-compatta .student-row .settore-badge,
-    .view-compatta .student-row .status-cell {
+    .view-compatta .student-row .sector-badges-container,
+    .view-compatta .student-row .status-cell,
+    .view-compatta .student-row .week-planner-mini {
         display: none;
     }
     /* Filtri: 2 colonne su tablet, mai verticali */
@@ -2556,12 +2601,47 @@ echo $OUTPUT->header();
         </div>
     </div>
 
+    <!-- Search + Reset Bar (always visible) -->
+    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+        <form method="get" action="" id="searchForm" style="flex: 1; display: flex; gap: 8px; align-items: center;">
+            <input type="hidden" name="view" value="<?php echo s($view); ?>">
+            <input type="hidden" name="zoom" value="<?php echo $zoom; ?>">
+            <?php if ($courseid): ?><input type="hidden" name="courseid" value="<?php echo $courseid; ?>"><?php endif; ?>
+            <?php if ($colorfilter): ?><input type="hidden" name="color" value="<?php echo s($colorfilter); ?>"><?php endif; ?>
+            <?php if ($weekfilter): ?><input type="hidden" name="week" value="<?php echo $weekfilter; ?>"><?php endif; ?>
+            <?php if ($statusfilter): ?><input type="hidden" name="status" value="<?php echo s($statusfilter); ?>"><?php endif; ?>
+            <div style="position: relative; flex: 1; max-width: 400px;">
+                <input type="text" name="search" value="<?php echo s($search); ?>"
+                       placeholder="Cerca studente per nome, cognome o email..."
+                       style="width: 100%; padding: 10px 14px 10px 36px; border: 2px solid #a0a8c0; border-radius: 8px; font-size: 14px; color: #333; background: white;">
+                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #888; font-size: 16px;">&#128269;</span>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary" style="padding: 10px 18px; border-radius: 8px; font-size: 14px;">Cerca</button>
+            <?php if (!empty($search)): ?>
+            <a href="?view=<?php echo s($view); ?>&zoom=<?php echo $zoom; ?><?php echo $courseid ? '&courseid='.$courseid : ''; ?><?php echo $colorfilter ? '&color='.s($colorfilter) : ''; ?><?php echo $weekfilter ? '&week='.$weekfilter : ''; ?><?php echo $statusfilter ? '&status='.s($statusfilter) : ''; ?>"
+               class="btn btn-sm btn-outline-secondary" style="padding: 10px 14px; border-radius: 8px; font-size: 13px;" title="Cancella ricerca">&#x2715;</a>
+            <?php endif; ?>
+        </form>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFilters()" style="padding: 10px 18px; border-radius: 8px; font-size: 13px; white-space: nowrap;">
+            &#x21ba; Reset filtri
+        </button>
+    </div>
+
     <!-- Filters Section -->
     <div class="filters-section collapsed" id="filtersSection">
         <div class="filters-header" onclick="toggleFilters()">
             <h4>
                 <span class="filter-icon">&#9776;</span>
                 <?php echo get_string('advanced_filters', 'local_coachmanager'); ?>
+                <?php
+                $active_filters = 0;
+                if ($courseid) $active_filters++;
+                if ($colorfilter) $active_filters++;
+                if ($weekfilter) $active_filters++;
+                if ($statusfilter) $active_filters++;
+                if ($active_filters > 0): ?>
+                <span style="background: #0066cc; color: white; border-radius: 12px; padding: 2px 8px; font-size: 12px; font-weight: 600;"><?php echo $active_filters; ?> attivi</span>
+                <?php endif; ?>
             </h4>
             <div class="filters-toggle">&#9660;</div>
         </div>
@@ -2569,6 +2649,7 @@ echo $OUTPUT->header();
             <form method="get" action="" id="filterForm">
                 <input type="hidden" name="view" value="<?php echo s($view); ?>">
                 <input type="hidden" name="zoom" value="<?php echo $zoom; ?>">
+                <?php if (!empty($search)): ?><input type="hidden" name="search" value="<?php echo s($search); ?>"><?php endif; ?>
 
                 <!-- TABELLA per forzare layout orizzontale -->
                 <table style="width: 100%; border: none; border-collapse: collapse;">
@@ -2626,11 +2707,6 @@ echo $OUTPUT->header();
                     </td>
                 </tr>
                 </table>
-                <div style="text-align: right; margin-top: 10px;">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFilters()" style="padding: 6px 18px; border-radius: 6px; font-size: 13px;">
-                        &#x21ba; <?php echo get_string('reset_filtri', 'local_coachmanager'); ?>
-                    </button>
-                </div>
             </form>
         </div>
     </div>
@@ -3597,8 +3673,8 @@ function render_view_compatta($students, $dashboard) {
                 <div></div>
                 <div>Studente</div>
                 <div>Settore</div>
-                <div>Sett.</div>
-                <div>Competenze</div>
+                <div>Settimana</div>
+                <div>Comp.</div>
                 <div>Autoval</div>
                 <div>Lab</div>
                 <div>Azioni</div>
@@ -3631,10 +3707,10 @@ function render_view_compatta($students, $dashboard) {
                     <div class="email"><a href="mailto:<?php echo $student->email; ?>" onclick="event.stopPropagation(); openOutlook('<?php echo $student->email; ?>'); return false;" title="Apri in Outlook"><?php echo $student->email; ?></a></div>
                 </div>
                 <div>
-                    <?php echo render_sector_selector($student); ?>
+                    <?php echo render_sector_badges($student); ?>
                 </div>
                 <div class="week-cell">
-                    <?php echo $student->current_week ?? 1; ?>
+                    S<?php echo $student->current_week ?? 1; ?>
                     <div class="week-planner-mini">
                         <?php
                         $compatta_cw = $student->current_week ?? 1;

@@ -1,5 +1,47 @@
 # FTM Plugins - Development Journey
 
+## 24 Febbraio 2026
+
+### Excel Quiz Import - Modalita Sostituzione (local_competencyxmlimport)
+- **Funzionalita:** Checkbox "Sostituisci domande esistenti" nell'import Excel quiz
+- **Comportamento:** Quando attivato, per ogni quiz nel file Excel:
+  1. Cancella il quiz esistente con `course_delete_module()` (API Moodle ufficiale)
+  2. Cancella le domande vecchie nella categoria (FK order: competencies, answers, options, refs, slots, versions, entries, questions)
+  3. Crea le nuove domande normalmente
+  4. Crea un nuovo quiz activity con le nuove domande
+- **Nota tecnica:** La manipolazione diretta del DB (quiz_slots, question_references) NON funziona per quiz esistenti a causa della cache interna di Moodle. Necessario cancellare il quiz via API e ricrearlo.
+- **UI:** Checkbox nella sezione import Excel di setup_universale.php, risultato mostra "Domande vecchie cancellate: N"
+- **File modificati:**
+  - `local/competencyxmlimport/classes/excel_quiz_importer.php` (+`delete_existing_quiz()`, `delete_category_questions()`, param `$replaceexisting`)
+  - `local/competencyxmlimport/setup_universale.php` (checkbox UI, param reading, DB verification log)
+
+### Coach Dashboard - Ricerca Studenti e Filtri (local_coachmanager)
+- **Ricerca:** Barra di ricerca per nome/cognome/email sempre visibile sopra i filtri
+  - Input + "Cerca" + "X" (clear), preserva filtri esistenti come hidden inputs
+  - Backend gia supportava `$search` in `dashboard_helper.php`
+- **Filtri avanzati:** Fix collasso pannello (CSS specificity: rimosso `!important` da `display: flex`, aggiunto `!important` su `display: none`)
+- **Reset filtri:** Bottone sempre visibile fuori dal pannello collapsabile
+- **Badge:** Conteggio filtri attivi nel header del pannello
+- **Applicato a:** `coach_dashboard_v2.php` e `course_students.php`
+
+### Coach Dashboard - Vista Compatta Ottimizzata (local_coachmanager)
+- **Problema:** Contenuti sovrapposti nella vista compatta (settori, coach, settimana)
+- **Soluzioni:**
+  - Grid ridimensionato: 8 colonne (dashboard) / 9 colonne (course_students con Coach)
+  - `overflow: hidden` su tutte le celle per prevenire bleeding
+  - Container `overflow-x: auto` con `min-width` per scroll orizzontale se necessario
+  - Settore: usa `render_sector_badges()` (read-only) invece di `render_sector_selector()` (interattivo con chips + add/remove)
+  - Week planner mini: bottoni 16x16px, font 8px
+  - Status icons: 24x24px (da 28px)
+  - Action buttons: padding ridotto, flex-wrap per layout compatto
+  - Email: text-overflow ellipsis
+  - Coach badge (course_students): truncamento con ellipsis
+- **File modificati:**
+  - `local/coachmanager/coach_dashboard_v2.php` (CSS grid + HTML compatta)
+  - `local/coachmanager/course_students.php` (CSS grid + HTML compatta + `render_sector_badges_cs()`)
+
+---
+
 ## 20 Febbraio 2026
 
 ### Week Planner Modal (local_coachmanager v2.4.0)

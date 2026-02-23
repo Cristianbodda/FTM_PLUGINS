@@ -221,6 +221,24 @@ function render_sector_selector_cs($student) {
     return $html;
 }
 
+// Render compact sector badges (read-only, for compact view)
+function render_sector_badges_cs($student) {
+    $current = strtoupper($student->sector ?? '');
+    $sectors_all = $student->sectors_all ?? ['primary' => $current, 'secondary' => null, 'tertiary' => null];
+
+    $html = '<div class="sector-badges-container" style="display: flex; flex-wrap: wrap; gap: 2px;">';
+    $primary = $sectors_all['primary'] ?? $student->sector ?? 'N/D';
+    $html .= '<span class="settore-badge" title="Settore Primario">' . strtoupper($primary) . '</span>';
+    if (!empty($sectors_all['secondary'])) {
+        $html .= '<span class="settore-badge settore-secondary">' . strtoupper($sectors_all['secondary']) . '</span>';
+    }
+    if (!empty($sectors_all['tertiary'])) {
+        $html .= '<span class="settore-badge settore-tertiary">' . strtoupper($sectors_all['tertiary']) . '</span>';
+    }
+    $html .= '</div>';
+    return $html;
+}
+
 echo $OUTPUT->header();
 
 // ============================================
@@ -452,17 +470,18 @@ echo $OUTPUT->header();
 }
 
 .filters-section.collapsed .filters-toggle { transform: rotate(-90deg); }
-.filters-section.collapsed .filters-body { display: none; }
 
 .filters-body {
-    display: flex !important;
-    flex-direction: row !important;
+    display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
     gap: 20px;
     margin-top: 20px;
     padding-top: 20px;
     border-top: 1px solid #c5c9d4;
 }
+
+.filters-section.collapsed .filters-body { display: none !important; }
 
 .filters-body .filter-group { flex: 1; min-width: 180px; }
 .filter-group { display: flex; flex-direction: column; gap: 8px; }
@@ -504,28 +523,32 @@ echo $OUTPUT->header();
 /* =============================================
    VISTA COMPATTA
    ============================================= */
-.view-compatta .students-list { background: white; border-radius: 12px; border: 2px solid #b8bcc8; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-.view-compatta .student-row { display: grid; grid-template-columns: 40px 220px 120px 100px 80px 80px 80px 80px 1fr; align-items: center; padding: 15px 20px; border-bottom: 1px solid #c5c9d4; transition: background 0.2s; gap: 15px; }
+.view-compatta .students-list { background: white; border-radius: 12px; border: 2px solid #b8bcc8; overflow-x: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+.view-compatta .student-row { display: grid; grid-template-columns: 36px 180px 100px 130px 80px 60px 45px 45px 1fr; align-items: center; padding: 12px 16px; min-height: 56px; min-width: 900px; border-bottom: 1px solid #c5c9d4; transition: background 0.2s; gap: 8px; }
+.view-compatta .student-row > div { overflow: hidden; }
 .view-compatta .student-row:hover { background: #f8f9fa; }
 .view-compatta .student-row:last-child { border-bottom: none; }
-.view-compatta .student-row.header { background: #f0f2f5; font-weight: 700; font-size: 13px; color: #475569; text-transform: uppercase; }
-.view-compatta .expand-btn { width: 32px; height: 32px; border: none; background: #f0f2f5; border-radius: 50%; cursor: pointer; font-size: 14px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.view-compatta .student-row.header { background: #f0f2f5; font-weight: 700; font-size: 12px; color: #475569; text-transform: uppercase; }
+.view-compatta .expand-btn { width: 28px; height: 28px; border: none; background: #f0f2f5; border-radius: 50%; cursor: pointer; font-size: 13px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
 .view-compatta .expand-btn:hover { background: #475569; color: white; }
-.view-compatta .student-name-cell { font-weight: 600; font-size: 15px; }
-.view-compatta .student-name-cell .email { font-size: 12px; color: #4a4a4a; font-weight: normal; }
-.view-compatta .settore-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #475569; color: white; text-align: center; display: inline-block; margin: 1px 0; }
+.view-compatta .student-name-cell { font-weight: 600; font-size: 14px; overflow: hidden; }
+.view-compatta .student-name-cell .email { font-size: 11px; color: #4a4a4a; font-weight: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.view-compatta .settore-badge { padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 600; background: #475569; color: white; text-align: center; display: inline-block; margin: 1px 0; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .view-compatta .settore-secondary { background: #78808d; }
 .view-compatta .settore-tertiary { background: #94979d; }
-.view-compatta .sector-badges-container { flex-direction: column; align-items: flex-start; }
-.view-compatta .week-cell { font-weight: 600; text-align: center; }
-.view-compatta .competency-cell { font-weight: 700; font-size: 18px; }
+.view-compatta .sector-badges-container { flex-direction: column; align-items: flex-start; gap: 2px; }
+.view-compatta .coach-badge { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: block; font-size: 11px; padding: 3px 8px; }
+.view-compatta .week-cell { font-weight: 600; text-align: center; font-size: 14px; }
+.view-compatta .week-planner-mini { display: flex; gap: 1px; justify-content: center; margin-top: 2px; }
+.view-compatta .week-planner-mini .wp-mini-btn { width: 16px; height: 16px; font-size: 8px; padding: 0; }
+.view-compatta .competency-cell { font-weight: 700; font-size: 15px; text-align: center; }
 .view-compatta .competency-cell.danger { color: #9b2c2c; }
 .view-compatta .competency-cell.success { color: #2d6a4e; }
-.view-compatta .status-cell { display: flex; gap: 5px; }
-.view-compatta .status-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.view-compatta .status-cell { display: flex; gap: 3px; justify-content: center; }
+.view-compatta .status-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
 .view-compatta .status-icon.done { background: #d4edda; color: #155724; }
 .view-compatta .status-icon.missing { background: #f8d7da; color: #721c24; }
-.view-compatta .actions-cell { display: flex; gap: 8px; justify-content: flex-end; }
+.view-compatta .actions-cell { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
 
 /* Row color indicators */
 .view-compatta .student-row.color-giallo { border-left: 4px solid #a08210; }
@@ -747,9 +770,10 @@ echo $OUTPUT->header();
 .sector-dropdown > div:hover:not(.already-assigned) { background: #f1f5f9; }
 .sector-dropdown > div.already-assigned { color: #c0c5ce; cursor: default; text-decoration: line-through; }
 
-.view-compatta .sector-chip { font-size: 0.75em; padding: 2px 7px; }
-.view-compatta .sector-add-btn { width: 20px; height: 20px; font-size: 14px; }
-.view-compatta .sector-chips-wrap { flex-direction: row; gap: 3px; }
+.view-compatta .sector-chip { font-size: 10px; padding: 2px 5px; white-space: nowrap; }
+.view-compatta .sector-add-btn { width: 18px; height: 18px; font-size: 12px; }
+.view-compatta .sector-chips-wrap { flex-direction: row; gap: 2px; }
+.view-compatta .actions-cell .btn-sm { padding: 4px 6px; font-size: 13px; min-width: 30px; }
 
 .student-sectors-row { margin-top: 4px; display: flex; flex-direction: row; align-items: center; max-width: 100%; }
 .student-sectors-row .sector-chips-wrap { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; align-items: center !important; gap: 5px !important; max-width: 100% !important; }
@@ -765,8 +789,8 @@ echo $OUTPUT->header();
 @media (max-width: 900px) {
     .stats-row { grid-template-columns: repeat(2, 1fr); }
     .view-standard .students-grid, .view-classica .students-grid { grid-template-columns: 1fr; }
-    .view-compatta .student-row { grid-template-columns: 40px 1fr 80px; }
-    .view-compatta .student-row .settore-badge, .view-compatta .student-row .status-cell { display: none; }
+    .view-compatta .student-row { grid-template-columns: 36px 1fr 80px; min-width: auto; }
+    .view-compatta .student-row .settore-badge, .view-compatta .student-row .sector-badges-container, .view-compatta .student-row .coach-badge, .view-compatta .student-row .status-cell, .view-compatta .student-row .week-planner-mini { display: none; }
     .view-controls { flex-direction: column; align-items: stretch; }
     .view-selector { justify-content: center; }
     .zoom-controls { justify-content: center; }
@@ -894,12 +918,46 @@ echo $OUTPUT->header();
         </div>
     </div>
 
+    <!-- Search + Reset Bar (always visible) -->
+    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px;">
+        <form method="get" action="" id="searchForm" style="flex: 1; display: flex; gap: 8px; align-items: center;">
+            <input type="hidden" name="courseid" value="<?php echo $courseid; ?>">
+            <input type="hidden" name="view" value="<?php echo s($view); ?>">
+            <input type="hidden" name="zoom" value="<?php echo $zoom; ?>">
+            <?php if ($colorfilter): ?><input type="hidden" name="color" value="<?php echo s($colorfilter); ?>"><?php endif; ?>
+            <?php if ($weekfilter): ?><input type="hidden" name="week" value="<?php echo $weekfilter; ?>"><?php endif; ?>
+            <?php if ($statusfilter): ?><input type="hidden" name="status" value="<?php echo s($statusfilter); ?>"><?php endif; ?>
+            <div style="position: relative; flex: 1; max-width: 400px;">
+                <input type="text" name="search" value="<?php echo s($search); ?>"
+                       placeholder="Cerca studente per nome, cognome o email..."
+                       style="width: 100%; padding: 10px 14px 10px 36px; border: 2px solid #a0a8c0; border-radius: 8px; font-size: 14px; color: #333; background: white;">
+                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #888; font-size: 16px;">&#128269;</span>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary" style="padding: 10px 18px; border-radius: 8px; font-size: 14px;">Cerca</button>
+            <?php if (!empty($search)): ?>
+            <a href="?courseid=<?php echo $courseid; ?>&view=<?php echo s($view); ?>&zoom=<?php echo $zoom; ?><?php echo $colorfilter ? '&color='.s($colorfilter) : ''; ?><?php echo $weekfilter ? '&week='.$weekfilter : ''; ?><?php echo $statusfilter ? '&status='.s($statusfilter) : ''; ?>"
+               class="btn btn-sm btn-outline-secondary" style="padding: 10px 14px; border-radius: 8px; font-size: 13px;" title="Cancella ricerca">&#x2715;</a>
+            <?php endif; ?>
+        </form>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFilters()" style="padding: 10px 18px; border-radius: 8px; font-size: 13px; white-space: nowrap;">
+            &#x21ba; Reset filtri
+        </button>
+    </div>
+
     <!-- Filters Section -->
     <div class="filters-section collapsed" id="filtersSection">
         <div class="filters-header" onclick="toggleFilters()">
             <h4>
                 <span class="filter-icon">&#9776;</span>
                 <?php echo get_string('advanced_filters', 'local_coachmanager'); ?>
+                <?php
+                $active_filters = 0;
+                if ($colorfilter) $active_filters++;
+                if ($weekfilter) $active_filters++;
+                if ($statusfilter) $active_filters++;
+                if ($active_filters > 0): ?>
+                <span style="background: #0066cc; color: white; border-radius: 12px; padding: 2px 8px; font-size: 12px; font-weight: 600;"><?php echo $active_filters; ?> attivi</span>
+                <?php endif; ?>
             </h4>
             <div class="filters-toggle">&#9660;</div>
         </div>
@@ -908,6 +966,7 @@ echo $OUTPUT->header();
                 <input type="hidden" name="courseid" value="<?php echo $courseid; ?>">
                 <input type="hidden" name="view" value="<?php echo s($view); ?>">
                 <input type="hidden" name="zoom" value="<?php echo $zoom; ?>">
+                <?php if (!empty($search)): ?><input type="hidden" name="search" value="<?php echo s($search); ?>"><?php endif; ?>
 
                 <table style="width: 100%; border: none; border-collapse: collapse;">
                 <tr>
@@ -1063,6 +1122,11 @@ function changeZoom(newZoom) {
 // Toggle filters
 function toggleFilters() {
     document.getElementById('filtersSection').classList.toggle('collapsed');
+}
+
+// Reset all filters
+function resetFilters() {
+    window.location.href = window.location.pathname + '?courseid=<?php echo $courseid; ?>&view=<?php echo s($view); ?>&zoom=<?php echo $zoom; ?>';
 }
 
 // Set color filter
@@ -1572,13 +1636,13 @@ function cs_render_view_compatta($students, $dashboard) {
                     <div class="email"><a href="mailto:<?php echo $student->email; ?>" onclick="event.stopPropagation(); openOutlook('<?php echo $student->email; ?>'); return false;" title="Apri in Outlook"><?php echo $student->email; ?></a></div>
                 </div>
                 <div>
-                    <?php echo render_sector_selector_cs($student); ?>
+                    <?php echo render_sector_badges_cs($student); ?>
                 </div>
                 <div>
                     <?php echo render_coach_badge($student); ?>
                 </div>
                 <div class="week-cell">
-                    <?php echo $student->current_week ?? 1; ?>
+                    S<?php echo $student->current_week ?? 1; ?>
                     <div class="week-planner-mini">
                         <?php
                         $compatta_cw = $student->current_week ?? 1;

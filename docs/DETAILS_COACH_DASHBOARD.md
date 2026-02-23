@@ -1,4 +1,4 @@
-# COACH DASHBOARD V2 - DETTAGLI TECNICI (20/02/2026)
+# COACH DASHBOARD V2 - DETTAGLI TECNICI (24/02/2026)
 
 ## Viste Disponibili
 
@@ -80,3 +80,41 @@ Il coach clicca su una settimana (Sett. 1-6) nella timeline e si apre un modale 
 - Test/Lab/External → `local_ftm_student_program` (calendario individuale)
 - Rimozione atelier → `status = 'cancelled'`
 - Rimozione test/lab/ext → DELETE da student_program
+
+## Ricerca e Filtri (24/02/2026)
+
+### Barra Ricerca Studenti
+- Sempre visibile sopra il pannello filtri avanzati
+- Input testo + bottone "Cerca" + bottone "X" (clear)
+- Parametro: `search` (PARAM_TEXT)
+- Cerca in: `firstname`, `lastname`, `email` (LIKE %term%)
+- Backend: `dashboard_helper::get_my_students($search)` e `get_course_students($search)`
+- Preserva tutti i filtri esistenti come hidden inputs
+
+### Pannello Filtri Avanzati
+- Collassabile con freccia toggle (CSS: `.filters-section.collapsed .filters-body { display: none !important; }`)
+- Badge conteggio filtri attivi nell'header
+- Bottone "Reset Filtri" sempre visibile fuori dal pannello
+- Filtri: Settore, Gruppo, Settimana, Stato, Ordinamento
+
+## Vista Compatta - Layout Ottimizzato (24/02/2026)
+
+### Grid Layout
+- `coach_dashboard_v2.php` (8 colonne): `36px 200px 120px 110px 65px 45px 45px 1fr`
+  - Expand | Studente | Settore | Settimana | Comp. | Autoval | Lab | Azioni
+- `course_students.php` (9 colonne): `36px 180px 100px 130px 80px 60px 45px 45px 1fr`
+  - Expand | Studente | Settore | Coach | Sett. | Comp. | Autov. | Lab | Azioni
+
+### Overflow Control
+- Container: `overflow-x: auto` (scroll orizzontale se necessario)
+- Rows: `min-width: 850px/900px` (previene compressione)
+- Cells: `overflow: hidden` su tutti i `> div`
+- Email: `text-overflow: ellipsis; white-space: nowrap`
+- Settore badges: `max-width: 100%; overflow: hidden; text-overflow: ellipsis`
+- Coach badge (course_students): `overflow: hidden; text-overflow: ellipsis`
+
+### Rendering Compatto
+- Settore: `render_sector_badges()` (read-only badges) invece di `render_sector_selector()` (interattivo)
+- Week planner mini: 16x16px buttons, font 8px, gap 1px
+- Status icons: 24x24px
+- Action buttons: padding 4px 6px, flex-wrap enabled
