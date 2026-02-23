@@ -51,7 +51,7 @@ try {
 
     if ($action === 'preview') {
         // Preview mode - just parse and return first 5 rows.
-        $rows = $importer->preview_file($tmpfile, 5);
+        $rows = $importer->preview_file($tmpfile, 5, $filename);
 
         // Add detected sector to each row for preview.
         foreach ($rows as &$row) {
@@ -80,10 +80,10 @@ try {
         ];
 
         // Parse file.
-        $rows = $importer->parse_file($tmpfile);
+        $rows = $importer->parse_file($tmpfile, $filename);
 
         if (empty($rows)) {
-            throw new \Exception('No valid rows found in CSV file');
+            throw new \Exception('No valid rows found in file');
         }
 
         // Import each row.

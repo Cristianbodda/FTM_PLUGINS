@@ -173,12 +173,111 @@ class csv_importer {
     }
 
     /**
+     * Parse a file (CSV or Excel) and return rows.
+     * Detects format from the original filename extension.
+     *
+     * @param string $filepath Path to uploaded temp file.
+     * @param string $originalname Original filename for extension detection.
+     * @return array Array of parsed rows.
+     */
+    public function parse_file($filepath, $originalname = '') {
+        $ext = strtolower(pathinfo($originalname, PATHINFO_EXTENSION));
+        if (in_array($ext, ['xlsx', 'xls'])) {
+            return $this->parse_excel_file($filepath);
+        }
+        return $this->parse_csv_file($filepath);
+    }
+
+    /**
+     * Parse Excel file (.xlsx/.xls) and return rows.
+     *
+     * @param string $filepath Path to Excel file.
+     * @return array Array of parsed rows.
+     */
+    public function parse_excel_file($filepath) {
+        $rows = [];
+
+        if (!file_exists($filepath)) {
+            $this->errors[] = ['row' => 0, 'error' => 'File not found: ' . $filepath];
+            return $rows;
+        }
+
+        try {
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($filepath);
+            $spreadsheet = $reader->load($filepath);
+            $worksheet = $spreadsheet->getActiveSheet();
+
+            // Identify date column indices (0-based) from COLUMN_MAP.
+            $dateindices = [];
+            foreach (self::COLUMN_MAP as $idx => $fieldname) {
+                if (in_array($fieldname, self::DATE_FIELDS)) {
+                    $dateindices[] = $idx;
+                }
+            }
+
+            $linenum = 0;
+            foreach ($worksheet->getRowIterator() as $wsrow) {
+                $linenum++;
+
+                // Skip header rows (first 2 lines: categories + column names).
+                if ($linenum <= 2) {
+                    continue;
+                }
+
+                $cellIterator = $wsrow->getCellIterator();
+                $cellIterator->setIterateOnlyExistingCells(false);
+
+                $fields = [];
+                $colidx = 0;
+                foreach ($cellIterator as $cell) {
+                    $val = $cell->getValue();
+                    // Handle Excel date serial numbers.
+                    if (in_array($colidx, $dateindices) && is_numeric($val) && $val > 10000) {
+                        try {
+                            $dateObj = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($val);
+                            $val = $dateObj->format('d.m.Y');
+                        } catch (\Exception $e) {
+                            // Keep original value.
+                        }
+                    }
+                    $fields[] = $val !== null ? (string)$val : '';
+                    $colidx++;
+                }
+
+                // Skip empty rows.
+                $nonEmpty = array_filter($fields, function($v) { return trim($v) !== ''; });
+                if (empty($nonEmpty)) {
+                    continue;
+                }
+
+                // Skip if not enough columns.
+                if (count($fields) < 17) {
+                    continue;
+                }
+
+                $row = $this->map_row($fields);
+                $row['_line'] = $linenum;
+                $rows[] = $row;
+            }
+
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+
+        } catch (\Exception $e) {
+            $this->errors[] = ['row' => 0, 'error' => 'Errore lettura Excel: ' . $e->getMessage()];
+        }
+
+        $this->stats['total'] = count($rows);
+        return $rows;
+    }
+
+    /**
      * Parse CSV file and return rows.
      *
      * @param string $filepath Path to CSV file.
      * @return array Array of parsed rows.
      */
-    public function parse_file($filepath) {
+    public function parse_csv_file($filepath) {
         $rows = [];
 
         if (!file_exists($filepath)) {
@@ -483,12 +582,13 @@ class csv_importer {
     /**
      * Get preview of first N rows.
      *
-     * @param string $filepath Path to CSV file.
+     * @param string $filepath Path to uploaded file.
      * @param int $limit Number of rows to preview.
+     * @param string $originalname Original filename for format detection.
      * @return array Preview data.
      */
-    public function preview_file($filepath, $limit = 5) {
-        $rows = $this->parse_file($filepath);
+    public function preview_file($filepath, $limit = 5, $originalname = '') {
+        $rows = $this->parse_file($filepath, $originalname);
         return array_slice($rows, 0, $limit);
     }
 }

@@ -2626,6 +2626,11 @@ echo $OUTPUT->header();
                     </td>
                 </tr>
                 </table>
+                <div style="text-align: right; margin-top: 10px;">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFilters()" style="padding: 6px 18px; border-radius: 6px; font-size: 13px;">
+                        &#x21ba; <?php echo get_string('reset_filtri', 'local_coachmanager'); ?>
+                    </button>
+                </div>
             </form>
         </div>
     </div>
@@ -2761,6 +2766,11 @@ function setColorFilter(color) {
     document.getElementById('filterForm').submit();
 }
 
+function resetFilters() {
+    var url = window.location.pathname + '?view=<?php echo s($view); ?>&zoom=<?php echo $zoom; ?>';
+    window.location.href = url;
+}
+
 // Toggle card (for standard/classic view)
 function toggleCard(cardId) {
     document.getElementById(cardId).classList.toggle('collapsed');
@@ -2823,6 +2833,28 @@ function saveNotes(studentId) {
 // Export Word
 function exportWord(studentId) {
     window.location.href = 'export_word.php?studentid=' + studentId + '&sesskey=<?php echo sesskey(); ?>';
+}
+
+// Send reminder to student (autoval, lab, quiz)
+function sendReminder(studentId, type) {
+    if (!confirm('Inviare sollecito allo studente?')) return;
+
+    fetch('ajax_send_reminder.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'studentid=' + studentId + '&type=' + type + '&sesskey=<?php echo sesskey(); ?>'
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            alert('Sollecito inviato con successo!');
+        } else {
+            alert('Errore: ' + (data.message || 'Impossibile inviare'));
+        }
+    })
+    .catch(function() {
+        alert('Errore di connessione');
+    });
 }
 
 // Quick choices modal

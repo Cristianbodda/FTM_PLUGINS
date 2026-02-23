@@ -343,11 +343,10 @@ echo $OUTPUT->header();
         <div class="cpurc-instructions">
             <strong><?php echo get_string('import_instructions', 'local_ftm_cpurc'); ?></strong>
             <ul>
-                <li>File CSV con separatore punto e virgola (;)</li>
-                <li>69 colonne formato CPURC svizzero</li>
+                <li>File <strong>Excel (.xlsx)</strong> o CSV (separatore punto e virgola)</li>
+                <li>69-75 colonne formato CPURC svizzero</li>
                 <li>Prima riga: intestazione categorie</li>
                 <li>Seconda riga: nomi colonne</li>
-                <li>Encoding: UTF-8</li>
             </ul>
         </div>
 
@@ -357,10 +356,10 @@ echo $OUTPUT->header();
             <div class="drop-zone" id="drop-zone">
                 <div class="drop-zone-icon">📄</div>
                 <div class="drop-zone-text">
-                    Trascina qui il file CSV oppure <strong>clicca per selezionare</strong>
+                    Trascina qui il file Excel o CSV oppure <strong>clicca per selezionare</strong>
                 </div>
                 <div class="drop-zone-file" id="file-name" style="display:none;"></div>
-                <input type="file" name="csvfile" id="csvfile" accept=".csv" style="display:none;">
+                <input type="file" name="csvfile" id="csvfile" accept=".csv,.xlsx,.xls" style="display:none;">
             </div>
         </form>
     </div>
@@ -477,8 +476,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function handleFile(file) {
-        if (!file.name.endsWith('.csv')) {
-            alert('Seleziona un file CSV');
+        var name = file.name.toLowerCase();
+        if (!name.endsWith('.csv') && !name.endsWith('.xlsx') && !name.endsWith('.xls')) {
+            alert('Seleziona un file Excel (.xlsx) o CSV (.csv)');
             return;
         }
 

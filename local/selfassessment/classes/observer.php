@@ -97,10 +97,14 @@ class observer {
             $competencyid = $mapping->competencyid;
 
             // If student has a primary sector, only assign competencies from that sector.
+            // Generic competencies (GEN, GENERICO) are always assigned regardless of sector.
             if (!empty($primarySector)) {
                 $competencySector = self::get_competency_sector($competencyid);
-                if (!empty($competencySector) && $competencySector !== $primarySector) {
-                    // Skip competencies from non-primary sectors (silent).
+                $genericSectors = ['GEN', 'GENERICO', 'GENERICHE', 'TRASVERSALI'];
+                if (!empty($competencySector)
+                    && $competencySector !== $primarySector
+                    && !in_array($competencySector, $genericSectors)) {
+                    // Skip competencies from non-primary, non-generic sectors.
                     continue;
                 }
             }

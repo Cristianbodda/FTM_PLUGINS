@@ -731,9 +731,10 @@ class excel_quiz_importer {
      *
      * @param int $courseid Course ID
      * @param bool $assigncompetencies Whether to assign competencies
+     * @param bool $replaceexisting Whether to delete existing questions before importing
      * @return array Result with stats
      */
-    public function create_all_quizzes($courseid, $assigncompetencies = true) {
+    public function create_all_quizzes($courseid, $assigncompetencies = true, $replaceexisting = false) {
         global $DB, $USER;
 
         $result = [
@@ -741,6 +742,7 @@ class excel_quiz_importer {
             'quizzes_created' => 0,
             'questions_created' => 0,
             'questions_existing' => 0,
+            'questions_deleted' => 0,
             'competencies_assigned' => 0,
             'quiz_details' => [],
             'errors' => []
@@ -757,6 +759,17 @@ class excel_quiz_importer {
                 // Create subcategory for this quiz
                 $subCatName = $quizData['short_name'];
                 $subCat = $this->get_or_create_category($context->id, $subCatName, $parentCat->id);
+
+                // If replace mode: delete existing quiz activity + old questions, then recreate fresh
+                $questionsDeleted = 0;
+                if ($replaceexisting) {
+                    // 1. Delete the existing quiz activity via Moodle API (handles slots, refs, sections, attempts, grades)
+                    $this->delete_existing_quiz($courseid, $quizData['name']);
+
+                    // 2. Delete old questions in the category (handles question bank cleanup)
+                    $questionsDeleted = $this->delete_category_questions($subCat->id);
+                    $result['questions_deleted'] += $questionsDeleted;
+                }
 
                 // Create questions
                 $questionIds = [];
@@ -785,11 +798,10 @@ class excel_quiz_importer {
                     }
                 }
 
-                // Create quiz activity
+                // Create new quiz activity (always fresh - old one was deleted if replacing)
                 $quiz = $this->create_quiz_activity($courseid, $quizData['name']);
 
                 if ($quiz) {
-                    // Add questions to quiz
                     $this->add_questions_to_quiz($quiz->id, $questionIds);
 
                     $result['quizzes_created']++;
@@ -799,6 +811,7 @@ class excel_quiz_importer {
                         'questions' => count($questionIds),
                         'created' => $questionsCreated,
                         'existing' => $questionsExisting,
+                        'deleted' => $questionsDeleted,
                         'competencies' => $competenciesAssigned
                     ];
                 }
@@ -822,6 +835,116 @@ class excel_quiz_importer {
         }
 
         return $result;
+    }
+
+    /**
+     * Delete all questions in a category (for replace mode)
+     *
+     * Deletes in correct FK order:
+     * 1. qbank_competenciesbyquestion
+     * 2. question_answers
+     * 3. qtype_multichoice_options
+     * 4. question_references (pointing to these bank entries)
+     * 5. quiz_slots (that had those references)
+     * 6. question_versions
+     * 7. question_bank_entries
+     * 8. question records
+     *
+     * @param int $categoryid Question category ID
+     * @return int Number of questions deleted
+     */
+    private function delete_category_questions($categoryid) {
+        global $DB;
+
+        // Find all question bank entries in this category
+        $bankentries = $DB->get_records('question_bank_entries', ['questioncategoryid' => $categoryid]);
+        if (empty($bankentries)) {
+            return 0;
+        }
+
+        $bankentryids = array_keys($bankentries);
+        $count = 0;
+
+        // For each bank entry, find all question versions (questions)
+        foreach ($bankentryids as $beid) {
+            $versions = $DB->get_records('question_versions', ['questionbankentryid' => $beid]);
+
+            foreach ($versions as $qv) {
+                $qid = $qv->questionid;
+
+                // 1. Delete competency assignments
+                $DB->delete_records('qbank_competenciesbyquestion', ['questionid' => $qid]);
+
+                // 2. Delete question answers
+                $DB->delete_records('question_answers', ['question' => $qid]);
+
+                // 3. Delete multichoice options
+                $DB->delete_records('qtype_multichoice_options', ['questionid' => $qid]);
+
+                // 4. Delete question_references pointing to this bank entry
+                // (these link quiz_slots to questions)
+                $refs = $DB->get_records('question_references', ['questionbankentryid' => $beid]);
+                foreach ($refs as $ref) {
+                    // 5. Delete the quiz_slot that this reference points to
+                    if ($ref->component === 'mod_quiz' && $ref->questionarea === 'slot') {
+                        $DB->delete_records('quiz_slots', ['id' => $ref->itemid]);
+                    }
+                    $DB->delete_records('question_references', ['id' => $ref->id]);
+                }
+
+                // 6. Delete question version
+                $DB->delete_records('question_versions', ['id' => $qv->id]);
+
+                // 8. Delete question record
+                $DB->delete_records('question', ['id' => $qid]);
+
+                $count++;
+            }
+
+            // 7. Delete bank entry
+            $DB->delete_records('question_bank_entries', ['id' => $beid]);
+        }
+
+        return $count;
+    }
+
+    /**
+     * Delete an existing quiz activity completely using Moodle's API
+     *
+     * Uses course_delete_module() which properly handles:
+     * - Quiz attempts and grades
+     * - Quiz slots and question references
+     * - Quiz sections
+     * - Course module and context
+     * - Course cache rebuild
+     *
+     * @param int $courseid Course ID
+     * @param string $quizname Quiz name
+     */
+    private function delete_existing_quiz($courseid, $quizname) {
+        global $DB, $CFG;
+
+        $quiz = $DB->get_record('quiz', ['course' => $courseid, 'name' => $quizname]);
+        if (!$quiz) {
+            return;
+        }
+
+        $module = $DB->get_record('modules', ['name' => 'quiz']);
+        if (!$module) {
+            return;
+        }
+
+        $cm = $DB->get_record('course_modules', [
+            'module' => $module->id,
+            'instance' => $quiz->id,
+            'course' => $courseid
+        ]);
+        if (!$cm) {
+            return;
+        }
+
+        require_once($CFG->dirroot . '/course/lib.php');
+        course_delete_module($cm->id);
     }
 
     /**

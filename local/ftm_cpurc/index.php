@@ -312,6 +312,144 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
 .urc-chip strong {
     color: #0066cc;
 }
+
+/* Add Student Modal */
+.add-student-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-student-dialog {
+    background: white;
+    border-radius: 12px;
+    width: 500px;
+    max-width: 90vw;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.add-student-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.add-student-header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.add-student-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    line-height: 1;
+}
+
+.add-student-body {
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.add-student-search {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 15px;
+    outline: none;
+}
+
+.add-student-search:focus {
+    border-color: #0066cc;
+}
+
+.add-student-hint {
+    font-size: 12px;
+    color: #888;
+    margin-top: 6px;
+}
+
+.add-student-results {
+    margin-top: 16px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.add-student-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: background 0.15s;
+}
+
+.add-student-item:hover {
+    background: #f8f9fa;
+}
+
+.add-student-item-info strong {
+    display: block;
+    font-size: 14px;
+}
+
+.add-student-item-info small {
+    color: #888;
+    font-size: 12px;
+}
+
+.add-student-item button {
+    padding: 6px 16px;
+    background: #0066cc;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.add-student-item button:hover {
+    background: #0052a3;
+}
+
+.add-student-item button:disabled {
+    background: #28a745;
+    cursor: default;
+}
+
+.add-student-msg {
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 13px;
+    color: #666;
+}
+
+.add-student-msg.success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.add-student-msg.error {
+    background: #f8d7da;
+    color: #721c24;
+}
 </style>
 
 <div class="cpurc-dashboard">
@@ -326,6 +464,9 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
                 📦 Export Word (ZIP)
             </a>
             <?php if ($canimport): ?>
+            <button class="cpurc-btn cpurc-btn-success" onclick="document.getElementById('addStudentModal').style.display='flex'">
+                ➕ Aggiungi Studente
+            </button>
             <a href="<?php echo new moodle_url('/local/ftm_cpurc/import.php'); ?>" class="cpurc-btn cpurc-btn-primary">
                 📥 <?php echo get_string('import_csv', 'local_ftm_cpurc'); ?>
             </a>
@@ -545,6 +686,24 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
     </div>
 </div>
 
+<!-- Add Student Modal -->
+<?php if ($canimport): ?>
+<div class="add-student-modal" id="addStudentModal">
+    <div class="add-student-dialog">
+        <div class="add-student-header">
+            <h3>➕ Aggiungi Studente</h3>
+            <button class="add-student-close" onclick="document.getElementById('addStudentModal').style.display='none'">&times;</button>
+        </div>
+        <div class="add-student-body">
+            <input type="text" class="add-student-search" id="addStudentSearch"
+                   placeholder="Cerca per nome, cognome o email..." autocomplete="off">
+            <div class="add-student-hint">Digita almeno 2 caratteri per cercare utenti Moodle non ancora in CPURC</div>
+            <div class="add-student-results" id="addStudentResults"></div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <script>
 // Coach assignment AJAX
 document.querySelectorAll('.coach-select').forEach(function(select) {
@@ -580,6 +739,114 @@ document.querySelectorAll('.coach-select').forEach(function(select) {
         });
     });
 });
+
+// --- Add Student Modal ---
+(function() {
+    var searchInput = document.getElementById('addStudentSearch');
+    var resultsDiv = document.getElementById('addStudentResults');
+    var modal = document.getElementById('addStudentModal');
+    var timer = null;
+
+    if (!searchInput) return;
+
+    // Close modal on backdrop click.
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // Search as user types.
+    searchInput.addEventListener('input', function() {
+        clearTimeout(timer);
+        var query = this.value.trim();
+        if (query.length < 2) {
+            resultsDiv.innerHTML = '';
+            return;
+        }
+        timer = setTimeout(function() { searchUsers(query); }, 300);
+    });
+
+    // Focus input when modal opens.
+    var observer = new MutationObserver(function() {
+        if (modal.style.display === 'flex') {
+            searchInput.value = '';
+            resultsDiv.innerHTML = '';
+            searchInput.focus();
+        }
+    });
+    observer.observe(modal, { attributes: true, attributeFilter: ['style'] });
+
+    function searchUsers(query) {
+        resultsDiv.innerHTML = '<div class="add-student-msg">Ricerca in corso...</div>';
+
+        fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_add_student.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'sesskey=<?php echo sesskey(); ?>&action=search&query=' + encodeURIComponent(query)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.success) {
+                resultsDiv.innerHTML = '<div class="add-student-msg error">' + escText(data.message) + '</div>';
+                return;
+            }
+            if (data.users.length === 0) {
+                resultsDiv.innerHTML = '<div class="add-student-msg">Nessun utente trovato (o gia in CPURC)</div>';
+                return;
+            }
+            var html = '';
+            data.users.forEach(function(u) {
+                html += '<div class="add-student-item" id="user-row-' + u.id + '">' +
+                    '<div class="add-student-item-info">' +
+                    '<strong>' + escText(u.lastname) + ' ' + escText(u.firstname) + '</strong>' +
+                    '<small>' + escText(u.email) + '</small>' +
+                    '</div>' +
+                    '<button onclick="addStudent(' + u.id + ', this)">Aggiungi</button>' +
+                    '</div>';
+            });
+            resultsDiv.innerHTML = html;
+        })
+        .catch(function() {
+            resultsDiv.innerHTML = '<div class="add-student-msg error">Errore di connessione</div>';
+        });
+    }
+
+    function escText(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    window.addStudent = function(userid, btn) {
+        btn.disabled = true;
+        btn.textContent = '...';
+
+        fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_add_student.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'sesskey=<?php echo sesskey(); ?>&action=add&userid=' + userid
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                btn.textContent = 'Aggiunto!';
+                btn.style.background = '#28a745';
+                // Reload page after short delay to show the new student.
+                setTimeout(function() { location.reload(); }, 1000);
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Aggiungi';
+                alert('Errore: ' + data.message);
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            btn.textContent = 'Aggiungi';
+            alert('Errore di connessione');
+        });
+    };
+})();
 </script>
 
 <?php

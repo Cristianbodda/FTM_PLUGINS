@@ -1985,6 +1985,10 @@ if ($step == 3):
                         Verranno creati <strong><?php echo $quizCount; ?> quiz</strong> con <strong><?php echo $totalQuestions; ?> domande</strong> totali.
                         Le categorie domande saranno organizzate come: <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 3px;"><?php echo htmlspecialchars($sector); ?> → [Nome Quiz]</code>
                     </p>
+                    <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 12px; background: rgba(255,255,255,0.15); border-radius: 6px; cursor: pointer; font-size: 13px;">
+                        <input type="checkbox" name="replace_existing" value="1" style="width: 16px; height: 16px;">
+                        <span>🔄 <strong>Sostituisci domande esistenti</strong> — cancella le vecchie domande nelle categorie e reimporta da zero</span>
+                    </label>
                 </div>
                 <div>
                     <button type="submit" class="btn btn-primary" style="background: white; color: #059669; border: none; padding: 12px 30px; font-weight: 600; font-size: 15px;" <?php echo !$excelSummary['can_import'] ? 'disabled' : ''; ?>>
@@ -2290,6 +2294,7 @@ if ($step == 5 && $action === 'executeexcel'):
     $framework = $DB->get_record('competency_framework', ['id' => $frameworkid]);
 
     $assign_competencies = optional_param('assign_competencies', 1, PARAM_INT);
+    $replace_existing = optional_param('replace_existing', 0, PARAM_INT);
 
     // Verify Excel file exists
     if (!isset($SESSION->excel_import_file) || !file_exists($SESSION->excel_import_file)) {
@@ -2358,14 +2363,20 @@ if ($step == 5 && $action === 'executeexcel'):
     echo '</div>';
 
     // Execute multi-quiz import
+    if ($replace_existing) {
+        echo '<div class="log-line warning">🔄 Modalità SOSTITUZIONE attiva: le domande esistenti nelle categorie saranno cancellate prima dell\'import</div>';
+    }
     echo '<div class="log-line info">🚀 Creazione quiz e domande...</div>';
 
-    $result = $importer->create_all_quizzes($courseid, $assign_competencies);
+    $result = $importer->create_all_quizzes($courseid, $assign_competencies, $replace_existing);
 
     if ($result['success']) {
         echo '<div class="log-line success" style="font-size: 15px; font-weight: bold;">✅ Import completato!</div>';
         echo '<div class="log-line success">📚 Quiz creati: ' . $result['quizzes_created'] . '</div>';
         echo '<div class="log-line success">❓ Domande create: ' . $result['questions_created'] . '</div>';
+        if (!empty($result['questions_deleted'])) {
+            echo '<div class="log-line warning">🗑️ Domande vecchie cancellate: ' . $result['questions_deleted'] . '</div>';
+        }
         if ($result['questions_existing'] > 0) {
             echo '<div class="log-line warning">⚠️ Domande esistenti (aggiornate): ' . $result['questions_existing'] . '</div>';
         }
@@ -2385,6 +2396,28 @@ if ($step == 5 && $action === 'executeexcel'):
                 echo ', ' . $qd['competencies'] . ' competenze';
                 echo '</div>';
             }
+        }
+
+        // Verification: check quiz_slots actually exist in DB
+        echo '<div class="log-line" style="margin-top: 10px; font-size: 12px; color: #666;"><strong>Verifica DB:</strong> ';
+        $verify_ok = true;
+        foreach ($result['quiz_details'] as $qd) {
+            $slot_count = $DB->count_records('quiz_slots', ['quizid' => $qd['id']]);
+            $ref_count = $DB->count_records_sql(
+                "SELECT COUNT(*) FROM {question_references} qr
+                 JOIN {quiz_slots} qs ON qs.id = qr.itemid
+                 WHERE qs.quizid = ? AND qr.component = 'mod_quiz' AND qr.questionarea = 'slot'",
+                [$qd['id']]
+            );
+            $section_count = $DB->count_records('quiz_sections', ['quizid' => $qd['id']]);
+            echo 'Quiz ' . $qd['id'] . ': ' . $slot_count . ' slots, ' . $ref_count . ' refs, ' . $section_count . ' sections | ';
+            if ($slot_count == 0 || $ref_count == 0) {
+                $verify_ok = false;
+            }
+        }
+        echo '</div>';
+        if (!$verify_ok) {
+            echo '<div class="log-line warning">⚠️ Alcuni quiz hanno 0 slots o 0 references - potrebbe esserci un problema!</div>';
         }
 
         echo '<div class="log-line success" style="font-size: 16px; margin-top: 20px; padding: 10px; background: #d1fae5; border-radius: 6px;">🎉 IMPORT MULTI-QUIZ COMPLETATO CON SUCCESSO!</div>';
