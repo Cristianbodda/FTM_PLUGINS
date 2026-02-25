@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida per Claude
 
-**Ultimo aggiornamento:** 24 Febbraio 2026
+**Ultimo aggiornamento:** 25 Febbraio 2026
 
 ## Panoramica Progetto
 
@@ -12,7 +12,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (24/02/2026)
+## STATO ATTUALE SVILUPPO (25/02/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -50,6 +50,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 #### 4. Self Assessment (local_selfassessment) - v1.3.1
 - Popup bloccante, doppia password skip (6807/FTM)
 - Hook System Moodle 4.3+, Bloom Legend, Area Mapping completo
+- **Observer affidabile:** Versioning fallback Moodle 4.x, retroactive assignment safety net in compile.php
 
 #### 5. Setup Universale Quiz (local_competencyxmlimport) - v1.5
 - Import XML/Word/Excel/CSV, assegnazione competenze, debug integrato

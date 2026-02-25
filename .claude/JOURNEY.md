@@ -1,5 +1,26 @@
 # FTM Plugins - Development Journey
 
+## 25 Febbraio 2026
+
+### Selfassessment - Observer Reliability Fix (local_selfassessment)
+- **Problema:** Lo studente completava un quiz ma cliccando "La mia autovalutazione" non vedeva nulla (nessuna competenza assegnata)
+- **Causa root:** In Moodle 4.x le domande hanno versioni (`question_versions`). Il `questionid` nell'attempt puo' essere diverso dal `questionid` nel mapping competenze (`qbank_competenciesbyquestion`). L'observer falliva silenziosamente.
+- **Fix observer.php** - Riscrittura completa:
+  - `assign_competencies_from_attempt()` - Metodo pubblico riusabile (observer + retroactive)
+  - `retroactive_assign($userid)` - Scansiona TUTTI i quiz completati e assegna competenze mancanti
+  - `find_competency_table()` - Cache della tabella mapping (evita `table_exists` ripetuti)
+  - `find_competency_mappings()` - Ricerca in 2 fasi: match diretto + fallback versioning via `question_versions` (trova tutte le versioni della stessa question bank entry)
+  - Try-catch globale con `debugging()` per logging errori
+- **Fix compile.php** - Safety net + diagnostica:
+  - Se nessuna competenza assegnata, chiama `retroactive_assign()` automaticamente
+  - Se ancora vuoto, mostra diagnostica (quiz/attempt count) con warning per contattare il coach
+  - Fix duplicate `define()` con guard `if (!defined())`
+- **File modificati:**
+  - `local/selfassessment/classes/observer.php` (riscrittura: +287 righe, -98 righe)
+  - `local/selfassessment/compile.php` (+46 righe)
+
+---
+
 ## 24 Febbraio 2026
 
 ### Excel Quiz Import - Modalita Sostituzione (local_competencyxmlimport)
@@ -564,8 +585,9 @@
    - Testare con tutti i settori
 
 4. **Selfassessment:**
-   - Verificare funzionamento hook su produzione
-   - Testare con tutti gli utenti di test
+   - ✅ Observer riscritto con versioning fallback + retroactive assignment
+   - Verificare su server con Francesco Puglioli (caricare observer.php aggiornato via FTP!)
+   - Testare con altri studenti
 
 5. **Quiz Analysis:**
    - Pulire domande duplicate Chimica 23

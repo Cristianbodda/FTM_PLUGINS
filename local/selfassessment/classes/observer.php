@@ -11,7 +11,12 @@ namespace local_selfassessment;
 defined('MOODLE_INTERNAL') || die();
 
 class observer {
-    
+
+    /** @var string|null Cached competency-question mapping table name */
+    private static $comp_table_cache = null;
+    /** @var bool Whether we already checked for the table */
+    private static $comp_table_checked = false;
+
     /**
      * Gestisce l'evento quiz_attempt_submitted
      * Assegna automaticamente le competenze del quiz per l'autovalutazione
@@ -19,92 +24,101 @@ class observer {
     public static function quiz_attempt_submitted(\mod_quiz\event\attempt_submitted $event) {
         global $DB;
 
-        $userid = $event->relateduserid;
-        $attemptid = $event->objectid;
+        try {
+            $userid = $event->relateduserid;
+            $attemptid = $event->objectid;
 
-        if (!$userid || !$attemptid) {
-            return;
+            if (!$userid || !$attemptid) {
+                return;
+            }
+
+            // Trova l'attempt nel database
+            $attempt = $DB->get_record('quiz_attempts', ['id' => $attemptid]);
+            if (!$attempt) {
+                debugging("selfassessment observer: attempt $attemptid not found", DEBUG_DEVELOPER);
+                return;
+            }
+
+            $quizid = $attempt->quiz;
+            if (!$quizid) {
+                return;
+            }
+
+            // Assegna competenze dal quiz
+            $assigned = self::assign_competencies_from_attempt($userid, $attempt);
+
+            // Invia notifica e redirect se ci sono nuove assegnazioni
+            if ($assigned > 0) {
+                self::send_assignment_notification($userid, $quizid, $assigned);
+                self::show_success_message($userid, $assigned);
+                self::set_redirect_flag($userid);
+            }
+
+            // Rileva settori (silenzioso)
+            self::detect_sectors_from_attempt($userid, $attempt);
+
+        } catch (\Exception $e) {
+            // Non bloccare mai il quiz per errori del selfassessment
+            debugging("selfassessment observer error: " . $e->getMessage(), DEBUG_DEVELOPER);
         }
+    }
 
-        // Trova l'attempt nel database
-        $attempt = $DB->get_record('quiz_attempts', ['id' => $attemptid]);
-        if (!$attempt) {
-            return;
-        }
+    /**
+     * Assegna competenze da un singolo quiz attempt.
+     * Usabile sia dall'observer che dal retroactive assignment.
+     *
+     * @param int $userid User ID
+     * @param object $attempt Quiz attempt record
+     * @return int Number of newly assigned competencies
+     */
+    public static function assign_competencies_from_attempt($userid, $attempt) {
+        global $DB;
 
-        // Ottieni quizid dall'attempt (più affidabile che da event->other)
         $quizid = $attempt->quiz;
-        if (!$quizid) {
-            return;
-        }
-        
+
         // Ottieni le domande dal quiz attempt
         $questions = $DB->get_records_sql("
             SELECT DISTINCT qa.questionid
             FROM {question_attempts} qa
             WHERE qa.questionusageid = ?
         ", [$attempt->uniqueid]);
-        
+
         if (empty($questions)) {
-            return;
+            return 0;
         }
-        
+
         $questionids = array_keys($questions);
-        
-        // Cerca tabella competenze-domande
-        $comp_tables = [
-            'qbank_competenciesbyquestion' => 'questionid',
-            'qbank_comp_question' => 'questionid',
-            'local_competencymanager_qcomp' => 'questionid'
-        ];
-        
-        $comp_question_table = null;
-        $comp_question_field = null;
-        
-        foreach ($comp_tables as $table => $field) {
-            if ($DB->get_manager()->table_exists($table)) {
-                $comp_question_table = $table;
-                $comp_question_field = $field;
-                break;
-            }
+
+        // Trova la tabella di mapping competenze-domande
+        $comp_table = self::find_competency_table();
+        if (!$comp_table) {
+            return 0;
         }
-        
-        if (!$comp_question_table) {
-            // Nessuna tabella di mapping trovata
-            return;
-        }
-        
-        // Trova competenze associate alle domande
-        list($sql_in, $params) = $DB->get_in_or_equal($questionids);
-        $mappings = $DB->get_records_sql("
-            SELECT DISTINCT competencyid 
-            FROM {{$comp_question_table}} 
-            WHERE {$comp_question_field} $sql_in
-        ", $params);
-        
+
+        // Cerca competenze: prima con question IDs diretti, poi con versioning fallback
+        $mappings = self::find_competency_mappings($questionids, $comp_table);
+
         if (empty($mappings)) {
-            return;
+            return 0;
         }
-        
-        // Get student's primary sector (if set).
+
+        // Get student's primary sector (if set)
         $primarySector = self::get_student_primary_sector($userid);
 
-        // Assegna ogni competenza per l'autovalutazione
+        // Assegna ogni competenza
         $now = time();
         $assigned = 0;
 
         foreach ($mappings as $mapping) {
             $competencyid = $mapping->competencyid;
 
-            // If student has a primary sector, only assign competencies from that sector.
-            // Generic competencies (GEN, GENERICO) are always assigned regardless of sector.
+            // Filtro settore: solo competenze del settore primario + generiche
             if (!empty($primarySector)) {
                 $competencySector = self::get_competency_sector($competencyid);
                 $genericSectors = ['GEN', 'GENERICO', 'GENERICHE', 'TRASVERSALI'];
                 if (!empty($competencySector)
                     && $competencySector !== $primarySector
                     && !in_array($competencySector, $genericSectors)) {
-                    // Skip competencies from non-primary, non-generic sectors.
                     continue;
                 }
             }
@@ -127,44 +141,195 @@ class observer {
                     $DB->insert_record('local_selfassessment_assign', $record);
                     $assigned++;
                 } catch (\Exception $e) {
-                    // Ignora errori (es. duplicati)
+                    // Duplicato o altro errore, continua
                 }
             }
         }
-        
-        // Invia notifica allo studente se ci sono nuove assegnazioni
-        if ($assigned > 0) {
-            self::send_assignment_notification($userid, $quizid, $assigned);
-            // Mostra messaggio di congratulazioni allo studente (notifica verde)
-            self::show_success_message($userid, $assigned);
-            // Setta flag per redirect a compile.php
-            self::set_redirect_flag($userid);
+
+        return $assigned;
+    }
+
+    /**
+     * Assegnazione retroattiva: scansiona TUTTI i quiz completati dello studente
+     * e assegna le competenze mancanti. Chiamato da compile.php come safety net.
+     *
+     * @param int $userid User ID
+     * @return int Total number of newly assigned competencies
+     */
+    public static function retroactive_assign($userid) {
+        global $DB;
+
+        // Trova tutti i quiz attempts completati per questo studente
+        $attempts = $DB->get_records_sql("
+            SELECT qa.id, qa.quiz, qa.uniqueid, qa.state
+            FROM {quiz_attempts} qa
+            WHERE qa.userid = ?
+            AND qa.state = 'finished'
+            ORDER BY qa.timemodified DESC
+        ", [$userid]);
+
+        if (empty($attempts)) {
+            return 0;
         }
 
-        // Rileva e registra i settori dalle competenze del quiz (silenzioso)
-        self::detect_sectors_safe($userid, $quizid, $mappings);
+        $total_assigned = 0;
+
+        foreach ($attempts as $attempt) {
+            $assigned = self::assign_competencies_from_attempt($userid, $attempt);
+            $total_assigned += $assigned;
+        }
+
+        return $total_assigned;
+    }
+
+    /**
+     * Trova la tabella di mapping competenze-domande (con cache).
+     *
+     * @return array|null ['table' => name, 'field' => column] or null
+     */
+    private static function find_competency_table() {
+        global $DB;
+
+        if (self::$comp_table_checked) {
+            return self::$comp_table_cache;
+        }
+
+        $comp_tables = [
+            'qbank_competenciesbyquestion' => 'questionid',
+            'qbank_comp_question' => 'questionid',
+            'local_competencymanager_qcomp' => 'questionid'
+        ];
+
+        $dbman = $DB->get_manager();
+
+        foreach ($comp_tables as $table => $field) {
+            if ($dbman->table_exists($table)) {
+                self::$comp_table_cache = ['table' => $table, 'field' => $field];
+                self::$comp_table_checked = true;
+                return self::$comp_table_cache;
+            }
+        }
+
+        self::$comp_table_checked = true;
+        self::$comp_table_cache = null;
+        return null;
+    }
+
+    /**
+     * Trova i mapping competenza-domanda, con fallback per versioning Moodle 4.x.
+     *
+     * In Moodle 4.x, le domande hanno versioni:
+     * question.id → question_versions → question_bank_entries
+     * Il mapping competenza potrebbe essere su una versione diversa della stessa domanda.
+     *
+     * @param array $questionids Question IDs from question_attempts
+     * @param array $comp_table ['table' => name, 'field' => column]
+     * @return array Competency mapping records
+     */
+    private static function find_competency_mappings($questionids, $comp_table) {
+        global $DB;
+
+        $table = $comp_table['table'];
+        $field = $comp_table['field'];
+
+        // Tentativo 1: match diretto (question_attempts.questionid == mapping.questionid)
+        list($sql_in, $params) = $DB->get_in_or_equal($questionids);
+        $mappings = $DB->get_records_sql("
+            SELECT DISTINCT competencyid
+            FROM {{$table}}
+            WHERE {$field} $sql_in
+        ", $params);
+
+        if (!empty($mappings)) {
+            return $mappings;
+        }
+
+        // Tentativo 2: versioning fallback
+        // Le competenze potrebbero essere mappate a una versione diversa della stessa domanda.
+        // Mappa: question.id → question_versions.questionbankentryid → tutte le versioni → cerca mapping
+        try {
+            $dbman = $DB->get_manager();
+            if (!$dbman->table_exists('question_versions')) {
+                return [];
+            }
+
+            list($sql_in, $params) = $DB->get_in_or_equal($questionids);
+
+            // Trova tutti i question IDs di tutte le versioni delle stesse domande
+            $all_version_ids = $DB->get_records_sql("
+                SELECT DISTINCT qv2.questionid
+                FROM {question_versions} qv1
+                JOIN {question_versions} qv2 ON qv2.questionbankentryid = qv1.questionbankentryid
+                WHERE qv1.questionid $sql_in
+            ", $params);
+
+            if (empty($all_version_ids)) {
+                return [];
+            }
+
+            $all_ids = array_keys($all_version_ids);
+            list($sql_in2, $params2) = $DB->get_in_or_equal($all_ids);
+
+            $mappings = $DB->get_records_sql("
+                SELECT DISTINCT competencyid
+                FROM {{$table}}
+                WHERE {$field} $sql_in2
+            ", $params2);
+
+            return $mappings;
+
+        } catch (\Exception $e) {
+            debugging("selfassessment: versioning fallback failed: " . $e->getMessage(), DEBUG_DEVELOPER);
+            return [];
+        }
+    }
+
+    /**
+     * Rileva settori dalle competenze di un attempt
+     */
+    private static function detect_sectors_from_attempt($userid, $attempt) {
+        global $DB;
+
+        $quizid = $attempt->quiz;
+
+        // Get questions and mappings
+        $questions = $DB->get_records_sql("
+            SELECT DISTINCT qa.questionid
+            FROM {question_attempts} qa
+            WHERE qa.questionusageid = ?
+        ", [$attempt->uniqueid]);
+
+        if (empty($questions)) {
+            return;
+        }
+
+        $comp_table = self::find_competency_table();
+        if (!$comp_table) {
+            return;
+        }
+
+        $mappings = self::find_competency_mappings(array_keys($questions), $comp_table);
+        if (!empty($mappings)) {
+            self::detect_sectors_safe($userid, $quizid, $mappings);
+        }
     }
 
     /**
      * Setta un flag per indicare che lo studente deve essere reindirizzato a compile.php
-     * Il redirect effettivo avviene via JavaScript nella pagina di revisione quiz
      */
     private static function set_redirect_flag($userid) {
         global $USER, $SESSION;
 
-        // Solo se l'utente corrente è lo studente
         if ($USER->id != $userid) {
             return;
         }
 
-        // Verifica skip permanente
         global $DB;
         $status = $DB->get_record('local_selfassessment_status', ['userid' => $userid]);
         if ($status && $status->skip_accepted) {
-            return; // Ha skip permanente, non fare redirect
+            return;
         }
 
-        // Setta flag nella sessione per il redirect
         $SESSION->selfassessment_redirect_pending = true;
     }
 
@@ -174,32 +339,25 @@ class observer {
     private static function show_success_message($userid, $count) {
         global $USER;
 
-        // Mostra solo se l'utente corrente è lo studente che ha completato il quiz
         if ($USER->id != $userid) {
             return;
         }
 
-        // Messaggio di congratulazioni
         $message = get_string('competencies_assigned_success', 'local_selfassessment', $count);
         \core\notification::success($message);
     }
 
     /**
      * Get student's primary sector from local_student_sectors.
-     *
-     * @param int $userid User ID.
-     * @return string|null Primary sector code or null if not set.
      */
     private static function get_student_primary_sector($userid) {
         global $DB;
 
-        // Check if table exists.
         $dbman = $DB->get_manager();
         if (!$dbman->table_exists('local_student_sectors')) {
             return null;
         }
 
-        // Get primary sector.
         $record = $DB->get_record('local_student_sectors', [
             'userid' => $userid,
             'is_primary' => 1
@@ -210,25 +368,23 @@ class observer {
 
     /**
      * Get sector from competency idnumber.
-     *
-     * @param int $competencyid Competency ID.
-     * @return string|null Sector code or null.
      */
     private static function get_competency_sector($competencyid) {
         global $DB;
 
-        // Get competency idnumber.
         $competency = $DB->get_record('competency', ['id' => $competencyid]);
         if (!$competency || empty($competency->idnumber)) {
             return null;
         }
 
-        // Extract sector from idnumber (e.g., "LOGISTICA_LO_A1" → "LOGISTICA").
         $parts = explode('_', $competency->idnumber);
         if (!empty($parts[0])) {
-            // Normalize encoding.
             $sector = strtoupper($parts[0]);
-            $sector = str_replace(['À', 'È', 'É', 'Ì', 'Ò', 'Ù'], ['A', 'E', 'E', 'I', 'O', 'U'], $sector);
+            $sector = str_replace(
+                ['À', 'È', 'É', 'Ì', 'Ò', 'Ù'],
+                ['A', 'E', 'E', 'I', 'O', 'U'],
+                $sector
+            );
             return $sector;
         }
 
@@ -236,21 +392,19 @@ class observer {
     }
 
     /**
-     * Rileva settori in modo sicuro (non blocca se sector_manager non esiste)
+     * Rileva settori in modo sicuro
      */
     private static function detect_sectors_safe($userid, $quizid, $mappings) {
         global $DB;
 
-        // Verifica se il file sector_manager esiste
         $sector_manager_file = __DIR__ . '/../../competencymanager/classes/sector_manager.php';
         if (!file_exists($sector_manager_file)) {
-            return; // Sector manager non installato, skip silenzioso
+            return;
         }
 
-        // Verifica se la tabella esiste
         $dbman = $DB->get_manager();
         if (!$dbman->table_exists('local_student_sectors')) {
-            return; // Tabella non creata, skip silenzioso
+            return;
         }
 
         try {
@@ -277,7 +431,6 @@ class observer {
             return false;
         }
 
-        // Prepara dati per il messaggio
         $url = new \moodle_url('/local/selfassessment/compile.php');
 
         $messagedata = new \stdClass();
@@ -286,7 +439,6 @@ class observer {
         $messagedata->count = $count;
         $messagedata->url = $url->out();
 
-        // Crea messaggio Moodle
         $message = new \core\message\message();
         $message->component = 'local_selfassessment';
         $message->name = 'assignment';
@@ -305,7 +457,6 @@ class observer {
             message_send($message);
             return true;
         } catch (\Exception $e) {
-            // Errore silenzioso - la notifica non è critica
             return false;
         }
     }

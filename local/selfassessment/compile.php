@@ -20,9 +20,13 @@ $PAGE->set_title(get_string('compile_title', 'local_selfassessment'));
 $PAGE->set_heading(get_string('compile_title', 'local_selfassessment'));
 $PAGE->set_pagelayout('standard');
 
-// Password per skippare l'autovalutazione
-define('SELFASSESSMENT_SKIP_TEMP', '6807');      // Skip temporaneo (solo sessione)
-define('SELFASSESSMENT_SKIP_PERMANENT', 'FTM');  // Skip definitivo (accetta incompleto)
+// Password per skippare l'autovalutazione (definite in lib.php con guard, evita ridefinizione)
+if (!defined('SELFASSESSMENT_SKIP_TEMP')) {
+    define('SELFASSESSMENT_SKIP_TEMP', '6807');
+}
+if (!defined('SELFASSESSMENT_SKIP_PERMANENT')) {
+    define('SELFASSESSMENT_SKIP_PERMANENT', 'FTM');
+}
 
 // Verifica permessi
 require_capability('local/selfassessment:complete', $context);
@@ -41,9 +45,35 @@ $manager = new \local_selfassessment\manager();
 // Verifica se lo studente ha competenze assegnate
 $assigned_competencies = $manager->get_assigned_competencies($USER->id);
 
-// Se non ha assegnazioni, mostra messaggio
+// SAFETY NET: Se non ci sono assegnazioni, prova assegnazione retroattiva
+// Questo copre i casi in cui l'observer non ha funzionato (errori, versioning, ecc.)
+if (empty($assigned_competencies)) {
+    require_once(__DIR__ . '/classes/observer.php');
+    $retroactive_count = \local_selfassessment\observer::retroactive_assign($USER->id);
+
+    if ($retroactive_count > 0) {
+        // Ricarica le competenze appena assegnate
+        $assigned_competencies = $manager->get_assigned_competencies($USER->id);
+    }
+}
+
+// Se ancora non ha assegnazioni, mostra messaggio con diagnostica
 if (empty($assigned_competencies)) {
     echo $OUTPUT->header();
+
+    // Diagnostica: controlla se lo studente ha quiz completati
+    $quiz_count = $DB->count_records_sql("
+        SELECT COUNT(DISTINCT qa.quiz)
+        FROM {quiz_attempts} qa
+        WHERE qa.userid = ? AND qa.state = 'finished'
+    ", [$USER->id]);
+
+    $attempt_count = $DB->count_records_sql("
+        SELECT COUNT(*)
+        FROM {quiz_attempts} qa
+        WHERE qa.userid = ? AND qa.state = 'finished'
+    ", [$USER->id]);
+
     ?>
     <div style="max-width: 800px; margin: 50px auto; text-align: center; padding: 40px;">
         <div style="font-size: 4em; margin-bottom: 20px;">📭</div>
@@ -53,9 +83,17 @@ if (empty($assigned_competencies)) {
             Le competenze vengono assegnate automaticamente quando completi i quiz,<br>
             oppure possono essere assegnate dal tuo coach.
         </p>
+        <?php if ($quiz_count > 0): ?>
+        <div style="margin-top: 20px; padding: 20px; background: #fff3e0; border-radius: 12px; border-left: 4px solid #ff9800;">
+            <strong>⚠️ Attenzione:</strong> Risultano <?php echo $attempt_count; ?> tentativi completati su <?php echo $quiz_count; ?> quiz,
+            ma nessuna competenza e' stata assegnata. Questo puo' indicare che i quiz non hanno competenze associate.
+            Contatta il tuo coach o l'amministratore.
+        </div>
+        <?php else: ?>
         <div style="margin-top: 30px; padding: 20px; background: #e3f2fd; border-radius: 12px;">
             <strong>💡 Suggerimento:</strong> Completa i quiz del tuo corso per sbloccare l'autovalutazione!
         </div>
+        <?php endif; ?>
     </div>
     <?php
     echo $OUTPUT->footer();
