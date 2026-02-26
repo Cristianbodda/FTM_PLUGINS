@@ -1,4 +1,4 @@
-# COACH DASHBOARD V2 - DETTAGLI TECNICI (24/02/2026)
+# COACH DASHBOARD V2 - DETTAGLI TECNICI (26/02/2026)
 
 ## Viste Disponibili
 
@@ -118,3 +118,45 @@ Il coach clicca su una settimana (Sett. 1-6) nella timeline e si apre un modale 
 - Week planner mini: 16x16px buttons, font 8px, gap 1px
 - Status icons: 24x24px
 - Action buttons: padding 4px 6px, flex-wrap enabled
+
+## Bottone Percorso Studente (26/02/2026)
+
+### Funzionalita
+Link diretto a `student_program.php` con `userid` e `groupid` preimpostati. Apre il programma individuale 6 settimane dello studente nello Scheduler.
+
+### Condizione di visibilita
+Il bottone appare solo se `$student->groupid > 0` (studente con gruppo scheduler assegnato in `local_ftm_group_members`).
+
+### Aspetto
+- Icona: `&#128197;` (calendario)
+- Colore: Arancione (`#f59e0b`, hover `#d97706`)
+- Testo: "Percorso" (standard/dettagliata/classica) o solo icona (compatta)
+- CSS class: `.quick-btn.percorso` / `.cpurc-btn-percorso`
+
+### Posizione nelle 4 viste
+| Vista | Posizione | Tipo elemento |
+|-------|-----------|---------------|
+| Compatta | Dopo bottone CPURC | `<button>` icon-only |
+| Standard | Dopo link CPURC | `<a class="quick-btn percorso">` |
+| Dettagliata | Dopo bottone CPURC | `<button>` con testo |
+| Classica | Dopo bottone CPURC | `<button>` con testo |
+
+### Presente anche in
+- `course_students.php` (stesse 4 viste)
+- `local/ftm_cpurc/student_card.php` (header buttons)
+
+## Fix Tabelle Gruppi (26/02/2026)
+
+### Problema
+`dashboard_helper::get_student_group()` cercava tabelle inesistenti:
+- `local_ftm_scheduler_assignments` (non esiste)
+- `local_ftm_scheduler_groups` (non esiste)
+
+### Soluzione
+Query corretta sulle tabelle reali:
+- `local_ftm_group_members` (con filtro `status = 'active'`)
+- `local_ftm_groups`
+
+### Impatto
+- Colore badge ora corretto (era random per fallback)
+- `$student->groupid` ora valorizzato (era sempre 0)

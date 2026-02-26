@@ -1,4 +1,4 @@
-# SISTEMA CPURC - DETTAGLI TECNICI (24/01/2026)
+# SISTEMA CPURC - DETTAGLI TECNICI (26/02/2026)
 
 ## Panoramica
 Sistema completo per la gestione degli studenti CPURC (Centro Professionale URC) con import da CSV, gestione anagrafica, assegnazione coach/settori e generazione report Word.
@@ -72,6 +72,12 @@ local/ftm_cpurc/
 ## Student Card (student_card.php)
 
 ### Tab: Anagrafica, Percorso, Assenze, Stage
+
+### Bottone Percorso Studente (26/02/2026)
+- Link diretto a `student_program.php?userid=X&groupid=Y` nell'header
+- Condizione: visibile solo se studente ha gruppo scheduler assegnato (`local_ftm_group_members`)
+- Stile: arancione `cpurc-btn-percorso` (`#f59e0b`)
+- Query groupid eseguita all'init della pagina
 
 ### Coach Assignment
 - Dropdown con coach da `local_ftm_coaches` (scheduler)

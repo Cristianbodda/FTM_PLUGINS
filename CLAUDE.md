@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida per Claude
 
-**Ultimo aggiornamento:** 25 Febbraio 2026
+**Ultimo aggiornamento:** 26 Febbraio 2026
 
 ## Panoramica Progetto
 
@@ -12,7 +12,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (25/02/2026)
+## STATO ATTUALE SVILUPPO (26/02/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -58,7 +58,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - CSV Import: supporta file esportati dal Quiz Export Tool (semicolon, UTF-8 BOM)
 - **Sostituisci domande:** Checkbox per cancellare quiz+domande vecchie e reimportare da Excel pulito
 
-#### 6. Coach Dashboard V2 (local_coachmanager) - 24/02/2026
+#### 6. Coach Dashboard V2 (local_coachmanager) - 26/02/2026
 - 4 Viste, Zoom accessibilita, Filtri, Timeline, Note Coach, Export Word
 - Navigazione dentro corsi (sidebar link)
 - Reports V2: link diretto a Student Report con parametri preimpostati
@@ -66,10 +66,13 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Ricerca studenti:** Filtro per nome/cognome/email sempre visibile
 - **Filtri avanzati:** Pannello collassabile con reset, badge conteggio filtri attivi
 - **Vista compatta ottimizzata:** Grid layout con overflow control, badge settore read-only
+- **Bottone Percorso Studente:** Link diretto a student_program.php (tutte le viste + CPURC student card)
+- **Fix tabelle gruppi:** `get_student_group()` usa `local_ftm_group_members`/`local_ftm_groups` (corrette)
 - Dettagli: `docs/DETAILS_COACH_DASHBOARD.md`
 
-#### 7. Sistema CPURC (local_ftm_cpurc) - 24/01/2026
+#### 7. Sistema CPURC (local_ftm_cpurc) - 26/02/2026
 - Import CSV, Dashboard Segreteria, Student Card (4 tab), Report Word
+- **Bottone Percorso:** Link a student_program.php nell'header della Student Card
 - Dettagli: `docs/DETAILS_CPURC.md`
 
 ---

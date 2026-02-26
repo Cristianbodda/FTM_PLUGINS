@@ -70,6 +70,20 @@ $PAGE->set_pagelayout('standard');
 $week = \local_ftm_cpurc\cpurc_manager::calculate_week_number($student->date_start);
 $weekstatus = \local_ftm_cpurc\cpurc_manager::get_week_status($week);
 
+// Get scheduler groupid for "Percorso" button.
+$student_groupid = 0;
+if ($DB->get_manager()->table_exists('local_ftm_group_members')) {
+    $grp = $DB->get_record_sql(
+        "SELECT gm.groupid FROM {local_ftm_group_members} gm
+         WHERE gm.userid = ? AND gm.status = 'active'
+         ORDER BY gm.timecreated DESC LIMIT 1",
+        [$student->userid]
+    );
+    if ($grp) {
+        $student_groupid = (int)$grp->groupid;
+    }
+}
+
 // Can edit?
 $canedit = has_capability('local/ftm_cpurc:edit', $context);
 
@@ -133,6 +147,8 @@ echo $OUTPUT->header();
 .cpurc-btn-primary { background: #0066cc; color: white !important; }
 .cpurc-btn-success { background: #28a745; color: white !important; }
 .cpurc-btn-secondary { background: #6c757d; color: white !important; }
+.cpurc-btn-percorso { background: #f59e0b; color: white !important; border-color: #d97706; }
+.cpurc-btn-percorso:hover { background: #d97706; }
 .cpurc-btn:hover { opacity: 0.9; text-decoration: none !important; color: white !important; }
 a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc-btn:focus { color: white !important; text-decoration: none !important; }
 
@@ -427,6 +443,11 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
             <a href="<?php echo new moodle_url('/local/ftm_cpurc/report.php', ['id' => $id]); ?>" class="cpurc-btn cpurc-btn-success">
                 Report
             </a>
+            <?php if ($student_groupid > 0): ?>
+            <a href="<?php echo new moodle_url('/local/ftm_scheduler/student_program.php', ['userid' => $student->userid, 'groupid' => $student_groupid]); ?>" class="cpurc-btn cpurc-btn-percorso">
+                &#128197; Percorso
+            </a>
+            <?php endif; ?>
             <a href="<?php echo new moodle_url('/local/ftm_cpurc/index.php'); ?>" class="cpurc-btn cpurc-btn-secondary">
                 Torna
             </a>
