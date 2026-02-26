@@ -1419,6 +1419,21 @@ echo $OUTPUT->header();
     color: #fff !important;
 }
 
+.quick-btn.percorso {
+    background: #f59e0b !important;
+    color: #fff !important;
+    border-color: #d97706 !important;
+}
+.quick-btn.percorso:hover {
+    background: #d97706 !important;
+    color: #fff !important;
+}
+.quick-btn.percorso:visited,
+.quick-btn.percorso:focus,
+.quick-btn.percorso:active {
+    color: #fff !important;
+}
+
 /* Card Footer */
 .view-standard .student-card-footer {
     display: none; /* Nascosto - bottoni ora nei Quick Actions */
@@ -3767,6 +3782,14 @@ function render_view_compatta($students, $dashboard) {
                             title="Rapporto CPURC">
                         &#128209;
                     </button>
+                    <?php if (!empty($student->groupid)): ?>
+                    <button class="btn btn-sm"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_scheduler/student_program.php?userid=<?php echo $student->id; ?>&amp;groupid=<?php echo $student->groupid; ?>'"
+                            title="Percorso Studente"
+                            style="background: #f59e0b !important; color: #fff !important; border-color: #d97706 !important;">
+                        &#128197;
+                    </button>
+                    <?php endif; ?>
                     <?php if ($is_end6): ?>
                     <button class="btn btn-warning btn-sm"
                             onclick="exportWord(<?php echo $student->id; ?>)"
@@ -3869,6 +3892,12 @@ function render_view_standard($students, $dashboard) {
                        class="quick-btn cpurc" title="Rapporto CPURC">
                         &#128209; Rapporto CPURC
                     </a>
+                    <?php if (!empty($student->groupid)): ?>
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_scheduler/student_program.php?userid=<?php echo $student->id; ?>&amp;groupid=<?php echo $student->groupid; ?>"
+                       class="quick-btn percorso" title="Percorso Studente">
+                        &#128197; Percorso
+                    </a>
+                    <?php endif; ?>
                     <?php if ($is_end6): ?>
                     <a href="#" onclick="exportWord(<?php echo $student->id; ?>); return false;"
                        class="quick-btn word" title="Esporta Word">
@@ -4402,6 +4431,13 @@ function render_view_dettagliata($students, $dashboard) {
                             onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/report.php?userid=<?php echo $student->id; ?>'">
                         &#128209; Rapporto CPURC
                     </button>
+                    <?php if (!empty($student->groupid)): ?>
+                    <button class="btn"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_scheduler/student_program.php?userid=<?php echo $student->id; ?>&amp;groupid=<?php echo $student->groupid; ?>'"
+                            style="background: #f59e0b !important; color: #fff !important; border-color: #d97706 !important;">
+                        &#128197; Percorso
+                    </button>
+                    <?php endif; ?>
                     <?php if ($is_end6): ?>
                     <button class="btn btn-warning"
                             onclick="exportWord(<?php echo $student->id; ?>)">
@@ -4567,6 +4603,14 @@ function render_view_classica($students, $dashboard) {
                                 onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/report.php?userid=<?php echo $student->id; ?>'">
                             &#128209; CPURC
                         </button>
+                        <?php if (!empty($student->groupid)): ?>
+                        <button class="btn btn-sm"
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_scheduler/student_program.php?userid=<?php echo $student->id; ?>&amp;groupid=<?php echo $student->groupid; ?>'"
+                                title="Percorso Studente"
+                                style="background: #f59e0b !important; color: #fff !important; border-color: #d97706 !important;">
+                            &#128197; Percorso
+                        </button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

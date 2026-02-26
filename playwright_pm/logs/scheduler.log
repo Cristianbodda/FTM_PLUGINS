@@ -493,3 +493,111 @@ WARN:  0
 ERROR: 0
 
 ✅ Tutti i controlli OK!
+
+============================================================
+FTM HEALTH CHECK - 21/02/2026, 09:00:02
+============================================================
+
+[LOGIN]...
+[LOGIN] OK
+
+[Coach Dashboard V2]...
+[Coach Dashboard V2] OK (3/3)
+
+[Coach Dashboard]...
+[Coach Dashboard] OK (2/2)
+
+[FTM Scheduler]...
+[FTM Scheduler] OK (1/1)
+
+[Setup Universale]...
+[Setup Universale] WARN (0/1)
+
+Report salvato: ./reports/report_2026-02-21T08-00-02.json
+
+============================================================
+RIEPILOGO
+============================================================
+OK:    3
+WARN:  1
+ERROR: 0
+
+⚠️  ATTENZIONE: Verificare i problemi rilevati!
+
+============================================================
+FTM HEALTH CHECK - 23/02/2026, 10:36:11
+============================================================
+
+[LOGIN]...
+[LOGIN] OK
+
+[Coach Dashboard V2]...
+[Coach Dashboard V2] OK (3/3)
+
+[Coach Dashboard]...
+[Coach Dashboard] OK (2/2)
+
+[FTM Scheduler]...
+[FTM Scheduler] OK (1/1)
+
+[Setup Universale]...
+[Setup Universale] WARN (0/1)
+
+Report salvato: ./reports/report_2026-02-23T09-36-11.json
+
+============================================================
+RIEPILOGO
+============================================================
+OK:    3
+WARN:  1
+ERROR: 0
+
+⚠️  ATTENZIONE: Verificare i problemi rilevati!
+
+============================================================
+FTM HEALTH CHECK - 24/02/2026, 09:00:02
+============================================================
+
+[LOGIN]...
+[LOGIN] OK
+
+[Coach Dashboard V2]...
+[Coach Dashboard V2] OK (3/3)
+
+[Coach Dashboard]...
+[Coach Dashboard] OK (2/2)
+
+[FTM Scheduler]...
+[FTM Scheduler] OK (1/1)
+
+[Setup Universale]...
+[Setup Universale] WARN (0/1)
+
+Report salvato: ./reports/report_2026-02-24T08-00-02.json
+
+============================================================
+RIEPILOGO
+============================================================
+OK:    3
+WARN:  1
+ERROR: 0
+
+⚠️  ATTENZIONE: Verificare i problemi rilevati!
+
+============================================================
+FTM HEALTH CHECK - 25/02/2026, 09:00:03
+============================================================
+
+[LOGIN]...
+Errore generale: Login fallito
+
+Report salvato: ./reports/report_2026-02-25T08-00-03.json
+
+============================================================
+RIEPILOGO
+============================================================
+OK:    0
+WARN:  0
+ERROR: 0
+
+✅ Tutti i controlli OK!

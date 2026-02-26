@@ -134,6 +134,7 @@ class dashboard_helper {
         $group = $this->get_student_group($student->id);
         $student->group_color = $group['color'];
         $student->current_week = $group['week'];
+        $student->groupid = $group['groupid'];
 
         // Get sector (primary for backward compatibility)
         $student->sector = $this->get_student_sector($student->id);
@@ -260,17 +261,20 @@ class dashboard_helper {
     private function get_student_group($userid) {
         $color = null;
         $week = 1;
+        $groupid = 0;
 
-        // Get color from scheduler assignments.
-        if ($this->db->get_manager()->table_exists('local_ftm_scheduler_assignments')) {
-            $sql = "SELECT g.color, g.entry_date
-                    FROM {local_ftm_scheduler_assignments} a
-                    JOIN {local_ftm_scheduler_groups} g ON a.groupid = g.id
-                    WHERE a.userid = ?
-                    ORDER BY a.timecreated DESC
+        // Get color from scheduler group members.
+        if ($this->db->get_manager()->table_exists('local_ftm_group_members')) {
+            $sql = "SELECT g.id as groupid, g.color, g.entry_date
+                    FROM {local_ftm_group_members} gm
+                    JOIN {local_ftm_groups} g ON gm.groupid = g.id
+                    WHERE gm.userid = ?
+                    AND gm.status = 'active'
+                    ORDER BY gm.timecreated DESC
                     LIMIT 1";
             $data = $this->db->get_record_sql($sql, [$userid]);
             if ($data) {
+                $groupid = (int)$data->groupid;
                 $color = $data->color;
                 // Calculate week from group entry_date as fallback.
                 if (!empty($data->entry_date) && $data->entry_date <= time()) {
@@ -310,7 +314,7 @@ class dashboard_helper {
             }
         }
 
-        return ['color' => $color, 'week' => $week];
+        return ['color' => $color, 'week' => $week, 'groupid' => $groupid];
     }
 
     /**
