@@ -43,6 +43,19 @@ $sector = optional_param('sector', '', PARAM_TEXT);
 $status = optional_param('status', '', PARAM_TEXT);
 $reportstatus = optional_param('reportstatus', '', PARAM_TEXT);
 $coach = optional_param('coach', 0, PARAM_INT);
+$datefrom = optional_param('datefrom', '', PARAM_TEXT);
+$dateto = optional_param('dateto', '', PARAM_TEXT);
+$groupcolor = optional_param('groupcolor', '', PARAM_TEXT);
+
+// Parse date filters (dd.mm.yyyy -> timestamp).
+$datefrom_ts = 0;
+$dateto_ts = 0;
+if ($datefrom && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $datefrom, $m)) {
+    $datefrom_ts = mktime(0, 0, 0, (int)$m[2], (int)$m[3], (int)$m[1]);
+}
+if ($dateto && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $dateto, $m)) {
+    $dateto_ts = mktime(23, 59, 59, (int)$m[2], (int)$m[3], (int)$m[1]);
+}
 
 // Get data.
 $stats = \local_ftm_cpurc\cpurc_manager::get_stats();
@@ -53,6 +66,9 @@ $students = \local_ftm_cpurc\cpurc_manager::get_students([
     'status' => $status,
     'report_status' => $reportstatus,
     'coach' => $coach,
+    'date_from' => $datefrom_ts,
+    'date_to' => $dateto_ts,
+    'group_color' => $groupcolor,
 ]);
 $urclist = \local_ftm_cpurc\cpurc_manager::get_urc_offices();
 $sectorlist = \local_ftm_cpurc\cpurc_manager::get_sectors();
@@ -471,6 +487,11 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
                 📥 <?php echo get_string('import_csv', 'local_ftm_cpurc'); ?>
             </a>
             <?php endif; ?>
+            <?php if (is_siteadmin()): ?>
+            <a href="<?php echo new moodle_url('/local/ftm_cpurc/import_production.php'); ?>" class="cpurc-btn cpurc-btn-primary" style="background:#dc3545;">
+                🚀 Import Produzione
+            </a>
+            <?php endif; ?>
             <a href="<?php echo new moodle_url('/local/ftm_scheduler/index.php'); ?>" class="cpurc-btn cpurc-btn-secondary">
                 📅 Scheduler
             </a>
@@ -574,10 +595,29 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
                     </select>
                 </div>
                 <div class="filter-group">
+                    <label>Data Inizio Da</label>
+                    <input type="date" name="datefrom" value="<?php echo s($datefrom); ?>">
+                </div>
+                <div class="filter-group">
+                    <label>Data Inizio A</label>
+                    <input type="date" name="dateto" value="<?php echo s($dateto); ?>">
+                </div>
+                <div class="filter-group">
+                    <label>Gruppo Colore</label>
+                    <select name="groupcolor">
+                        <option value="">Tutti</option>
+                        <option value="giallo" <?php echo $groupcolor === 'giallo' ? 'selected' : ''; ?>>🟡 Giallo</option>
+                        <option value="grigio" <?php echo $groupcolor === 'grigio' ? 'selected' : ''; ?>>⚪ Grigio</option>
+                        <option value="rosso" <?php echo $groupcolor === 'rosso' ? 'selected' : ''; ?>>🔴 Rosso</option>
+                        <option value="marrone" <?php echo $groupcolor === 'marrone' ? 'selected' : ''; ?>>🟤 Marrone</option>
+                        <option value="viola" <?php echo $groupcolor === 'viola' ? 'selected' : ''; ?>>🟣 Viola</option>
+                    </select>
+                </div>
+                <div class="filter-group">
                     <label>&nbsp;</label>
                     <button type="submit" class="cpurc-btn cpurc-btn-primary">🔍 Filtra</button>
                 </div>
-                <?php if ($search || $urc || $sector || $status || $reportstatus || $coach): ?>
+                <?php if ($search || $urc || $sector || $status || $reportstatus || $coach || $datefrom || $dateto || $groupcolor): ?>
                 <div class="filter-group">
                     <label>&nbsp;</label>
                     <a href="<?php echo new moodle_url('/local/ftm_cpurc/index.php'); ?>" class="cpurc-btn cpurc-btn-secondary">

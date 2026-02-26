@@ -51,6 +51,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - Popup bloccante, doppia password skip (6807/FTM)
 - Hook System Moodle 4.3+, Bloom Legend, Area Mapping completo
 - **Observer affidabile:** Versioning fallback Moodle 4.x, retroactive assignment safety net in compile.php
+- **Toggle admin:** settings.php con checkbox `popup_enabled` (default OFF per setup produzione)
 
 #### 5. Setup Universale Quiz (local_competencyxmlimport) - v1.5
 - Import XML/Word/Excel/CSV, assegnazione competenze, debug integrato
@@ -73,6 +74,8 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 #### 7. Sistema CPURC (local_ftm_cpurc) - 26/02/2026
 - Import CSV, Dashboard Segreteria, Student Card (4 tab), Report Word
 - **Bottone Percorso:** Link a student_program.php nell'header della Student Card
+- **Import Produzione:** `import_production.php` - Upload Excel, dedup, anteprima, assegnazione gruppo/coach/settore/corso
+- **Filtri avanzati dashboard:** Data inizio da/a, Gruppo colore (giallo/grigio/rosso/marrone/viola)
 - Dettagli: `docs/DETAILS_CPURC.md`
 
 ---

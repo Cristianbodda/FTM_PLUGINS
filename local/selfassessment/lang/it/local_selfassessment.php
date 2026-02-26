@@ -156,3 +156,7 @@ $string['reminder_skip_perm_success'] = 'Skip permanente salvato - non vedrai pi
 $string['reminder_skip_error'] = 'Codice non valido';
 $string['quiz_blocked_title'] = 'Quiz Bloccato';
 $string['quiz_blocked_message'] = 'Per continuare con i quiz, devi prima completare l\'autovalutazione delle competenze già assegnate.';
+
+// Settings
+$string['setting_popup_enabled'] = 'Abilita popup autovalutazione';
+$string['setting_popup_enabled_desc'] = 'Se attivo, gli studenti vedranno il popup di reminder per l\'autovalutazione. Disabilitare durante il setup iniziale in produzione.';

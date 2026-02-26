@@ -34,6 +34,11 @@ class hook_callbacks {
             return;
         }
 
+        // Toggle admin: se il popup e' disabilitato nelle impostazioni, non mostrare nulla.
+        if (!get_config('local_selfassessment', 'popup_enabled')) {
+            return;
+        }
+
         // Mai durante CLI o AJAX di sistema
         if (defined('CLI_SCRIPT') || defined('ABORT_AFTER_CONFIG')) {
             return;

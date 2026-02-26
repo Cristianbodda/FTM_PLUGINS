@@ -156,3 +156,7 @@ $string['reminder_skip_perm_success'] = 'Permanent skip saved - you will not see
 $string['reminder_skip_error'] = 'Invalid code';
 $string['quiz_blocked_title'] = 'Quiz Blocked';
 $string['quiz_blocked_message'] = 'To continue with quizzes, you must first complete the self-assessment of your already assigned competencies.';
+
+// Settings
+$string['setting_popup_enabled'] = 'Enable self-assessment popup';
+$string['setting_popup_enabled_desc'] = 'When enabled, students will see the self-assessment popup reminder. Disable during initial production setup.';

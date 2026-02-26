@@ -152,6 +152,15 @@ class cpurc_manager {
             $params['dateto'] = $filters['date_to'];
         }
 
+        // Group color filter.
+        $groupjoin = '';
+        if (!empty($filters['group_color'])) {
+            $groupjoin = "LEFT JOIN {local_ftm_group_members} gm ON gm.userid = cs.userid
+                          LEFT JOIN {local_ftm_groups} grp ON grp.id = gm.groupid";
+            $where[] = "grp.color = :groupcolor";
+            $params['groupcolor'] = $filters['group_color'];
+        }
+
         $wheresql = implode(' AND ', $where);
 
         // Build query with all required user fields for fullname.
@@ -165,6 +174,7 @@ class cpurc_manager {
                 LEFT JOIN {local_ftm_cpurc_reports} r ON r.studentid = cs.id
                 LEFT JOIN {local_student_coaching} sc ON sc.userid = cs.userid
                 LEFT JOIN {user} coach ON coach.id = sc.coachid
+                {$groupjoin}
                 WHERE {$wheresql}
                 ORDER BY cs.date_start DESC, u.lastname ASC, u.firstname ASC";
 
