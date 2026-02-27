@@ -52,18 +52,24 @@ class user_manager {
 
     /**
      * Generate username from first name and last name.
-     * Format: first 3 chars of firstname + first 3 chars of lastname.
+     * Format: cognome3 + nome3 (first 3 letters of first lastname + first 3 letters of first firstname).
+     * Accents, apostrophes, spaces removed. All lowercase.
+     * Example: D'Agostino Maicol -> dagmai, Müller Giovanni José -> mulgio
      *
-     * @param string $firstname First name.
-     * @param string $lastname Last name.
+     * @param string $firstname First name (may contain multiple names).
+     * @param string $lastname Last name (may contain multiple surnames).
      * @return string Unique username.
      */
     public static function generate_username($firstname, $lastname) {
         global $DB;
 
-        // Clean and extract first 3 characters.
-        $fn = self::clean_for_username($firstname);
-        $ln = self::clean_for_username($lastname);
+        // Take only the first name/surname if multiple are present.
+        $fn_first = self::extract_first_name($firstname);
+        $ln_first = self::extract_first_name($lastname);
+
+        // Clean: remove accents, apostrophes, non-alpha chars, concatenate.
+        $fn = self::clean_for_username($fn_first);
+        $ln = self::clean_for_username($ln_first);
 
         $fn = substr($fn, 0, 3);
         $ln = substr($ln, 0, 3);
@@ -72,7 +78,8 @@ class user_manager {
         $fn = str_pad($fn, 3, 'x');
         $ln = str_pad($ln, 3, 'x');
 
-        $base = strtolower($fn . $ln);
+        // Cognome3 + Nome3 (matches LADI template).
+        $base = strtolower($ln . $fn);
 
         // Ensure uniqueness.
         $username = $base;
@@ -86,15 +93,45 @@ class user_manager {
     }
 
     /**
+     * Extract the first name from a potentially multi-part name.
+     * Handles: "Giovanni José" -> "Giovanni", "De Rossi" -> "De Rossi" (compound kept).
+     * If name starts with a short prefix (De, Di, La, Le, Lo, Von, Van, Dal, Del),
+     * it's treated as part of the surname and concatenated.
+     *
+     * @param string $name Full name string.
+     * @return string First name extracted.
+     */
+    private static function extract_first_name($name) {
+        $name = trim($name);
+        if (empty($name)) {
+            return '';
+        }
+
+        $parts = preg_split('/\s+/', $name);
+        if (count($parts) <= 1) {
+            return $name;
+        }
+
+        // If first part is a common prefix (De, Di, La, etc.), keep it attached to the next part.
+        $prefixes = ['de', 'di', 'da', 'la', 'le', 'lo', 'li', 'del', 'dal', 'van', 'von', 'el', 'al'];
+        if (in_array(strtolower($parts[0]), $prefixes) && count($parts) >= 2) {
+            return $parts[0] . $parts[1];
+        }
+
+        return $parts[0];
+    }
+
+    /**
      * Clean string for username generation.
+     * Removes accents, apostrophes, spaces, hyphens - keeps only letters.
      *
      * @param string $str Input string.
-     * @return string Cleaned string.
+     * @return string Cleaned lowercase string (only a-z).
      */
     private static function clean_for_username($str) {
-        // Remove accents and special characters.
+        // Remove accents.
         $str = self::remove_accents($str);
-        // Keep only letters.
+        // Remove everything that is not a letter (apostrophes, spaces, hyphens, numbers).
         $str = preg_replace('/[^a-zA-Z]/', '', $str);
         return strtolower($str);
     }
@@ -125,20 +162,24 @@ class user_manager {
 
     /**
      * Generate password from first name.
-     * Format: 123 + FirstName + *
+     * Format: 123 + FirstName (first word only, capitalized) + *
+     * Example: "Giovanni José" -> "123Giovanni*"
      *
      * @param string $firstname First name.
      * @return string Password.
      */
     public static function generate_password($firstname) {
-        // Clean and capitalize first letter.
         $name = self::remove_accents(trim($firstname));
+        // Take only the first name if multiple.
+        $parts = preg_split('/\s+/', $name);
+        $name = $parts[0];
         $name = ucfirst(strtolower($name));
         return '123' . $name . '*';
     }
 
     /**
      * Create or find Moodle user.
+     * Uses Moodle core API user_create_user() for proper event triggering and cache invalidation.
      *
      * @param array $data User data from CSV.
      * @param bool $updateexisting Update existing user if found.
@@ -152,98 +193,108 @@ class user_manager {
         $result->updated = false;
         $result->userid = 0;
 
-        // Check if user exists by email.
-        $existinguser = $DB->get_record('user', ['email' => $data['email'], 'deleted' => 0]);
+        // Check if user exists by email (case-insensitive).
+        $existinguser = $DB->get_record_select('user',
+            'LOWER(email) = LOWER(:email) AND deleted = 0',
+            ['email' => trim($data['email'])]
+        );
 
         if ($existinguser) {
             $result->userid = $existinguser->id;
             if ($updateexisting) {
-                // Update basic fields.
-                $existinguser->firstname = $data['firstname'];
-                $existinguser->lastname = $data['lastname'];
-                $existinguser->phone1 = $data['phone'] ?? '';
-                $existinguser->phone2 = $data['mobile'] ?? '';
-                $existinguser->timemodified = time();
-                $DB->update_record('user', $existinguser);
+                // Update basic fields via Moodle API.
+                $updateuser = new \stdClass();
+                $updateuser->id = $existinguser->id;
+                $updateuser->firstname = $data['firstname'];
+                $updateuser->lastname = $data['lastname'];
+                $updateuser->phone1 = $data['phone'] ?? '';
+                $updateuser->phone2 = $data['mobile'] ?? '';
+                user_update_user($updateuser, false);
                 $result->updated = true;
             }
             return $result;
         }
 
-        // Create new user.
+        // Create new user via Moodle API.
+        $password_plain = self::generate_password($data['firstname']);
+
         $user = new \stdClass();
         $user->username = self::generate_username($data['firstname'], $data['lastname']);
-        $user->password = hash_internal_user_password(self::generate_password($data['firstname']));
+        $user->password = $password_plain;
         $user->firstname = $data['firstname'];
         $user->lastname = $data['lastname'];
-        $user->email = $data['email'];
+        $user->email = trim($data['email']);
         $user->phone1 = $data['phone'] ?? '';
         $user->phone2 = $data['mobile'] ?? '';
         $user->auth = 'manual';
         $user->confirmed = 1;
-        $user->mnethostid = $DB->get_field('mnet_host', 'id', ['wwwroot' => $CFG->wwwroot]);
+        $user->mnethostid = $CFG->mnet_localhost_id;
         $user->lang = 'it';
         $user->timezone = 'Europe/Zurich';
-        $user->timecreated = time();
-        $user->timemodified = time();
 
-        $result->userid = $DB->insert_record('user', $user);
+        // user_create_user() handles: hashing password, setting timecreated/timemodified,
+        // triggering user_created event, invalidating caches.
+        $result->userid = user_create_user($user);
         $result->created = true;
         $result->username = $user->username;
-        $result->password_plain = self::generate_password($data['firstname']);
+        $result->password_plain = $password_plain;
 
         return $result;
     }
 
     /**
-     * Enroll user in course.
+     * Enroll user in course using Moodle enrol API.
+     * Properly triggers events, invalidates caches, assigns role.
      *
      * @param int $userid User ID.
      * @param int $courseid Course ID.
      * @return bool Success.
      */
     public static function enrol_in_course($userid, $courseid) {
-        global $DB;
+        global $DB, $CFG;
 
-        // Get or create manual enrol instance.
-        $enrol = $DB->get_record('enrol', [
-            'courseid' => $courseid,
-            'enrol' => 'manual',
-            'status' => 0,
-        ]);
+        require_once($CFG->libdir . '/enrollib.php');
 
-        if (!$enrol) {
-            // Create manual enrol instance.
-            $enrol = new \stdClass();
-            $enrol->enrol = 'manual';
-            $enrol->courseid = $courseid;
-            $enrol->status = 0;
-            $enrol->roleid = $DB->get_field('role', 'id', ['shortname' => 'student']);
-            $enrol->timecreated = time();
-            $enrol->timemodified = time();
-            $enrol->id = $DB->insert_record('enrol', $enrol);
+        // Get manual enrol plugin.
+        $enrolplugin = enrol_get_plugin('manual');
+        if (!$enrolplugin) {
+            throw new \Exception('Manual enrol plugin not available');
+        }
+
+        // Find manual enrol instance for this course.
+        $instances = enrol_get_instances($courseid, true);
+        $manualinstance = null;
+        foreach ($instances as $instance) {
+            if ($instance->enrol === 'manual') {
+                $manualinstance = $instance;
+                break;
+            }
+        }
+
+        // Create manual enrol instance if none exists.
+        if (!$manualinstance) {
+            $enrolplugin->add_instance(get_course($courseid));
+            $instances = enrol_get_instances($courseid, true);
+            foreach ($instances as $instance) {
+                if ($instance->enrol === 'manual') {
+                    $manualinstance = $instance;
+                    break;
+                }
+            }
+        }
+
+        if (!$manualinstance) {
+            throw new \Exception('Cannot create manual enrol instance for course ' . $courseid);
         }
 
         // Check if already enrolled.
-        if ($DB->record_exists('user_enrolments', ['enrolid' => $enrol->id, 'userid' => $userid])) {
+        if (is_enrolled(\context_course::instance($courseid), $userid)) {
             return true;
         }
 
-        // Create enrollment.
-        $ue = new \stdClass();
-        $ue->enrolid = $enrol->id;
-        $ue->userid = $userid;
-        $ue->status = 0;
-        $ue->timestart = 0;
-        $ue->timeend = 0;
-        $ue->timecreated = time();
-        $ue->timemodified = time();
-        $DB->insert_record('user_enrolments', $ue);
-
-        // Assign student role.
+        // Enrol user via API (handles: user_enrolments, role_assign, events, caches).
         $studentroleid = $DB->get_field('role', 'id', ['shortname' => 'student']);
-        $context = \context_course::instance($courseid);
-        role_assign($studentroleid, $userid, $context->id);
+        $enrolplugin->enrol_user($manualinstance, $userid, $studentroleid);
 
         return true;
     }

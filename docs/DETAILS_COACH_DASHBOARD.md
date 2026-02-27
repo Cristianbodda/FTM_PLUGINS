@@ -1,4 +1,4 @@
-# COACH DASHBOARD V2 - DETTAGLI TECNICI (26/02/2026)
+# COACH DASHBOARD V2 - DETTAGLI TECNICI (27/02/2026)
 
 ## Viste Disponibili
 
@@ -160,3 +160,18 @@ Query corretta sulle tabelle reali:
 ### Impatto
 - Colore badge ora corretto (era random per fallback)
 - `$student->groupid` ora valorizzato (era sempre 0)
+
+## Ordinamento Studenti (27/02/2026)
+
+### Dropdown Sort
+Aggiunto nel pannello filtri avanzati con 3 opzioni:
+| Valore | Etichetta | Logica |
+|--------|-----------|--------|
+| `recent` | Piu recenti prima | `date_start DESC` (default) |
+| `end6w` | Fine 6 settimane prima | `date_start ASC` (chi finisce prima) |
+| `alpha` | Alfabetico | `lastname ASC, firstname ASC` |
+
+### Backend
+- `dashboard_helper::get_my_students()` accetta parametro `$sort`
+- `usort()` applicato dopo il fetch dei dati
+- Parametro `sort` preservato in tutti i link, form e quick filters

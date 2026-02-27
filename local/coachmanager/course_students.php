@@ -108,8 +108,8 @@ if ($mode === 'debug' && is_siteadmin()) {
     die();
 }
 
-// courseid is required
-$courseid = required_param('courseid', PARAM_INT);
+// courseid is optional - if missing, show course selector
+$courseid = optional_param('courseid', 0, PARAM_INT);
 $colorfilter = optional_param('color', '', PARAM_ALPHA);
 $weekfilter = optional_param('week', 0, PARAM_INT);
 $statusfilter = optional_param('status', '', PARAM_ALPHANUMEXT);
@@ -117,9 +117,76 @@ $search = optional_param('search', '', PARAM_TEXT);
 $view = optional_param('view', '', PARAM_ALPHA);
 $zoom = optional_param('zoom', 0, PARAM_INT);
 
-// Permissions: coachmanager:view + (siteadmin OR grade:viewall in course)
+// Permissions
 $context = context_system::instance();
 require_capability('local/coachmanager:view', $context);
+
+// If no courseid, show course selector
+if (empty($courseid)) {
+    $PAGE->set_url(new moodle_url('/local/coachmanager/course_students.php'));
+    $PAGE->set_context($context);
+    $PAGE->set_title(get_string('course_students', 'local_coachmanager'));
+    $PAGE->set_heading(get_string('course_students', 'local_coachmanager'));
+    $PAGE->set_pagelayout('report');
+    echo $OUTPUT->header();
+
+    // Get courses where user has a role (or all courses for admin)
+    if (is_siteadmin()) {
+        $courses = $DB->get_records_select('course', 'id > 1', null, 'fullname ASC', 'id, shortname, fullname');
+    } else {
+        $courses = $DB->get_records_sql(
+            "SELECT DISTINCT c.id, c.shortname, c.fullname
+               FROM {course} c
+               JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = ?
+               JOIN {role_assignments} ra ON ra.contextid = ctx.id AND ra.userid = ?
+              WHERE c.id > 1
+           ORDER BY c.fullname",
+            [CONTEXT_COURSE, $USER->id]
+        );
+    }
+
+    // Sort: R.comp courses first, then alphabetical.
+    $rcomp = [];
+    $others = [];
+    foreach ($courses as $c) {
+        if (stripos($c->shortname, 'R.comp') !== false || stripos($c->fullname, 'R.comp') !== false) {
+            $rcomp[] = $c;
+        } else {
+            $others[] = $c;
+        }
+    }
+    $courses = array_merge($rcomp, $others);
+
+    echo '<div style="margin:40px 20px; font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;">';
+    echo '<h2 style="margin-bottom:8px;">' . get_string('course_students', 'local_coachmanager') . '</h2>';
+    echo '<p style="color:#666; margin-bottom:24px;">Seleziona un corso per visualizzare gli studenti iscritti.</p>';
+
+    if (empty($courses)) {
+        echo '<div style="padding:20px; background:#fff3cd; border-radius:8px; color:#856404;">Nessun corso disponibile.</div>';
+    } else {
+        echo '<div style="display:flex; flex-wrap:wrap; gap:12px;">';
+        $first = true;
+        foreach ($courses as $c) {
+            $url = new moodle_url('/local/coachmanager/course_students.php', ['courseid' => $c->id]);
+            $enrolled = $DB->count_records_select('user_enrolments', 'enrolid IN (SELECT id FROM {enrol} WHERE courseid = ?)', [$c->id]);
+            $is_rcomp = (stripos($c->shortname, 'R.comp') !== false || stripos($c->fullname, 'R.comp') !== false);
+            $border_color = $is_rcomp ? '#0066cc' : '#dee2e6';
+            $bg = $is_rcomp ? '#f0f7ff' : 'white';
+            $shadow = $is_rcomp ? 'box-shadow:0 2px 8px rgba(0,102,204,0.15);' : '';
+            echo '<a href="' . $url . '" style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:16px 20px; min-width:160px; max-width:220px; background:' . $bg . '; border:2px solid ' . $border_color . '; border-radius:10px; text-decoration:none; color:#333; transition:all 0.2s; ' . $shadow . '" onmouseover="this.style.borderColor=\'#0066cc\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,102,204,0.2)\'" onmouseout="this.style.borderColor=\'' . $border_color . '\';this.style.transform=\'none\';this.style.boxShadow=\'' . ($is_rcomp ? '0 2px 8px rgba(0,102,204,0.15)' : 'none') . '\'">';
+            echo '<strong style="font-size:14px; margin-bottom:4px; line-height:1.3;">' . format_string($c->fullname) . '</strong>';
+            echo '<span style="font-size:12px; color:#666; margin-bottom:8px;">' . s($c->shortname) . '</span>';
+            echo '<span style="background:' . ($is_rcomp ? '#0066cc' : '#e9ecef') . '; color:' . ($is_rcomp ? 'white' : '#333') . '; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600;">' . $enrolled . ' studenti</span>';
+            echo '</a>';
+            $first = false;
+        }
+        echo '</div>';
+    }
+    echo '</div>';
+
+    echo $OUTPUT->footer();
+    die();
+}
 
 $coursecontext = context_course::instance($courseid);
 if (!is_siteadmin() && !has_capability('moodle/grade:viewall', $coursecontext)) {

@@ -37,7 +37,7 @@ class dashboard_helper {
      * @param string $search Search term
      * @return array Array of student objects
      */
-    public function get_my_students($courseid = 0, $colorfilter = '', $weekfilter = 0, $statusfilter = '', $search = '') {
+    public function get_my_students($courseid = 0, $colorfilter = '', $weekfilter = 0, $statusfilter = '', $search = '', $sort = 'recent') {
         global $CFG;
 
         // Site admins see ALL students from all coaches
@@ -108,7 +108,50 @@ class dashboard_helper {
             $students = $this->filter_by_status($students, $statusfilter);
         }
 
-        return $students;
+        // Sort students.
+        $students_arr = array_values($students);
+        switch ($sort) {
+            case 'recent':
+                // Most recent first (lowest week number = newest student).
+                usort($students_arr, function($a, $b) {
+                    $wa = $a->current_week ?? 99;
+                    $wb = $b->current_week ?? 99;
+                    if ($wa === $wb) {
+                        return strcasecmp($a->lastname, $b->lastname);
+                    }
+                    return $wa - $wb;
+                });
+                break;
+            case 'week_desc':
+                // Highest week first (oldest students, near end of 6 weeks).
+                usort($students_arr, function($a, $b) {
+                    $wa = $a->current_week ?? 0;
+                    $wb = $b->current_week ?? 0;
+                    if ($wa === $wb) {
+                        return strcasecmp($a->lastname, $b->lastname);
+                    }
+                    return $wb - $wa;
+                });
+                break;
+            case 'alpha':
+                usort($students_arr, function($a, $b) {
+                    return strcasecmp($a->lastname . $a->firstname, $b->lastname . $b->firstname);
+                });
+                break;
+            default:
+                // Default: recent first.
+                usort($students_arr, function($a, $b) {
+                    $wa = $a->current_week ?? 99;
+                    $wb = $b->current_week ?? 99;
+                    if ($wa === $wb) {
+                        return strcasecmp($a->lastname, $b->lastname);
+                    }
+                    return $wa - $wb;
+                });
+                break;
+        }
+
+        return $students_arr;
     }
 
     /**

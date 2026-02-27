@@ -47,7 +47,7 @@ $datefrom = optional_param('datefrom', '', PARAM_TEXT);
 $dateto = optional_param('dateto', '', PARAM_TEXT);
 $groupcolor = optional_param('groupcolor', '', PARAM_TEXT);
 
-// Parse date filters (dd.mm.yyyy -> timestamp).
+// Parse date filters (YYYY-MM-DD from HTML date input -> timestamp).
 $datefrom_ts = 0;
 $dateto_ts = 0;
 if ($datefrom && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $datefrom, $m)) {
@@ -55,6 +55,10 @@ if ($datefrom && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $datefrom, $m)) {
 }
 if ($dateto && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $dateto, $m)) {
     $dateto_ts = mktime(23, 59, 59, (int)$m[2], (int)$m[3], (int)$m[1]);
+}
+// If only "Da" is set without "A", filter for exactly that single day.
+if ($datefrom_ts > 0 && $dateto_ts == 0) {
+    $dateto_ts = $datefrom_ts + 86399; // Same day 23:59:59.
 }
 
 // Get data.
@@ -480,6 +484,9 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
                 📦 Export Word (ZIP)
             </a>
             <?php if ($canimport): ?>
+            <a href="<?php echo new moodle_url('/local/ftm_cpurc/download_credentials.php', ['source' => 'db', 'sesskey' => sesskey(), 'search' => $search, 'urc' => $urc, 'sector' => $sector, 'status' => $status, 'reportstatus' => $reportstatus, 'coach' => $coach, 'datefrom' => $datefrom, 'dateto' => $dateto, 'groupcolor' => $groupcolor]); ?>" class="cpurc-btn cpurc-btn-success" style="background:#e67e22;">
+                📋 Export Credenziali LADI
+            </a>
             <button class="cpurc-btn cpurc-btn-success" onclick="document.getElementById('addStudentModal').style.display='flex'">
                 ➕ Aggiungi Studente
             </button>

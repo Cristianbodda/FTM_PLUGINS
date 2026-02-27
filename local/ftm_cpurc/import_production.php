@@ -232,7 +232,8 @@ if ($action === 'confirm' && confirm_sesskey()) {
             // 6. Assegna coach.
             $coach_userid = $row['_coach_userid'] ?? 0;
             if ($coach_userid) {
-                \local_ftm_cpurc\cpurc_manager::assign_coach($userid, $coach_userid, $COURSE_RCOMP_ID);
+                $date_start_for_coach = $row['date_start'] ?? 0;
+                \local_ftm_cpurc\cpurc_manager::assign_coach($userid, $coach_userid, $COURSE_RCOMP_ID, $date_start_for_coach);
                 $res['actions'][] = 'Coach assegnato (id=' . $coach_userid . ')';
             }
         } else {

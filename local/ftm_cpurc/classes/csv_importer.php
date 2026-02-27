@@ -455,6 +455,15 @@ class csv_importer {
                 user_manager::sync_sector($userresult->userid, $sector, $options['courseid']);
             }
 
+            // Assign coach from trainer field.
+            if (!empty($row['trainer']) && !empty($options['courseid'])) {
+                $coachid = self::find_coach_by_trainer($row['trainer']);
+                if ($coachid) {
+                    $datestart = !empty($row['date_start']) ? (int)$row['date_start'] : 0;
+                    cpurc_manager::assign_coach($userresult->userid, $coachid, $options['courseid'], $datestart);
+                }
+            }
+
             // Save extended CPURC data.
             $this->save_cpurc_student($userresult->userid, $row);
 
@@ -577,6 +586,81 @@ class csv_importer {
         $log->timecreated = time();
 
         return $DB->insert_record('local_ftm_cpurc_imports', $log);
+    }
+
+    /**
+     * Find coach user ID from trainer name in CSV.
+     * Matches against local_ftm_coaches table first, then fallback to user table.
+     *
+     * @param string $trainername Trainer name from CSV (e.g. "Cristian Bodda").
+     * @return int|null Coach user ID or null if not found.
+     */
+    private static function find_coach_by_trainer($trainername) {
+        global $DB;
+
+        static $coachcache = null;
+
+        // Build cache on first call.
+        if ($coachcache === null) {
+            $coachcache = [];
+
+            // Try local_ftm_coaches table first.
+            if ($DB->get_manager()->table_exists('local_ftm_coaches')) {
+                $coaches = $DB->get_records('local_ftm_coaches');
+                foreach ($coaches as $coach) {
+                    $fullname = strtolower(trim($coach->firstname . ' ' . $coach->lastname));
+                    $coachcache[$fullname] = $coach->userid;
+                    // Also cache by last name only for partial match.
+                    $coachcache['_ln_' . strtolower(trim($coach->lastname))] = $coach->userid;
+                }
+            }
+
+            // Fallback: known coach names from user table.
+            if (empty($coachcache)) {
+                $knowncoaches = ['cristian bodda', 'fabio marinoni', 'graziano margonar', 'roberto bravo'];
+                foreach ($knowncoaches as $name) {
+                    $parts = explode(' ', $name);
+                    $coach = $DB->get_record_select('user',
+                        'LOWER(firstname) = :fn AND LOWER(lastname) = :ln AND deleted = 0',
+                        ['fn' => $parts[0], 'ln' => $parts[1]],
+                        'id',
+                        IGNORE_MULTIPLE
+                    );
+                    if ($coach) {
+                        $coachcache[$name] = $coach->id;
+                        $coachcache['_ln_' . $parts[1]] = $coach->id;
+                    }
+                }
+            }
+        }
+
+        $trainer = strtolower(trim($trainername));
+        if (empty($trainer)) {
+            return null;
+        }
+
+        // Full name match.
+        foreach ($coachcache as $key => $uid) {
+            if (strpos($key, '_ln_') === 0) {
+                continue; // Skip lastname-only entries.
+            }
+            if (strpos($trainer, $key) !== false || strpos($key, $trainer) !== false) {
+                return $uid;
+            }
+        }
+
+        // Partial match on last name.
+        foreach ($coachcache as $key => $uid) {
+            if (strpos($key, '_ln_') !== 0) {
+                continue;
+            }
+            $lastname = substr($key, 4);
+            if (strpos($trainer, $lastname) !== false) {
+                return $uid;
+            }
+        }
+
+        return null;
     }
 
     /**

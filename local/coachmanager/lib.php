@@ -40,7 +40,7 @@ function local_coachmanager_extend_navigation(global_navigation $navigation) {
 
     $node->add(
         get_string('course_students', 'local_coachmanager'),
-        new moodle_url('/local/coachmanager/course_students.php', ['courseid' => 2]),
+        new moodle_url('/local/coachmanager/course_students.php'),
         navigation_node::TYPE_CUSTOM,
         null,
         'coachmanager_all_students',

@@ -28,6 +28,7 @@ $statusfilter = optional_param('status', '', PARAM_ALPHANUMEXT);
 $search = optional_param('search', '', PARAM_TEXT);
 $view = optional_param('view', '', PARAM_ALPHA); // classica, compatta, standard, dettagliata
 $zoom = optional_param('zoom', 0, PARAM_INT); // 90, 100, 120, 140
+$sort = optional_param('sort', 'recent', PARAM_ALPHA); // recent, week_desc, alpha
 
 // Carica preferenze utente
 $user_prefs = get_user_dashboard_preferences($USER->id);
@@ -52,7 +53,7 @@ $PAGE->set_pagelayout('report');
 
 // Carica dati
 $dashboard = new \local_coachmanager\dashboard_helper($USER->id);
-$students = $dashboard->get_my_students($courseid, $colorfilter, $weekfilter, $statusfilter, $search);
+$students = $dashboard->get_my_students($courseid, $colorfilter, $weekfilter, $statusfilter, $search, $sort);
 $courses = $dashboard->get_coach_courses();
 $groups = $dashboard->get_color_groups();
 $stats = $dashboard->get_dashboard_stats($students);
@@ -2625,6 +2626,7 @@ echo $OUTPUT->header();
             <?php if ($colorfilter): ?><input type="hidden" name="color" value="<?php echo s($colorfilter); ?>"><?php endif; ?>
             <?php if ($weekfilter): ?><input type="hidden" name="week" value="<?php echo $weekfilter; ?>"><?php endif; ?>
             <?php if ($statusfilter): ?><input type="hidden" name="status" value="<?php echo s($statusfilter); ?>"><?php endif; ?>
+            <?php if ($sort && $sort !== 'recent'): ?><input type="hidden" name="sort" value="<?php echo s($sort); ?>"><?php endif; ?>
             <div style="position: relative; flex: 1; max-width: 400px;">
                 <input type="text" name="search" value="<?php echo s($search); ?>"
                        placeholder="Cerca studente per nome, cognome o email..."
@@ -2633,7 +2635,7 @@ echo $OUTPUT->header();
             </div>
             <button type="submit" class="btn btn-sm btn-primary" style="padding: 10px 18px; border-radius: 8px; font-size: 14px;">Cerca</button>
             <?php if (!empty($search)): ?>
-            <a href="?view=<?php echo s($view); ?>&zoom=<?php echo $zoom; ?><?php echo $courseid ? '&courseid='.$courseid : ''; ?><?php echo $colorfilter ? '&color='.s($colorfilter) : ''; ?><?php echo $weekfilter ? '&week='.$weekfilter : ''; ?><?php echo $statusfilter ? '&status='.s($statusfilter) : ''; ?>"
+            <a href="?view=<?php echo s($view); ?>&zoom=<?php echo $zoom; ?><?php echo $courseid ? '&courseid='.$courseid : ''; ?><?php echo $colorfilter ? '&color='.s($colorfilter) : ''; ?><?php echo $weekfilter ? '&week='.$weekfilter : ''; ?><?php echo $statusfilter ? '&status='.s($statusfilter) : ''; ?><?php echo ($sort && $sort !== 'recent') ? '&sort='.s($sort) : ''; ?>"
                class="btn btn-sm btn-outline-secondary" style="padding: 10px 14px; border-radius: 8px; font-size: 13px;" title="Cancella ricerca">&#x2715;</a>
             <?php endif; ?>
         </form>
@@ -2654,6 +2656,7 @@ echo $OUTPUT->header();
                 if ($colorfilter) $active_filters++;
                 if ($weekfilter) $active_filters++;
                 if ($statusfilter) $active_filters++;
+                if ($sort && $sort !== 'recent') $active_filters++;
                 if ($active_filters > 0): ?>
                 <span style="background: #0066cc; color: white; border-radius: 12px; padding: 2px 8px; font-size: 12px; font-weight: 600;"><?php echo $active_filters; ?> attivi</span>
                 <?php endif; ?>
@@ -2669,7 +2672,7 @@ echo $OUTPUT->header();
                 <!-- TABELLA per forzare layout orizzontale -->
                 <table style="width: 100%; border: none; border-collapse: collapse;">
                 <tr>
-                    <td style="padding: 10px; vertical-align: top; width: 25%;">
+                    <td style="padding: 10px; vertical-align: top; width: 20%;">
                         <label style="display: block; font-weight: 600; color: #555; margin-bottom: 8px;"><?php echo get_string('course', 'local_coachmanager'); ?></label>
                         <select name="courseid" onchange="this.form.submit()" style="width: 100%; padding: 12px; border: 2px solid #a0a8c0; border-radius: 8px; font-size: 15px; color: #333;">
                             <option value=""><?php echo get_string('all_courses', 'local_coachmanager'); ?></option>
@@ -2680,7 +2683,7 @@ echo $OUTPUT->header();
                             <?php endforeach; ?>
                         </select>
                     </td>
-                    <td style="padding: 10px; vertical-align: top; width: 25%;">
+                    <td style="padding: 10px; vertical-align: top; width: 20%;">
                         <label style="display: block; font-weight: 600; color: #555; margin-bottom: 8px;"><?php echo get_string('group_color', 'local_coachmanager'); ?></label>
                         <div class="color-chips" style="display: flex; gap: 8px; flex-wrap: wrap;">
                             <?php
@@ -2697,7 +2700,7 @@ echo $OUTPUT->header();
                         </div>
                         <input type="hidden" name="color" id="colorFilter" value="<?php echo s($colorfilter); ?>">
                     </td>
-                    <td style="padding: 10px; vertical-align: top; width: 25%;">
+                    <td style="padding: 10px; vertical-align: top; width: 20%;">
                         <label style="display: block; font-weight: 600; color: #555; margin-bottom: 8px;"><?php echo get_string('week', 'local_coachmanager'); ?></label>
                         <select name="week" onchange="this.form.submit()" style="width: 100%; padding: 12px; border: 2px solid #a0a8c0; border-radius: 8px; font-size: 15px; color: #333;">
                             <option value=""><?php echo get_string('all_weeks', 'local_coachmanager'); ?></option>
@@ -2709,7 +2712,7 @@ echo $OUTPUT->header();
                             <?php endfor; ?>
                         </select>
                     </td>
-                    <td style="padding: 10px; vertical-align: top; width: 25%;">
+                    <td style="padding: 10px; vertical-align: top; width: 20%;">
                         <label style="display: block; font-weight: 600; color: #555; margin-bottom: 8px;"><?php echo get_string('status', 'local_coachmanager'); ?></label>
                         <select name="status" onchange="this.form.submit()" style="width: 100%; padding: 12px; border: 2px solid #a0a8c0; border-radius: 8px; font-size: 15px; color: #333;">
                             <option value=""><?php echo get_string('all_statuses', 'local_coachmanager'); ?></option>
@@ -2718,6 +2721,14 @@ echo $OUTPUT->header();
                             <option value="no_autoval" <?php echo $statusfilter == 'no_autoval' ? 'selected' : ''; ?>>Manca Autovalutazione</option>
                             <option value="no_lab" <?php echo $statusfilter == 'no_lab' ? 'selected' : ''; ?>>Manca Laboratorio</option>
                             <option value="no_choices" <?php echo $statusfilter == 'no_choices' ? 'selected' : ''; ?>>Mancano Scelte</option>
+                        </select>
+                    </td>
+                    <td style="padding: 10px; vertical-align: top; width: 20%;">
+                        <label style="display: block; font-weight: 600; color: #555; margin-bottom: 8px;">Ordinamento</label>
+                        <select name="sort" onchange="this.form.submit()" style="width: 100%; padding: 12px; border: 2px solid #a0a8c0; border-radius: 8px; font-size: 15px; color: #333;">
+                            <option value="recent" <?php echo $sort == 'recent' ? 'selected' : ''; ?>>Piu recenti prima</option>
+                            <option value="week_desc" <?php echo $sort == 'week_desc' ? 'selected' : ''; ?>>Fine 6 settimane prima</option>
+                            <option value="alpha" <?php echo $sort == 'alpha' ? 'selected' : ''; ?>>Alfabetico</option>
                         </select>
                     </td>
                 </tr>
@@ -2752,28 +2763,29 @@ echo $OUTPUT->header();
 
     <!-- Quick Filters -->
     <div class="quick-filters">
+        <?php $sort_param = ($sort && $sort !== 'recent') ? '&sort=' . s($sort) : ''; ?>
         <button class="quick-filter <?php echo empty($statusfilter) ? 'active' : ''; ?>"
-                onclick="location.href='?view=<?php echo $view; ?>&zoom=<?php echo $zoom; ?>'">
+                onclick="location.href='?view=<?php echo $view; ?>&zoom=<?php echo $zoom; ?><?php echo $sort_param; ?>'">
             Tutti (<?php echo $stats['total_students']; ?>)
         </button>
         <button class="quick-filter <?php echo $statusfilter == 'no_choices' ? 'active' : ''; ?>"
-                onclick="location.href='?view=<?php echo $view; ?>&zoom=<?php echo $zoom; ?>&status=no_choices'">
+                onclick="location.href='?view=<?php echo $view; ?>&zoom=<?php echo $zoom; ?>&status=no_choices<?php echo $sort_param; ?>'">
             Mancano Scelte (<?php echo $stats['missing_choices']; ?>)
         </button>
         <button class="quick-filter <?php echo $statusfilter == 'no_autoval' ? 'active' : ''; ?>"
-                onclick="location.href='?view=<?php echo $view; ?>&zoom=<?php echo $zoom; ?>&status=no_autoval'">
+                onclick="location.href='?view=<?php echo $view; ?>&zoom=<?php echo $zoom; ?>&status=no_autoval<?php echo $sort_param; ?>'">
             Manca Autoval (<?php echo $stats['missing_autoval']; ?>)
         </button>
         <button class="quick-filter <?php echo $statusfilter == 'no_lab' ? 'active' : ''; ?>"
-                onclick="location.href='?view=<?php echo $view; ?>&zoom=<?php echo $zoom; ?>&status=no_lab'">
+                onclick="location.href='?view=<?php echo $view; ?>&zoom=<?php echo $zoom; ?>&status=no_lab<?php echo $sort_param; ?>'">
             Manca Lab (<?php echo $stats['missing_lab']; ?>)
         </button>
         <button class="quick-filter <?php echo $statusfilter == 'below50' ? 'active' : ''; ?>"
-                onclick="location.href='?view=<?php echo $view; ?>&zoom=<?php echo $zoom; ?>&status=below50'">
+                onclick="location.href='?view=<?php echo $view; ?>&zoom=<?php echo $zoom; ?>&status=below50<?php echo $sort_param; ?>'">
             Sotto Soglia (<?php echo $stats['below_threshold']; ?>)
         </button>
         <button class="quick-filter end6 <?php echo $statusfilter == 'end6' ? 'active' : ''; ?>"
-                onclick="location.href='?view=<?php echo $view; ?>&zoom=<?php echo $zoom; ?>&status=end6'">
+                onclick="location.href='?view=<?php echo $view; ?>&zoom=<?php echo $zoom; ?>&status=end6<?php echo $sort_param; ?>'">
             Fine 6 Sett. (<?php echo $stats['end_6_weeks']; ?>)
         </button>
     </div>

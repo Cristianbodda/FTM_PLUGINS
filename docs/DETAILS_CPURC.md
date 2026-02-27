@@ -1,4 +1,4 @@
-# SISTEMA CPURC - DETTAGLI TECNICI (26/02/2026)
+# SISTEMA CPURC - DETTAGLI TECNICI (27/02/2026)
 
 ## Panoramica
 Sistema completo per la gestione degli studenti CPURC (Centro Professionale URC) con import da CSV, gestione anagrafica, assegnazione coach/settori e generazione report Word.
@@ -11,6 +11,8 @@ local/ftm_cpurc/
 ├── student_card.php          # Scheda studente (4 tab)
 ├── report.php                # Compilazione report Word
 ├── import.php                # Import CSV CPURC
+├── ajax_import.php           # AJAX endpoint import (preview/import + dedup)
+├── download_credentials.php  # Export Excel credenziali LADI (session/db)
 ├── export_excel.php          # Export Excel completo
 ├── export_word.php           # Export singolo Word
 ├── export_word_bulk.php      # Export ZIP tutti i Word
@@ -129,10 +131,57 @@ Mapping esplicito (non modulo KW): 19.01=giallo, 02.02=grigio, 16.02=rosso, 02.0
 ### Corso R.comp
 Cercato per nome (`find_course('R.comp')`) - non hardcoded. Se non trovato, iscrizione saltata con warning.
 
+## Export Credenziali LADI (27/02/2026)
+
+### File: `download_credentials.php`
+Due modalita di funzionamento:
+- **`source=session`**: Dopo un import, legge da `$SESSION->cpurc_credentials` (impostato da `ajax_import.php`)
+- **`source=db`**: Dalla dashboard, usa `cpurc_manager::get_students($filters)` con gli stessi filtri attivi
+
+### Formato Excel
+Layout LADI template con PhpSpreadsheet:
+- **Row 1:** "Inizio" + data (piu recente date_start)
+- **Row 3:** Headers (A=#, B=Nome, C=Cognome, D=Localita, E=E-mail, F=N.Personale, G=Formatore, H=Username, I=Password, J=Gruppo)
+- **Colori:** Header grigio scuro (#595959), Input azzurro (#D6E4F0), F3M Academy arancio (#F2DCAB)
+- **Username:** cognome3+nome3 (prime 3 lettere primo cognome + prime 3 primo nome, no accenti/apostrofi)
+- **Password:** `123` + Nome (ucfirst, primo nome solo) + `*`
+- **Gruppo:** `KW XX gruppo colore` (calcolato da date_start)
+
+### Bottone Dashboard
+Nella header buttons di `index.php`, arancione (#e67e22), visibile con capability `import`.
+Passa tutti i filtri correnti (search, urc, sector, status, reportstatus, coach, datefrom, dateto, groupcolor).
+
+## Fix User Creation & Enrollment (27/02/2026)
+
+### user_manager::create_or_find_user()
+- Usa `user_create_user()` API Moodle (non `$DB->insert_record('user')`)
+- Eventi e cache gestiti correttamente
+- Lookup email case-insensitive con `LOWER()`
+- Update con `user_update_user()` se `update_existing=true`
+
+### user_manager::enrol_in_course()
+- Usa `enrol_get_plugin('manual')->enrol_user()` (non manipolazione diretta tabelle)
+- Crea enrol instance con `add_instance()` se non presente
+- Check `is_enrolled()` prima di iscrivere (idempotente)
+
+### user_manager::generate_username()
+- Formato: `cognome3` + `nome3` (es. "Brunner Ziggy" -> "bruzig")
+- `extract_first_name()` gestisce nomi composti (De Rossi -> "der", Von Moos -> "vonmoo")
+- Prefissi: de, di, da, la, le, lo, li, del, dal, van, von, el, al
+- Dedup: `username + counter` se gia esistente
+
+### Import Deduplication (ajax_import.php)
+- Per email (case-insensitive), tiene la row con `date_start` piu recente
+- Credenziali salvate in `$SESSION` per download Excel successivo
+
+### Coach Auto-Assignment (csv_importer.php)
+- `find_coach_by_trainer()`: match nome formatore CSV -> `local_ftm_coaches` + fallback user table
+- Coach assegnato durante import con `cpurc_manager::assign_coach()` usando `date_start` reale dal CSV
+
 ## Capabilities
 | Capability | Descrizione |
 |------------|-------------|
 | local/ftm_cpurc:view | Visualizza dashboard e student card |
 | local/ftm_cpurc:edit | Modifica dati, assegna coach/settori |
-| local/ftm_cpurc:import | Importa CSV |
+| local/ftm_cpurc:import | Importa CSV + Export Credenziali LADI |
 | local/ftm_cpurc:generatereport | Genera e esporta report Word |

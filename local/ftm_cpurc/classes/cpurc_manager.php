@@ -165,7 +165,7 @@ class cpurc_manager {
 
         // Build query with all required user fields for fullname.
         // Include coach from local_student_coaching (shared table).
-        $sql = "SELECT cs.*, u.id as moodleuserid, u.firstname, u.lastname, u.email,
+        $sql = "SELECT cs.*, u.id as moodleuserid, u.username, u.firstname, u.lastname, u.email,
                        u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename,
                        r.id as reportid, r.status as report_status,
                        sc.coachid, coach.firstname as coach_firstname, coach.lastname as coach_lastname
@@ -427,9 +427,10 @@ class cpurc_manager {
      * @param int $userid Moodle user ID.
      * @param int $coachid Coach user ID.
      * @param int $courseid Course ID (optional).
+     * @param int $datestart Actual course start date timestamp (optional, defaults to now).
      * @return bool Success.
      */
-    public static function assign_coach($userid, $coachid, $courseid = 0) {
+    public static function assign_coach($userid, $coachid, $courseid = 0, $datestart = 0) {
         global $DB;
 
         // Check if coaching record exists.
@@ -439,22 +440,29 @@ class cpurc_manager {
         ]);
 
         $now = time();
+        // Use real date_start from CSV if provided, otherwise fallback to now.
+        $actualstart = ($datestart > 0) ? $datestart : $now;
 
         if ($existing) {
-            // Update existing record.
+            // Update existing record - update coach, recalculate dates if provided.
             $existing->coachid = $coachid;
+            if ($datestart > 0) {
+                $existing->date_start = $actualstart;
+                $existing->date_end = $actualstart + (6 * 7 * 24 * 60 * 60);
+                $existing->current_week = self::calculate_week_number($actualstart);
+            }
             $existing->timemodified = $now;
             return $DB->update_record('local_student_coaching', $existing);
         } else {
-            // Create new record.
+            // Create new record with real date_start.
             $record = new \stdClass();
             $record->userid = $userid;
             $record->coachid = $coachid;
             $record->courseid = $courseid;
             $record->status = 'active';
-            $record->current_week = 1;
-            $record->date_start = $now;
-            $record->date_end = $now + (6 * 7 * 24 * 60 * 60); // 6 weeks.
+            $record->current_week = self::calculate_week_number($actualstart);
+            $record->date_start = $actualstart;
+            $record->date_end = $actualstart + (6 * 7 * 24 * 60 * 60); // 6 weeks from real start.
             $record->timecreated = $now;
             $record->timemodified = $now;
             return $DB->insert_record('local_student_coaching', $record);

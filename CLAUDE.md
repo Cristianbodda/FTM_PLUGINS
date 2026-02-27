@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida per Claude
 
-**Ultimo aggiornamento:** 26 Febbraio 2026
+**Ultimo aggiornamento:** 27 Febbraio 2026
 
 ## Panoramica Progetto
 
@@ -12,7 +12,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (26/02/2026)
+## STATO ATTUALE SVILUPPO (27/02/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -59,7 +59,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - CSV Import: supporta file esportati dal Quiz Export Tool (semicolon, UTF-8 BOM)
 - **Sostituisci domande:** Checkbox per cancellare quiz+domande vecchie e reimportare da Excel pulito
 
-#### 6. Coach Dashboard V2 (local_coachmanager) - 26/02/2026
+#### 6. Coach Dashboard V2 (local_coachmanager) - 27/02/2026
 - 4 Viste, Zoom accessibilita, Filtri, Timeline, Note Coach, Export Word
 - Navigazione dentro corsi (sidebar link)
 - Reports V2: link diretto a Student Report con parametri preimpostati
@@ -69,13 +69,19 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Vista compatta ottimizzata:** Grid layout con overflow control, badge settore read-only
 - **Bottone Percorso Studente:** Link diretto a student_program.php (tutte le viste + CPURC student card)
 - **Fix tabelle gruppi:** `get_student_group()` usa `local_ftm_group_members`/`local_ftm_groups` (corrette)
+- **Ordinamento studenti:** Dropdown sort (recenti/fine 6 sett./alfabetico) in filtri avanzati
 - Dettagli: `docs/DETAILS_COACH_DASHBOARD.md`
 
-#### 7. Sistema CPURC (local_ftm_cpurc) - 26/02/2026
+#### 7. Sistema CPURC (local_ftm_cpurc) - 27/02/2026
 - Import CSV, Dashboard Segreteria, Student Card (4 tab), Report Word
 - **Bottone Percorso:** Link a student_program.php nell'header della Student Card
 - **Import Produzione:** `import_production.php` - Upload Excel, dedup, anteprima, assegnazione gruppo/coach/settore/corso
 - **Filtri avanzati dashboard:** Data inizio da/a, Gruppo colore (giallo/grigio/rosso/marrone/viola)
+- **Fix user creation:** `user_create_user()` API + `enrol_get_plugin('manual')` per enrollment corretto
+- **Username:** cognome3+nome3 (prime 3 lettere primo cognome + prime 3 lettere primo nome)
+- **Export Credenziali LADI:** Excel con formato LADI template, filtri dashboard, modalita session/db
+- **Import dedup:** Per email, tiene row con date_start piu recente
+- **Coach auto-assign:** Import CSV assegna coach tramite mapping formatore->coach
 - Dettagli: `docs/DETAILS_CPURC.md`
 
 ---

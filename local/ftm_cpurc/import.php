@@ -424,11 +424,17 @@ echo $OUTPUT->header();
         </div>
 
         <div id="credentials-section" style="display:none;">
-            <h4 style="margin-top:20px;">🔑 Credenziali Create</h4>
+            <h4 style="margin-top:20px;">Credenziali Utenti</h4>
             <div class="credentials-list" id="credentials-list"></div>
-            <button type="button" id="btn-download-credentials" class="cpurc-btn cpurc-btn-primary" style="margin-top:15px;">
-                📥 Scarica CSV Credenziali
-            </button>
+            <div style="display:flex; gap:12px; margin-top:15px;">
+                <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/download_credentials.php?sesskey=<?php echo sesskey(); ?>"
+                   id="btn-download-excel" class="cpurc-btn cpurc-btn-success" style="display:none; text-decoration:none;">
+                    Scarica Excel Credenziali (LADI)
+                </a>
+                <button type="button" id="btn-download-credentials" class="cpurc-btn cpurc-btn-primary">
+                    Scarica CSV Credenziali
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -629,10 +635,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         resultContent.innerHTML = html;
 
-        // Show credentials if any were created
+        // Show credentials for all processed users.
         if (data.credentials && data.credentials.length > 0) {
             importedCredentials = data.credentials;
             showCredentials(data.credentials);
+            // Show Excel download button.
+            document.getElementById('btn-download-excel').style.display = 'inline-flex';
         }
     }
 
@@ -640,14 +648,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const section = document.getElementById('credentials-section');
         const list = document.getElementById('credentials-list');
 
-        let html = '<table><thead><tr><th>Nome</th><th>Cognome</th><th>Username</th><th>Password</th></tr></thead><tbody>';
+        let html = '<table><thead><tr><th>#</th><th>Nome</th><th>Cognome</th><th>Localita</th><th>E-mail</th><th>N. Personale</th><th>Formatore</th><th>Username</th><th>Password</th><th>Gruppo</th><th>Stato</th></tr></thead><tbody>';
 
-        credentials.forEach(cred => {
-            html += '<tr>';
+        credentials.forEach((cred, i) => {
+            const isNew = cred.created;
+            html += '<tr style="' + (isNew ? 'background:#d4edda;' : '') + '">';
+            html += '<td>' + (i + 1) + '</td>';
             html += '<td>' + escapeHtml(cred.firstname) + '</td>';
-            html += '<td>' + escapeHtml(cred.lastname) + '</td>';
+            html += '<td><strong>' + escapeHtml(cred.lastname) + '</strong></td>';
+            html += '<td>' + escapeHtml(cred.city || '') + '</td>';
+            html += '<td>' + escapeHtml(cred.email) + '</td>';
+            html += '<td>' + escapeHtml(cred.personal_number || '') + '</td>';
+            html += '<td>' + escapeHtml(cred.trainer || '') + '</td>';
             html += '<td><code>' + escapeHtml(cred.username) + '</code></td>';
             html += '<td><code>' + escapeHtml(cred.password) + '</code></td>';
+            html += '<td>' + escapeHtml(cred.group || '') + '</td>';
+            html += '<td>' + (isNew ? '<span style="color:#28a745;font-weight:600;">Nuovo</span>' : '<span style="color:#0066cc;">Esistente</span>') + '</td>';
             html += '</tr>';
         });
 

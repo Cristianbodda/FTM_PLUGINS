@@ -86,22 +86,82 @@ try {
             throw new \Exception('No valid rows found in file');
         }
 
+        // Deduplication: keep the row with the most recent date_start for each email.
+        $byemail = [];
+        foreach ($rows as $row) {
+            $email = strtolower(trim($row['email'] ?? ''));
+            if (empty($email)) {
+                continue;
+            }
+            if (!isset($byemail[$email])) {
+                $byemail[$email] = $row;
+            } else {
+                $existingdate = $byemail[$email]['date_start'] ?? 0;
+                $newdate = $row['date_start'] ?? 0;
+                if ($newdate > $existingdate) {
+                    $byemail[$email] = $row;
+                }
+            }
+        }
+        $rows = array_values($byemail);
+
         // Import each row.
         $credentials = [];
         foreach ($rows as $row) {
             $result = $importer->import_row($row, $options);
 
-            // Collect credentials for newly created users.
-            if ($result['created'] && isset($result['username']) && isset($result['password'])) {
-                $credentials[] = [
+            // Collect credentials for all processed users (created or found).
+            if ($result['success']) {
+                // Password: 123 + FirstName (capitalized) + *
+                $password_display = \local_ftm_cpurc\user_manager::generate_password($row['firstname']);
+
+                $cred = [
                     'firstname' => $row['firstname'],
                     'lastname' => $row['lastname'],
+                    'city' => $row['address_city'] ?? '',
                     'email' => $row['email'],
-                    'username' => $result['username'],
-                    'password' => $result['password'],
+                    'personal_number' => $row['personal_number'] ?? '',
+                    'trainer' => $row['trainer'] ?? '',
+                    'created' => $result['created'],
                 ];
+
+                if ($result['created'] && isset($result['username'])) {
+                    $cred['username'] = $result['username'];
+                    $cred['password'] = $password_display;
+                } else {
+                    // Existing user - fetch username from DB.
+                    $existinguser = $DB->get_record('user', ['id' => $result['userid']], 'username');
+                    $cred['username'] = $existinguser ? $existinguser->username : '';
+                    $cred['password'] = $password_display;
+                }
+
+                // Get group info.
+                if (!empty($row['date_start'])) {
+                    $kw = (int)date('W', $row['date_start']);
+                    $colorindex = ($kw - 1) % 5;
+                    $colors = ['giallo', 'grigio', 'rosso', 'marrone', 'viola'];
+                    $color = $colors[$colorindex];
+                    $cred['group'] = 'KW ' . str_pad($kw, 2, '0', STR_PAD_LEFT) . ' gruppo ' . $color;
+                } else {
+                    $cred['group'] = '';
+                }
+
+                $credentials[] = $cred;
             }
         }
+
+        // Store credentials in session for Excel download.
+        // Use the most recent date_start from imported rows as the "Inizio" date.
+        global $SESSION;
+        $SESSION->cpurc_credentials = $credentials;
+        $maxdate = 0;
+        foreach ($rows as $r) {
+            $ds = $r['date_start'] ?? 0;
+            if ($ds > $maxdate) {
+                $maxdate = $ds;
+            }
+        }
+        $SESSION->cpurc_credentials_date = $maxdate > 0 ? date('d.m.Y', $maxdate) : date('d.m.Y');
 
         // Log import.
         $importer->log_import($filename);
