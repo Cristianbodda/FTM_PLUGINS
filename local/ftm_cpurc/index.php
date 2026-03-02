@@ -505,6 +505,9 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
             <a href="<?php echo new moodle_url('/local/competencymanager/sector_admin.php'); ?>" class="cpurc-btn cpurc-btn-secondary">
                 🎯 Settori
             </a>
+            <a href="<?php echo new moodle_url('/local/ftm_scheduler/manage_coaches.php'); ?>" class="cpurc-btn cpurc-btn-secondary">
+                👥 Gestione Coach
+            </a>
         </div>
     </div>
 

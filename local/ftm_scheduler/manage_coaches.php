@@ -91,7 +91,10 @@ $coaches = $DB->get_records_sql("
     ORDER BY c.initials
 ");
 
-// Carica utenti potenziali (editingteacher o manager)
+// Carica utenti potenziali (editingteacher, manager, o siteadmin)
+$siteadmins = get_admins();
+$adminids = array_keys($siteadmins);
+
 $potential_users = $DB->get_records_sql("
     SELECT DISTINCT u.id, u.firstname, u.lastname, u.username, u.email
     FROM {user} u
@@ -102,6 +105,17 @@ $potential_users = $DB->get_records_sql("
     AND u.id NOT IN (SELECT userid FROM {local_ftm_coaches})
     ORDER BY u.lastname, u.firstname
 ");
+
+// Also include site admins not yet in coaches table.
+foreach ($siteadmins as $admin) {
+    if ($admin->deleted || isset($potential_users[$admin->id])) {
+        continue;
+    }
+    if ($DB->record_exists('local_ftm_coaches', ['userid' => $admin->id])) {
+        continue;
+    }
+    $potential_users[$admin->id] = $admin;
+}
 
 echo $OUTPUT->header();
 ?>

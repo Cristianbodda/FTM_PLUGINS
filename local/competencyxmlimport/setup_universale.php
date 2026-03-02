@@ -2656,7 +2656,7 @@ if ($step == 5 && $action === 'execute'):
             // Crea question
             $question = new stdClass();
             $question->name = $full_name;
-            $question->questiontext = $qtext;
+            $question->questiontext = local_competencyxmlimport_clean_questiontext($qtext);
             $question->questiontextformat = FORMAT_HTML;
             $question->generalfeedback = '';
             $question->generalfeedbackformat = FORMAT_HTML;
@@ -2699,7 +2699,7 @@ if ($step == 5 && $action === 'execute'):
             for ($i = 0; $i < count($answers[0]); $i++) {
                 $ans = new stdClass();
                 $ans->question = $question->id;
-                $ans->answer = html_entity_decode($answers[2][$i]);
+                $ans->answer = local_competencyxmlimport_clean_questiontext(html_entity_decode($answers[2][$i]));
                 $ans->answerformat = FORMAT_HTML;
                 $ans->fraction = $answers[1][$i] / 100;
                 $ans->feedback = '';

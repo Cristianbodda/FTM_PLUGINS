@@ -834,7 +834,7 @@ function convert_word_questions_to_xml($questions, $quiz_name) {
         
         $xml .= '<question type="multichoice">' . "\n";
         $xml .= '    <name><text>' . $name . '</text></name>' . "\n";
-        $xml .= '    <questiontext format="html"><text>&lt;p&gt;' . $text . '&lt;/p&gt;</text></questiontext>' . "\n";
+        $xml .= '    <questiontext format="html"><text>' . $text . '</text></questiontext>' . "\n";
         $xml .= '    <generalfeedback format="html"><text></text></generalfeedback>' . "\n";
         $xml .= '    <defaultgrade>1.0000000</defaultgrade>' . "\n";
         $xml .= '    <penalty>0.3333333</penalty>' . "\n";
@@ -849,11 +849,11 @@ function convert_word_questions_to_xml($questions, $quiz_name) {
             $feedback = ($letter === $q['correct_answer']) ? 'Corretto!' : 'Non corretto.';
             $answer_escaped = htmlspecialchars($answer_text);
             
-            $xml .= '    <answer fraction="' . $fraction . '" format="html"><text>&lt;p&gt;' . $answer_escaped . '&lt;/p&gt;</text><feedback format="html"><text>&lt;p&gt;' . $feedback . '&lt;/p&gt;</text></feedback></answer>' . "\n";
+            $xml .= '    <answer fraction="' . $fraction . '" format="html"><text>' . $answer_escaped . '</text><feedback format="html"><text>' . $feedback . '</text></feedback></answer>' . "\n";
         }
         
-        $xml .= '    <correctfeedback format="html"><text>&lt;p&gt;Risposta corretta!&lt;/p&gt;</text></correctfeedback>' . "\n";
-        $xml .= '    <incorrectfeedback format="html"><text>&lt;p&gt;Risposta non corretta.&lt;/p&gt;</text></incorrectfeedback>' . "\n";
+        $xml .= '    <correctfeedback format="html"><text>Risposta corretta!</text></correctfeedback>' . "\n";
+        $xml .= '    <incorrectfeedback format="html"><text>Risposta non corretta.</text></incorrectfeedback>' . "\n";
         $xml .= '</question>' . "\n\n";
     }
     

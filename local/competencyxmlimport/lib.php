@@ -25,6 +25,40 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
+ * Clean question text by removing unnecessary HTML wrapping.
+ *
+ * Strips outer <p></p> tags (single paragraph only), trailing <br> tags,
+ * and excess whitespace that cause large gaps in quiz display.
+ *
+ * @param string $text The question or answer text.
+ * @return string Cleaned text.
+ */
+function local_competencyxmlimport_clean_questiontext($text) {
+    $text = trim($text);
+    if (empty($text)) {
+        return '';
+    }
+
+    // Strip outer <p>...</p> wrapping (only if it's a single paragraph, no nested <p>).
+    if (preg_match('/^\s*<p>(.*)<\/p>\s*$/si', $text, $m)) {
+        $inner = $m[1];
+        // Only strip if there are no other <p> tags inside (preserve multi-paragraph content).
+        if (stripos($inner, '<p>') === false && stripos($inner, '<p ') === false) {
+            $text = $inner;
+        }
+    }
+
+    // Remove trailing <br> / <br/> / <br /> tags.
+    $text = preg_replace('/(\s*<br\s*\/?\s*>\s*)+$/i', '', $text);
+
+    // Remove leading/trailing whitespace and non-breaking spaces.
+    $text = trim($text);
+    $text = preg_replace('/^(\s|&nbsp;)+|(\s|&nbsp;)+$/i', '', $text);
+
+    return trim($text);
+}
+
+/**
  * Extend navigation to add quiz export link.
  *
  * @param global_navigation $navigation The navigation object.

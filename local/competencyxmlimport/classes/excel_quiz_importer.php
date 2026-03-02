@@ -1035,7 +1035,7 @@ class excel_quiz_importer {
         // Create question
         $question = new \stdClass();
         $question->name = $qdata['name'];
-        $question->questiontext = $qdata['questiontext'];
+        $question->questiontext = local_competencyxmlimport_clean_questiontext($qdata['questiontext']);
         $question->questiontextformat = FORMAT_HTML;
         $question->generalfeedback = '';
         $question->generalfeedbackformat = FORMAT_HTML;
@@ -1078,7 +1078,7 @@ class excel_quiz_importer {
             if (!empty(trim($answer['text']))) {
                 $ans = new \stdClass();
                 $ans->question = $question->id;
-                $ans->answer = $answer['text'];
+                $ans->answer = local_competencyxmlimport_clean_questiontext($answer['text']);
                 $ans->answerformat = FORMAT_HTML;
                 $ans->fraction = $answer['fraction'];
                 $ans->feedback = '';

@@ -183,6 +183,7 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
 .sector-AUTOMAZIONE { background: #F3E8FF; color: #6B21A8; }
 .sector-METALCOSTRUZIONE { background: #E5E7EB; color: #374151; }
 .sector-CHIMFARM { background: #FCE7F3; color: #9D174D; }
+.sector-GENERICO { background: #F0FDF4; color: #166534; }
 
 /* Tabs */
 .card-tabs {
@@ -691,6 +692,7 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
                 'AUTOMAZIONE' => 'Automazione',
                 'METALCOSTRUZIONE' => 'Metalcostruzione',
                 'CHIMFARM' => 'Chimico-Farmaceutico',
+                'GENERICO' => 'Generico',
             ];
             $studentSectors = \local_ftm_cpurc\cpurc_manager::get_student_sectors($student->userid);
             $primarySector = '';

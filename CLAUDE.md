@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida per Claude
 
-**Ultimo aggiornamento:** 27 Febbraio 2026
+**Ultimo aggiornamento:** 02 Marzo 2026
 
 ## Panoramica Progetto
 
@@ -58,6 +58,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - Quiz Export Tool (CSV/Excel), Excel/CSV Quiz Import (.xlsx/.xlsb/.csv)
 - CSV Import: supporta file esportati dal Quiz Export Tool (semicolon, UTF-8 BOM)
 - **Sostituisci domande:** Checkbox per cancellare quiz+domande vecchie e reimportare da Excel pulito
+- **Fix HTML quiz:** Rimosso wrapping `<p>` e `<br>` da import (tutte le path) + script fix DB esistenti
 
 #### 6. Coach Dashboard V2 (local_coachmanager) - 27/02/2026
 - 4 Viste, Zoom accessibilita, Filtri, Timeline, Note Coach, Export Word
@@ -72,7 +73,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Ordinamento studenti:** Dropdown sort (recenti/fine 6 sett./alfabetico) in filtri avanzati
 - Dettagli: `docs/DETAILS_COACH_DASHBOARD.md`
 
-#### 7. Sistema CPURC (local_ftm_cpurc) - 27/02/2026
+#### 7. Sistema CPURC (local_ftm_cpurc) - 02/03/2026
 - Import CSV, Dashboard Segreteria, Student Card (4 tab), Report Word
 - **Bottone Percorso:** Link a student_program.php nell'header della Student Card
 - **Import Produzione:** `import_production.php` - Upload Excel, dedup, anteprima, assegnazione gruppo/coach/settore/corso
@@ -82,6 +83,9 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Export Credenziali LADI:** Excel con formato LADI template, filtri dashboard, modalita session/db
 - **Import dedup:** Per email, tiene row con date_start piu recente
 - **Coach auto-assign:** Import CSV assegna coach tramite mapping formatore->coach
+- **Settore GENERICO:** Aggiunto a student_card percorso (dropdown + CSS badge)
+- **Fix coach dropdown:** Deduplicazione per userid, siteadmin in manage_coaches
+- **Bottone Gestione Coach:** Link diretto a manage_coaches.php nella dashboard CPURC
 - Dettagli: `docs/DETAILS_CPURC.md`
 
 ---

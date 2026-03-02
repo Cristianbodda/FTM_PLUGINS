@@ -393,13 +393,23 @@ class cpurc_manager {
         $dbman = $DB->get_manager();
 
         if ($dbman->table_exists('local_ftm_coaches')) {
-            $coaches = $DB->get_records_sql(
-                "SELECT c.userid, u.firstname, u.lastname, c.initials
+            // Use c.id as key to avoid deduplication when multiple records share same userid.
+            $raw = $DB->get_records_sql(
+                "SELECT c.id, c.userid, u.firstname, u.lastname, c.initials
                  FROM {local_ftm_coaches} c
                  JOIN {user} u ON u.id = c.userid
-                 WHERE c.active = 1 AND c.role = 'coach'
+                 WHERE c.active = 1 AND c.role = 'coach' AND u.deleted = 0
                  ORDER BY u.lastname, u.firstname"
             );
+
+            // Deduplicate by userid (keep only one entry per real user).
+            $seen = [];
+            foreach ($raw as $r) {
+                if (!isset($seen[$r->userid])) {
+                    $seen[$r->userid] = $r;
+                }
+            }
+            $coaches = array_values($seen);
         }
 
         // If no coaches found, get from role assignments.

@@ -1484,7 +1484,7 @@ elseif ($step == 4):
                 $question->category = $category_id;
                 $question->parent = 0;
                 $question->name = $q_name;
-                $question->questiontext = '<p>' . htmlspecialchars($q['question']) . '</p>';
+                $question->questiontext = htmlspecialchars($q['question']);
                 $question->questiontextformat = FORMAT_HTML;
                 $question->generalfeedback = '';
                 $question->generalfeedbackformat = FORMAT_HTML;
@@ -1538,7 +1538,7 @@ elseif ($step == 4):
                 foreach ($letters as $letter) {
                     $answer = new stdClass();
                     $answer->question = $question->id;
-                    $answer->answer = '<p>' . htmlspecialchars($q['answers'][$letter]) . '</p>';
+                    $answer->answer = htmlspecialchars($q['answers'][$letter]);
                     $answer->answerformat = FORMAT_HTML;
                     $answer->fraction = ($letter == $q['correct']) ? 1.0 : 0.0;
                     $answer->feedback = '';
