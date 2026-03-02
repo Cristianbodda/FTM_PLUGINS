@@ -172,8 +172,10 @@ echo $OUTPUT->header();
 .no-date-section { background: #fef3c7; }
 .no-date-section .date-group-header { background: #fbbf24; color: #78350f; }
 .cohort-badge { display: inline-block; background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px; }
-.remove-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background: #fee2e2; color: #dc2626; text-decoration: none; transition: all 0.2s; flex-shrink: 0; }
+.remove-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background: #fee2e2; color: #dc2626; text-decoration: none; transition: all 0.2s; flex-shrink: 0; font-size: 14px; }
 .remove-btn:hover { background: #dc2626; color: white; }
+.delete-platform-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background: #dc2626; color: white; text-decoration: none; transition: all 0.2s; flex-shrink: 0; font-size: 16px; font-weight: bold; }
+.delete-platform-btn:hover { background: #991b1b; color: white; }
 .member-item { display: flex; align-items: center; }
 </style>
 
@@ -246,9 +248,15 @@ echo $OUTPUT->header();
                                         'sesskey' => sesskey()
                                     ]); ?>"
                                        class="remove-btn"
-                                       onclick="return confirm('Sei sicuro di voler rimuovere <?php echo fullname($member); ?> dal gruppo?');"
+                                       onclick="return confirm('Rimuovere <?php echo s(fullname($member)); ?> dal gruppo?');"
                                        title="Rimuovi dal gruppo">
                                         🗑️
+                                    </a>
+                                    <a href="#"
+                                       class="delete-platform-btn"
+                                       onclick="return deletePlatformUser(<?php echo $member->userid; ?>, '<?php echo s(addslashes_js(fullname($member))); ?>', <?php echo $groupid; ?>);"
+                                       title="Elimina dalla piattaforma">
+                                        ✕
                                     </a>
                                 </div>
                             <?php endforeach; ?>
@@ -348,6 +356,33 @@ echo $OUTPUT->header();
 </div>
 
 <script>
+function deletePlatformUser(userid, fullname, groupid) {
+    // First confirmation.
+    if (!confirm('ATTENZIONE: Stai per eliminare DEFINITIVAMENTE l\'utente "' + fullname + '" dalla piattaforma Moodle.\n\nQuesta azione è IRREVERSIBILE.\n\nVuoi procedere?')) {
+        return false;
+    }
+
+    // Second confirmation: type the name.
+    var typed = prompt('Per confermare, digita il cognome dell\'utente:');
+    if (!typed) {
+        return false;
+    }
+
+    // Check that typed text matches at least part of the name (case-insensitive).
+    var nameLower = fullname.toLowerCase();
+    var typedLower = typed.trim().toLowerCase();
+    if (typedLower.length < 3 || nameLower.indexOf(typedLower) === -1) {
+        alert('Il testo digitato non corrisponde. Operazione annullata.');
+        return false;
+    }
+
+    // Redirect to action.
+    window.location.href = '<?php echo $CFG->wwwroot; ?>/local/ftm_scheduler/action.php' +
+        '?action=delete_platform_user&userid=' + userid + '&groupid=' + groupid +
+        '&sesskey=<?php echo sesskey(); ?>';
+    return false;
+}
+
 function filterUsers() {
     var input = document.getElementById('searchUsers');
     var filter = input.value.toLowerCase();

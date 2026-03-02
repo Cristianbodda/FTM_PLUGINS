@@ -169,6 +169,54 @@ switch ($action) {
         $returnurl = new moodle_url('/local/ftm_scheduler/members.php', ['groupid' => $groupid]);
         break;
 
+    case 'delete_platform_user':
+        // Only site admins can delete users from the platform.
+        if (!is_siteadmin()) {
+            require_capability('moodle/user:delete', $context);
+        }
+
+        $groupid = required_param('groupid', PARAM_INT);
+        $userid = required_param('userid', PARAM_INT);
+
+        global $DB;
+
+        // Safety: never delete admin, guest, or self.
+        $usertocheck = $DB->get_record('user', ['id' => $userid], '*', MUST_EXIST);
+        if (is_siteadmin($userid) || isguestuser($userid) || $userid == $USER->id) {
+            \core\notification::error('Impossibile eliminare questo utente (admin/guest/se stessi).');
+            $returnurl = new moodle_url('/local/ftm_scheduler/members.php', ['groupid' => $groupid]);
+            break;
+        }
+
+        // 1. Remove from FTM group.
+        $DB->delete_records('local_ftm_group_members', [
+            'groupid' => $groupid,
+            'userid' => $userid
+        ]);
+        $DB->delete_records('local_ftm_enrollments', [
+            'groupid' => $groupid,
+            'userid' => $userid
+        ]);
+
+        // 2. Clean up FTM-specific tables.
+        $DB->delete_records('local_student_coaching', ['userid' => $userid]);
+        $DB->delete_records('local_student_sectors', ['userid' => $userid]);
+
+        $dbman = $DB->get_manager();
+        if ($dbman->table_exists('local_ftm_cpurc_students')) {
+            $DB->delete_records('local_ftm_cpurc_students', ['userid' => $userid]);
+        }
+
+        // 3. Delete user from Moodle (sets deleted=1, anonymizes data).
+        require_once($CFG->dirroot . '/user/lib.php');
+        $fullname = fullname($usertocheck);
+        user_delete_user($usertocheck);
+
+        \core\notification::success('Utente "' . $fullname . '" eliminato dalla piattaforma.');
+
+        $returnurl = new moodle_url('/local/ftm_scheduler/members.php', ['groupid' => $groupid]);
+        break;
+
     default:
         throw new moodle_exception('invalidaction', 'error');
 }
