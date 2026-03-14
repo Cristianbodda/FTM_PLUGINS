@@ -160,3 +160,15 @@ $string['quiz_blocked_message'] = 'Per continuare con i quiz, devi prima complet
 // Settings
 $string['setting_popup_enabled'] = 'Abilita popup autovalutazione';
 $string['setting_popup_enabled_desc'] = 'Se attivo, gli studenti vedranno il popup di reminder per l\'autovalutazione. Disabilitare durante il setup iniziale in produzione.';
+
+// Quiz unlock
+$string['quiz_unlock'] = 'Sblocca Quiz';
+$string['quiz_unlock_title'] = 'Sblocca Quiz - {$a}';
+$string['quiz_unlock_confirm'] = 'Sei sicuro di voler sbloccare questo quiz per lo studente?';
+$string['quiz_unlock_success'] = 'Quiz sbloccato con successo!';
+$string['quiz_unlock_error'] = 'Errore nello sblocco del quiz.';
+$string['quiz_status_blocked'] = 'Bloccato';
+$string['quiz_status_free'] = 'Libero';
+$string['quiz_status_unlimited'] = 'Illimitato';
+$string['quiz_attempts'] = 'Tentativi';
+$string['quiz_no_rcomp'] = 'Nessun corso R.comp trovato.';

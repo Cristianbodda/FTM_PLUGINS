@@ -108,7 +108,8 @@ $sectionOrder = [
     'gap_analysis'   => optional_param('order_gap', 8, PARAM_INT),
     'spunti'         => optional_param('order_spunti', 9, PARAM_INT),
     'suggerimenti'   => optional_param('order_suggerimenti', 10, PARAM_INT),
-    'coach_eval'     => optional_param('order_coach_eval', 11, PARAM_INT),
+    'overlay_radar'  => optional_param('order_overlay', 11, PARAM_INT),
+    'coach_eval'     => optional_param('order_coach_eval', 12, PARAM_INT),
 ];
 // Ordina per valore (ordine di stampa)
 asort($sectionOrder);
@@ -804,6 +805,104 @@ function generate_svg_radar($data, $title = '', $size = 300, $fillColor = 'rgba(
 }
 
 /**
+ * Genera radar SVG con multipli dataset sovrapposti (per stampa overlay)
+ *
+ * @param array $datasets Array di dataset, ciascuno con 'data' (array valori 0-100), 'label', 'fill', 'stroke'
+ * @param array $labels Etichette per ogni asse
+ * @param int $size Dimensione del radar
+ * @param string $title Titolo del grafico
+ * @return string SVG markup
+ */
+function generate_svg_overlay_radar($datasets, $labels, $size = 490, $title = '') {
+    if (empty($datasets) || empty($labels)) return '<p>Nessun dato disponibile</p>';
+
+    $n = count($labels);
+    if ($n < 3) return '<p>Servono almeno 3 aree per il radar</p>';
+
+    $horizontalPadding = 180;
+    $svgWidth = $size + (2 * $horizontalPadding);
+    $cx = $horizontalPadding + ($size / 2);
+    $cy = $size / 2;
+    $margin = 70;
+    $radius = ($size / 2) - $margin;
+    $angleStep = (2 * M_PI) / $n;
+    $offsetY = $title ? 35 : 10;
+
+    $svg = '<svg width="' . $svgWidth . '" height="' . ($size + 80) . '" xmlns="http://www.w3.org/2000/svg" style="font-family: Arial, sans-serif;">';
+
+    if ($title) {
+        $svg .= '<text x="' . $cx . '" y="20" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">' . htmlspecialchars($title) . '</text>';
+    }
+
+    // Cerchi griglia
+    for ($p = 20; $p <= 100; $p += 20) {
+        $r = $radius * ($p / 100);
+        $svg .= '<circle cx="' . $cx . '" cy="' . ($cy + $offsetY) . '" r="' . $r . '" fill="none" stroke="#e0e0e0" stroke-width="1"/>';
+        if ($p % 40 == 0) {
+            $svg .= '<text x="' . ($cx + 5) . '" y="' . ($cy + $offsetY - $r - 3) . '" font-size="8" fill="#999">' . $p . '%</text>';
+        }
+    }
+
+    // Soglie 60% e 80%
+    $svg .= '<circle cx="' . $cx . '" cy="' . ($cy + $offsetY) . '" r="' . ($radius * 0.6) . '" fill="none" stroke="#f39c12" stroke-width="1.5" stroke-dasharray="5,3"/>';
+    $svg .= '<circle cx="' . $cx . '" cy="' . ($cy + $offsetY) . '" r="' . ($radius * 0.8) . '" fill="none" stroke="#27ae60" stroke-width="1.5" stroke-dasharray="5,3"/>';
+
+    // Assi e etichette
+    for ($i = 0; $i < $n; $i++) {
+        $angle = ($i * $angleStep) - (M_PI / 2);
+        $axisX = $cx + $radius * cos($angle);
+        $axisY = ($cy + $offsetY) + $radius * sin($angle);
+        $svg .= '<line x1="' . $cx . '" y1="' . ($cy + $offsetY) . '" x2="' . $axisX . '" y2="' . $axisY . '" stroke="#ddd" stroke-width="1"/>';
+
+        $labelRadius = $radius + 20;
+        $labelX = $cx + $labelRadius * cos($angle);
+        $labelY = ($cy + $offsetY) + $labelRadius * sin($angle);
+        $anchor = 'middle';
+        if ($labelX < $cx - 20) $anchor = 'end';
+        else if ($labelX > $cx + 20) $anchor = 'start';
+
+        $svg .= '<text x="' . $labelX . '" y="' . $labelY . '" text-anchor="' . $anchor . '" font-size="9" fill="#333">' . htmlspecialchars($labels[$i]) . '</text>';
+    }
+
+    // Disegna ogni dataset (poligono + punti)
+    foreach ($datasets as $ds) {
+        $dsData = $ds['data'];
+        $fill = $ds['fill'] ?? 'rgba(0,0,0,0.1)';
+        $stroke = $ds['stroke'] ?? '#333';
+        $points = [];
+
+        for ($i = 0; $i < $n; $i++) {
+            $angle = ($i * $angleStep) - (M_PI / 2);
+            $value = min(100, max(0, $dsData[$i] ?? 0));
+            $pointRadius = $radius * ($value / 100);
+            $px = $cx + $pointRadius * cos($angle);
+            $py = ($cy + $offsetY) + $pointRadius * sin($angle);
+            $points[] = round($px, 1) . ',' . round($py, 1);
+        }
+
+        $svg .= '<polygon points="' . implode(' ', $points) . '" fill="' . $fill . '" stroke="' . $stroke . '" stroke-width="2"/>';
+
+        // Punti
+        foreach ($points as $point) {
+            list($px, $py) = explode(',', $point);
+            $svg .= '<circle cx="' . $px . '" cy="' . $py . '" r="4" fill="' . $stroke . '" stroke="white" stroke-width="1.5"/>';
+        }
+    }
+
+    // Legenda
+    $legendY = $size + $offsetY + 15;
+    $legendX = $cx - ($svgWidth / 2) + 30;
+    foreach ($datasets as $idx => $ds) {
+        $lx = $legendX + ($idx * 170);
+        $svg .= '<rect x="' . $lx . '" y="' . ($legendY - 5) . '" width="12" height="12" fill="' . ($ds['stroke'] ?? '#333') . '" rx="2"/>';
+        $svg .= '<text x="' . ($lx + 16) . '" y="' . ($legendY + 5) . '" font-size="9" fill="#333">' . htmlspecialchars($ds['label'] ?? '') . '</text>';
+    }
+
+    $svg .= '</svg>';
+    return $svg;
+}
+
+/**
  * Genera un grafico a barre SVG (per meno di 3 elementi)
  */
 function generate_svg_bar_chart($data, $title = '', $width = 300) {
@@ -935,6 +1034,32 @@ if (empty($sector) && !empty($courseSector)) {
     $sectorsFound[$courseSector] = true;
 }
 
+// ============================================
+// SETTORE EFFETTIVO: auto-rileva dal quiz se filtro non impostato
+// Se l'utente seleziona quiz di un solo settore senza cambiare il dropdown,
+// filtriamo automaticamente autovalutazione/overlay per quel settore.
+// ============================================
+// Se i quiz selezionati sono tutti di UN settore, usa quel settore
+// indipendentemente dal valore cm_sector nell'URL (che può essere stale)
+if (count($sectorsFound) === 1 && !empty($sector)) {
+    $effectiveSectorFilter = $sector;
+} else {
+    $effectiveSectorFilter = $cm_sector_filter;
+}
+
+// DEBUG SETTORE - rimuovere dopo test
+echo '<!-- DEBUG_SECTOR_V2: cm_sector_filter=' . $cm_sector_filter
+    . ' | sectorsFound=' . implode(',', array_keys($sectorsFound))
+    . ' | sector=' . ($sector ?? 'NULL')
+    . ' | effectiveSectorFilter=' . $effectiveSectorFilter
+    . ' | studentPrimarySector=' . ($studentPrimarySector ?? 'NULL')
+    . ' | courseSector=' . ($courseSector ?? 'NULL')
+    . ' -->' . "\n";
+if (!empty($competencies)) {
+    $firstComp = reset($competencies);
+    echo '<!-- DEBUG_FIRST_COMP: idnumber=' . ($firstComp['idnumber'] ?? 'NULL') . ' name=' . ($firstComp['name'] ?? 'NULL') . ' -->' . "\n";
+}
+
 // Carica descrizioni per TUTTI i settori trovati
 $areaDescriptions = [];
 $competencyDescriptions = [];
@@ -946,10 +1071,10 @@ foreach (array_keys($sectorsFound) as $sec) {
     $competencyDescriptions = array_merge($compDesc, $competencyDescriptions);
 }
 
-// FILTRA COMPETENZE PER SETTORE PRIMA DI AGGREGARE (se filtro attivo)
+// FILTRA COMPETENZE PER SETTORE PRIMA DI AGGREGARE (se filtro attivo o auto-rilevato)
 $competencies_for_areas = $competencies;
-if ($cm_sector_filter !== 'all') {
-    $normalizedSectorFilter = normalize_sector_name($cm_sector_filter);
+if ($effectiveSectorFilter !== 'all') {
+    $normalizedSectorFilter = normalize_sector_name($effectiveSectorFilter);
     $competencies_for_areas = array_filter($competencies, function($comp) use ($normalizedSectorFilter) {
         $idnumber = $comp['idnumber'] ?? '';
         $compSector = extract_sector_from_idnumber($idnumber);
@@ -1012,10 +1137,10 @@ if ($showDualRadar || $showGapAnalysis || $showSpuntiColloquio || $showSuggerime
         
         // Aggrega autovalutazione per area (anche per overlay)
         if ($showDualRadar || $printDualRadar || $showOverlayRadar || $printOverlayRadar) {
-            // FILTRA AUTOVALUTAZIONE PER SETTORE (se filtro attivo)
+            // FILTRA AUTOVALUTAZIONE PER SETTORE (se filtro attivo o auto-rilevato)
             $autovalutazione_for_areas = $autovalutazioneData;
-            if ($cm_sector_filter !== 'all') {
-                $normalizedSectorFilter = normalize_sector_name($cm_sector_filter);
+            if ($effectiveSectorFilter !== 'all') {
+                $normalizedSectorFilter = normalize_sector_name($effectiveSectorFilter);
                 $autovalutazione_for_areas = array_filter($autovalutazioneData, function($comp, $idnumber) use ($normalizedSectorFilter) {
                     $compSector = extract_sector_from_idnumber($idnumber);
                     return strcasecmp($compSector, $normalizedSectorFilter) === 0;
@@ -1060,7 +1185,8 @@ $coachEvaluationData = null;
 $coachRadarData = [];
 
 // Determina il settore corrente per il filtro coach evaluation
-$currentSector = ($cm_sector_filter !== 'all') ? $cm_sector_filter : ($studentPrimarySector ?: $sector);
+// Usa effectiveSectorFilter che include auto-rilevamento dal quiz
+$currentSector = ($effectiveSectorFilter !== 'all') ? $effectiveSectorFilter : ($studentPrimarySector ?: $sector);
 
 if (!empty($currentSector)) {
     $coachEvaluations = coach_evaluation_manager::get_student_evaluations($userid, $currentSector);
@@ -1225,6 +1351,97 @@ if (!empty($autovalutazioneResult)) {
     // Fallback
     if (empty($autovalutazioneQuizName)) {
         $autovalutazioneQuizName = 'Autovalutazione';
+    }
+}
+
+// ============================================
+// PREPARAZIONE DATI OVERLAY RADAR (necessario PRIMA del routing print)
+// ============================================
+$overlayAreas = [];
+$overlayLabels = [];
+$overlayQuiz = [];
+$overlayAuto = [];
+$overlayLabeval = [];
+$overlayCoach = [];
+
+if ($showOverlayRadar || $printOverlayRadar) {
+    // 1. Quiz (gia in percentuale)
+    if (!empty($areasData)) {
+        foreach ($areasData as $areaData) {
+            $code = $areaData['code'];
+            if (!isset($overlayAreas[$code])) {
+                $overlayAreas[$code] = [
+                    'code' => $code, 'name' => $areaData['name'],
+                    'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null
+                ];
+            }
+            $overlayAreas[$code]['quiz'] = round($areaData['percentage'], 1);
+        }
+    }
+    // 2. Autovalutazione
+    if (!empty($autovalutazioneAreas)) {
+        foreach ($autovalutazioneAreas as $areaData) {
+            $code = $areaData['code'];
+            if (!isset($overlayAreas[$code])) {
+                $overlayAreas[$code] = [
+                    'code' => $code, 'name' => $areaData['name'],
+                    'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null
+                ];
+            }
+            $overlayAreas[$code]['auto'] = round($areaData['percentage'], 1);
+        }
+    }
+    // 3. LabEval
+    if (!empty($labEvalByArea)) {
+        foreach ($labEvalByArea as $areaCode => $areaData) {
+            if (!isset($overlayAreas[$areaCode])) {
+                $overlayAreas[$areaCode] = [
+                    'code' => $areaCode, 'name' => $areaData['name'],
+                    'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null
+                ];
+            }
+            $overlayAreas[$areaCode]['labeval'] = round($areaData['percentage'], 1);
+        }
+    }
+    // 4. Coach Evaluation
+    if (!empty($coachRadarData)) {
+        foreach ($coachRadarData as $areaData) {
+            $code = $areaData['area'];
+            if (!isset($overlayAreas[$code])) {
+                $overlayAreas[$code] = [
+                    'code' => $code, 'name' => "Area $code",
+                    'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null
+                ];
+            }
+            $bloomValue = $areaData['bloom_avg'] ?? 0;
+            $overlayAreas[$code]['coach'] = round(($bloomValue / 6) * 100, 1);
+        }
+    }
+    ksort($overlayAreas);
+
+    // Carica valori manuali (modifiche coach dalla tabella comparativa)
+    $manualOverlayPrint = [];
+    $dbmanOvp = $DB->get_manager();
+    if ($dbmanOvp->table_exists('local_compman_final_ratings')) {
+        $manualRecsOvp = $DB->get_records_sql("
+            SELECT * FROM {local_compman_final_ratings}
+            WHERE studentid = ? AND courseid = ? AND sector = ?
+            AND method IN ('rilevamento', 'auto_comp', 'coach_comp')
+        ", [$userid, $courseid, $currentSector]);
+        foreach ($manualRecsOvp as $mr) {
+            $manualOverlayPrint[$mr->area_code][$mr->method] = (float)$mr->manual_value;
+        }
+    }
+
+    // Costruisci array per SVG/Chart.js (usa valori manuali se presenti)
+    foreach ($overlayAreas as $code => $data) {
+        $overlayLabels[] = $data['name'] ?: "Area $code";
+        $overlayQuiz[] = $data['quiz'];
+        $overlayAuto[] = isset($manualOverlayPrint[$code]['auto_comp'])
+            ? $manualOverlayPrint[$code]['auto_comp'] : $data['auto'];
+        $overlayLabeval[] = $data['labeval'];
+        $overlayCoach[] = isset($manualOverlayPrint[$code]['coach_comp'])
+            ? $manualOverlayPrint[$code]['coach_comp'] : $data['coach'];
     }
 }
 
@@ -2503,7 +2720,7 @@ if (!empty($quizComparison)) {
                 <?php if ($showSpuntiColloquio): ?><input type="hidden" name="show_spunti" value="1"><?php endif; ?>
                 <?php if ($showCoachEvaluation): ?><input type="hidden" name="show_coach_eval" value="1"><?php endif; ?>
                 <?php if ($showOverlayRadar): ?><input type="hidden" name="show_overlay" value="1"><?php endif; ?>
-                <?php if (!empty($currentSector)): ?><input type="hidden" name="cm_sector" value="<?php echo $currentSector; ?>"><?php endif; ?>
+                <?php /* cm_sector NON viene inviato dal form quiz - viene gestito solo dal dropdown settore */ ?>
                 <?php if ($openTab): ?><input type="hidden" name="open_tab" value="<?php echo s($openTab); ?>"><?php endif; ?>
 
                 <!-- Filtro tentativi -->
@@ -3626,6 +3843,10 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
                                 <label class="custom-control-label" for="print_spunti"><strong>💬 Spunti Colloquio</strong></label>
                             </div>
                             <div class="custom-control custom-checkbox mb-2">
+                                <input type="checkbox" class="custom-control-input section-check" id="print_overlay" name="print_overlay" value="1">
+                                <label class="custom-control-label" for="print_overlay"><strong>🔀 Overlay Multi-Fonte</strong></label>
+                            </div>
+                            <div class="custom-control custom-checkbox mb-2">
                                 <input type="checkbox" class="custom-control-input section-check" id="print_suggerimenti" name="print_suggerimenti" value="1">
                                 <label class="custom-control-label" for="print_suggerimenti"><strong>📋 Suggerimenti Rapporto</strong></label>
                                 <small class="d-block text-muted ml-4">Commenti automatici basati sul gap con attivita lavorative</small>
@@ -3840,15 +4061,34 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
                                             <option value="8">8</option>
                                             <option value="9">9</option>
                                             <option value="10" selected>10</option>
+                                            <option value="11">11</option>
+                                            <option value="12">12</option>
                                         </select>
                                         <label class="mb-0">📋 Suggerimenti Rapporto</label>
+                                    </div>
+                                    <div class="form-group mb-2 d-flex align-items-center">
+                                        <select name="order_overlay" class="form-control form-control-sm mr-2" style="width: 60px;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                            <option value="6">6</option>
+                                            <option value="7">7</option>
+                                            <option value="8">8</option>
+                                            <option value="9">9</option>
+                                            <option value="10">10</option>
+                                            <option value="11" selected>11</option>
+                                            <option value="12">12</option>
+                                        </select>
+                                        <label class="mb-0">🔀 Overlay Multi-Fonte</label>
                                     </div>
                                     <?php endif; ?>
                                 </div>
                             </div>
 
                             <div class="mt-2 p-2" style="background: #fff3cd; border-radius: 4px;">
-                                <small class="text-warning"><strong>💡 Suggerimento:</strong> Per stampare prima i grafici di confronto e poi il doppio radar, imposta Doppio Radar = 2 e Gap Analysis = 3</small>
+                                <small class="text-warning"><strong>💡 Suggerimento:</strong> Trascina i numeri per cambiare l'ordine di stampa. Overlay Multi-Fonte include il radar sovrapposto con tutte le fonti.</small>
                             </div>
                         </div>
                     </div>
@@ -5122,6 +5362,41 @@ if ($tab === 'overview') {
 
         ksort($overlayAreas);
 
+        // Prepara dati competenze per drill-down accordion nella tabella
+        $overlayCompetencyData = [];
+        $autoDataMap = !empty($autovalutazioneData) ? $autovalutazioneData : [];
+        $labDataMap = !empty($labEvalData) ? $labEvalData : [];
+        $coachDataMap = [];
+        if (!empty($coachEvaluationData)) {
+            $coachRatingsAll = coach_evaluation_manager::get_evaluation_ratings($coachEvaluationData->id);
+            foreach ($coachRatingsAll as $cr) {
+                $coachDataMap[$cr->idnumber] = [
+                    'bloom' => (int)$cr->rating,
+                    'percentage' => round(($cr->rating / 6) * 100, 1)
+                ];
+            }
+        }
+        foreach ($areasData as $areaKey => $areaInfo) {
+            $code = $areaInfo['code'];
+            if (!isset($overlayAreas[$code])) continue;
+            $comps = [];
+            foreach ($areaInfo['competencies'] as $comp) {
+                $idnum = $comp['idnumber'];
+                $comps[] = [
+                    'id' => $comp['id'],
+                    'idnumber' => $idnum,
+                    'name' => $comp['description'] ?: $comp['name'],
+                    'quiz' => round($comp['percentage'], 1),
+                    'auto' => isset($autoDataMap[$idnum]) ? $autoDataMap[$idnum]['percentage'] : null,
+                    'labeval' => isset($labDataMap[$idnum]) ? round($labDataMap[$idnum]['percentage'], 1) : null,
+                    'coach' => isset($coachDataMap[$idnum]) ? $coachDataMap[$idnum]['percentage'] : null,
+                ];
+            }
+            if (!empty($comps)) {
+                $overlayCompetencyData[$code] = $comps;
+            }
+        }
+
         // Carica valori manuali per il grafico (stessa logica della tabella)
         $manualOverlay = [];
         $dbmanOverlay = $DB->get_manager();
@@ -5248,6 +5523,17 @@ if ($tab === 'overview') {
             </div>
 
             <!-- Tabella Comparativa -->
+            <style>
+            .comp-chevron { transition: transform 0.2s; font-size: 12px; color: #6c757d; }
+            .comp-chevron.open { transform: rotate(90deg); }
+            tr.comp-detail-row td { padding: 4px 8px !important; background: #f8f9fa; border-top: none !important; font-size: 0.9em; }
+            tr.comp-detail-row .comp-name { font-weight: 600; cursor: pointer; }
+            tr.comp-detail-row .comp-name:hover { color: #0066cc; }
+            tr.question-detail-row td { padding: 3px 8px 3px 40px !important; background: #fff; font-size: 0.85em; }
+            tr.question-detail-row .q-correct { color: #28a745; }
+            tr.question-detail-row .q-wrong { color: #dc3545; }
+            .comp-questions-loading { text-align: center; padding: 8px; color: #6c757d; }
+            </style>
             <h6 class="mt-4 mb-3">📋 Tabella Comparativa Dettagliata</h6>
             <div class="table-responsive">
                 <table class="table table-bordered table-hover table-sm" id="overlay-comparison-table" style="font-size: 115%;">
@@ -5318,8 +5604,8 @@ if ($tab === 'overview') {
                             $gapMax = count($values) > 1 ? round(max($values) - min($values), 1) : null;
                             $gapClass = $gapMax !== null ? ($gapMax > 30 ? 'text-danger font-weight-bold' : ($gapMax > 15 ? 'text-warning' : 'text-success')) : '';
                         ?>
-                        <tr data-area="<?php echo $code; ?>">
-                            <td><strong><?php echo s($data['name']); ?></strong> <small class="text-muted">(<?php echo $code; ?>)</small></td>
+                        <tr data-area="<?php echo $code; ?>" style="cursor:pointer;" onclick="toggleAreaCompetencies(this, '<?php echo $code; ?>')">
+                            <td><i class="fa fa-chevron-right comp-chevron mr-1"></i><strong><?php echo s($data['name']); ?></strong> <small class="text-muted">(<?php echo $code; ?>)</small></td>
                             <!-- Rilevamento -->
                             <td class="text-center col-rilevamento">
                                 <?php if ($rilevamento !== null): ?>
@@ -5331,7 +5617,7 @@ if ($tab === 'overview') {
                                           data-value="<?php echo $rilevamento; ?>"
                                           data-calculated="<?php echo $rilevamentoCalc; ?>"
                                           data-modified="<?php echo $rilevamentoModified ? '1' : '0'; ?>"
-                                          onclick="showComparativeDropdown(this)"
+                                          onclick="event.stopPropagation(); showComparativeDropdown(this)"
                                           title="Clicca per modificare">
                                         <?php echo $rilevamento; ?>%<?php if ($rilevamentoModified): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
                                     </span>
@@ -5360,7 +5646,7 @@ if ($tab === 'overview') {
                                           data-value="<?php echo $autoVal; ?>"
                                           data-calculated="<?php echo $data['auto']; ?>"
                                           data-modified="<?php echo $autoModified ? '1' : '0'; ?>"
-                                          onclick="showComparativeDropdown(this)"
+                                          onclick="event.stopPropagation(); showComparativeDropdown(this)"
                                           title="Clicca per modificare">
                                         <?php echo $autoVal; ?>%<?php if ($autoModified): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
                                     </span>
@@ -5382,7 +5668,7 @@ if ($tab === 'overview') {
                                           data-value="<?php echo $coachVal; ?>"
                                           data-calculated="<?php echo $data['coach']; ?>"
                                           data-modified="<?php echo $coachModified ? '1' : '0'; ?>"
-                                          onclick="showComparativeDropdown(this)"
+                                          onclick="event.stopPropagation(); showComparativeDropdown(this)"
                                           title="Clicca per modificare">
                                         <?php echo $coachVal; ?>%<?php if ($coachModified): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
                                     </span>
@@ -5551,6 +5837,160 @@ if ($tab === 'overview') {
 
         console.log('Overlay Radar Chart inizializzato con successo');
     });
+
+    // ============================================
+    // DRILL-DOWN ACCORDION TABELLA COMPARATIVA
+    // ============================================
+    var overlayCompetencyData = <?php echo json_encode($overlayCompetencyData); ?>;
+    var drillDownStudentId = <?php echo (int)$userid; ?>;
+    var drillDownCourseId = <?php echo (int)$courseid; ?>;
+    var drillDownQuizIds = <?php echo json_encode(!empty($selectedQuizzes) ? array_values($selectedQuizzes) : []); ?>;
+
+    function escHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    function toggleAreaCompetencies(rowEl, areaCode) {
+        var chevron = rowEl.querySelector('.comp-chevron');
+        var nextRow = rowEl.nextElementSibling;
+        if (nextRow && nextRow.classList.contains('comp-detail-row')) {
+            while (rowEl.nextElementSibling && (rowEl.nextElementSibling.classList.contains('comp-detail-row') || rowEl.nextElementSibling.classList.contains('question-detail-row'))) {
+                rowEl.nextElementSibling.remove();
+            }
+            if (chevron) chevron.classList.remove('open');
+            return;
+        }
+        var comps = overlayCompetencyData[areaCode];
+        if (!comps || comps.length === 0) return;
+        if (chevron) chevron.classList.add('open');
+
+        comps.forEach(function(comp) {
+            var tr = document.createElement('tr');
+            tr.className = 'comp-detail-row';
+            tr.setAttribute('data-area', areaCode);
+            tr.setAttribute('data-compid', comp.id);
+
+            var quizStr = comp.quiz !== null ? comp.quiz + '%' : '-';
+            var autoStr = comp.auto !== null ? comp.auto + '%' : '-';
+            var coachStr = comp.coach !== null ? comp.coach + '%' : '-';
+            var vals = [comp.quiz, comp.auto, comp.coach].filter(function(v) { return v !== null; });
+            var mediaStr = vals.length > 0 ? (vals.reduce(function(a, b) { return a + b; }, 0) / vals.length).toFixed(1) + '%' : '-';
+            var gapStr = '-';
+            if (vals.length > 1) {
+                var gap = (Math.max.apply(null, vals) - Math.min.apply(null, vals)).toFixed(1);
+                gapStr = gap + '%';
+            }
+            var nameShort = comp.name.length > 60 ? comp.name.substring(0, 57) + '...' : comp.name;
+
+            tr.innerHTML = '<td style="padding-left: 28px;"><i class="fa fa-chevron-right comp-chevron mr-1" style="font-size:10px;"></i><span class="comp-name" onclick="event.stopPropagation(); toggleCompQuestions(this.closest(\'tr\'), ' + comp.id + ', \'' + areaCode + '\')" title="' + escHtml(comp.idnumber) + '">' + escHtml(nameShort) + '</span></td>'
+                + '<td class="text-center col-rilevamento">' + quizStr + '</td>'
+                + '<td class="text-center col-lab-separato" style="display:none;">' + (comp.labeval !== null ? comp.labeval + '%' : '-') + '</td>'
+                + '<td class="text-center">' + autoStr + '</td>'
+                + '<td class="text-center">' + coachStr + '</td>'
+                + '<td class="text-center">' + mediaStr + '</td>'
+                + '<td class="text-center">' + gapStr + '</td>';
+
+            var labVisible = document.querySelector('#overlay-toggle-lab-separato');
+            if (labVisible && labVisible.checked) {
+                tr.querySelectorAll('.col-lab-separato').forEach(function(el) { el.style.display = ''; });
+            }
+            var insertAfter = rowEl;
+            while (insertAfter.nextElementSibling && (insertAfter.nextElementSibling.classList.contains('comp-detail-row') || insertAfter.nextElementSibling.classList.contains('question-detail-row'))) {
+                insertAfter = insertAfter.nextElementSibling;
+            }
+            insertAfter.after(tr);
+        });
+    }
+
+    function toggleCompQuestions(compRowEl, competencyId, areaCode) {
+        var chevron = compRowEl.querySelector('.comp-chevron');
+        var nextRow = compRowEl.nextElementSibling;
+        if (nextRow && nextRow.classList.contains('question-detail-row') && nextRow.getAttribute('data-compid') == competencyId) {
+            while (compRowEl.nextElementSibling && compRowEl.nextElementSibling.classList.contains('question-detail-row') && compRowEl.nextElementSibling.getAttribute('data-compid') == competencyId) {
+                compRowEl.nextElementSibling.remove();
+            }
+            if (chevron) chevron.classList.remove('open');
+            return;
+        }
+        if (chevron) chevron.classList.add('open');
+
+        var loadingTr = document.createElement('tr');
+        loadingTr.className = 'question-detail-row';
+        loadingTr.setAttribute('data-compid', competencyId);
+        loadingTr.innerHTML = '<td colspan="7" class="comp-questions-loading"><i class="fa fa-spinner fa-spin"></i> Caricamento domande...</td>';
+        compRowEl.after(loadingTr);
+
+        var url = M.cfg.wwwroot + '/local/competencymanager/ajax_get_competency_questions.php'
+            + '?sesskey=' + M.cfg.sesskey
+            + '&competencyid=' + competencyId
+            + '&studentid=' + drillDownStudentId
+            + '&courseid=' + drillDownCourseId
+            + (drillDownQuizIds.length > 0 ? '&' + drillDownQuizIds.map(function(id) { return 'quizids[]=' + id; }).join('&') : '');
+
+        fetch(url)
+            .then(function(resp) { return resp.json(); })
+            .then(function(data) {
+                loadingTr.remove();
+                if (!data.success) {
+                    var errTr = document.createElement('tr');
+                    errTr.className = 'question-detail-row';
+                    errTr.setAttribute('data-compid', competencyId);
+                    errTr.innerHTML = '<td colspan="7" class="text-danger" style="padding-left:40px;">Errore: ' + (data.message || 'sconosciuto') + '</td>';
+                    compRowEl.after(errTr);
+                    return;
+                }
+                var questions = data.data.questions || [];
+                if (questions.length === 0) {
+                    var emptyTr = document.createElement('tr');
+                    emptyTr.className = 'question-detail-row';
+                    emptyTr.setAttribute('data-compid', competencyId);
+                    emptyTr.innerHTML = '<td colspan="7" style="padding-left:40px;color:#6c757d;">Nessuna domanda trovata per questa competenza</td>';
+                    compRowEl.after(emptyTr);
+                    return;
+                }
+                for (var i = questions.length - 1; i >= 0; i--) {
+                    var q = questions[i];
+                    var qTr = document.createElement('tr');
+                    qTr.className = 'question-detail-row';
+                    qTr.setAttribute('data-compid', competencyId);
+                    var qName = q.questionname || q.questiontext;
+                    if (qName.length > 80) qName = qName.substring(0, 77) + '...';
+                    var esitoIcon = q.iscorrect ? '<i class="fa fa-check q-correct"></i>' : '<i class="fa fa-times q-wrong"></i>';
+                    var studentAns = q.studentanswer || '-';
+                    if (studentAns.length > 40) studentAns = studentAns.substring(0, 37) + '...';
+                    var correctAns = q.correctanswer || '-';
+                    if (correctAns.length > 40) correctAns = correctAns.substring(0, 37) + '...';
+                    var reviewLink = q.reviewurl ? '<a href="' + escHtml(q.reviewurl) + '" target="_blank" onclick="event.stopPropagation();" class="btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:0.75em;">Review</a>' : '';
+                    var levelBadge = '';
+                    if (q.difficultylevel) {
+                        var lvlColors = {1: '#28a745', 2: '#ffc107', 3: '#dc3545'};
+                        var lvlNames = {1: 'Base', 2: 'Inter.', 3: 'Avanz.'};
+                        levelBadge = '<span class="badge" style="background:' + (lvlColors[q.difficultylevel] || '#6c757d') + ';color:white;font-size:0.7em;margin-left:4px;">' + (lvlNames[q.difficultylevel] || q.difficultylevel) + '</span>';
+                    }
+                    qTr.innerHTML = '<td style="padding-left:40px;">' + esitoIcon + ' ' + escHtml(qName) + levelBadge + '</td>'
+                        + '<td class="text-center col-rilevamento" title="' + escHtml(studentAns) + '">' + escHtml(studentAns) + '</td>'
+                        + '<td class="text-center col-lab-separato" style="display:none;"></td>'
+                        + '<td class="text-center" title="' + escHtml(correctAns) + '">' + escHtml(correctAns) + '</td>'
+                        + '<td class="text-center">' + reviewLink + '</td>'
+                        + '<td colspan="2"></td>';
+                    var labVisible = document.querySelector('#overlay-toggle-lab-separato');
+                    if (labVisible && labVisible.checked) {
+                        qTr.querySelectorAll('.col-lab-separato').forEach(function(el) { el.style.display = ''; });
+                    }
+                    compRowEl.after(qTr);
+                }
+            })
+            .catch(function(err) {
+                loadingTr.remove();
+                var errTr = document.createElement('tr');
+                errTr.className = 'question-detail-row';
+                errTr.setAttribute('data-compid', competencyId);
+                errTr.innerHTML = '<td colspan="7" class="text-danger" style="padding-left:40px;">Errore di rete</td>';
+                compRowEl.after(errTr);
+            });
+    }
 
     // ============================================
     // EDITOR TABELLA COMPARATIVA

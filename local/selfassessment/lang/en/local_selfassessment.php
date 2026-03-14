@@ -160,3 +160,15 @@ $string['quiz_blocked_message'] = 'To continue with quizzes, you must first comp
 // Settings
 $string['setting_popup_enabled'] = 'Enable self-assessment popup';
 $string['setting_popup_enabled_desc'] = 'When enabled, students will see the self-assessment popup reminder. Disable during initial production setup.';
+
+// Quiz unlock
+$string['quiz_unlock'] = 'Unlock Quiz';
+$string['quiz_unlock_title'] = 'Unlock Quiz - {$a}';
+$string['quiz_unlock_confirm'] = 'Are you sure you want to unlock this quiz for the student?';
+$string['quiz_unlock_success'] = 'Quiz unlocked successfully!';
+$string['quiz_unlock_error'] = 'Error unlocking quiz.';
+$string['quiz_status_blocked'] = 'Blocked';
+$string['quiz_status_free'] = 'Free';
+$string['quiz_status_unlimited'] = 'Unlimited';
+$string['quiz_attempts'] = 'Attempts';
+$string['quiz_no_rcomp'] = 'No R.comp course found.';

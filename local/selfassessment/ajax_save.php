@@ -67,6 +67,26 @@ foreach ($input['assessments'] as $competencyid => $level) {
     }
 }
 
+// Notifica coach/segreteria al completamento autovalutazione.
+if ($saved > 0) {
+    try {
+        // Conta competenze assegnate e valutate.
+        $total_assigned = $DB->count_records('local_selfassessment_assign', ['userid' => $USER->id]);
+        $total_rated = $DB->count_records('local_selfassessment', ['userid' => $USER->id]);
+
+        // Verifica se PRIMA di questo save era già completa (per evitare notifiche duplicate).
+        $was_complete_before = ($total_rated - $saved) >= $total_assigned && $total_assigned > 0;
+        $is_complete_now = $total_rated >= $total_assigned && $total_assigned > 0;
+
+        // Notifica sempre al salvataggio (progresso), ma con messaggio diverso se completato.
+        \local_selfassessment\observer::notify_selfassessment_saved(
+            $USER->id, $saved, $total_rated, $total_assigned, $is_complete_now && !$was_complete_before
+        );
+    } catch (Exception $e) {
+        // Non bloccare il salvataggio per errori di notifica.
+    }
+}
+
 echo json_encode([
     'success' => true,
     'saved' => $saved,

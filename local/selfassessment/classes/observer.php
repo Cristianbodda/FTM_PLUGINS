@@ -39,6 +39,14 @@ class observer {
                 return;
             }
 
+            // FIX PREVIEW: Admin e coach hanno mod/quiz:preview che salva i tentativi
+            // come preview (non contano come tentativi reali). Convertiamo in normali.
+            if (!empty($attempt->preview)) {
+                self::convert_preview_to_normal($attempt);
+                // Ricarica il record aggiornato.
+                $attempt = $DB->get_record('quiz_attempts', ['id' => $attemptid]);
+            }
+
             $quizid = $attempt->quiz;
             if (!$quizid) {
                 return;
@@ -56,6 +64,9 @@ class observer {
 
             // Rileva settori (silenzioso)
             self::detect_sectors_from_attempt($userid, $attempt);
+
+            // Notifica email a coach e segreteria.
+            self::notify_quiz_completion($userid, $attempt);
 
         } catch (\Exception $e) {
             // Non bloccare mai il quiz per errori del selfassessment
@@ -413,6 +424,436 @@ class observer {
             \local_competencymanager\sector_manager::detect_sectors_from_quiz($userid, $quizid, $competencyids);
         } catch (\Exception $e) {
             // Errore silenzioso - non blocca il quiz
+        }
+    }
+
+    /**
+     * Notifica via email coach e segreteria quando uno studente completa un quiz.
+     *
+     * Destinatari:
+     * - Coach assegnato allo studente (da local_student_coaching)
+     * - Tutti i siteadmin (include Segreteria)
+     *
+     * @param int $userid Student user ID
+     * @param object $attempt Quiz attempt record
+     */
+    private static function notify_quiz_completion($userid, $attempt) {
+        global $DB, $CFG;
+
+        try {
+            $student = $DB->get_record('user', ['id' => $userid]);
+            $quiz = $DB->get_record('quiz', ['id' => $attempt->quiz]);
+            if (!$student || !$quiz) {
+                return;
+            }
+
+            $course = $DB->get_record('course', ['id' => $quiz->course]);
+            $coursename = $course ? $course->fullname : '?';
+
+            // Orario completamento.
+            $completiontime = $attempt->timefinish ? $attempt->timefinish : $attempt->timestart;
+            $timestr = userdate($completiontime, '%A %d %B %Y, %H:%M');
+
+            // Voto.
+            $gradestr = 'N/D';
+            if ($attempt->state === 'finished' && $attempt->sumgrades !== null) {
+                $quizgrades = $DB->get_record('quiz', ['id' => $attempt->quiz], 'sumgrades');
+                if ($quizgrades && $quizgrades->sumgrades > 0) {
+                    $percent = round(($attempt->sumgrades / $quizgrades->sumgrades) * 100, 1);
+                    $gradestr = $attempt->sumgrades . ' / ' . $quizgrades->sumgrades . ' (' . $percent . '%)';
+                } else {
+                    $gradestr = $attempt->sumgrades;
+                }
+            }
+
+            // Link al report studente.
+            $reporturl = $CFG->wwwroot . '/local/competencymanager/student_report.php?userid=' . $userid . '&courseid=' . $quiz->course;
+            // Link alla review del tentativo.
+            $reviewurl = $CFG->wwwroot . '/mod/quiz/review.php?attempt=' . $attempt->id;
+
+            // Costruisci il messaggio.
+            $studentname = fullname($student);
+            $subject = "FTM - Quiz completato: {$studentname} - {$quiz->name}";
+
+            $body = "Notifica completamento Quiz FTM\n";
+            $body .= "================================\n\n";
+            $body .= "Studente:  {$studentname}\n";
+            $body .= "Email:     {$student->email}\n";
+            $body .= "Quiz:      {$quiz->name}\n";
+            $body .= "Corso:     {$coursename}\n";
+            $body .= "Data/Ora:  {$timestr}\n";
+            $body .= "Voto:      {$gradestr}\n\n";
+            $body .= "Link:\n";
+            $body .= "- Review tentativo: {$reviewurl}\n";
+            $body .= "- Report studente:  {$reporturl}\n\n";
+            $body .= "---\n";
+            $body .= "Notifica automatica FTM Academy\n";
+
+            // Barra di progresso voto.
+            $percentval = 0;
+            if ($attempt->state === 'finished' && $attempt->sumgrades !== null) {
+                $qz = $DB->get_record('quiz', ['id' => $attempt->quiz], 'sumgrades');
+                if ($qz && $qz->sumgrades > 0) {
+                    $percentval = round(($attempt->sumgrades / $qz->sumgrades) * 100, 1);
+                }
+            }
+            $barcolor = $percentval >= 70 ? '#28a745' : ($percentval >= 40 ? '#EAB308' : '#dc3545');
+
+            // Estrai settore dal nome quiz (prima parte prima del trattino).
+            $quizparts = explode(' - ', $quiz->name, 2);
+            $sector = isset($quizparts[0]) ? trim($quizparts[0]) : '';
+            $quizshort = isset($quizparts[1]) ? trim($quizparts[1]) : $quiz->name;
+            // Pulizia nome quiz (rimuovi date e underscore).
+            $quizshort = preg_replace('/_\d{8}_\d+$/', '', $quizshort);
+            $quizshort = str_replace('_', ' ', $quizshort);
+
+            $htmlbody = self::build_email_html(
+                'quiz',
+                $studentname,
+                $student->email,
+                [
+                    ['label' => 'Settore', 'value' => $sector, 'bold' => true],
+                    ['label' => 'Quiz', 'value' => $quizshort],
+                    ['label' => 'Corso', 'value' => $coursename],
+                    ['label' => 'Data/Ora', 'value' => $timestr],
+                ],
+                $percentval,
+                $barcolor,
+                $gradestr,
+                [
+                    ['url' => $reviewurl, 'label' => 'Review Tentativo', 'color' => '#0066cc'],
+                    ['url' => $reporturl, 'label' => 'Report Studente', 'color' => '#28a745'],
+                ]
+            );
+
+            // Raccogli destinatari (coach + siteadmins + tutti i coach), dedup.
+            $recipients = self::get_notification_recipients($userid);
+
+            if (empty($recipients)) {
+                return;
+            }
+
+            // Invia email a ogni destinatario.
+            $noreply = \core_user::get_noreply_user();
+            $sent = 0;
+            foreach ($recipients as $recipient) {
+                try {
+                    email_to_user($recipient, $noreply, $subject, $body, $htmlbody);
+                    $sent++;
+                } catch (\Exception $e) {
+                    debugging("selfassessment: email to {$recipient->email} failed: " . $e->getMessage(), DEBUG_DEVELOPER);
+                }
+            }
+
+            debugging("selfassessment: quiz completion notification sent to {$sent} recipients for user {$userid}", DEBUG_DEVELOPER);
+
+        } catch (\Exception $e) {
+            // Non bloccare mai il quiz per errori di notifica.
+            debugging("selfassessment: notification error: " . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
+     * Notifica coach e segreteria quando uno studente salva l'autovalutazione.
+     * Invia email solo al completamento (100% competenze valutate).
+     *
+     * @param int $userid Student ID
+     * @param int $saved Number of assessments saved in this batch
+     * @param int $total_rated Total assessments rated so far
+     * @param int $total_assigned Total competencies assigned
+     * @param bool $just_completed True if this save triggered 100% completion
+     */
+    public static function notify_selfassessment_saved($userid, $saved, $total_rated, $total_assigned, $just_completed) {
+        global $DB, $CFG;
+
+        // Invia email solo al completamento, non ad ogni salvataggio parziale.
+        if (!$just_completed) {
+            return;
+        }
+
+        try {
+            $student = $DB->get_record('user', ['id' => $userid]);
+            if (!$student) {
+                return;
+            }
+
+            $studentname = fullname($student);
+            $timestr = userdate(time(), '%A %d %B %Y, %H:%M');
+
+            // Link alla pagina compile dello studente (per coach).
+            $compileurl = $CFG->wwwroot . '/local/selfassessment/compile.php';
+
+            // Trova il corso R.comp per il link al report.
+            $rcomp = $DB->get_record_sql("SELECT id FROM {course} WHERE fullname = :fn OR shortname = :sn LIMIT 1",
+                ['fn' => 'R.comp', 'sn' => 'R.comp']);
+            $reporturl = $rcomp
+                ? $CFG->wwwroot . '/local/competencymanager/student_report.php?userid=' . $userid . '&courseid=' . $rcomp->id
+                : $CFG->wwwroot . '/local/competencymanager/student_report.php?userid=' . $userid;
+
+            $subject = "FTM - Autovalutazione completata: {$studentname}";
+
+            $body = "Notifica Autovalutazione FTM\n";
+            $body .= "================================\n\n";
+            $body .= "Studente:     {$studentname}\n";
+            $body .= "Email:        {$student->email}\n";
+            $body .= "Competenze:   {$total_rated} / {$total_assigned} valutate (100%)\n";
+            $body .= "Data/Ora:     {$timestr}\n\n";
+            $body .= "Link:\n";
+            $body .= "- Report studente: {$reporturl}\n\n";
+            $body .= "---\n";
+            $body .= "Notifica automatica FTM Academy\n";
+
+            $htmlbody = self::build_email_html(
+                'selfassessment',
+                $studentname,
+                $student->email,
+                [
+                    ['label' => 'Competenze', 'value' => "{$total_rated} / {$total_assigned} valutate", 'bold' => true],
+                    ['label' => 'Data/Ora', 'value' => $timestr],
+                ],
+                100,
+                '#28a745',
+                "{$total_rated} / {$total_assigned} (100%)",
+                [
+                    ['url' => $reporturl, 'label' => 'Report Studente', 'color' => '#28a745'],
+                ]
+            );
+
+            // Stessi destinatari del quiz: coach assegnato + siteadmins + tutti i coach.
+            $recipients = self::get_notification_recipients($userid);
+
+            if (empty($recipients)) {
+                return;
+            }
+
+            $noreply = \core_user::get_noreply_user();
+            foreach ($recipients as $recipient) {
+                try {
+                    email_to_user($recipient, $noreply, $subject, $body, $htmlbody);
+                } catch (\Exception $e) {
+                    debugging("selfassessment: email to {$recipient->email} failed: " . $e->getMessage(), DEBUG_DEVELOPER);
+                }
+            }
+
+        } catch (\Exception $e) {
+            debugging("selfassessment: selfassessment notification error: " . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
+     * Genera l'HTML professionale per le email di notifica FTM.
+     *
+     * @param string $type 'quiz' o 'selfassessment'
+     * @param string $studentname Nome completo studente
+     * @param string $email Email studente
+     * @param array $fields Campi aggiuntivi [['label'=>..., 'value'=>..., 'bold'=>bool], ...]
+     * @param float $percent Percentuale per la barra di progresso (0-100)
+     * @param string $barcolor Colore della barra
+     * @param string $scoretext Testo del punteggio
+     * @param array $buttons Bottoni [['url'=>..., 'label'=>..., 'color'=>...], ...]
+     * @return string HTML email
+     */
+    private static function build_email_html($type, $studentname, $email, $fields, $percent, $barcolor, $scoretext, $buttons) {
+
+        $isQuiz = ($type === 'quiz');
+        $headerBg = $isQuiz ? '#0066cc' : '#28a745';
+        $headerIcon = $isQuiz ? '&#128221;' : '&#9989;';
+        $headerTitle = $isQuiz ? 'Quiz Completato' : 'Autovalutazione Completata';
+        $accentColor = $isQuiz ? '#0066cc' : '#28a745';
+
+        $html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0; padding:0; background:#f4f6f8;">';
+        $html .= '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8; padding:20px 0;">';
+        $html .= '<tr><td align="center">';
+
+        // Container.
+        $html .= '<table width="580" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">';
+
+        // Header con gradiente.
+        $html .= '<tr><td style="background:' . $headerBg . '; padding:28px 32px;">';
+        $html .= '<table width="100%" cellpadding="0" cellspacing="0"><tr>';
+        $html .= '<td style="color:#ffffff; font-family:Arial,Helvetica,sans-serif;">';
+        $html .= '<div style="font-size:28px; margin-bottom:4px;">' . $headerIcon . '</div>';
+        $html .= '<div style="font-size:22px; font-weight:700; letter-spacing:-0.3px;">' . $headerTitle . '</div>';
+        $html .= '<div style="font-size:13px; opacity:0.85; margin-top:4px;">FTM Academy - Notifica automatica</div>';
+        $html .= '</td>';
+        $html .= '<td align="right" valign="top" style="color:#ffffff; font-family:Arial,Helvetica,sans-serif;">';
+        $html .= '<div style="font-size:11px; opacity:0.7; text-transform:uppercase; letter-spacing:1px;">FTM</div>';
+        $html .= '<div style="font-size:11px; opacity:0.7;">Academy</div>';
+        $html .= '</td>';
+        $html .= '</tr></table>';
+        $html .= '</td></tr>';
+
+        // Studente card.
+        $html .= '<tr><td style="padding:24px 32px 0;">';
+        $html .= '<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fa; border-radius:8px; border:1px solid #e9ecef;">';
+        $html .= '<tr><td style="padding:16px 20px;">';
+        $html .= '<table width="100%" cellpadding="0" cellspacing="0"><tr>';
+        // Avatar cerchio con iniziali.
+        $initials = '';
+        $nameparts = explode(' ', $studentname);
+        foreach ($nameparts as $np) {
+            if (!empty($np)) {
+                $initials .= mb_strtoupper(mb_substr($np, 0, 1));
+            }
+        }
+        $initials = mb_substr($initials, 0, 2);
+        $html .= '<td width="48" valign="top">';
+        $html .= '<div style="width:44px; height:44px; border-radius:50%; background:' . $accentColor . '; color:#fff; font-family:Arial,sans-serif; font-size:16px; font-weight:700; line-height:44px; text-align:center;">' . s($initials) . '</div>';
+        $html .= '</td>';
+        $html .= '<td style="padding-left:12px; font-family:Arial,Helvetica,sans-serif;">';
+        $html .= '<div style="font-size:16px; font-weight:700; color:#1a1a2e;">' . s($studentname) . '</div>';
+        $html .= '<div style="font-size:13px; color:#6c757d; margin-top:2px;">' . s($email) . '</div>';
+        $html .= '</td>';
+        $html .= '</tr></table>';
+        $html .= '</td></tr></table>';
+        $html .= '</td></tr>';
+
+        // Dettagli.
+        $html .= '<tr><td style="padding:20px 32px 0;">';
+        $html .= '<table width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,Helvetica,sans-serif;">';
+        foreach ($fields as $f) {
+            $bold = !empty($f['bold']) ? 'font-weight:700;' : '';
+            $html .= '<tr>';
+            $html .= '<td width="110" style="padding:7px 0; font-size:13px; color:#6c757d; vertical-align:top;">' . s($f['label']) . '</td>';
+            $html .= '<td style="padding:7px 0; font-size:14px; color:#1a1a2e; ' . $bold . '">' . s($f['value']) . '</td>';
+            $html .= '</tr>';
+        }
+        $html .= '</table>';
+        $html .= '</td></tr>';
+
+        // Barra punteggio.
+        $html .= '<tr><td style="padding:20px 32px 0;">';
+        $html .= '<table width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,Helvetica,sans-serif;">';
+        $html .= '<tr><td style="font-size:12px; color:#6c757d; text-transform:uppercase; letter-spacing:0.5px; padding-bottom:8px;">Risultato</td></tr>';
+        $html .= '<tr><td>';
+        // Barra sfondo.
+        $html .= '<table width="100%" cellpadding="0" cellspacing="0"><tr>';
+        $html .= '<td style="background:#e9ecef; border-radius:20px; height:28px; overflow:hidden;">';
+        $html .= '<div style="background:' . $barcolor . '; width:' . max($percent, 3) . '%; height:28px; border-radius:20px; text-align:center; line-height:28px;">';
+        if ($percent >= 15) {
+            $html .= '<span style="color:#fff; font-size:12px; font-weight:700;">' . $percent . '%</span>';
+        }
+        $html .= '</div>';
+        $html .= '</td></tr></table>';
+        if ($percent < 15) {
+            $html .= '<div style="text-align:left; margin-top:4px; font-size:12px; color:#6c757d;">' . $percent . '%</div>';
+        }
+        $html .= '</td></tr>';
+        $html .= '<tr><td style="font-size:14px; font-weight:600; color:#1a1a2e; padding-top:6px;">' . s($scoretext) . '</td></tr>';
+        $html .= '</table>';
+        $html .= '</td></tr>';
+
+        // Bottoni.
+        $html .= '<tr><td style="padding:24px 32px;" align="center">';
+        $html .= '<table cellpadding="0" cellspacing="0"><tr>';
+        foreach ($buttons as $btn) {
+            $html .= '<td style="padding:0 6px;">';
+            $html .= '<a href="' . $btn['url'] . '" style="display:inline-block; background:' . $btn['color'] . '; color:#ffffff; font-family:Arial,sans-serif; font-size:14px; font-weight:600; text-decoration:none; padding:11px 24px; border-radius:8px;">';
+            $html .= s($btn['label']);
+            $html .= '</a>';
+            $html .= '</td>';
+        }
+        $html .= '</tr></table>';
+        $html .= '</td></tr>';
+
+        // Footer.
+        $html .= '<tr><td style="background:#f8f9fa; padding:16px 32px; border-top:1px solid #e9ecef;">';
+        $html .= '<table width="100%" cellpadding="0" cellspacing="0"><tr>';
+        $html .= '<td style="font-family:Arial,Helvetica,sans-serif; font-size:11px; color:#adb5bd;">';
+        $html .= 'Notifica automatica &middot; FTM Academy &middot; Fondazione Terzo Millennio';
+        $html .= '</td>';
+        $html .= '<td align="right" style="font-family:Arial,Helvetica,sans-serif; font-size:11px; color:#adb5bd;">';
+        $html .= date('d.m.Y H:i');
+        $html .= '</td>';
+        $html .= '</tr></table>';
+        $html .= '</td></tr>';
+
+        $html .= '</table>'; // container
+        $html .= '</td></tr></table>'; // outer
+        $html .= '</body></html>';
+
+        return $html;
+    }
+
+    /**
+     * Raccoglie i destinatari delle notifiche: coach dello studente + siteadmins + tutti i coach.
+     *
+     * @param int $userid Student user ID (escluso dai destinatari)
+     * @return array User records
+     */
+    private static function get_notification_recipients($userid) {
+        global $DB;
+
+        $recipients = [];
+
+        // 1. Coach assegnato allo studente.
+        $coaching = $DB->get_records('local_student_coaching', ['userid' => $userid, 'status' => 'active']);
+        foreach ($coaching as $c) {
+            if (!empty($c->coachid) && $c->coachid > 0) {
+                $coach = $DB->get_record('user', ['id' => $c->coachid, 'deleted' => 0, 'suspended' => 0]);
+                if ($coach) {
+                    $recipients[$coach->id] = $coach;
+                }
+            }
+        }
+
+        // 2. Siteadmins.
+        $admins = get_admins();
+        foreach ($admins as $admin) {
+            if (!$admin->deleted && !$admin->suspended && !empty($admin->email)) {
+                $recipients[$admin->id] = $admin;
+            }
+        }
+
+        // 3. Tutti i coach registrati.
+        $allcoaches = $DB->get_records('local_ftm_coaches');
+        foreach ($allcoaches as $fc) {
+            if ($fc->userid > 0 && !isset($recipients[$fc->userid])) {
+                $coachuser = $DB->get_record('user', ['id' => $fc->userid, 'deleted' => 0, 'suspended' => 0]);
+                if ($coachuser && !empty($coachuser->email)) {
+                    $recipients[$coachuser->id] = $coachuser;
+                }
+            }
+        }
+
+        // Non notificare lo studente stesso.
+        unset($recipients[$userid]);
+
+        return $recipients;
+    }
+
+    /**
+     * Converte un tentativo PREVIEW in un tentativo normale.
+     * Necessario perché admin/coach hanno mod/quiz:preview che marca
+     * automaticamente i tentativi come preview (non visibili nei report).
+     *
+     * @param object $attempt Quiz attempt record with preview=1
+     */
+    private static function convert_preview_to_normal($attempt) {
+        global $DB, $CFG;
+
+        try {
+            // Calcola il numero tentativo corretto (sequenziale per user+quiz).
+            $maxattempt = $DB->get_field_sql(
+                "SELECT COALESCE(MAX(attempt), 0)
+                   FROM {quiz_attempts}
+                  WHERE quiz = :quiz AND userid = :userid AND preview = 0",
+                ['quiz' => $attempt->quiz, 'userid' => $attempt->userid]
+            );
+
+            $DB->set_field('quiz_attempts', 'preview', 0, ['id' => $attempt->id]);
+            $DB->set_field('quiz_attempts', 'attempt', $maxattempt + 1, ['id' => $attempt->id]);
+
+            // Ricalcola il voto finale del quiz per questo utente.
+            require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+            $quiz = $DB->get_record('quiz', ['id' => $attempt->quiz]);
+            if ($quiz) {
+                quiz_update_all_final_grades($quiz);
+            }
+
+            debugging("selfassessment: converted preview attempt {$attempt->id} to normal for user {$attempt->userid}", DEBUG_DEVELOPER);
+        } catch (\Exception $e) {
+            debugging("selfassessment: preview conversion failed: " . $e->getMessage(), DEBUG_DEVELOPER);
         }
     }
 

@@ -257,7 +257,17 @@ function is_valid_competency($code, $valid_competencies) {
     // Crea array di competenze valide in maiuscolo per confronto (UTF-8)
     $valid_upper = array_map(function($c) { return mb_strtoupper($c, 'UTF-8'); }, $valid_competencies);
 
-    return in_array($normalized, $valid_upper);
+    if (in_array($normalized, $valid_upper)) {
+        return true;
+    }
+
+    // METALCOSTRUZIONE: fallback DF↔MC prefix
+    $altCode = try_metalcostruzione_alt_prefix($normalized);
+    if ($altCode && in_array($altCode, $valid_upper)) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
@@ -275,6 +285,32 @@ function find_matching_competency($code, $valid_competencies) {
         }
     }
 
+    // METALCOSTRUZIONE: fallback DF↔MC prefix
+    $altCode = try_metalcostruzione_alt_prefix($normalized);
+    if ($altCode) {
+        foreach ($valid_competencies as $valid) {
+            if (mb_strtoupper($valid, 'UTF-8') === $altCode) {
+                return $valid;
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Try alternate METALCOSTRUZIONE profile prefix (DF↔MC)
+ *
+ * @param string $codeUpper Uppercase competency code
+ * @return string|null Alternate code or null
+ */
+function try_metalcostruzione_alt_prefix($codeUpper) {
+    if (strpos($codeUpper, 'METALCOSTRUZIONE_DF_') === 0) {
+        return 'METALCOSTRUZIONE_MC_' . substr($codeUpper, 20);
+    }
+    if (strpos($codeUpper, 'METALCOSTRUZIONE_MC_') === 0) {
+        return 'METALCOSTRUZIONE_DF_' . substr($codeUpper, 20);
+    }
     return null;
 }
 

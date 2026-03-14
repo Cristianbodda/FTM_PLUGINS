@@ -824,6 +824,127 @@ function render_section_suggerimenti_rapporto($params) {
     <?php
 }
 
+/**
+ * Render sezione Overlay Radar (Confronto Multi-Fonte)
+ * Genera radar SVG con Rilevamento, Autovalutazione e Coach sovrapposti
+ */
+function render_section_overlay_radar($params) {
+    if (empty($params['printOverlayRadar'])) return;
+
+    $overlayAreas = $params['overlayAreas'] ?? [];
+    $overlayLabels = $params['overlayLabels'] ?? [];
+    $overlayQuiz = $params['overlayQuiz'] ?? [];
+    $overlayAuto = $params['overlayAuto'] ?? [];
+    $overlayLabeval = $params['overlayLabeval'] ?? [];
+    $overlayCoach = $params['overlayCoach'] ?? [];
+
+    if (empty($overlayLabels) || count($overlayLabels) < 3) return;
+
+    // Calcola Rilevamento = (Quiz+Lab)/2 per ogni area
+    $rilevamento = [];
+    for ($i = 0; $i < count($overlayLabels); $i++) {
+        $q = $overlayQuiz[$i] ?? 0;
+        $l = $overlayLabeval[$i] ?? 0;
+        $sources = 0;
+        $total = 0;
+        if ($q > 0) { $total += $q; $sources++; }
+        if ($l > 0) { $total += $l; $sources++; }
+        $rilevamento[] = $sources > 0 ? round($total / $sources, 1) : 0;
+    }
+
+    // Prepara dataset
+    $datasets = [];
+    $datasets[] = [
+        'data' => $rilevamento,
+        'label' => 'Rilevamento (Quiz+Lab)',
+        'fill' => 'rgba(40,167,69,0.15)',
+        'stroke' => '#28a745',
+    ];
+
+    $hasAuto = array_filter($overlayAuto, function($v) { return $v !== null; });
+    if (!empty($hasAuto)) {
+        $autoData = array_map(function($v) { return $v ?? 0; }, $overlayAuto);
+        $datasets[] = [
+            'data' => $autoData,
+            'label' => 'Autovalutazione',
+            'fill' => 'rgba(102,126,234,0.15)',
+            'stroke' => '#667eea',
+        ];
+    }
+
+    $hasCoach = array_filter($overlayCoach, function($v) { return $v !== null; });
+    if (!empty($hasCoach)) {
+        $coachData = array_map(function($v) { return $v ?? 0; }, $overlayCoach);
+        $datasets[] = [
+            'data' => $coachData,
+            'label' => 'Formatore',
+            'fill' => 'rgba(220,53,69,0.15)',
+            'stroke' => '#dc3545',
+        ];
+    }
+
+    ?>
+    <div class="section" style="page-break-before: always;">
+        <div class="section-title" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; font-size: 14pt;">
+            🔀 CONFRONTO MULTI-FONTE (Overlay)
+        </div>
+
+        <div style="text-align: center; margin: 15px 0;">
+            <?php echo generate_svg_overlay_radar($datasets, $overlayLabels, 490, 'Sovrapposizione Confronto Multi-Fonte'); ?>
+        </div>
+
+        <!-- Tabella comparativa -->
+        <table style="width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: 15px;">
+            <thead>
+                <tr style="background: #f0f4f8;">
+                    <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: left;">Area</th>
+                    <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; color: #28a745;">Rilevamento</th>
+                    <?php if (!empty($hasAuto)): ?>
+                    <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; color: #667eea;">Autovalutazione</th>
+                    <?php endif; ?>
+                    <?php if (!empty($hasCoach)): ?>
+                    <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; color: #dc3545;">Coach</th>
+                    <?php endif; ?>
+                    <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center;">Media</th>
+                    <th style="border: 1px solid #dee2e6; padding: 6px 8px; text-align: center;">Gap Max</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php for ($i = 0; $i < count($overlayLabels); $i++):
+                    $values = [$rilevamento[$i]];
+                    if (!empty($hasAuto)) $values[] = ($overlayAuto[$i] ?? 0);
+                    if (!empty($hasCoach)) $values[] = ($overlayCoach[$i] ?? 0);
+                    $validValues = array_filter($values, function($v) { return $v > 0; });
+                    $media = !empty($validValues) ? round(array_sum($validValues) / count($validValues), 1) : 0;
+                    $gapMax = !empty($validValues) ? round(max($validValues) - min($validValues), 1) : 0;
+                    $gapColor = $gapMax > 25 ? '#dc3545' : ($gapMax > 10 ? '#ffc107' : '#28a745');
+                ?>
+                <tr>
+                    <td style="border: 1px solid #dee2e6; padding: 5px 8px; font-weight: bold;"><?php echo htmlspecialchars($overlayLabels[$i]); ?></td>
+                    <td style="border: 1px solid #dee2e6; padding: 5px 8px; text-align: center;"><?php echo $rilevamento[$i]; ?>%</td>
+                    <?php if (!empty($hasAuto)): ?>
+                    <td style="border: 1px solid #dee2e6; padding: 5px 8px; text-align: center;"><?php echo ($overlayAuto[$i] ?? 0); ?>%</td>
+                    <?php endif; ?>
+                    <?php if (!empty($hasCoach)): ?>
+                    <td style="border: 1px solid #dee2e6; padding: 5px 8px; text-align: center;"><?php echo ($overlayCoach[$i] ?? 0); ?>%</td>
+                    <?php endif; ?>
+                    <td style="border: 1px solid #dee2e6; padding: 5px 8px; text-align: center; font-weight: bold;"><?php echo $media; ?>%</td>
+                    <td style="border: 1px solid #dee2e6; padding: 5px 8px; text-align: center; color: <?php echo $gapColor; ?>; font-weight: bold;"><?php echo $gapMax; ?>%</td>
+                </tr>
+                <?php endfor; ?>
+            </tbody>
+        </table>
+
+        <div style="margin-top: 10px; font-size: 8pt; color: #666;">
+            🟢 Rilevamento: media Quiz + Laboratorio |
+            🟣 Autovalutazione: percezione studente |
+            🔴 Coach: valutazione formatore (Bloom) |
+            Gap Max: differenza massima tra fonti
+        </div>
+    </div>
+    <?php
+}
+
 // ============================================
 // FINE FUNZIONI DI RENDERING
 // ============================================
@@ -1314,8 +1435,11 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
          ============================================ -->
     <?php
     // Prepara il settore da mostrare nel running header
+    // Usa settore effettivo (auto-rilevato dai quiz o filtro esplicito)
     $runningHeaderSector = null;
-    if (!empty($studentPrimarySector)) {
+    if (!empty($effectiveSectorFilter) && $effectiveSectorFilter !== 'all') {
+        $runningHeaderSector = strtoupper($effectiveSectorFilter);
+    } elseif (!empty($studentPrimarySector)) {
         $runningHeaderSector = strtoupper($studentPrimarySector);
     } elseif (!empty($sector)) {
         $runningHeaderSector = strtoupper($sector);
@@ -1366,12 +1490,16 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
                 <p><strong>Email:</strong> <?php echo $student->email; ?></p>
                 <?php if ($course): ?><p><strong>Corso:</strong> <?php echo format_string($course->fullname); ?></p><?php endif; ?>
                 <?php
-                // Mostra sempre il settore dello studente
+                // Mostra il settore effettivo dei dati visualizzati
                 $displaySector = null;
                 $sectorSource = '';
 
-                // Priorità: 1) Settore primario assegnato, 2) Settore rilevato dai quiz, 3) Settore dal corso
-                if (!empty($studentPrimarySector)) {
+                // Priorità: 1) Settore effettivo (dal filtro o auto-rilevato dai quiz),
+                //           2) Settore primario assegnato, 3) Settore dal corso
+                if (!empty($effectiveSectorFilter) && $effectiveSectorFilter !== 'all') {
+                    $displaySector = strtoupper($effectiveSectorFilter);
+                    $sectorSource = ($cm_sector_filter !== 'all') ? 'filtro' : 'rilevato dai quiz';
+                } elseif (!empty($studentPrimarySector)) {
                     $displaySector = strtoupper($studentPrimarySector);
                     $sectorSource = 'assegnato';
                 } elseif (!empty($sector)) {
@@ -1445,6 +1573,14 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
         'sogliaAllineamento' => $sogliaAllineamento ?? 10,
         'sogliaMonitorare' => $sogliaMonitorare ?? 25,
         'studentName' => fullname($student),
+        // Overlay radar data
+        'printOverlayRadar' => $printOverlayRadar ?? false,
+        'overlayAreas' => $overlayAreas ?? [],
+        'overlayLabels' => $overlayLabels ?? [],
+        'overlayQuiz' => $overlayQuiz ?? [],
+        'overlayAuto' => $overlayAuto ?? [],
+        'overlayLabeval' => $overlayLabeval ?? [],
+        'overlayCoach' => $overlayCoach ?? [],
     ];
 
     // Mappa sezioni -> funzioni di rendering
@@ -1459,6 +1595,7 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
         'gap_analysis'   => 'render_section_gap_analysis',
         'spunti'         => 'render_section_spunti',
         'suggerimenti'   => 'render_section_suggerimenti_rapporto',
+        'overlay_radar'  => 'render_section_overlay_radar',
     ];
 
     // Render sezioni nell'ordine specificato

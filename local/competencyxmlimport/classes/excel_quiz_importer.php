@@ -265,15 +265,10 @@ class excel_quiz_importer {
             $competencyId = null;
 
             if (!empty($competencyCode) && !empty($this->competency_lookup)) {
-                if (isset($this->competency_lookup[$competencyCodeUpper])) {
-                    $competencyValid = true;
-                    $competencyId = $this->competency_lookup[$competencyCodeUpper]->id;
-                } else {
-                    $suggested = $this->find_similar_competency($competencyCodeUpper);
-                    if ($suggested) {
-                        $this->warnings[] = "Riga $row: '$competencyCode' non trovato. Simile: $suggested";
-                    }
-                }
+                $result = $this->validate_competency($competencyCodeUpper, $row, $competencyCode);
+                $competencyValid = $result['valid'];
+                $competencyId = $result['id'];
+                $competencyCodeUpper = $result['resolved_code'];
             }
 
             // Group by quiz name (same as Excel parser).
@@ -473,16 +468,10 @@ class excel_quiz_importer {
         $competencyId = null;
 
         if (!empty($competencyCode) && !empty($this->competency_lookup)) {
-            if (isset($this->competency_lookup[$competencyCodeUpper])) {
-                $competencyValid = true;
-                $competencyId = $this->competency_lookup[$competencyCodeUpper]->id;
-            } else {
-                // Try fuzzy match
-                $suggested = $this->find_similar_competency($competencyCodeUpper);
-                if ($suggested) {
-                    $this->warnings[] = "Riga $row: '$competencyCode' non trovato. Simile: $suggested";
-                }
-            }
+            $result = $this->validate_competency($competencyCodeUpper, $row, $competencyCode);
+            $competencyValid = $result['valid'];
+            $competencyId = $result['id'];
+            $competencyCodeUpper = $result['resolved_code'];
         }
 
         // Build question data
@@ -569,6 +558,62 @@ class excel_quiz_importer {
             return "Q{$num} - {$competencyCode}";
         }
         return "Q{$num}";
+    }
+
+    /**
+     * Validate a competency code against the lookup, with automatic prefix fallback.
+     *
+     * For METALCOSTRUZIONE, tries switching DF↔MC prefix when code is not found.
+     *
+     * @param string $codeUpper Uppercase competency code
+     * @param int $row Row number for warning messages
+     * @param string $codeOriginal Original code for messages
+     * @return array ['valid' => bool, 'id' => int|null, 'resolved_code' => string]
+     */
+    private function validate_competency($codeUpper, $row, $codeOriginal) {
+        // Direct match
+        if (isset($this->competency_lookup[$codeUpper])) {
+            return [
+                'valid' => true,
+                'id' => $this->competency_lookup[$codeUpper]->id,
+                'resolved_code' => $codeUpper,
+            ];
+        }
+
+        // METALCOSTRUZIONE: try alternate prefix DF↔MC
+        $altCode = $this->try_alternate_prefix($codeUpper);
+        if ($altCode && isset($this->competency_lookup[$altCode])) {
+            $this->warnings[] = "Riga $row: '$codeOriginal' corretto automaticamente in '$altCode'";
+            return [
+                'valid' => true,
+                'id' => $this->competency_lookup[$altCode]->id,
+                'resolved_code' => $altCode,
+            ];
+        }
+
+        // Fuzzy match (suggestion only)
+        $suggested = $this->find_similar_competency($codeUpper);
+        if ($suggested) {
+            $this->warnings[] = "Riga $row: '$codeOriginal' non trovato. Simile: $suggested";
+        }
+
+        return ['valid' => false, 'id' => null, 'resolved_code' => $codeUpper];
+    }
+
+    /**
+     * Try alternate profile prefix for METALCOSTRUZIONE (DF↔MC)
+     *
+     * @param string $codeUpper Uppercase competency code
+     * @return string|null Alternate code or null
+     */
+    private function try_alternate_prefix($codeUpper) {
+        if (strpos($codeUpper, 'METALCOSTRUZIONE_DF_') === 0) {
+            return 'METALCOSTRUZIONE_MC_' . substr($codeUpper, 20);
+        }
+        if (strpos($codeUpper, 'METALCOSTRUZIONE_MC_') === 0) {
+            return 'METALCOSTRUZIONE_DF_' . substr($codeUpper, 20);
+        }
+        return null;
     }
 
     /**

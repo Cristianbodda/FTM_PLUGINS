@@ -216,8 +216,24 @@ try {
                     }
                     $found_competencies[$comp]['count']++;
                     // Verifica case-insensitive sia codice originale che normalizzato
-                    $found_competencies[$comp]['exists'] = in_array($comp, $valid_competencies_upper)
+                    $exists = in_array($comp, $valid_competencies_upper)
                         || in_array($normalized, $valid_competencies_upper);
+
+                    // METALCOSTRUZIONE: fallback DF↔MC prefix
+                    if (!$exists) {
+                        $altCode = null;
+                        if (strpos($normalized, 'METALCOSTRUZIONE_DF_') === 0) {
+                            $altCode = 'METALCOSTRUZIONE_MC_' . substr($normalized, 20);
+                        } elseif (strpos($normalized, 'METALCOSTRUZIONE_MC_') === 0) {
+                            $altCode = 'METALCOSTRUZIONE_DF_' . substr($normalized, 20);
+                        }
+                        if ($altCode && in_array($altCode, $valid_competencies_upper)) {
+                            $exists = true;
+                            $found_competencies[$comp]['normalized'] = $altCode;
+                        }
+                    }
+
+                    $found_competencies[$comp]['exists'] = $exists;
                 }
             }
 

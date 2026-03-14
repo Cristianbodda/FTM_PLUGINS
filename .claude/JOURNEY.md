@@ -1,5 +1,19 @@
 # FTM Plugins - Development Journey
 
+## 5 Marzo 2026
+
+### Student Report - Stampa Overlay Radar SVG + Genera PDF (local_competencymanager)
+- **Funzionalita:** Grafico overlay multi-fonte in stampa (SVG) + generazione PDF server-side con TCPDF
+- **File modificati:**
+  - `student_report.php` - `generate_svg_overlay_radar()`, overlay data pre-print, routing PDF, bottone PDF, checkbox overlay nel modale stampa
+  - `student_report_print.php` - `render_section_overlay_radar()`, renderParams overlay, sectionRenderers
+  - `student_report_pdf.php` (NUOVO) - Endpoint PDF con TCPDF, sezioni selezionabili, SVG overlay
+- **Bug fix critico:** `$autovalutazioneAreas` ha chiavi `LOGISTICA_A` ma il codice usava `$areaCode` (chiave array) invece di `$areaData['code']` (codice breve `A`). Questo raddoppiava le aree nel radar (16 label invece di 8)
+- **Fix:** Allineato al codice originale: `foreach ($autovalutazioneAreas as $areaData) { $code = $areaData['code']; }`
+- **Altri fix:** Filtro Formatore `$v !== null` (non `$v > 0`), debug echo skip per PDF, etichette SVG complete
+
+---
+
 ## 25 Febbraio 2026
 
 ### Selfassessment - Observer Reliability Fix (local_selfassessment)

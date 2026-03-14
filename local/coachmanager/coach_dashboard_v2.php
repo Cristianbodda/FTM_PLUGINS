@@ -2245,6 +2245,128 @@ echo $OUTPUT->header();
     padding: 20px 24px;
 }
 
+/* Quiz Unlock Modal */
+.qu-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1050;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 50px;
+    overflow-y: auto;
+}
+.qu-modal.active {
+    display: flex;
+}
+.qu-modal-content {
+    background: white;
+    border-radius: 14px;
+    width: 95%;
+    max-width: 650px;
+    box-shadow: 0 10px 50px rgba(0,0,0,0.25);
+    margin-bottom: 50px;
+}
+.qu-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 2px solid #e2e4e8;
+    background: #f8f9fb;
+    border-radius: 14px 14px 0 0;
+}
+.qu-modal-header h3 {
+    margin: 0;
+    font-size: 17px;
+    color: #333;
+}
+.qu-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0 4px;
+    line-height: 1;
+}
+.qu-modal-close:hover { color: #dc3545; }
+.qu-modal-body {
+    padding: 20px 24px;
+}
+.qu-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.qu-table th {
+    background: #f1f3f5;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 2px solid #dee2e6;
+}
+.qu-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+.qu-table tr:hover {
+    background: #f8f9fa;
+}
+.qu-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.qu-badge.blocked { background: #fee2e2; color: #dc2626; }
+.qu-badge.free { background: #dcfce7; color: #16a34a; }
+.qu-badge.unlimited { background: #e0e7ff; color: #4f46e5; }
+.qu-badge.overridden { background: #dbeafe; color: #2563eb; }
+.qu-unlock-btn {
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: none;
+    background: #0066cc;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.qu-unlock-btn:hover { background: #0052a3; }
+.qu-unlock-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+.qu-loading {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+.qu-toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: #16a34a;
+    color: white;
+    padding: 14px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    z-index: 1100;
+    animation: quToastIn 0.3s ease-out;
+}
+@keyframes quToastIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
 /* Current activities section */
 .wp-current-section {
     margin-bottom: 20px;
@@ -3640,6 +3762,162 @@ function wpRemoveActivity(type, recordId) {
     .catch(() => alert('Errore di connessione'));
 }
 
+// ============================================
+// QUIZ UNLOCK MODAL
+// ============================================
+
+let quStudentId = null;
+let quStudentName = '';
+
+function openQuizUnlock(studentId, studentName) {
+    quStudentId = studentId;
+    quStudentName = studentName;
+
+    // Create modal if not exists
+    let modal = document.getElementById('quModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'quModal';
+        modal.className = 'qu-modal';
+        modal.innerHTML = `
+            <div class="qu-modal-content">
+                <div class="qu-modal-header">
+                    <h3 id="quTitle">Sblocca Quiz</h3>
+                    <button class="qu-modal-close" onclick="closeQuizUnlock()">&times;</button>
+                </div>
+                <div class="qu-modal-body">
+                    <div id="quBody">
+                        <div class="qu-loading">Caricamento quiz...</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeQuizUnlock();
+        });
+    }
+
+    document.getElementById('quTitle').textContent = '\uD83D\uDD13 Sblocca Quiz - ' + studentName;
+    document.getElementById('quBody').innerHTML = '<div class="qu-loading">Caricamento quiz...</div>';
+
+    modal.classList.add('active');
+
+    loadQuizStatus();
+}
+
+function closeQuizUnlock() {
+    const modal = document.getElementById('quModal');
+    if (modal) modal.classList.remove('active');
+    quStudentId = null;
+}
+
+function loadQuizStatus() {
+    const url = '<?php echo $CFG->wwwroot; ?>/local/selfassessment/ajax_unlock_quiz.php' +
+                '?action=getquizzes&studentid=' + quStudentId +
+                '&sesskey=<?php echo sesskey(); ?>';
+
+    fetch(url)
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) {
+            document.getElementById('quBody').innerHTML =
+                '<div style="color:#dc3545;padding:20px;text-align:center;">' + (data.message || 'Errore') + '</div>';
+            return;
+        }
+
+        if (!data.quizzes || data.quizzes.length === 0) {
+            document.getElementById('quBody').innerHTML =
+                '<div style="padding:20px;text-align:center;color:#999;">Nessun quiz trovato in R.comp.</div>';
+            return;
+        }
+
+        let html = '<table class="qu-table"><thead><tr>';
+        html += '<th>Quiz</th><th style="text-align:center;">Tentativi</th>';
+        html += '<th style="text-align:center;">Stato</th><th style="text-align:center;">Azione</th>';
+        html += '</tr></thead><tbody>';
+
+        data.quizzes.forEach(q => {
+            html += '<tr>';
+            html += '<td>' + escapeHtml(q.name) + '</td>';
+
+            // Attempts display
+            if (q.status === 'unlimited') {
+                html += '<td style="text-align:center;">' + q.finished + ' / &infin;</td>';
+            } else {
+                html += '<td style="text-align:center;">' + q.finished + ' / ' + q.max_attempts + '</td>';
+            }
+
+            // Status badge
+            if (q.status === 'blocked') {
+                html += '<td style="text-align:center;"><span class="qu-badge blocked">Bloccato</span></td>';
+            } else if (q.status === 'unlimited') {
+                html += '<td style="text-align:center;"><span class="qu-badge unlimited">Illimitato</span></td>';
+            } else {
+                html += '<td style="text-align:center;"><span class="qu-badge free">Libero</span></td>';
+            }
+
+            // Override info / unlock button
+            if (q.has_override) {
+                html += '<td style="text-align:center;font-size:11px;color:#2563eb;">Override: ' + q.override_attempts + ' tent.';
+                if (q.status === 'blocked') {
+                    html += '<br><button class="qu-unlock-btn" style="margin-top:4px;" onclick="unlockQuiz(' + q.quizid + ',\'' + escapeHtml(q.name).replace(/'/g, "\\'") + '\')">Sblocca</button>';
+                }
+                html += '</td>';
+            } else if (q.status === 'blocked') {
+                html += '<td style="text-align:center;"><button class="qu-unlock-btn" onclick="unlockQuiz(' + q.quizid + ',\'' + escapeHtml(q.name).replace(/'/g, "\\'") + '\')">Sblocca</button></td>';
+            } else {
+                html += '<td style="text-align:center;">&mdash;</td>';
+            }
+
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('quBody').innerHTML = html;
+    })
+    .catch(() => {
+        document.getElementById('quBody').innerHTML =
+            '<div style="color:#dc3545;padding:20px;text-align:center;">Errore di connessione.</div>';
+    });
+}
+
+function unlockQuiz(quizId, quizName) {
+    if (!confirm('Sbloccare "' + quizName + '" per ' + quStudentName + '?\n\nLo studente potra\' fare un ulteriore tentativo.')) {
+        return;
+    }
+
+    const url = '<?php echo $CFG->wwwroot; ?>/local/selfassessment/ajax_unlock_quiz.php' +
+                '?action=unlock&studentid=' + quStudentId +
+                '&quizid=' + quizId +
+                '&sesskey=<?php echo sesskey(); ?>';
+
+    fetch(url)
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // Show toast
+            const toast = document.createElement('div');
+            toast.className = 'qu-toast';
+            toast.textContent = '\u2705 ' + (data.message || 'Quiz sbloccato!');
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+
+            // Reload quiz list
+            loadQuizStatus();
+        } else {
+            alert(data.message || 'Errore nello sblocco.');
+        }
+    })
+    .catch(() => alert('Errore di connessione'));
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+}
+
 </script>
 
 <?php
@@ -3802,6 +4080,12 @@ function render_view_compatta($students, $dashboard) {
                         &#128197;
                     </button>
                     <?php endif; ?>
+                    <button class="btn btn-sm"
+                            onclick="event.stopPropagation(); openQuizUnlock(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>')"
+                            title="Sblocca Quiz"
+                            style="background: #7c3aed !important; color: #fff !important; border-color: #6d28d9 !important;">
+                        &#128275;
+                    </button>
                     <?php if ($is_end6): ?>
                     <button class="btn btn-warning btn-sm"
                             onclick="exportWord(<?php echo $student->id; ?>)"
@@ -3910,6 +4194,10 @@ function render_view_standard($students, $dashboard) {
                         &#128197; Percorso
                     </a>
                     <?php endif; ?>
+                    <a href="#" onclick="event.stopPropagation(); openQuizUnlock(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>'); return false;"
+                       class="quick-btn" title="Sblocca Quiz" style="background:#7c3aed;color:#fff;">
+                        &#128275; Quiz
+                    </a>
                     <?php if ($is_end6): ?>
                     <a href="#" onclick="exportWord(<?php echo $student->id; ?>); return false;"
                        class="quick-btn word" title="Esporta Word">
@@ -4221,6 +4509,11 @@ function render_view_standard($students, $dashboard) {
                         <button class="btn btn-primary btn-sm"
                                 onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti'">
                             &#128172; Colloquio
+                        </button>
+                        <button class="btn btn-sm"
+                                onclick="openQuizUnlock(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>')"
+                                style="background: #7c3aed !important; color: #fff !important; border-color: #6d28d9 !important;">
+                            &#128275; Quiz
                         </button>
                         <?php if ($student->needs_choices ?? false): ?>
                         <button class="btn btn-success btn-sm" onclick="saveChoices(<?php echo $student->id; ?>)">
@@ -4623,6 +4916,11 @@ function render_view_classica($students, $dashboard) {
                             &#128197; Percorso
                         </button>
                         <?php endif; ?>
+                        <button class="btn btn-sm"
+                                onclick="openQuizUnlock(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>')"
+                                style="background: #7c3aed !important; color: #fff !important; border-color: #6d28d9 !important;">
+                            &#128275; Quiz
+                        </button>
                     </div>
                 </div>
             </div>

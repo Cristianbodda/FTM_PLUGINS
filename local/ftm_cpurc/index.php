@@ -78,6 +78,22 @@ $urclist = \local_ftm_cpurc\cpurc_manager::get_urc_offices();
 $sectorlist = \local_ftm_cpurc\cpurc_manager::get_sectors();
 $coachlist = \local_ftm_cpurc\cpurc_manager::get_coaches();
 
+// Carica gruppo colore per ogni studente (ultimo gruppo attivo per userid)
+$studentGroupColors = [];
+$groupColorRecords = $DB->get_records_sql("
+    SELECT gm.userid, g.color, g.name as group_name, g.calendar_week
+    FROM {local_ftm_group_members} gm
+    JOIN {local_ftm_groups} g ON g.id = gm.groupid
+    WHERE gm.status = 'active'
+    ORDER BY g.entry_date DESC
+");
+foreach ($groupColorRecords as $rec) {
+    // Tiene solo il primo (più recente per entry_date DESC)
+    if (!isset($studentGroupColors[$rec->userid])) {
+        $studentGroupColors[$rec->userid] = $rec;
+    }
+}
+
 // Check import capability.
 $canimport = has_capability('local/ftm_cpurc:import', $context);
 
@@ -256,6 +272,22 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
     background: #E5E7EB;
     color: #374151;
 }
+
+/* Quadratino colore gruppo */
+.group-color-dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    margin-right: 6px;
+    vertical-align: middle;
+    border: 1px solid rgba(0,0,0,0.15);
+}
+.group-color-dot.gc-giallo { background: #FFFF00; }
+.group-color-dot.gc-grigio { background: #808080; }
+.group-color-dot.gc-rosso { background: #FF0000; }
+.group-color-dot.gc-marrone { background: #996633; }
+.group-color-dot.gc-viola { background: #7030A0; }
 
 .sector-AUTOMOBILE { background: #DBEAFE; color: #1E40AF; }
 .sector-MECCANICA { background: #D1FAE5; color: #065F46; }
@@ -656,6 +688,7 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
                 <thead>
                     <tr>
                         <th>Settimana</th>
+                        <th>Gruppo</th>
                         <th>Nome</th>
                         <th>URC</th>
                         <th>Coach</th>
@@ -675,6 +708,17 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
                             <span class="status-badge <?php echo $weekstatus['class']; ?>">
                                 <?php echo $weekstatus['icon']; ?> Sett. <?php echo $week > 0 ? $week : '-'; ?>
                             </span>
+                        </td>
+                        <td style="text-align: center;">
+                            <?php
+                            $uid = $student->userid ?? $student->moodleuserid ?? 0;
+                            $grp = $studentGroupColors[$uid] ?? null;
+                            if ($grp): ?>
+                                <span class="group-color-dot gc-<?php echo s($grp->color); ?>"
+                                      title="<?php echo s($grp->group_name); ?>"></span>
+                            <?php else: ?>
+                                <span style="color:#ccc;">-</span>
+                            <?php endif; ?>
                         </td>
                         <td>
                             <strong><?php echo s($student->lastname); ?></strong> <?php echo s($student->firstname); ?><br>
