@@ -94,6 +94,10 @@ try {
     $data->hired = optional_param('hired', 0, PARAM_INT);
     $data->hired_details = optional_param('hired_details', '', PARAM_TEXT);
 
+    // SIP consent + Allegati.
+    $data->sip_consent = optional_param('sip_consent', null, PARAM_INT);
+    $data->allegati = optional_param('allegati', '', PARAM_TEXT);
+
     // Save report.
     $newid = \local_ftm_cpurc\cpurc_manager::save_report($data);
 

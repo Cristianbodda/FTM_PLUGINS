@@ -43,6 +43,9 @@ class word_template_processor {
     /** @var array Checkbox replacements */
     private $checkboxes = [];
 
+    /** @var array Text replacements (find exact text, replace with value) */
+    private $textReplacements = [];
+
     /**
      * Constructor.
      *
@@ -90,6 +93,19 @@ class word_template_processor {
      */
     public function setCheckbox($field, $checked) {
         $this->checkboxes[$field] = $checked;
+        return $this;
+    }
+
+    /**
+     * Set a text replacement (find text in document, replace with value).
+     * Unlike merge fields, these find literal text in the document body.
+     *
+     * @param string $findText Text to find.
+     * @param string $replaceWith Replacement text.
+     * @return self
+     */
+    public function replaceText($findText, $replaceWith) {
+        $this->textReplacements[$findText] = $replaceWith;
         return $this;
     }
 
@@ -189,6 +205,9 @@ class word_template_processor {
         // Replace checkboxes.
         $content = $this->replaceCheckboxes($content);
 
+        // Replace text content.
+        $content = $this->replaceTextContent($content);
+
         return $content;
     }
 
@@ -204,13 +223,13 @@ class word_template_processor {
      * @return string Cleaned content.
      */
     private function cleanupMergeFields($content) {
-        // Pattern to find split merge fields and join them.
-        // This handles cases where « and » are in separate <w:t> tags.
+        // Only join w:t tags when they clearly contain split merge fields (« ... »).
+        // Be conservative: only act when we see « without matching » in the same tag,
+        // or » without a preceding « in the same tag.
 
-        // First pass: join adjacent w:t elements within the same w:r.
         $pattern = '/<w:t([^>]*)>([^<]*)<\/w:t><\/w:r><w:r[^>]*><w:t([^>]*)>([^<]*)<\/w:t>/';
 
-        $maxIterations = 50;
+        $maxIterations = 30;
         $iteration = 0;
 
         while ($iteration < $maxIterations) {
@@ -218,16 +237,16 @@ class word_template_processor {
                 $text1 = $matches[2];
                 $text2 = $matches[4];
 
-                // Check if this looks like a split merge field.
-                if ((strpos($text1, '«') !== false && strpos($text2, '»') !== false) ||
-                    (preg_match('/«[A-Z0-9_]*$/', $text1) && preg_match('/^[A-Z0-9_]*»/', $text2)) ||
-                    (strpos($text1, '«') !== false) ||
-                    (strpos($text2, '»') !== false)) {
-                    // Join them.
+                // ONLY join if text1 ends with an open merge field that hasn't closed,
+                // or text2 starts with completion of a merge field.
+                $has_open = (strpos($text1, "\xC2\xAB") !== false && strpos($text1, "\xC2\xBB") === false); // « without »
+                $has_close = (strpos($text2, "\xC2\xBB") !== false && strpos($text2, "\xC2\xAB") === false); // » without «
+
+                if ($has_open || $has_close) {
                     return '<w:t' . $matches[1] . '>' . $text1 . $text2 . '</w:t>';
                 }
 
-                // Not a merge field, keep original.
+                // Not a merge field split, keep original.
                 return $matches[0];
             }, $content);
 
@@ -302,6 +321,32 @@ class word_template_processor {
                 // Find checked near the field and make it unchecked.
                 $pattern = '/(' . preg_quote($field, '/') . '.*?)☒/s';
                 $content = preg_replace($pattern, '$1☐', $content, 1);
+            }
+        }
+
+        return $content;
+    }
+
+    /**
+     * Replace literal text content in the document XML.
+     *
+     * Handles the case where text may be split across multiple <w:t> tags
+     * by searching in the raw XML after cleanup.
+     *
+     * @param string $content XML content.
+     * @return string Processed content.
+     */
+    private function replaceTextContent($content) {
+        foreach ($this->textReplacements as $findText => $replaceWith) {
+            $escapedFind = $this->escapeXml($findText);
+            $escapedReplace = $this->escapeXml($replaceWith);
+
+            // Direct replacement in XML text content.
+            $content = str_replace($escapedFind, $escapedReplace, $content);
+
+            // Also try without XML escaping (for texts that are already plain in the XML).
+            if (strpos($content, $findText) !== false) {
+                $content = str_replace($findText, $escapedReplace, $content);
             }
         }
 

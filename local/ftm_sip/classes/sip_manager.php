@@ -248,8 +248,8 @@ class sip_manager {
      */
     public static function get_coach_enrollments($coachid) {
         global $DB;
-        $sql = "SELECT e.*, " .
-               get_all_user_name_fields(true, 'u') . ", u.email
+        $sql = "SELECT e.*, u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic,
+               u.middlename, u.alternatename, u.email
                FROM {local_ftm_sip_enrollments} e
                JOIN {user} u ON u.id = e.userid
                WHERE e.coachid = :coachid AND e.status = :status AND u.deleted = 0
@@ -274,9 +274,9 @@ class sip_manager {
             $where .= ' AND e.status = :status';
             $params['status'] = $status;
         }
-        $sql = "SELECT e.*, " .
-               get_all_user_name_fields(true, 'u') . ", u.email,
-               " . get_all_user_name_fields(true, 'c', '', 'coach_') . "
+        $sql = "SELECT e.*, u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic,
+               u.middlename, u.alternatename, u.email,
+               c.firstname AS coach_firstname, c.lastname AS coach_lastname
                FROM {local_ftm_sip_enrollments} e
                JOIN {user} u ON u.id = e.userid
                LEFT JOIN {user} c ON c.id = e.coachid
@@ -707,8 +707,8 @@ class sip_manager {
         global $DB;
         $now = time();
         $until = $now + ($days_ahead * 86400);
-        $sql = "SELECT a.*, " .
-               get_all_user_name_fields(true, 'u') . ", u.email
+        $sql = "SELECT a.*, u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic,
+               u.middlename, u.alternatename, u.email
                FROM {local_ftm_sip_appointments} a
                JOIN {user} u ON u.id = a.studentid
                WHERE a.coachid = :coachid

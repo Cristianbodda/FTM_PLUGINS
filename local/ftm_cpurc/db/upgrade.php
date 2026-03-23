@@ -138,5 +138,23 @@ function xmldb_local_ftm_cpurc_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026032001, 'local', 'ftm_cpurc');
     }
 
+    if ($oldversion < 2026032301) {
+        $table = new xmldb_table('local_ftm_cpurc_reports');
+
+        // SIP consent (0/1/null).
+        $field = new xmldb_field('sip_consent', XMLDB_TYPE_INTEGER, '1', null, null, null, null, 'hired_details');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Allegati field.
+        $field = new xmldb_field('allegati', XMLDB_TYPE_TEXT, null, null, null, null, null, 'sip_consent');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026032301, 'local', 'ftm_cpurc');
+    }
+
     return true;
 }

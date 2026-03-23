@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_ftm_cpurc';
-$plugin->version = 2026032001;  // Report page rewrite - official document structure.
+$plugin->version = 2026032301;  // SIP consent box + absence table update + allegati field.
 $plugin->requires = 2024042200; // Moodle 4.4+
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = 'v1.4.0';
+$plugin->release = 'v1.4.1';
 $plugin->dependencies = [
     'local_competencymanager' => ANY_VERSION,
     'local_ftm_scheduler' => ANY_VERSION,

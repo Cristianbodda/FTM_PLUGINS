@@ -1,4 +1,4 @@
-# SISTEMA CPURC - DETTAGLI TECNICI (27/02/2026)
+# SISTEMA CPURC - DETTAGLI TECNICI (23/03/2026)
 
 ## Panoramica
 Sistema completo per la gestione degli studenti CPURC (Centro Professionale URC) con import da CSV, gestione anagrafica, assegnazione coach/settori e generazione report Word.
@@ -97,10 +97,79 @@ local/ftm_cpurc/
 - **Secondario/Terziario:** Suggerimenti per il coach
 - Salvataggio in `local_student_sectors` (condivisa)
 
-## Report Word (report.php)
+## Report Word (report.php + word_exporter.php)
 
-### Campi Narrativi
-- `narrative_behavior`, `narrative_technical`, `narrative_transversal`, `narrative_recommendations`, `narrative_conclusion`
+### Template: `templates/rapporto_finale_template.docx`
+Basato su "Rapporto finale PML_V2026.docx" ufficiale. 137 merge field totali:
+
+### Merge Field Standard (32 MERGEFIELD instrText)
+| Campo | Descrizione |
+|-------|-------------|
+| F3 | Cognome |
+| DATI_ANAGRAFICI_base | Nome |
+| F6/F7/F8 | Via/CAP/Citta |
+| F11 | Nr. AVS |
+| DATI_ANAGRAFICI_altri | Data nascita |
+| F20 | Iniziali coach |
+| F22/F23/F24 | Date inizio/fine prevista/fine effettiva |
+| F25 | Grado occupazione |
+| F26/F27 | URC ufficio/consulente |
+| F32/F33 | Giorni partecipazione |
+| F34-F43 | Assenze (A-I + totale) |
+| F44 | Numero colloqui |
+| F74, COLLOQUI_DASSUNZIONE | Dettagli colloqui |
+| DATI_PERCORSO_altri, F29, F30 | Professione/esito |
+
+### Griglie Competenze (95 tag guillemet)
+Sigla formato: `«{PREFIX}{N}_{SCALA}»` -> sostituita con "X" se selezionata
+
+| Prefisso | Sezione | N. righe |
+|----------|---------|----------|
+| P | 3.1 Competenze personali | 0-4 (5 item) |
+| S | 3.2 Competenze sociali | 0-1 (2 item) |
+| M | 3.3 Competenze metodologiche | 0-4 (5 item) |
+| T | 3.4 Competenze TIC | 0 (1 item) |
+| R | 4. Competenze ricerca impiego | 0-4 (5 item) |
+| VO | 4.3 Valutazione complessiva | (1 riga) |
+
+Scale: `_MB` (Molto buone), `_B` (Buone), `_S` (Sufficienti), `_I` (Insufficienti), `_NV` (N.V.)
+
+### Tag Narrativi (10 tag guillemet)
+| Campo | Sezione |
+|-------|---------|
+| SITUAZIONE_INIZIALE | Sez. 1 - Situazione iniziale |
+| VALUTAZIONE_SETTORE | Sez. 2 - Competenze settore |
+| POSSIBILI_SETTORI | Sez. 2 - Possibili settori |
+| SINTESI_CONCLUSIVA | Sez. 2 - Sintesi conclusiva |
+| OSS_PERSONALI | Sez. 3.1 - Osservazioni personali |
+| OSS_SOCIALI | Sez. 3.2 - Osservazioni sociali |
+| OSS_METODOLOGICHE | Sez. 3.3 - Osservazioni metodologiche |
+| OSS_TIC | Sez. 3.4 - Osservazioni TIC |
+| OSS_CANALI_RICERCA | Sez. 4.2 - Osservazioni canali |
+| OSS_VALUTAZIONE_RICERCA | Sez. 4.3 - Osservazioni valutazione |
+
+### Campi DB Report (local_ftm_cpurc_reports)
+| Campo | Tipo | Descrizione |
+|-------|------|-------------|
+| initial_situation | TEXT | Situazione iniziale |
+| initial_situation_sector | TEXT | Settore/i di riferimento |
+| sector_competency_text | TEXT | Valutazione competenze settore |
+| possible_sectors | TEXT | Possibili settori |
+| final_summary | TEXT | Sintesi conclusiva |
+| personal/social/methodological/tic_competencies | TEXT (JSON) | Array valori scala testo |
+| obs_personal/social/methodological/tic | TEXT | Osservazioni competenze |
+| dossier_complete | INT | 0/1 |
+| search_competencies | TEXT (JSON) | Competenze ricerca impiego |
+| search_channels | TEXT (JSON) | Canali ricerca selezionati |
+| search_overall | CHAR(30) | Valutazione complessiva ricerca |
+| obs_search_channels/obs_search_evaluation | TEXT | Osservazioni ricerca |
+| interviews_count | INT | Numero colloqui |
+| interviews_employers | TEXT | Datori di lavoro |
+| obs_interviews | TEXT | Osservazioni colloqui |
+| hired | INT | 0/1 assunzione |
+| hired_details | TEXT | Dettagli assunzione |
+| sip_consent | INT | 0/1 consenso coaching SIP |
+| allegati | TEXT | Allegati inviati al CP URC |
 
 ## Import Produzione (import_production.php)
 

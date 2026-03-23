@@ -155,6 +155,8 @@
         <!-- SEZIONE 6: Esito -->
         <FIELD NAME="hired" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="0/1"/>
         <FIELD NAME="hired_details" TYPE="text" NOTNULL="false" COMMENT="Dettagli assunzione (datore, professione, data, contratto)"/>
+        <FIELD NAME="sip_consent" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="PCI consent for 10-week SIP coaching 0/1"/>
+        <FIELD NAME="allegati" TYPE="text" NOTNULL="false" COMMENT="Eventuali allegati inviati al CP URC"/>
         <FIELD NAME="hired_company" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="(legacy)"/>
         <FIELD NAME="hired_date" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="(legacy)"/>
         <FIELD NAME="hired_percentage" TYPE="int" LENGTH="3" NOTNULL="false" COMMENT="(legacy)"/>

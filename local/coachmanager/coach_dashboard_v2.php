@@ -2713,13 +2713,17 @@ echo $OUTPUT->header();
     background: #0891B2 !important;
 }
 .btn-sip {
-    background: #0891B2 !important;
+    background: linear-gradient(135deg, #F59E0B, #D97706) !important;
     color: white !important;
-    border-color: #06B6D4 !important;
+    border-color: #B45309 !important;
     font-size: 11px;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.15);
 }
 .btn-sip:hover {
-    background: #0E7490 !important;
+    background: linear-gradient(135deg, #D97706, #B45309) !important;
+    text-decoration: none !important;
+    color: white !important;
 }
 .btn-sip-activate {
     background: #94a3b8 !important;
@@ -4468,7 +4472,7 @@ function render_view_compatta($students, $dashboard) {
                     <?php if (!empty($student->sip_enrolled)): ?>
                     <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
                        class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>
-                    <?php elseif (empty($student->sip_enrolled) && ($student->current_week ?? 0) >= 4): ?>
+                    <?php elseif (empty($student->sip_enrolled)): ?>
                     <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
                     <?php endif; ?>
                 </div>
@@ -4601,7 +4605,7 @@ function render_view_standard($students, $dashboard) {
                     <?php if (!empty($student->sip_enrolled)): ?>
                     <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
                        class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>
-                    <?php elseif (empty($student->sip_enrolled) && ($student->current_week ?? 0) >= 4): ?>
+                    <?php elseif (empty($student->sip_enrolled)): ?>
                     <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
                     <?php endif; ?>
                 </div>
@@ -4912,7 +4916,7 @@ function render_view_standard($students, $dashboard) {
                         <?php if (!empty($student->sip_enrolled)): ?>
                         <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
                            class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>
-                        <?php elseif (empty($student->sip_enrolled) && ($student->current_week ?? 0) >= 4): ?>
+                        <?php elseif (empty($student->sip_enrolled)): ?>
                         <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
                         <?php endif; ?>
                     </div>
@@ -5157,7 +5161,7 @@ function render_view_dettagliata($students, $dashboard) {
                     <?php if (!empty($student->sip_enrolled)): ?>
                     <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
                        class="btn btn-sip" title="Apri SIP">&#128221; SIP</a>
-                    <?php elseif (empty($student->sip_enrolled) && ($student->current_week ?? 0) >= 4): ?>
+                    <?php elseif (empty($student->sip_enrolled)): ?>
                     <button class="btn btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
                     <?php endif; ?>
                 </div>
@@ -5335,7 +5339,7 @@ function render_view_classica($students, $dashboard) {
                         <?php if (!empty($student->sip_enrolled)): ?>
                         <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
                            class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>
-                        <?php elseif (empty($student->sip_enrolled) && ($student->current_week ?? 0) >= 4): ?>
+                        <?php elseif (empty($student->sip_enrolled)): ?>
                         <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
                         <?php endif; ?>
                     </div>

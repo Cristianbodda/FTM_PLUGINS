@@ -273,7 +273,7 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
     width: 100%;
     border: none;
     border-bottom: 1px solid #ccc;
-    background: #fffef5;
+    background: white;
     padding: 4px 8px;
     font-family: inherit;
     font-size: inherit;
@@ -282,15 +282,15 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
 
 .doc-field:focus {
     outline: none;
-    background: #fff9c4;
+    background: #f8f9fa;
     border-bottom: 2px solid #2c3e50;
 }
 
 .doc-field-textarea {
     width: 100%;
     min-height: 120px;
-    border: 2px solid #ccc;
-    background: #fffef5;
+    border: 1px solid #ccc;
+    background: white;
     padding: 15px;
     font-family: inherit;
     font-size: 14pt;
@@ -300,7 +300,7 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
 
 .doc-field-textarea:focus {
     outline: none;
-    background: #fff9c4;
+    background: #f8f9fa;
     border-color: #2c3e50;
 }
 
@@ -506,10 +506,7 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
 }
 
 .doc-subsection-hint {
-    font-size: 9pt;
-    color: #666;
-    font-style: italic;
-    margin-bottom: 10px;
+    display: none;
 }
 
 /* Hired details */
@@ -715,27 +712,63 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                         </tr>
                     </table>
 
-                    <h3 style="font-size: 12pt; font-weight: 600; margin: 15px 0 10px;">N&deg; giorni per tipo di assenza</h3>
-                    <table class="doc-absence-table">
+                    <h3 style="font-size: 12pt; font-weight: 600; margin: 15px 0 10px; text-decoration: underline;">N&deg; giorni per tipo di assenza</h3>
+                    <table class="doc-absence-table" style="font-size: 11pt;">
                         <tr>
-                            <th>Vacanze</th>
-                            <th>Malattia</th>
-                            <th>Infortunio</th>
-                            <th>Maternita'</th>
-                            <th>Prot. civile</th>
-                            <th>Altro giust.</th>
-                            <th>Festivi</th>
-                            <th><strong>Totale</strong></th>
+                            <td style="text-align:left; border:1px solid #999; padding:6px 10px;"><strong>A =</strong>Giorni di vacanza (solo se gia' maturati)</td>
+                            <td style="text-align:center; border:1px solid #999; padding:6px 10px; width:60px;"><?php echo $student->absence_a ?? 0; ?></td>
+                            <td style="text-align:left; border:1px solid #999; padding:6px 10px;"><strong>F =</strong>Guadagno intermedio</td>
+                            <td style="text-align:center; border:1px solid #999; padding:6px 10px; width:60px;"><?php echo $student->absence_f ?? 0; ?></td>
                         </tr>
                         <tr>
-                            <td><?php echo $student->absence_a ?? 0; ?></td>
-                            <td><?php echo $student->absence_b ?? 0; ?></td>
-                            <td><?php echo $student->absence_c ?? 0; ?></td>
-                            <td><?php echo $student->absence_d ?? 0; ?></td>
-                            <td><?php echo $student->absence_e ?? 0; ?></td>
-                            <td><?php echo $student->absence_g ?? 0; ?></td>
-                            <td><?php echo $student->absence_h ?? 0; ?></td>
-                            <td><strong><?php echo $student->absence_total ?? 0; ?></strong></td>
+                            <td style="text-align:left; border:1px solid #999; padding:6px 10px;"><strong>B =</strong>Malattia, gravidanza</td>
+                            <td style="text-align:center; border:1px solid #999; padding:6px 10px;"><?php echo $student->absence_b ?? 0; ?></td>
+                            <td style="text-align:left; border:1px solid #999; padding:6px 10px;"><strong>G =</strong>Altre assenze giustificate</td>
+                            <td style="text-align:center; border:1px solid #999; padding:6px 10px;"><?php echo $student->absence_g ?? 0; ?></td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:left; border:1px solid #999; padding:6px 10px;"><strong>C =</strong>Infortunio</td>
+                            <td style="text-align:center; border:1px solid #999; padding:6px 10px;"><?php echo $student->absence_c ?? 0; ?></td>
+                            <td style="text-align:left; border:1px solid #999; padding:6px 10px;"><strong>H =</strong> Giorni festivi, vacanze aziendali</td>
+                            <td style="text-align:center; border:1px solid #999; padding:6px 10px;"><?php echo $student->absence_h ?? 0; ?></td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:left; border:1px solid #999; padding:6px 10px;"><strong>D =</strong> Congedo maternita', congedo genitore, congedo assistenza</td>
+                            <td style="text-align:center; border:1px solid #999; padding:6px 10px;"><?php echo $student->absence_d ?? 0; ?></td>
+                            <td style="text-align:left; border:1px solid #999; padding:6px 10px;"><strong>I =</strong>Assenze non giustificate</td>
+                            <td style="text-align:center; border:1px solid #999; padding:6px 10px;"><?php echo $student->absence_i ?? 0; ?></td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:left; border:1px solid #999; padding:6px 10px;"><strong>E =</strong>Servizio militare, civile, protezione civile</td>
+                            <td style="text-align:center; border:1px solid #999; padding:6px 10px;"><?php echo $student->absence_e ?? 0; ?></td>
+                            <td style="text-align:left; border:1px solid #999; padding:6px 10px;"><strong>TOTALE GIORNI DI ASSENZA</strong></td>
+                            <td style="text-align:center; border:1px solid #999; padding:6px 10px; font-weight:bold;"><?php echo $student->absence_total ?? 0; ?></td>
+                        </tr>
+                    </table>
+
+                    <!-- Conferma SIP coaching -->
+                    <table style="width:100%; border-collapse:collapse; margin-top:15px; font-size:12pt;">
+                        <tr>
+                            <td style="border:1px solid #999; padding:12px; width:70%;">
+                                La PCI conferma la volonta' di avvalersi del servizio personalizzato di coaching per le successive 10 settimane
+                                <span style="font-size:9pt;">(se si', apponendo la propria firma si dichiara d'accordo sulla gestione dei propri dati personali per un periodo massimo di 10 settimane dopo la data di fine misura)</span>
+                            </td>
+                            <td style="border:1px solid #999; padding:12px; text-align:center; width:15%;">
+                                <strong>Si'</strong><br>
+                                <label style="cursor:pointer;">
+                                    <input type="radio" name="sip_consent" value="1"
+                                           <?php echo (!empty($report->sip_consent) && $report->sip_consent == 1) ? 'checked' : ''; ?>
+                                           style="width:18px; height:18px; margin-top:5px;">
+                                </label>
+                            </td>
+                            <td style="border:1px solid #999; padding:12px; text-align:center; width:15%;">
+                                <strong>No</strong><br>
+                                <label style="cursor:pointer;">
+                                    <input type="radio" name="sip_consent" value="0"
+                                           <?php echo (isset($report->sip_consent) && $report->sip_consent == 0) ? 'checked' : ''; ?>
+                                           style="width:18px; height:18px; margin-top:5px;">
+                                </label>
+                            </td>
                         </tr>
                     </table>
                 </div>
@@ -751,7 +784,7 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                             Sintesi situazione iniziale e obiettivi, inserire una storia della carriera professionale e formativa della PCI.
                         </p>
                         <textarea name="initial_situation" class="doc-field-textarea" rows="6"
-                                  placeholder="Inserire la descrizione della situazione iniziale..."><?php echo s($report->initial_situation ?? ''); ?></textarea>
+                                  placeholder="Sintesi situazione iniziale e obiettivi, inserire una storia della carriera professionale e formativa della PCI."><?php echo s($report->initial_situation ?? ''); ?></textarea>
                     </div>
 
                     <div class="doc-subsection">
@@ -760,7 +793,7 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                             Es.: Generico, meccanica, automazione, logistica, elettrico ecc...
                         </p>
                         <textarea name="initial_situation_sector" class="doc-field-textarea" rows="3"
-                                  placeholder="Indicare il/i settore/i di riferimento..."><?php echo s($report->initial_situation_sector ?? ''); ?></textarea>
+                                  placeholder="Es.: Generico, meccanica, automazione, logistica, elettrico ecc. Indicare eventuali settori in cui si svolge un rilevamento approfondito teorico o pratico."><?php echo s($report->initial_situation_sector ?? ''); ?></textarea>
                     </div>
                 </div>
             </div>
@@ -775,7 +808,7 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                             (sulla base dei documenti redatti durante il percorso indicare quali competenze tecniche sono state rilevate, inserire qui anche se sono stati fatti anche stage che hanno permesso di rilevare/confermare competenze pratiche)
                         </p>
                         <textarea name="sector_competency_text" class="doc-field-textarea" rows="5"
-                                  placeholder="Descrivere le competenze tecniche rilevate..."><?php echo s($report->sector_competency_text ?? ''); ?></textarea>
+                                  placeholder="Sulla base dei documenti redatti durante il percorso indicare quali competenze tecniche sono state rilevate, inserire qui anche se sono stati fatti stage che hanno permesso di rilevare/confermare competenze pratiche."><?php echo s($report->sector_competency_text ?? ''); ?></textarea>
                     </div>
 
                     <div class="doc-subsection">
@@ -1035,6 +1068,15 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                                       placeholder="Indicare datore di lavoro, professione, data inizio e forma contrattuale..."><?php echo s($report->hired_details ?? ''); ?></textarea>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Eventuali allegati -->
+            <div class="doc-section" style="margin-top: 20px;">
+                <h2 class="doc-section-title">Eventuali allegati inviati al CP URC</h2>
+                <div class="doc-section-content">
+                    <textarea name="allegati" class="doc-field-textarea" rows="3"
+                              placeholder="Indicare quali allegati vengono inviati al consulente del personale URC..."><?php echo s($report->allegati ?? ''); ?></textarea>
                 </div>
             </div>
 

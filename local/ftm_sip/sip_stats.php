@@ -94,6 +94,8 @@ $outcome_map = [
     'tryout' => 0,
     'intermediate_earning' => 0,
     'training' => 0,
+    'not_placed_activated' => 0,
+    'not_suitable' => 0,
     'none' => 0,
     'interrupted' => 0,
 ];
@@ -153,8 +155,7 @@ if (!empty($completed_ids)) {
 }
 
 // --- Coach Performance ---
-$sql = "SELECT e.coachid,
-               " . get_all_user_name_fields(true, 'c') . ",
+$sql = "SELECT e.coachid, c.firstname, c.lastname,
                COUNT(e.id) AS total_students,
                SUM(CASE WHEN e.status = 'completed' THEN 1 ELSE 0 END) AS completed_count,
                SUM(CASE WHEN e.outcome IN ('hired', 'stage', 'tryout') THEN 1 ELSE 0 END) AS inserted_count
@@ -162,7 +163,7 @@ $sql = "SELECT e.coachid,
         JOIN {user} u ON u.id = e.userid
         JOIN {user} c ON c.id = e.coachid
         WHERE {$where_sql}
-        GROUP BY e.coachid, " . get_all_user_name_fields(true, 'c') . "
+        GROUP BY e.coachid, c.firstname, c.lastname
         ORDER BY total_students DESC";
 $coach_perf = $DB->get_records_sql($sql, $params);
 
@@ -209,7 +210,7 @@ unset($cp);
 
 // --- Filter dropdowns data ---
 // Coaches who have SIP students.
-$sql = "SELECT DISTINCT e.coachid, " . get_all_user_name_fields(true, 'c') . "
+$sql = "SELECT DISTINCT e.coachid, c.firstname, c.lastname
         FROM {local_ftm_sip_enrollments} e
         JOIN {user} c ON c.id = e.coachid AND c.deleted = 0
         ORDER BY c.lastname, c.firstname";

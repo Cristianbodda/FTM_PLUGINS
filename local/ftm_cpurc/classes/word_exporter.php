@@ -93,6 +93,9 @@ class word_exporter {
         // Set checkbox states.
         $this->setCheckboxStates($processor);
 
+        // Set narrative text replacements (report data into template hint texts).
+        $this->setTextReplacements($processor);
+
         // Generate filename.
         $filename = $this->generateFilename();
 
@@ -123,8 +126,12 @@ class word_exporter {
         $values['F20'] = $this->getCoachInitials();
 
         // === PARTECIPANTE - DATI ANAGRAFICI BASE ===
-        $values['F3'] = $this->getFullName();
-        $values['DATI_ANAGRAFICI_base'] = $this->getFullName();
+        // Template has «F3», «DATI_ANAGRAFICI_base» in same cell.
+        // F3 = lastname, DATI_ANAGRAFICI_base = firstname (produces "Lastname, Firstname").
+        $lastname = $this->user ? $this->user->lastname : ($this->student->lastname ?? '');
+        $firstname = $this->user ? $this->user->firstname : ($this->student->firstname ?? '');
+        $values['F3'] = $lastname;
+        $values['DATI_ANAGRAFICI_base'] = $firstname;
         $values['F6'] = $this->student->address_street ?? '';
         $values['F7'] = $this->student->address_cap ?? '';
         $values['F8'] = $this->student->address_city ?? '';
@@ -137,7 +144,7 @@ class word_exporter {
         $values['F22'] = $this->formatDate($this->student->date_start);
         $values['F23'] = $this->formatDate($this->student->date_end_planned);
         $values['F24'] = $this->formatDate($this->student->date_end_actual);
-        $values['F25'] = ($this->student->occupation_grade ?? '100') . '%';
+        $values['F25'] = ($this->student->occupation_grade ?? '100');
         $values['F26'] = $this->student->urc_office ?? '';
         $values['F27'] = $this->student->urc_consultant ?? '';
 
@@ -185,6 +192,65 @@ class word_exporter {
         $values['OSS_CANALI_RICERCA'] = $this->report->obs_search_channels ?? '';
         $values['OSS_VALUTAZIONE_RICERCA'] = $this->report->obs_search_evaluation ?? '';
 
+        // Osservazioni TIC.
+        $values['OSS_TIC'] = $this->report->obs_tic ?? '';
+
+        // Colloqui (update F44 with report data if available).
+        $interviews_count = $this->report->interviews_count ?? ($this->student->interviews ?? 0);
+        $values['F44'] = (string) $interviews_count;
+
+        // === COMPETENCY RATING GRIDS (Section 3 + 4) ===
+        // Each cell in the template has «XX_YY» where XX=row code, YY=scale code.
+        // Replace with "X" if selected, empty string if not.
+        $scaleKeys = ['molto_buone' => 'MB', 'buone' => 'B', 'sufficienti' => 'S', 'insufficienti' => 'I', 'nv' => 'NV'];
+
+        // 3.1 Personal (P0-P4), 3.2 Social (S0-S1), 3.3 Methodological (M0-M4), 3.4 TIC (T0).
+        $competencyMap = [
+            'personal_competencies' => ['prefix' => 'P', 'count' => 5],
+            'social_competencies' => ['prefix' => 'S', 'count' => 2],
+            'methodological_competencies' => ['prefix' => 'M', 'count' => 5],
+            'tic_competencies' => ['prefix' => 'T', 'count' => 1],
+        ];
+
+        foreach ($competencyMap as $field => $config) {
+            $saved = [];
+            if (!empty($this->report->$field)) {
+                $saved = json_decode($this->report->$field, true) ?: [];
+            }
+            for ($i = 0; $i < $config['count']; $i++) {
+                $selectedValue = $saved[$i] ?? '';
+                foreach ($scaleKeys as $scaleValue => $scaleCode) {
+                    $fieldKey = $config['prefix'] . $i . '_' . $scaleCode;
+                    $values[$fieldKey] = ($selectedValue === $scaleValue) ? 'X' : '';
+                }
+            }
+        }
+
+        // 4. Search competencies (R0-R4).
+        $savedSearch = [];
+        if (!empty($this->report->search_competencies)) {
+            $savedSearch = json_decode($this->report->search_competencies, true) ?: [];
+        }
+        for ($i = 0; $i < 5; $i++) {
+            $selectedValue = $savedSearch[$i] ?? '';
+            foreach ($scaleKeys as $scaleValue => $scaleCode) {
+                $fieldKey = 'R' . $i . '_' . $scaleCode;
+                $values[$fieldKey] = ($selectedValue === $scaleValue) ? 'X' : '';
+            }
+        }
+
+        // 4.3 Overall search assessment (VO).
+        $searchOverall = $this->report->search_overall ?? '';
+        foreach ($scaleKeys as $scaleValue => $scaleCode) {
+            $values['VO_' . $scaleCode] = ($searchOverall === $scaleValue) ? 'X' : '';
+        }
+
+        // Search channels (comma-separated list for template).
+        if (!empty($this->report->search_channels)) {
+            $channels = json_decode($this->report->search_channels, true) ?: [];
+            $values['CANALI_RICERCA'] = implode(', ', $channels);
+        }
+
         return $values;
     }
 
@@ -204,6 +270,55 @@ class word_exporter {
         $processor->setCheckbox('hired_no', !$hired);
 
         // Competency ratings are handled via 'x' markers in tables.
+    }
+
+    /**
+     * Set text replacements for narrative report content.
+     * Replaces hint/placeholder texts in the template with actual report data.
+     *
+     * @param word_template_processor $processor The processor instance.
+     */
+    private function setTextReplacements($processor) {
+        // Replace hint/placeholder texts that are NOT merge fields.
+        // The narrative merge fields (SITUAZIONE_INIZIALE, VALUTAZIONE_SETTORE, etc.)
+        // are already handled by getMergeFieldValues() via «FIELD» replacement.
+        //
+        // Here we only replace static hint texts in the template that should be
+        // overwritten with actual data or cleared.
+
+        // Allegati hint text.
+        $allegati = $this->report->allegati ?? '';
+        if (!empty($allegati)) {
+            $processor->replaceText('indicare quali allegati', $allegati);
+        }
+
+        // Hint texts in Section 1 (these are STATIC text, not merge fields).
+        // They appear alongside the merge fields and should be removed when data is present.
+        if (!empty($this->report->initial_situation)) {
+            $processor->replaceText(
+                'Sintesi situazione iniziale e obiettivi, inserire una storia della carriera professionale e formativa della PCI.',
+                ''
+            );
+        }
+
+        if (!empty($this->report->initial_situation_sector)) {
+            $processor->replaceText(
+                'Es.: Generico, meccanica, automazione, logistica, elettrico ecc',
+                ''
+            );
+        }
+
+        // Hint text in Section 2.
+        if (!empty($this->report->sector_competency_text)) {
+            $processor->replaceText(
+                '(sulla base dei documenti redatti durante il percorso indicare quali competenze tecniche sono state rilevate',
+                ''
+            );
+            $processor->replaceText(
+                ', inserire qui anche se sono stati fatti anche stage che hanno permesso di rilevare/confermare competenze pratiche)',
+                ''
+            );
+        }
     }
 
     /**
@@ -229,9 +344,9 @@ class word_exporter {
      */
     private function getFullName() {
         if ($this->user) {
-            return trim($this->user->firstname . ' ' . $this->user->lastname);
+            return trim($this->user->lastname . ', ' . $this->user->firstname);
         }
-        return trim(($this->student->firstname ?? '') . ' ' . ($this->student->lastname ?? ''));
+        return trim(($this->student->lastname ?? '') . ', ' . ($this->student->firstname ?? ''));
     }
 
     /**
@@ -337,6 +452,7 @@ class word_exporter {
         $processor = new word_template_processor($templatepath);
         $processor->setValues($this->getMergeFieldValues());
         $this->setCheckboxStates($processor);
+        $this->setTextReplacements($processor);
 
         return $processor->process($filepath);
     }

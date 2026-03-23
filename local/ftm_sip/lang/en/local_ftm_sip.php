@@ -266,6 +266,7 @@ $string['company_not_found'] = 'Company not found';
 $string['confirm_delete_company'] = 'Are you sure you want to delete this company?';
 $string['no_companies'] = 'No companies registered';
 $string['search_companies'] = 'Search companies...';
+$string['error_already_enrolled'] = 'Student is already enrolled in the SIP program';
 
 // Company statuses.
 $string['company_status_prospect'] = 'Prospect';

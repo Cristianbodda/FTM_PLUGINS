@@ -84,20 +84,20 @@ $week_display = min($current_week, LOCAL_FTM_SIP_TOTAL_WEEKS);
 $week_pct = ($current_week > 0) ? round(($week_display / LOCAL_FTM_SIP_TOTAL_WEEKS) * 100) : 0;
 
 // Meetings data (for diary tab).
-$meetings = sip_manager::get_meetings($enrollment->id);
+$meetings = \local_ftm_sip\sip_manager::get_meetings($enrollment->id);
 
 // All actions (for diary tab).
-$all_actions = sip_manager::get_all_actions($enrollment->id);
+$all_actions = \local_ftm_sip\sip_manager::get_all_actions($enrollment->id);
 $actions_by_meeting = [];
 foreach ($all_actions as $act) {
     $actions_by_meeting[$act->meetingid][] = $act;
 }
 
 // Pending actions.
-$pending_actions = sip_manager::get_pending_actions($enrollment->id);
+$pending_actions = \local_ftm_sip\sip_manager::get_pending_actions($enrollment->id);
 
 // Appointments (for calendar tab).
-$appointments = sip_manager::get_enrollment_appointments($enrollment->id);
+$appointments = \local_ftm_sip\sip_manager::get_enrollment_appointments($enrollment->id);
 $upcoming_appts = [];
 $past_appts = [];
 $now = time();
@@ -1925,7 +1925,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
         <?php endif; ?>
 
         <!-- New meeting button -->
-        <?php if ($can_edit): ?>
+        <?php if ($canedit): ?>
         <button onclick="document.getElementById('newMeetingForm').style.display = document.getElementById('newMeetingForm').style.display === 'none' ? 'block' : 'none';"
                 style="background:#0891B2;color:white;border:none;padding:10px 20px;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:16px;">
             <i class="fa fa-plus"></i> <?php echo get_string('new_meeting', 'local_ftm_sip'); ?>
@@ -1996,7 +1996,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                     <span style="background:#ECFEFF;color:#155E75;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-left:8px;">S.<?php echo $meeting->sip_week; ?></span>
                     <?php endif; ?>
                 </div>
-                <?php if ($can_edit): ?>
+                <?php if ($canedit): ?>
                 <button onclick="if(confirm('Eliminare questo incontro?')) deleteMeeting(<?php echo $meeting->id; ?>);" style="background:none;border:none;color:#DC2626;cursor:pointer;font-size:16px;" title="Elimina">&#128465;</button>
                 <?php endif; ?>
             </div>
@@ -2027,7 +2027,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
             <?php endif; ?>
 
             <!-- Add action inline -->
-            <?php if ($can_edit): ?>
+            <?php if ($canedit): ?>
             <div style="margin-top:8px;display:flex;gap:6px;align-items:center;">
                 <input type="text" id="new-action-<?php echo $meeting->id; ?>" placeholder="<?php echo get_string('add_action', 'local_ftm_sip'); ?>..." style="flex:1;border:1px solid #DEE2E6;border-radius:4px;padding:6px 8px;font-size:12px;">
                 <input type="date" id="new-action-deadline-<?php echo $meeting->id; ?>" style="border:1px solid #DEE2E6;border-radius:4px;padding:6px;font-size:12px;">
@@ -2042,7 +2042,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
         <!-- ==================== TAB 3: CALENDARIO APPUNTAMENTI ==================== -->
 
         <!-- New appointment button -->
-        <?php if ($can_edit): ?>
+        <?php if ($canedit): ?>
         <button onclick="document.getElementById('newApptForm').style.display = document.getElementById('newApptForm').style.display === 'none' ? 'block' : 'none';"
                 style="background:#0891B2;color:white;border:none;padding:10px 20px;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:16px;">
             <i class="fa fa-plus"></i> <?php echo get_string('new_appointment', 'local_ftm_sip'); ?>
@@ -2130,7 +2130,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                 <span style="background:<?php echo $sb; ?>;color:<?php echo $sc; ?>;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;">
                     <?php echo get_string('appt_' . $appt->status, 'local_ftm_sip'); ?>
                 </span>
-                <?php if ($can_edit && in_array($appt->status, ['scheduled', 'confirmed'])): ?>
+                <?php if ($canedit && in_array($appt->status, ['scheduled', 'confirmed'])): ?>
                 <select onchange="updateApptStatus(<?php echo $appt->id; ?>, this.value)" style="border:1px solid #DEE2E6;border-radius:4px;padding:4px;font-size:11px;">
                     <option value="">-- Azione --</option>
                     <option value="confirmed"><?php echo get_string('appt_confirmed', 'local_ftm_sip'); ?></option>
@@ -2200,7 +2200,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
         </div>
 
         <!-- Quick add buttons -->
-        <?php if ($can_edit): ?>
+        <?php if ($canedit): ?>
         <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
             <button onclick="document.getElementById('kpiAddApp').style.display=document.getElementById('kpiAddApp').style.display==='none'?'block':'none';"
                     style="background:#2563EB;color:white;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">
@@ -2279,7 +2279,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                     <th style="padding:6px 8px;font-size:11px;color:#6B7280;">Posizione</th>
                     <th style="padding:6px 8px;font-size:11px;color:#6B7280;">Tipo</th>
                     <th style="padding:6px 8px;font-size:11px;color:#6B7280;">Stato</th>
-                    <?php if ($can_edit): ?><th style="padding:6px 8px;"></th><?php endif; ?>
+                    <?php if ($canedit): ?><th style="padding:6px 8px;"></th><?php endif; ?>
                 </tr></thead>
                 <tbody>
                 <?php foreach ($kpi_applications as $app):
@@ -2293,7 +2293,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                     <td style="padding:6px 8px;color:#6B7280;"><?php echo s($app->position ?: '-'); ?></td>
                     <td style="padding:6px 8px;"><span style="background:#EFF6FF;color:#2563EB;padding:2px 6px;border-radius:4px;font-size:10px;"><?php echo $type_labels[$app->application_type] ?? $app->application_type; ?></span></td>
                     <td style="padding:6px 8px;">
-                        <?php if ($can_edit): ?>
+                        <?php if ($canedit): ?>
                         <select onchange="updateAppStatus(<?php echo $app->id; ?>, this.value)" style="border:1px solid #DEE2E6;border-radius:4px;padding:2px 4px;font-size:11px;color:<?php echo $status_colors[$app->status] ?? '#6B7280'; ?>;">
                             <?php foreach ($status_labels as $sk => $sl): ?>
                             <option value="<?php echo $sk; ?>" <?php echo $app->status === $sk ? 'selected' : ''; ?>><?php echo $sl; ?></option>
@@ -2303,7 +2303,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                         <span style="color:<?php echo $status_colors[$app->status] ?? '#6B7280'; ?>;font-weight:500;"><?php echo $status_labels[$app->status] ?? $app->status; ?></span>
                         <?php endif; ?>
                     </td>
-                    <?php if ($can_edit): ?>
+                    <?php if ($canedit): ?>
                     <td style="padding:6px 8px;"><button onclick="deleteKpiEntry('applications', <?php echo $app->id; ?>)" style="background:none;border:none;color:#DC2626;cursor:pointer;font-size:13px;">&#128465;</button></td>
                     <?php endif; ?>
                 </tr>
@@ -2326,7 +2326,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                     <th style="padding:6px 8px;font-size:11px;color:#6B7280;">Tipo</th>
                     <th style="padding:6px 8px;font-size:11px;color:#6B7280;">Persona</th>
                     <th style="padding:6px 8px;font-size:11px;color:#6B7280;">Esito</th>
-                    <?php if ($can_edit): ?><th style="padding:6px 8px;"></th><?php endif; ?>
+                    <?php if ($canedit): ?><th style="padding:6px 8px;"></th><?php endif; ?>
                 </tr></thead>
                 <tbody>
                 <?php foreach ($kpi_contacts as $cnt):
@@ -2340,7 +2340,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                     <td style="padding:6px 8px;"><?php echo $type_icons[$cnt->contact_type] ?? ''; ?> <?php echo s($cnt->contact_type); ?></td>
                     <td style="padding:6px 8px;color:#6B7280;"><?php echo s($cnt->contact_person ?: '-'); ?></td>
                     <td style="padding:6px 8px;">
-                        <?php if ($can_edit): ?>
+                        <?php if ($canedit): ?>
                         <select onchange="updateContactOutcome(<?php echo $cnt->id; ?>, this.value)" style="border:1px solid #DEE2E6;border-radius:4px;padding:2px 4px;font-size:11px;color:<?php echo $outcome_colors[$cnt->outcome] ?? '#6B7280'; ?>;">
                             <?php foreach ($outcome_labels as $ok => $ol): ?>
                             <option value="<?php echo $ok; ?>" <?php echo $cnt->outcome === $ok ? 'selected' : ''; ?>><?php echo $ol; ?></option>
@@ -2350,7 +2350,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                         <span style="color:<?php echo $outcome_colors[$cnt->outcome] ?? '#6B7280'; ?>;"><?php echo $outcome_labels[$cnt->outcome] ?? $cnt->outcome; ?></span>
                         <?php endif; ?>
                     </td>
-                    <?php if ($can_edit): ?>
+                    <?php if ($canedit): ?>
                     <td style="padding:6px 8px;"><button onclick="deleteKpiEntry('contacts', <?php echo $cnt->id; ?>)" style="background:none;border:none;color:#DC2626;cursor:pointer;font-size:13px;">&#128465;</button></td>
                     <?php endif; ?>
                 </tr>
@@ -2372,7 +2372,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                     <th style="padding:6px 8px;font-size:11px;color:#6B7280;">Azienda</th>
                     <th style="padding:6px 8px;font-size:11px;color:#6B7280;">Tipo</th>
                     <th style="padding:6px 8px;font-size:11px;color:#6B7280;">Stato</th>
-                    <?php if ($can_edit): ?><th style="padding:6px 8px;"></th><?php endif; ?>
+                    <?php if ($canedit): ?><th style="padding:6px 8px;"></th><?php endif; ?>
                 </tr></thead>
                 <tbody>
                 <?php foreach ($kpi_opportunities as $opp):
@@ -2385,7 +2385,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                     <td style="padding:6px 8px;font-weight:500;"><?php echo s($opp->company_name); ?></td>
                     <td style="padding:6px 8px;"><span style="background:#D1FAE5;color:#065F46;padding:2px 6px;border-radius:4px;font-size:10px;"><?php echo $opp_type_labels[$opp->opportunity_type] ?? $opp->opportunity_type; ?></span></td>
                     <td style="padding:6px 8px;">
-                        <?php if ($can_edit): ?>
+                        <?php if ($canedit): ?>
                         <select onchange="updateOppStatus(<?php echo $opp->id; ?>, this.value)" style="border:1px solid #DEE2E6;border-radius:4px;padding:2px 4px;font-size:11px;">
                             <?php foreach ($opp_status_labels as $sk => $sl): ?>
                             <option value="<?php echo $sk; ?>" <?php echo $opp->status === $sk ? 'selected' : ''; ?>><?php echo $sl; ?></option>
@@ -2395,7 +2395,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                         <span style="color:<?php echo $opp_status_colors[$opp->status] ?? '#6B7280'; ?>;"><?php echo $opp_status_labels[$opp->status] ?? $opp->status; ?></span>
                         <?php endif; ?>
                     </td>
-                    <?php if ($can_edit): ?>
+                    <?php if ($canedit): ?>
                     <td style="padding:6px 8px;"><button onclick="deleteKpiEntry('opportunities', <?php echo $opp->id; ?>)" style="background:none;border:none;color:#DC2626;cursor:pointer;font-size:13px;">&#128465;</button></td>
                     <?php endif; ?>
                 </tr>
@@ -2577,332 +2577,173 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
 </div><!-- .sip-student-page -->
 
 <script>
-var SipStudent = SipStudent || {};
+// ==================== SIP CONFIG ====================
+var sipConfig = {
+    sesskey: '<?php echo sesskey(); ?>',
+    wwwroot: '<?php echo $CFG->wwwroot; ?>',
+    userid: <?php echo $userid; ?>,
+    enrollmentid: <?php echo $enrollment->id; ?>,
+    isDraft: <?php echo $is_draft ? 'true' : 'false'; ?>,
+    canEdit: <?php echo $canedit ? 'true' : 'false'; ?>
+};
 
-SipStudent = (function() {
-    'use strict';
+function sipAjax(url, fd, onSuccess) {
+    fd.append('sesskey', sipConfig.sesskey);
+    fetch(url, { method: 'POST', body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) { if (onSuccess) onSuccess(result); }
+        else { alert(result.message || 'Errore'); }
+    })
+    .catch(function() { alert('Errore di connessione'); });
+}
 
-    var config = {
-        sesskey: '<?php echo sesskey(); ?>',
-        wwwroot: '<?php echo $CFG->wwwroot; ?>',
-        userid: <?php echo $userid; ?>,
-        enrollmentid: <?php echo $enrollment->id; ?>,
-        isDraft: <?php echo $is_draft ? 'true' : 'false'; ?>,
-        canEdit: <?php echo $canedit ? 'true' : 'false'; ?>
-    };
+// ==================== SipStudent OBJECT ====================
+var SipStudent = {
+    toggleArea: function(areaKey) {
+        var card = document.getElementById('sip-area-' + areaKey);
+        if (card) card.classList.toggle('expanded');
+    },
 
-    var dirty = {};
+    markDirty: function(areaKey) { /* no-op, save is manual */ },
 
-    function flashElement(el) {
-        el.classList.remove('sip-flash-success');
-        void el.offsetWidth;
-        el.classList.add('sip-flash-success');
-    }
+    saveArea: function(areaKey) {
+        var card = document.getElementById('sip-area-' + areaKey);
+        if (!card) return;
+        var planId = card.getAttribute('data-planid');
+        if (!planId || planId === '0') { alert('Piano non trovato'); return; }
 
-    function showFeedback(el, msg, isError) {
-        el.textContent = msg;
-        el.style.color = isError ? '#dc2626' : '#059669';
-        el.style.opacity = '1';
-        setTimeout(function() { el.style.opacity = '0'; }, 2500);
-    }
+        var btn = document.getElementById('save-btn-' + areaKey);
+        var feedback = document.getElementById('feedback-' + areaKey);
+        if (btn) { btn.disabled = true; btn.textContent = '...'; }
 
-    function ajaxPost(url, formData, callback) {
-        formData.append('sesskey', config.sesskey);
-        fetch(url, {
-            method: 'POST',
-            body: formData
-        })
-        .then(function(resp) { return resp.json(); })
-        .then(function(result) {
-            if (result.success) {
-                callback(null, result.data || {});
-            } else {
-                callback(result.message || 'Errore');
-            }
-        })
-        .catch(function(err) { callback(err.message || 'Errore di rete'); });
-    }
+        var initialRadio = document.querySelector('input[name="initial_' + areaKey + '"]:checked');
+        var currentRadio = document.querySelector('input[name="current_' + areaKey + '"]:checked');
 
-    // Remember active tab in localStorage.
-    var tabKey = 'sip_student_tab_' + config.userid;
-    var storedTab = localStorage.getItem(tabKey);
-    // Only use stored tab on first page load without explicit tab param.
-    if (storedTab && window.location.search.indexOf('tab=') === -1) {
-        // Redirect to stored tab.
-        var url = new URL(window.location.href);
-        url.searchParams.set('tab', storedTab);
-        window.location.replace(url.toString());
-    }
+        var fd = new FormData();
+        fd.append('planid', planId);
+        fd.append('level_initial', initialRadio ? initialRadio.value : '0');
+        fd.append('level_current', currentRadio ? currentRadio.value : '0');
+        fd.append('objective', (document.getElementById('objective_' + areaKey) || {}).value || '');
+        fd.append('actions_agreed', (document.getElementById('actions_' + areaKey) || {}).value || '');
+        fd.append('verification', (document.getElementById('verification_' + areaKey) || {}).value || '');
+        fd.append('notes', (document.getElementById('notes_' + areaKey) || {}).value || '');
+        fd.append('is_draft', sipConfig.isDraft ? '1' : '0');
 
-    // Store current tab.
-    var currentTab = '<?php echo $tab; ?>';
-    localStorage.setItem(tabKey, currentTab);
+        sipAjax(sipConfig.wwwroot + '/local/ftm_sip/ajax_save_plan.php', fd, function(result) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Salva'; }
+            if (feedback) { feedback.textContent = 'Salvato'; feedback.style.color = '#059669'; feedback.style.opacity = '1'; setTimeout(function() { feedback.style.opacity = '0'; }, 2000); }
+            if (card) { card.style.backgroundColor = '#f0fdf4'; setTimeout(function() { card.style.backgroundColor = ''; }, 1000); }
+        });
+    },
 
-    return {
-        toggleArea: function(areaKey) {
-            var card = document.getElementById('sip-area-' + areaKey);
-            if (card) {
-                card.classList.toggle('expanded');
-            }
-        },
+    savePhase: function(phaseNum) {
+        var node = document.getElementById('sip-phase-' + phaseNum);
+        if (!node) return;
+        var phaseId = node.getAttribute('data-phaseid');
+        if (!phaseId || phaseId === '0') return;
 
-        markDirty: function(areaKey) {
-            dirty[areaKey] = true;
-        },
+        var met = document.getElementById('phase-met-' + phaseNum);
+        var notes = document.getElementById('phase-notes-' + phaseNum);
+        var feedback = document.getElementById('phase-feedback-' + phaseNum);
 
-        saveArea: function(areaKey) {
-            var card = document.getElementById('sip-area-' + areaKey);
-            if (!card) return;
+        var fd = new FormData();
+        fd.append('phaseid', phaseId);
+        fd.append('objectives_met', met && met.checked ? '1' : '0');
+        fd.append('coach_notes', notes ? notes.value : '');
 
-            var planId = card.getAttribute('data-planid');
-            if (!planId || planId === '0') {
-                alert('Piano non trovato per questa area');
-                return;
-            }
+        sipAjax(sipConfig.wwwroot + '/local/ftm_sip/ajax_save_phase.php', fd, function() {
+            if (feedback) { feedback.textContent = 'Salvato'; feedback.style.color = '#059669'; feedback.style.opacity = '1'; setTimeout(function() { feedback.style.opacity = '0'; }, 2000); }
+        });
+    },
 
-            var btn = document.getElementById('save-btn-' + areaKey);
-            var feedback = document.getElementById('feedback-' + areaKey);
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> ...';
-
-            // Read radio values.
-            var initialRadio = document.querySelector('input[name="initial_' + areaKey + '"]:checked');
-            var currentRadio = document.querySelector('input[name="current_' + areaKey + '"]:checked');
-            var levelInitial = initialRadio ? initialRadio.value : '0';
-            var levelCurrent = currentRadio ? currentRadio.value : '0';
-
-            var fd = new FormData();
-            fd.append('planid', planId);
-            fd.append('level_initial', levelInitial);
-            fd.append('level_current', levelCurrent);
-            fd.append('objective', document.getElementById('objective_' + areaKey).value);
-            fd.append('actions_agreed', document.getElementById('actions_' + areaKey).value);
-            fd.append('verification', document.getElementById('verification_' + areaKey).value);
-            fd.append('notes', document.getElementById('notes_' + areaKey).value);
-            fd.append('is_draft', config.isDraft ? '1' : '0');
-
-            ajaxPost(config.wwwroot + '/local/ftm_sip/ajax_save_plan.php', fd, function(err, data) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa fa-check"></i> <?php echo get_string('save', 'local_ftm_sip'); ?>';
-
-                if (err) {
-                    showFeedback(feedback, err, true);
-                    return;
-                }
-
-                showFeedback(feedback, '<?php echo get_string('action_plan_saved', 'local_ftm_sip'); ?>', false);
-                flashElement(card);
-
-                // Update header dots.
-                var dots = card.querySelectorAll('.sip-level-dot');
-                if (dots.length >= 2) {
-                    dots[0].textContent = levelInitial;
-                    dots[1].textContent = levelCurrent;
-                }
-                var d = parseInt(levelCurrent) - parseInt(levelInitial);
-                var badge = card.querySelector('.sip-delta-badge');
-                if (badge) {
-                    badge.className = 'sip-delta-badge ' +
-                        (d > 0 ? 'sip-delta-positive' : (d < 0 ? 'sip-delta-negative' : 'sip-delta-zero'));
-                    badge.textContent = d > 0 ? '+' + d : (d === 0 ? '=' : '' + d);
-                }
-
-                dirty[areaKey] = false;
-            });
-        },
-
-        savePhase: function(phaseNum) {
-            var node = document.getElementById('sip-phase-' + phaseNum);
-            if (!node) return;
-
-            var phaseId = node.getAttribute('data-phaseid');
-            if (!phaseId || phaseId === '0') return;
-
-            var btn = node.querySelector('.sip-btn-save');
-            var feedback = document.getElementById('phase-feedback-' + phaseNum);
-
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> ...';
-            }
-
-            var met = document.getElementById('phase-met-' + phaseNum);
-            var notes = document.getElementById('phase-notes-' + phaseNum);
-
-            var fd = new FormData();
-            fd.append('phaseid', phaseId);
-            fd.append('objectives_met', met && met.checked ? '1' : '0');
-            fd.append('coach_notes', notes ? notes.value : '');
-
-            ajaxPost(config.wwwroot + '/local/ftm_sip/ajax_save_phase.php', fd, function(err, data) {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa fa-check"></i> <?php echo get_string('save', 'local_ftm_sip'); ?>';
-                }
-
-                if (err) {
-                    if (feedback) showFeedback(feedback, err, true);
-                    return;
-                }
-
-                if (feedback) showFeedback(feedback, '<?php echo get_string('success_saved', 'local_ftm_sip'); ?>', false);
-                flashElement(node);
-            });
-        },
-
-        toggleVisibility: function() {
-            // Called from event listener below.
-        },
-
-        // --- Closure functions ---
-        toggleClosure: function() {
-            var card = document.getElementById('sip-closure-card');
-            if (!card) return;
-            card.classList.toggle('sip-closure-hidden');
-            if (!card.classList.contains('sip-closure-hidden')) {
-                // Scroll to closure card.
-                setTimeout(function() { card.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 100);
-                // Init state.
-                SipStudent.closureOutcomeChanged();
-                SipStudent.updateCharCount();
-                SipStudent.validateClosure();
-            }
-        },
-
-        closureOutcomeChanged: function() {
-            var outcome = document.getElementById('sip-closure-outcome').value;
-            // Show/hide conditional fields.
-            var pctRow = document.getElementById('sip-closure-percentage-row');
-            var intRow = document.getElementById('sip-closure-interruption-row');
-            var refRow = document.getElementById('sip-closure-referral-row');
-            if (pctRow) pctRow.className = 'sip-closure-row sip-closure-conditional' + ((outcome === 'hired') ? ' visible' : '');
-            if (intRow) intRow.className = 'sip-closure-row sip-closure-conditional' + ((outcome === 'interrupted') ? ' visible' : '');
-            if (refRow) refRow.className = 'sip-closure-row sip-closure-conditional' + ((outcome === 'not_suitable') ? ' visible' : '');
-            SipStudent.validateClosure();
-        },
-
-        updateCharCount: function() {
-            var ta = document.getElementById('sip-closure-evaluation');
-            var counter = document.getElementById('sip-closure-charcount');
-            if (!ta || !counter) return;
-            var len = ta.value.length;
-            counter.textContent = len + ' / 100 caratteri';
-            counter.className = 'sip-char-count' + (len >= 100 ? ' sip-char-ok' : '');
-            SipStudent.validateClosure();
-        },
-
-        validateClosure: function() {
-            var outcome = document.getElementById('sip-closure-outcome');
-            var evaluation = document.getElementById('sip-closure-evaluation');
-            var submitBtn = document.getElementById('sip-closure-submit');
-            if (!outcome || !evaluation || !submitBtn) return;
-
-            var hasOutcome = outcome.value !== '';
-            var hasEvaluation = evaluation.value.length >= 100;
-
-            // Update validation icons.
-            var valOutcome = document.getElementById('sip-val-outcome');
-            var valEval = document.getElementById('sip-val-evaluation');
-            if (valOutcome) {
-                var icon = valOutcome.querySelector('.fa');
-                icon.className = 'fa ' + (hasOutcome ? 'fa-check' : 'fa-times');
-            }
-            if (valEval) {
-                var icon2 = valEval.querySelector('.fa');
-                icon2.className = 'fa ' + (hasEvaluation ? 'fa-check' : 'fa-times');
-            }
-
-            // Enable/disable submit. Levels + meetings are server-checked too,
-            // but we also validate outcome + evaluation client-side.
-            var allValid = hasOutcome && hasEvaluation;
-            submitBtn.disabled = !allValid;
-        },
-
-        submitClosure: function() {
-            var outcome = document.getElementById('sip-closure-outcome').value;
-            if (!outcome) { alert('Seleziona un esito finale'); return; }
-            var evaluation = document.getElementById('sip-closure-evaluation').value.trim();
-            if (evaluation.length < 100) { alert('La valutazione finale deve contenere almeno 100 caratteri'); return; }
-
-            if (!confirm('Sei sicuro di voler completare il SIP? Questa azione non e reversibile.')) return;
-
-            var fd = new FormData();
-            fd.append('sesskey', config.sesskey);
-            fd.append('action', 'close');
-            fd.append('enrollmentid', config.enrollmentid);
-            fd.append('outcome', outcome);
-            fd.append('outcome_date', document.getElementById('sip-closure-date').value);
-            fd.append('outcome_company', document.getElementById('sip-closure-company').value.trim());
-            fd.append('outcome_percentage', document.getElementById('sip-closure-percentage') ? document.getElementById('sip-closure-percentage').value : '');
-            fd.append('interruption_reason', document.getElementById('sip-closure-interruption') ? document.getElementById('sip-closure-interruption').value.trim() : '');
-            fd.append('referral_measure', document.getElementById('sip-closure-referral') ? document.getElementById('sip-closure-referral').value.trim() : '');
-            fd.append('coach_final_evaluation', evaluation);
-            fd.append('next_steps', document.getElementById('sip-closure-nextsteps').value.trim());
-
-            var btn = document.getElementById('sip-closure-submit');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> ...';
-
-            fetch(config.wwwroot + '/local/ftm_sip/ajax_close_sip.php', {
-                method: 'POST',
-                body: fd
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(result) {
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert('Errore: ' + (result.message || 'Errore sconosciuto'));
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa fa-flag-checkered"></i> <?php echo get_string('closure_confirm_btn', 'local_ftm_sip'); ?>';
-                }
-            })
-            .catch(function(err) {
-                alert('Errore di connessione');
-                console.error(err);
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa fa-flag-checkered"></i> <?php echo get_string('closure_confirm_btn', 'local_ftm_sip'); ?>';
-            });
+    toggleClosure: function() {
+        var card = document.getElementById('sip-closure-card');
+        if (!card) return;
+        if (card.style.display === 'none' || card.style.display === '') {
+            card.style.display = 'block';
+            card.scrollIntoView({behavior: 'smooth', block: 'start'});
+        } else {
+            card.style.display = 'none';
         }
-    };
-})();
+    },
 
-// Visibility toggle event listener.
+    closureOutcomeChanged: function() {
+        var outcome = (document.getElementById('sip-closure-outcome') || {}).value || '';
+        var pctRow = document.getElementById('sip-closure-percentage-row');
+        var intRow = document.getElementById('sip-closure-interruption-row');
+        var refRow = document.getElementById('sip-closure-referral-row');
+        if (pctRow) pctRow.style.display = (outcome === 'hired') ? 'block' : 'none';
+        if (intRow) intRow.style.display = (outcome === 'interrupted') ? 'block' : 'none';
+        if (refRow) refRow.style.display = (outcome === 'not_suitable') ? 'block' : 'none';
+        SipStudent.validateClosure();
+    },
+
+    updateCharCount: function() {
+        var textarea = document.getElementById('sip-closure-evaluation');
+        var counter = document.getElementById('sip-closure-charcount');
+        if (textarea && counter) {
+            var len = textarea.value.length;
+            counter.textContent = len + ' / 100 caratteri';
+            counter.style.color = len >= 100 ? '#059669' : '#dc2626';
+        }
+        SipStudent.validateClosure();
+    },
+
+    validateClosure: function() {
+        var btn = document.getElementById('sip-closure-submit');
+        if (!btn) return;
+        var outcome = (document.getElementById('sip-closure-outcome') || {}).value || '';
+        var evalText = (document.getElementById('sip-closure-evaluation') || {}).value || '';
+        var canSubmit = outcome !== '' && evalText.length >= 100;
+        btn.disabled = !canSubmit;
+    },
+
+    submitClosure: function() {
+        var outcome = (document.getElementById('sip-closure-outcome') || {}).value;
+        var evalText = (document.getElementById('sip-closure-evaluation') || {}).value;
+        if (!outcome) { alert('Seleziona un esito'); return; }
+        if (evalText.length < 100) { alert('La valutazione deve essere di almeno 100 caratteri'); return; }
+        if (!confirm('Sei sicuro di voler chiudere il SIP?')) return;
+
+        var fd = new FormData();
+        fd.append('action', 'close');
+        fd.append('enrollmentid', sipConfig.enrollmentid);
+        fd.append('outcome', outcome);
+        fd.append('outcome_company', (document.getElementById('sip-closure-company') || {}).value || '');
+        fd.append('outcome_date', (document.getElementById('sip-closure-date') || {}).value || '');
+        fd.append('outcome_percentage', (document.getElementById('sip-closure-percentage') || {}).value || '');
+        fd.append('interruption_reason', (document.getElementById('sip-closure-interruption') || {}).value || '');
+        fd.append('referral_measure', (document.getElementById('sip-closure-referral') || {}).value || '');
+        fd.append('coach_final_evaluation', evalText);
+        fd.append('next_steps', (document.getElementById('sip-closure-nextsteps') || {}).value || '');
+
+        sipAjax(sipConfig.wwwroot + '/local/ftm_sip/ajax_close_sip.php', fd, function() {
+            alert('SIP chiuso con successo');
+            location.reload();
+        });
+    }
+};
+
+// Visibility toggle.
 document.addEventListener('DOMContentLoaded', function() {
     var toggle = document.getElementById('sip-visibility-toggle');
     if (toggle) {
         toggle.addEventListener('change', function() {
-            var feedback = document.getElementById('sip-visibility-feedback');
             var fd = new FormData();
-            fd.append('sesskey', '<?php echo sesskey(); ?>');
-            fd.append('enrollmentid', '<?php echo $enrollment->id; ?>');
+            fd.append('enrollmentid', sipConfig.enrollmentid);
             fd.append('visible', this.checked ? '1' : '0');
-
-            fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_sip/ajax_toggle_visibility.php', {
-                method: 'POST',
-                body: fd
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(result) {
-                if (result.success) {
-                    feedback.textContent = '<?php echo get_string('success_saved', 'local_ftm_sip'); ?>';
-                    feedback.style.color = '#059669';
-                } else {
-                    feedback.textContent = result.message || 'Errore';
-                    feedback.style.color = '#dc2626';
-                }
-                feedback.style.opacity = '1';
-                setTimeout(function() { feedback.style.opacity = '0'; }, 2000);
-            })
-            .catch(function() {
-                feedback.textContent = 'Errore di rete';
-                feedback.style.color = '#dc2626';
-                feedback.style.opacity = '1';
-                setTimeout(function() { feedback.style.opacity = '0'; }, 2000);
-            });
+            sipAjax(sipConfig.wwwroot + '/local/ftm_sip/ajax_toggle_visibility.php', fd, function() {});
         });
     }
 });
+
+// DO NOT use localStorage redirect - let tabs work as normal links.
+
+
+// ==================== STANDALONE FUNCTIONS ====================
+// Note: Visibility toggle is handled in the SipStudent object above via DOMContentLoaded.
+// The old visibility listener below is also disabled.
 
 // ==================== DIARY FUNCTIONS ====================
 

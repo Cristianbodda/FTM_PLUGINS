@@ -167,48 +167,23 @@ function sip_outcome_label($outcome) {
         return '-';
     }
     $map = [
-        'hired'          => get_string('closure_outcome_hired', 'local_ftm_sip'),
-        'stage'          => get_string('closure_outcome_stage', 'local_ftm_sip'),
-        'training'       => get_string('closure_outcome_training', 'local_ftm_sip'),
-        'interrupted'    => get_string('closure_outcome_interrupted', 'local_ftm_sip'),
-        'not_suitable'   => get_string('closure_outcome_not_suitable', 'local_ftm_sip'),
-        'none'           => get_string('closure_outcome_none', 'local_ftm_sip'),
-        'tryout'         => get_string('closure_outcome_tryout', 'local_ftm_sip'),
-        'intermediate'   => get_string('closure_outcome_intermediate', 'local_ftm_sip'),
-        'not_placed'     => get_string('closure_outcome_not_placed', 'local_ftm_sip'),
+        'hired'                => get_string('closure_outcome_hired', 'local_ftm_sip'),
+        'stage'                => get_string('closure_outcome_stage', 'local_ftm_sip'),
+        'training'             => get_string('closure_outcome_training', 'local_ftm_sip'),
+        'interrupted'          => get_string('closure_outcome_interrupted', 'local_ftm_sip'),
+        'not_suitable'         => get_string('closure_outcome_not_suitable', 'local_ftm_sip'),
+        'none'                 => get_string('closure_outcome_none', 'local_ftm_sip'),
+        'tryout'               => get_string('closure_outcome_tryout', 'local_ftm_sip'),
+        'intermediate_earning' => get_string('closure_outcome_intermediate', 'local_ftm_sip'),
+        'intermediate'         => get_string('closure_outcome_intermediate', 'local_ftm_sip'),
+        'not_placed_activated' => get_string('closure_outcome_not_placed', 'local_ftm_sip'),
+        'not_placed'           => get_string('closure_outcome_not_placed', 'local_ftm_sip'),
     ];
     return $map[$outcome] ?? sip_esc($outcome);
 }
 
-/**
- * Get the localized eligibility value label for sector_placeable.
- *
- * @param string $val Value key (yes, partial, no).
- * @return string Localized label.
- */
-function sip_sector_label($val) {
-    $map = [
-        'yes'     => get_string('eligibility_yes', 'local_ftm_sip'),
-        'partial' => get_string('eligibility_partial', 'local_ftm_sip'),
-        'no'      => get_string('eligibility_no', 'local_ftm_sip'),
-    ];
-    return $map[$val] ?? sip_esc($val);
-}
-
-/**
- * Get the localized eligibility level label (high, medium, low).
- *
- * @param string $val Level key.
- * @return string Localized label.
- */
-function sip_level_elig_label($val) {
-    $map = [
-        'high'   => get_string('eligibility_high', 'local_ftm_sip'),
-        'medium' => get_string('eligibility_medium', 'local_ftm_sip'),
-        'low'    => get_string('eligibility_low', 'local_ftm_sip'),
-    ];
-    return $map[$val] ?? sip_esc($val);
-}
+// Legacy functions sip_sector_label() and sip_level_elig_label() removed.
+// The Griglia Valutazione PCI (v1.2.0) uses 6 numeric criteria 1-5 instead.
 
 /**
  * Get the localized recommendation label.

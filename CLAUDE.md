@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida per Claude
 
-**Ultimo aggiornamento:** 23 Marzo 2026
+**Ultimo aggiornamento:** 23 Marzo 2026 (v2)
 
 ## Panoramica Progetto
 
@@ -74,7 +74,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Ordinamento studenti:** Dropdown sort (recenti/fine 6 sett./alfabetico) in filtri avanzati
 - Dettagli: `docs/DETAILS_COACH_DASHBOARD.md`
 
-#### 7. Sistema CPURC (local_ftm_cpurc) - 23/03/2026 (v1.4.0)
+#### 7. Sistema CPURC (local_ftm_cpurc) - 23/03/2026 (v1.4.1)
 - Import CSV, Dashboard Segreteria, Student Card (4 tab), Report Word
 - **Report Finale riscritto:** Allineato al documento ufficiale "Rapporto finale PML_V2026.docx"
   - Titolo: "Rapporto finale d'attivita'"
@@ -83,6 +83,11 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
   - 10 canali ricerca impiego ufficiali
   - Sezione firme (Organizzatore + Partecipante)
   - 8 nuovi campi DB (initial_situation_sector, search_competencies, ecc.)
+- **Export Word competenze:** 137 merge field nel template (32 MERGEFIELD + 95 griglie competenze + 10 narrativi)
+  - Griglie: P0-P4 (personali), S0-S1 (sociali), M0-M4 (metodologiche), T0 (TIC), R0-R4 (ricerca), VO (complessiva)
+  - Ogni cella ha sigla `«XX_YY»` (es. `«P0_MB»`), sostituita con "X" se selezionata
+  - Tag narrativi: SITUAZIONE_INIZIALE, VALUTAZIONE_SETTORE, POSSIBILI_SETTORI, SINTESI_CONCLUSIVA, OSS_*
+- **SIP consent + Allegati:** Campi sip_consent (Si/No) e allegati nel report finale
 - **Bottone Percorso:** Link a student_program.php nell'header della Student Card
 - **Import Produzione:** `import_production.php` - Upload Excel, dedup, anteprima, assegnazione gruppo/coach/settore/corso
 - **Filtri avanzati dashboard:** Data inizio da/a, Gruppo colore (giallo/grigio/rosso/marrone/viola)
