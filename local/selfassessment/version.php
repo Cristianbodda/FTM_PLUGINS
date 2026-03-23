@@ -9,7 +9,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_selfassessment';
-$plugin->version = 2026030300;           // YYYYMMDDXX - quiz single attempt + unlock system
+$plugin->version = 2026031603;           // YYYYMMDDXX - PAGE requires js_init_code for Adaptable theme
 $plugin->requires = 2023100900;          // Moodle 4.3+ (richiesto per nuovo hook system)
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '1.6.0';
+$plugin->release = '1.6.3';

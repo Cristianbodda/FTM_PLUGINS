@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/ftm_sip/db" VERSION="20260320" COMMENT="Tables for FTM SIP - Sostegno Individuale Personalizzato">
+  <TABLES>
+
+    <!-- ============================== -->
+    <!-- ISCRIZIONI SIP                 -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_enrollments" COMMENT="SIP enrollment records - who is in the 10-week program">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id - the PCI student"/>
+        <FIELD NAME="coachid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id - assigned coach"/>
+        <FIELD NAME="activatedby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id - who activated SIP (coach or secretary)"/>
+        <FIELD NAME="motivation" TYPE="text" NOTNULL="false" COMMENT="Motivation for SIP activation"/>
+        <FIELD NAME="date_start" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="SIP start date timestamp"/>
+        <FIELD NAME="date_end_planned" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Planned end date (start + 10 weeks)"/>
+        <FIELD NAME="date_end_actual" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Actual end date"/>
+        <FIELD NAME="current_phase" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" COMMENT="Current roadmap phase 1-6"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" COMMENT="active, completed, suspended, cancelled"/>
+        <FIELD NAME="student_visible" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Student can see own SIP data"/>
+        <FIELD NAME="plan_status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="draft" COMMENT="draft (during 6w), active (SIP started), frozen"/>
+        <FIELD NAME="sector" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="Primary sector from competency assessment"/>
+        <FIELD NAME="outcome" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="Final outcome: hired, stage, training, none"/>
+        <FIELD NAME="outcome_company" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Company if hired/stage"/>
+        <FIELD NAME="outcome_date" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Date of outcome"/>
+        <FIELD NAME="outcome_notes" TYPE="text" NOTNULL="false" COMMENT="Notes about outcome"/>
+        <FIELD NAME="outcome_percentage" TYPE="int" LENGTH="3" NOTNULL="false" COMMENT="Employment percentage if hired"/>
+        <FIELD NAME="interruption_reason" TYPE="text" NOTNULL="false" COMMENT="Reason for early termination"/>
+        <FIELD NAME="referral_measure" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Referred to another measure"/>
+        <FIELD NAME="coach_final_evaluation" TYPE="text" NOTNULL="false" COMMENT="Coach final written evaluation"/>
+        <FIELD NAME="next_steps" TYPE="text" NOTNULL="false" COMMENT="Recommended next steps"/>
+        <FIELD NAME="closure_validated" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Closure data validated 0/1"/>
+        <FIELD NAME="eligibility_id" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="FK local_ftm_sip_eligibility.id"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="coachid_fk" TYPE="foreign" FIELDS="coachid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="activatedby_fk" TYPE="foreign" FIELDS="activatedby" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="eligibility_id_fk" TYPE="foreign" FIELDS="eligibility_id" REFTABLE="local_ftm_sip_eligibility" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_uq" UNIQUE="true" FIELDS="userid" COMMENT="One SIP enrollment per student"/>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="coachid_idx" UNIQUE="false" FIELDS="coachid"/>
+        <INDEX NAME="date_start_idx" UNIQUE="false" FIELDS="date_start"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================== -->
+    <!-- PIANO D'AZIONE - 7 AREE        -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_action_plan" COMMENT="Action plan - 7 activation areas per student with initial/current levels">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="enrollmentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK local_ftm_sip_enrollments.id"/>
+        <FIELD NAME="area_key" TYPE="char" LENGTH="50" NOTNULL="true" COMMENT="Area identifier: professional_strategy, job_monitoring, etc."/>
+        <FIELD NAME="level_initial" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Initial activation level 0-6, set at SIP start"/>
+        <FIELD NAME="level_current" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Current activation level 0-6, updated by coach"/>
+        <FIELD NAME="objective" TYPE="text" NOTNULL="false" COMMENT="Area objective (precompiled from template, editable)"/>
+        <FIELD NAME="actions_agreed" TYPE="text" NOTNULL="false" COMMENT="Agreed actions as JSON array [{text, done, deadline}]"/>
+        <FIELD NAME="verification" TYPE="text" NOTNULL="false" COMMENT="Verification indicator text"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" COMMENT="Coach notes for this area"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="enrollmentid_fk" TYPE="foreign" FIELDS="enrollmentid" REFTABLE="local_ftm_sip_enrollments" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="enrollment_area_uq" UNIQUE="true" FIELDS="enrollmentid, area_key" COMMENT="One record per area per enrollment"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================== -->
+    <!-- STORICO LIVELLI ATTIVAZIONE    -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_action_history" COMMENT="History of activation level changes for evolution tracking">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="planid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK local_ftm_sip_action_plan.id"/>
+        <FIELD NAME="level_before" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Level before change"/>
+        <FIELD NAME="level_after" TYPE="int" LENGTH="1" NOTNULL="true" COMMENT="Level after change"/>
+        <FIELD NAME="changedby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" COMMENT="Reason for change"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="planid_fk" TYPE="foreign" FIELDS="planid" REFTABLE="local_ftm_sip_action_plan" REFFIELDS="id"/>
+        <KEY NAME="changedby_fk" TYPE="foreign" FIELDS="changedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="planid_idx" UNIQUE="false" FIELDS="planid"/>
+        <INDEX NAME="timecreated_idx" UNIQUE="false" FIELDS="timecreated"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================== -->
+    <!-- INCONTRI / DIARIO COACHING     -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_meetings" COMMENT="Coaching diary - records of coaching meetings/interactions">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="enrollmentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK local_ftm_sip_enrollments.id"/>
+        <FIELD NAME="coachid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id - coach who logged the meeting"/>
+        <FIELD NAME="meeting_date" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Meeting date timestamp"/>
+        <FIELD NAME="duration_minutes" TYPE="int" LENGTH="3" NOTNULL="false" COMMENT="Duration in minutes"/>
+        <FIELD NAME="modality" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="presence" COMMENT="presence, remote, phone, email"/>
+        <FIELD NAME="sip_week" TYPE="int" LENGTH="2" NOTNULL="false" COMMENT="SIP week number when meeting occurred"/>
+        <FIELD NAME="summary" TYPE="text" NOTNULL="false" COMMENT="Meeting summary"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" COMMENT="Detailed coach notes"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="enrollmentid_fk" TYPE="foreign" FIELDS="enrollmentid" REFTABLE="local_ftm_sip_enrollments" REFFIELDS="id"/>
+        <KEY NAME="coachid_fk" TYPE="foreign" FIELDS="coachid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="enrollmentid_idx" UNIQUE="false" FIELDS="enrollmentid"/>
+        <INDEX NAME="meeting_date_idx" UNIQUE="false" FIELDS="meeting_date"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================== -->
+    <!-- AZIONI ASSEGNATE               -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_actions" COMMENT="Actions assigned to student during meetings">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="meetingid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK local_ftm_sip_meetings.id - meeting where action was assigned"/>
+        <FIELD NAME="enrollmentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK local_ftm_sip_enrollments.id - for direct queries"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="true" COMMENT="Action description"/>
+        <FIELD NAME="deadline" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Deadline timestamp"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" COMMENT="pending, in_progress, completed, not_done"/>
+        <FIELD NAME="completed_date" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="When action was marked completed"/>
+        <FIELD NAME="completed_by" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="FK user.id - who marked it (student or coach)"/>
+        <FIELD NAME="coach_notes" TYPE="text" NOTNULL="false" COMMENT="Coach notes on action completion"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="meetingid_fk" TYPE="foreign" FIELDS="meetingid" REFTABLE="local_ftm_sip_meetings" REFFIELDS="id"/>
+        <KEY NAME="enrollmentid_fk" TYPE="foreign" FIELDS="enrollmentid" REFTABLE="local_ftm_sip_enrollments" REFFIELDS="id"/>
+        <KEY NAME="completed_by_fk" TYPE="foreign" FIELDS="completed_by" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="enrollmentid_status_idx" UNIQUE="false" FIELDS="enrollmentid, status"/>
+        <INDEX NAME="deadline_idx" UNIQUE="false" FIELDS="deadline"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================== -->
+    <!-- APPUNTAMENTI FUTURI            -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_appointments" COMMENT="Scheduled appointments between coach and student">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="enrollmentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK local_ftm_sip_enrollments.id"/>
+        <FIELD NAME="coachid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id"/>
+        <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id"/>
+        <FIELD NAME="appointment_date" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Date timestamp"/>
+        <FIELD NAME="time_start" TYPE="char" LENGTH="5" NOTNULL="true" COMMENT="Start time HH:MM"/>
+        <FIELD NAME="duration_minutes" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="60" COMMENT="Duration in minutes"/>
+        <FIELD NAME="modality" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="presence" COMMENT="presence, remote, phone"/>
+        <FIELD NAME="location" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Meeting location or link"/>
+        <FIELD NAME="topic" TYPE="text" NOTNULL="false" COMMENT="Meeting topic/agenda"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="scheduled" COMMENT="scheduled, confirmed, completed, cancelled, no_show"/>
+        <FIELD NAME="meetingid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="FK local_ftm_sip_meetings.id - linked diary entry after completion"/>
+        <FIELD NAME="reminder_sent" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Reminder notification sent"/>
+        <FIELD NAME="reminder_coach_sent" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Coach reminder sent"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="enrollmentid_fk" TYPE="foreign" FIELDS="enrollmentid" REFTABLE="local_ftm_sip_enrollments" REFFIELDS="id"/>
+        <KEY NAME="coachid_fk" TYPE="foreign" FIELDS="coachid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="studentid_fk" TYPE="foreign" FIELDS="studentid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="appointment_date_idx" UNIQUE="false" FIELDS="appointment_date"/>
+        <INDEX NAME="coachid_date_idx" UNIQUE="false" FIELDS="coachid, appointment_date"/>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================== -->
+    <!-- CANDIDATURE INVIATE            -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_applications" COMMENT="Job applications sent by the student">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="enrollmentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK local_ftm_sip_enrollments.id"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="FK local_ftm_sip_companies.id (null if free text)"/>
+        <FIELD NAME="company_name" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Company name (denormalized for display)"/>
+        <FIELD NAME="position" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Position/role applied for"/>
+        <FIELD NAME="application_date" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Date of application"/>
+        <FIELD NAME="application_type" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="targeted" COMMENT="targeted, unsolicited"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="sent" COMMENT="sent, waiting, interview, rejected, no_response"/>
+        <FIELD NAME="response_date" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Date of company response"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" COMMENT="Notes"/>
+        <FIELD NAME="addedby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id - student or coach who added"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="enrollmentid_fk" TYPE="foreign" FIELDS="enrollmentid" REFTABLE="local_ftm_sip_enrollments" REFFIELDS="id"/>
+        <KEY NAME="companyid_fk" TYPE="foreign" FIELDS="companyid" REFTABLE="local_ftm_sip_companies" REFFIELDS="id"/>
+        <KEY NAME="addedby_fk" TYPE="foreign" FIELDS="addedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="enrollmentid_idx" UNIQUE="false" FIELDS="enrollmentid"/>
+        <INDEX NAME="application_date_idx" UNIQUE="false" FIELDS="application_date"/>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================== -->
+    <!-- CONTATTI AZIENDE               -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_contacts" COMMENT="Company contacts made by the student">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="enrollmentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK local_ftm_sip_enrollments.id"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="FK local_ftm_sip_companies.id"/>
+        <FIELD NAME="company_name" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Company name (denormalized)"/>
+        <FIELD NAME="contact_type" TYPE="char" LENGTH="20" NOTNULL="true" COMMENT="phone, visit, email, linkedin, network, other"/>
+        <FIELD NAME="contact_date" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Date of contact"/>
+        <FIELD NAME="contact_person" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Person contacted"/>
+        <FIELD NAME="outcome" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="neutral" COMMENT="positive, neutral, negative"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" COMMENT="Notes"/>
+        <FIELD NAME="addedby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="enrollmentid_fk" TYPE="foreign" FIELDS="enrollmentid" REFTABLE="local_ftm_sip_enrollments" REFFIELDS="id"/>
+        <KEY NAME="companyid_fk" TYPE="foreign" FIELDS="companyid" REFTABLE="local_ftm_sip_companies" REFFIELDS="id"/>
+        <KEY NAME="addedby_fk" TYPE="foreign" FIELDS="addedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="enrollmentid_idx" UNIQUE="false" FIELDS="enrollmentid"/>
+        <INDEX NAME="contact_date_idx" UNIQUE="false" FIELDS="contact_date"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================== -->
+    <!-- OPPORTUNITA GENERATE           -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_opportunities" COMMENT="Concrete opportunities generated during SIP">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="enrollmentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK local_ftm_sip_enrollments.id"/>
+        <FIELD NAME="companyid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="FK local_ftm_sip_companies.id"/>
+        <FIELD NAME="company_name" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Company name (denormalized)"/>
+        <FIELD NAME="opportunity_type" TYPE="char" LENGTH="30" NOTNULL="true" COMMENT="interview, trial_day, stage, intermediate_earning, hiring, training"/>
+        <FIELD NAME="opportunity_date" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Date of opportunity"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="planned" COMMENT="planned, in_progress, completed, cancelled"/>
+        <FIELD NAME="outcome" TYPE="text" NOTNULL="false" COMMENT="Outcome description"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" COMMENT="Notes"/>
+        <FIELD NAME="addedby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="enrollmentid_fk" TYPE="foreign" FIELDS="enrollmentid" REFTABLE="local_ftm_sip_enrollments" REFFIELDS="id"/>
+        <KEY NAME="companyid_fk" TYPE="foreign" FIELDS="companyid" REFTABLE="local_ftm_sip_companies" REFFIELDS="id"/>
+        <KEY NAME="addedby_fk" TYPE="foreign" FIELDS="addedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="enrollmentid_idx" UNIQUE="false" FIELDS="enrollmentid"/>
+        <INDEX NAME="opportunity_type_idx" UNIQUE="false" FIELDS="opportunity_type"/>
+        <INDEX NAME="opportunity_date_idx" UNIQUE="false" FIELDS="opportunity_date"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================== -->
+    <!-- REGISTRO AZIENDE CONDIVISO     -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_companies" COMMENT="Shared company registry - grows with use">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Company name"/>
+        <FIELD NAME="name_normalized" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Lowercase name for dedup matching"/>
+        <FIELD NAME="sector" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="FTM sector: MECCANICA, AUTOMOBILE, etc."/>
+        <FIELD NAME="city" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="City"/>
+        <FIELD NAME="address" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Street address"/>
+        <FIELD NAME="phone" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="Phone number"/>
+        <FIELD NAME="email" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Email"/>
+        <FIELD NAME="website" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Website URL"/>
+        <FIELD NAME="contact_person" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Primary contact person"/>
+        <FIELD NAME="contact_role" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="Contact role (HR, Director, etc.)"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" COMMENT="Notes about the company"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="prospect" COMMENT="prospect, contacted, interested, collaborating, inactive"/>
+        <FIELD NAME="interaction_count" TYPE="int" LENGTH="5" NOTNULL="true" DEFAULT="0" COMMENT="Total interactions across all students"/>
+        <FIELD NAME="createdby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id - who added the company"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="createdby_fk" TYPE="foreign" FIELDS="createdby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="name_normalized_idx" UNIQUE="false" FIELDS="name_normalized" COMMENT="For autocomplete dedup search"/>
+        <INDEX NAME="sector_idx" UNIQUE="false" FIELDS="sector"/>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================== -->
+    <!-- NOTE PER FASE ROADMAP          -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_phase_notes" COMMENT="Coach notes per roadmap phase">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="enrollmentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK local_ftm_sip_enrollments.id"/>
+        <FIELD NAME="phase" TYPE="int" LENGTH="1" NOTNULL="true" COMMENT="Phase number 1-6"/>
+        <FIELD NAME="objectives_met" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Phase objectives met 0/1"/>
+        <FIELD NAME="notes" TYPE="text" NOTNULL="false" COMMENT="Coach notes for this phase"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="enrollmentid_fk" TYPE="foreign" FIELDS="enrollmentid" REFTABLE="local_ftm_sip_enrollments" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="enrollment_phase_uq" UNIQUE="true" FIELDS="enrollmentid, phase" COMMENT="One record per phase per enrollment"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================== -->
+    <!-- VALUTAZIONE IDONEITA SIP      -->
+    <!-- Griglia Valutazione PCI       -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_eligibility" COMMENT="SIP eligibility assessment - Griglia Valutazione PCI">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id - student"/>
+        <FIELD NAME="assessedby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id - coach who assessed"/>
+        <FIELD NAME="motivazione" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Motivazione 1-5"/>
+        <FIELD NAME="chiarezza_obiettivo" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Chiarezza Obiettivo 1-5"/>
+        <FIELD NAME="occupabilita" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Occupabilita 1-5"/>
+        <FIELD NAME="autonomia" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Autonomia 1-5"/>
+        <FIELD NAME="bisogno_coaching" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Bisogno Coaching 1-5"/>
+        <FIELD NAME="comportamento" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Comportamento 1-5"/>
+        <FIELD NAME="totale" TYPE="int" LENGTH="2" NOTNULL="false" COMMENT="Sum of 6 criteria (6-30)"/>
+        <FIELD NAME="decisione" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" COMMENT="idoneo, non_idoneo, pending"/>
+        <FIELD NAME="coach_recommendation" TYPE="char" LENGTH="30" NOTNULL="false" COMMENT="activate, not_activate, refer_other - advisory only"/>
+        <FIELD NAME="referral_detail" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="If referred, to which measure"/>
+        <FIELD NAME="note" TYPE="text" NOTNULL="false" COMMENT="Free notes"/>
+        <FIELD NAME="approved" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Approved by secretary 0/1"/>
+        <FIELD NAME="approvedby" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="FK user.id"/>
+        <FIELD NAME="approved_date" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="assessedby_fk" TYPE="foreign" FIELDS="assessedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_uq" UNIQUE="true" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+
+  </TABLES>
+</XMLDB>

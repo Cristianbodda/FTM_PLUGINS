@@ -31,6 +31,7 @@ $area = optional_param('area', '', PARAM_TEXT);
 $tab = optional_param('tab', 'overview', PARAM_ALPHA);
 $openTab = optional_param('open_tab', '', PARAM_ALPHANUMEXT);
 $print = optional_param('print', 0, PARAM_INT);
+$output = optional_param('output', '', PARAM_ALPHA); // 'pdf' per download PDF diretto
 $selectedArea = optional_param('selectedarea', '', PARAM_TEXT);
 
 // Parametri per filtro e ordinamento nella tab Dettagli
@@ -105,10 +106,10 @@ $sectionOrder = [
     'piano'          => optional_param('order_piano', 5, PARAM_INT),
     'dettagli'       => optional_param('order_dettagli', 6, PARAM_INT),
     'dual_radar'     => optional_param('order_dual_radar', 7, PARAM_INT),
-    'gap_analysis'   => optional_param('order_gap', 8, PARAM_INT),
-    'spunti'         => optional_param('order_spunti', 9, PARAM_INT),
-    'suggerimenti'   => optional_param('order_suggerimenti', 10, PARAM_INT),
-    'overlay_radar'  => optional_param('order_overlay', 11, PARAM_INT),
+    'overlay_radar'  => optional_param('order_overlay', 8, PARAM_INT),
+    'gap_analysis'   => optional_param('order_gap', 9, PARAM_INT),
+    'spunti'         => optional_param('order_spunti', 10, PARAM_INT),
+    'suggerimenti'   => optional_param('order_suggerimenti', 11, PARAM_INT),
     'coach_eval'     => optional_param('order_coach_eval', 12, PARAM_INT),
 ];
 // Ordina per valore (ordine di stampa)
@@ -729,8 +730,20 @@ function generate_svg_radar($data, $title = '', $size = 300, $fillColor = 'rgba(
     $radius = ($size / 2) - $margin;
     $n = count($data);
 
-    if ($n < 3) {
+    if ($n == 1) {
         return generate_svg_bar_chart($data, $title, $size);
+    }
+    // Per 2 elementi: duplica per creare un radar a 4 punti (diamante simmetrico)
+    // I 2 valori reali vanno su assi opposti (Nord e Sud), i duplicati su Est e Ovest
+    if ($n == 2) {
+        $data = array_values($data);
+        $data = [
+            $data[0],                                            // Nord (valore reale 1)
+            $data[1],                                            // Est (valore reale 2)
+            ['label' => $data[0]['label'], 'value' => $data[0]['value'], '_duplicate' => true],  // Sud (duplicato 1)
+            ['label' => $data[1]['label'], 'value' => $data[1]['value'], '_duplicate' => true],  // Ovest (duplicato 2)
+        ];
+        $n = 4;
     }
 
     $angleStep = (2 * M_PI) / $n;
@@ -777,11 +790,16 @@ function generate_svg_radar($data, $title = '', $size = 300, $fillColor = 'rgba(
         else if ($labelX > $cx + 20) $anchor = 'start';
 
         $labelColor = $value >= 80 ? '#27ae60' : ($value >= 60 ? '#3498db' : ($value >= 40 ? '#f39c12' : '#c0392b'));
-        // Tronca etichetta se necessario (parametro configurabile)
-        $displayLabel = mb_strlen($item['label']) > $maxLabelLen ? mb_substr($item['label'], 0, $maxLabelLen - 2) . '...' : $item['label'];
 
-        $svg .= '<text x="' . $labelX . '" y="' . $labelY . '" text-anchor="' . $anchor . '" font-size="' . $labelFontSize . '" fill="#333">' . htmlspecialchars($displayLabel) . '</text>';
-        $svg .= '<text x="' . $labelX . '" y="' . ($labelY + $labelFontSize + 2) . '" text-anchor="' . $anchor . '" font-size="' . ($labelFontSize + 1) . '" font-weight="bold" fill="' . $labelColor . '">' . $value . '%</text>';
+        // Non mostrare etichette per punti duplicati (usati per creare diamante con 2 elementi)
+        $isDuplicate = !empty($item['_duplicate']);
+        if (!$isDuplicate) {
+            // Tronca etichetta se necessario (parametro configurabile)
+            $displayLabel = mb_strlen($item['label']) > $maxLabelLen ? mb_substr($item['label'], 0, $maxLabelLen - 2) . '...' : $item['label'];
+
+            $svg .= '<text x="' . $labelX . '" y="' . $labelY . '" text-anchor="' . $anchor . '" font-size="' . $labelFontSize . '" fill="#333">' . htmlspecialchars($displayLabel) . '</text>';
+            $svg .= '<text x="' . $labelX . '" y="' . ($labelY + $labelFontSize + 2) . '" text-anchor="' . $anchor . '" font-size="' . ($labelFontSize + 1) . '" font-weight="bold" fill="' . $labelColor . '">' . $value . '%</text>';
+        }
 
         $i++;
     }
@@ -1047,17 +1065,19 @@ if (count($sectorsFound) === 1 && !empty($sector)) {
     $effectiveSectorFilter = $cm_sector_filter;
 }
 
-// DEBUG SETTORE - rimuovere dopo test
-echo '<!-- DEBUG_SECTOR_V2: cm_sector_filter=' . $cm_sector_filter
-    . ' | sectorsFound=' . implode(',', array_keys($sectorsFound))
-    . ' | sector=' . ($sector ?? 'NULL')
-    . ' | effectiveSectorFilter=' . $effectiveSectorFilter
-    . ' | studentPrimarySector=' . ($studentPrimarySector ?? 'NULL')
-    . ' | courseSector=' . ($courseSector ?? 'NULL')
-    . ' -->' . "\n";
-if (!empty($competencies)) {
-    $firstComp = reset($competencies);
-    echo '<!-- DEBUG_FIRST_COMP: idnumber=' . ($firstComp['idnumber'] ?? 'NULL') . ' name=' . ($firstComp['name'] ?? 'NULL') . ' -->' . "\n";
+// DEBUG SETTORE - solo per visualizzazione HTML (non per PDF/print)
+if ($output !== 'pdf' && !$print) {
+    echo '<!-- DEBUG_SECTOR_V2: cm_sector_filter=' . $cm_sector_filter
+        . ' | sectorsFound=' . implode(',', array_keys($sectorsFound))
+        . ' | sector=' . ($sector ?? 'NULL')
+        . ' | effectiveSectorFilter=' . $effectiveSectorFilter
+        . ' | studentPrimarySector=' . ($studentPrimarySector ?? 'NULL')
+        . ' | courseSector=' . ($courseSector ?? 'NULL')
+        . ' -->' . "\n";
+    if (!empty($competencies)) {
+        $firstComp = reset($competencies);
+        echo '<!-- DEBUG_FIRST_COMP: idnumber=' . ($firstComp['idnumber'] ?? 'NULL') . ' name=' . ($firstComp['name'] ?? 'NULL') . ' -->' . "\n";
+    }
 }
 
 // Carica descrizioni per TUTTI i settori trovati
@@ -1146,11 +1166,13 @@ if ($showDualRadar || $showGapAnalysis || $showSpuntiColloquio || $showSuggerime
                     return strcasecmp($compSector, $normalizedSectorFilter) === 0;
                 }, ARRAY_FILTER_USE_BOTH);
 
-                // DEBUG: mostra quante competenze autovalutazione matchano il settore
-                echo "<!-- DEBUG AUTOVALUTAZIONE: filtro='$normalizedSectorFilter', totale=" . count($autovalutazioneData) . ", filtrate=" . count($autovalutazione_for_areas) . " -->\n";
-                if (count($autovalutazione_for_areas) > 0) {
-                    $firstKeys = array_slice(array_keys($autovalutazione_for_areas), 0, 3);
-                    echo "<!-- DEBUG AUTOVAL KEYS: " . implode(', ', $firstKeys) . " -->\n";
+                // DEBUG: mostra quante competenze autovalutazione matchano il settore (solo HTML)
+                if ($output !== 'pdf' && !$print) {
+                    echo "<!-- DEBUG AUTOVALUTAZIONE: filtro='$normalizedSectorFilter', totale=" . count($autovalutazioneData) . ", filtrate=" . count($autovalutazione_for_areas) . " -->\n";
+                    if (count($autovalutazione_for_areas) > 0) {
+                        $firstKeys = array_slice(array_keys($autovalutazione_for_areas), 0, 3);
+                        echo "<!-- DEBUG AUTOVAL KEYS: " . implode(', ', $firstKeys) . " -->\n";
+                    }
                 }
             }
             $autovalutazioneAreas = aggregate_autovalutazione_by_area($autovalutazione_for_areas, $areaDescriptions, $sector);
@@ -1314,8 +1336,8 @@ if (!empty($availableQuizzes)) {
     }
 }
 
-// DEBUG: mostra i quiz caricati
-if ($print) {
+// DEBUG: mostra i quiz caricati (solo print HTML, non PDF)
+if ($print && $output !== 'pdf') {
     echo "<!-- DEBUG QUIZ NAMES: " . count($selectedQuizNames) . " quiz - " . implode(', ', $selectedQuizNames) . " -->\n";
 }
 
@@ -1448,6 +1470,12 @@ if ($showOverlayRadar || $printOverlayRadar) {
 // Include file di visualizzazione stampa
 if ($print) {
     include(__DIR__ . '/student_report_print.php');
+    exit;
+}
+
+// Genera PDF diretto (TCPDF)
+if ($output === 'pdf') {
+    include(__DIR__ . '/student_report_pdf.php');
     exit;
 }
 
@@ -3747,7 +3775,49 @@ echo '<div class="col-md-4"><div class="p-3 rounded" style="background: #f8d7da;
 // Barra azioni
 echo '<div class="card mb-4"><div class="card-body d-flex justify-content-between align-items-center flex-wrap">';
 echo '<a href="' . new moodle_url('/local/competencymanager/reports.php', ['courseid' => $courseid]) . '" class="btn btn-secondary mb-2">← Torna alla lista</a>';
+// Costruisci URL per PDF completo con tutte le sezioni e quiz selezionati
+// Usa costruzione manuale per gestire correttamente i parametri array (quizids[], print_radar_areas[])
+$pdfBaseParams = [
+    'userid' => $userid,
+    'courseid' => $courseid,
+    'output' => 'pdf',
+    'print_panoramica' => 1,
+    'print_progressi' => 1,
+    'print_radar_aree' => 1,
+    'print_piano' => 1,
+    'print_dettagli' => 1,
+    'attempt_filter' => $attemptFilter,
+    'cm_sector' => $cm_sector_filter,
+    'tono_commenti' => $tonoCommenti,
+    'soglia_allineamento' => $sogliaAllineamento,
+    'soglia_critico' => $sogliaCritico,
+    'soglia_monitorare' => $sogliaMonitorare,
+];
+// Sezioni CoachManager (se dati disponibili)
+if ($hasAutovalutazione) {
+    $pdfBaseParams['print_dual_radar'] = 1;
+    $pdfBaseParams['print_gap'] = 1;
+    $pdfBaseParams['print_spunti'] = 1;
+    $pdfBaseParams['print_overlay'] = 1;
+    $pdfBaseParams['print_suggerimenti'] = 1;
+}
+// Costruisci query string manualmente per parametri array
+$pdfQueryParts = [];
+foreach ($pdfBaseParams as $k => $v) {
+    $pdfQueryParts[] = urlencode($k) . '=' . urlencode($v);
+}
+// Quiz selezionati (array)
+foreach ($selectedQuizzes as $qid) {
+    $pdfQueryParts[] = 'quizids%5B%5D=' . intval($qid);
+}
+// Aree radar dettaglio (array)
+foreach (array_keys($areasData) as $areaKey) {
+    $pdfQueryParts[] = 'print_radar_areas%5B%5D=' . urlencode($areaKey);
+}
+$pdfUrl = $CFG->wwwroot . '/local/competencymanager/student_report.php?' . implode('&', $pdfQueryParts);
+
 echo '<div><button type="button" class="btn btn-primary mr-2 mb-2" data-toggle="modal" data-target="#printModal">🖨️ Stampa Personalizzata</button>';
+echo '<a href="' . $pdfUrl . '" class="btn btn-danger mr-2 mb-2" target="_blank">📄 Genera PDF</a>';
 echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['userid' => $userid, 'courseid' => $courseid, 'format' => 'csv']) . '" class="btn btn-success mr-2 mb-2">📥 CSV</a>';
 echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['userid' => $userid, 'courseid' => $courseid, 'format' => 'excel']) . '" class="btn btn-success mb-2">📥 Excel</a></div></div></div>';
 
@@ -3771,6 +3841,11 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
                     <?php foreach ($selectedQuizzes as $qid): ?>
                     <input type="hidden" name="quizids[]" value="<?php echo $qid; ?>">
                     <?php endforeach; ?>
+
+                    <!-- PARAMETRI CONTESTO - passati alla stampa -->
+                    <input type="hidden" name="attempt_filter" value="<?php echo $attemptFilter; ?>">
+                    <input type="hidden" name="cm_sector" value="<?php echo $cm_sector_filter; ?>">
+                    <input type="hidden" name="tono_commenti" value="<?php echo $tonoCommenti; ?>">
 
                     <!-- SOGLIE CONFIGURABILI - passate alla stampa -->
                     <input type="hidden" name="soglia_allineamento" value="<?php echo $sogliaAllineamento; ?>">
@@ -3831,23 +3906,23 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
                             <hr>
                             <h6 class="text-success">🆕 Sezioni CoachManager:</h6>
                             <div class="custom-control custom-checkbox mb-2">
-                                <input type="checkbox" class="custom-control-input section-check" id="print_dual_radar" name="print_dual_radar" value="1">
+                                <input type="checkbox" class="custom-control-input section-check" id="print_dual_radar" name="print_dual_radar" value="1" <?php echo $showDualRadar ? 'checked' : ''; ?>>
                                 <label class="custom-control-label" for="print_dual_radar"><strong>🎯 Doppio Radar</strong></label>
                             </div>
                             <div class="custom-control custom-checkbox mb-2">
-                                <input type="checkbox" class="custom-control-input section-check" id="print_gap" name="print_gap" value="1">
+                                <input type="checkbox" class="custom-control-input section-check" id="print_gap" name="print_gap" value="1" <?php echo $showGapAnalysis ? 'checked' : ''; ?>>
                                 <label class="custom-control-label" for="print_gap"><strong>📈 Gap Analysis</strong></label>
                             </div>
                             <div class="custom-control custom-checkbox mb-2">
-                                <input type="checkbox" class="custom-control-input section-check" id="print_spunti" name="print_spunti" value="1">
+                                <input type="checkbox" class="custom-control-input section-check" id="print_spunti" name="print_spunti" value="1" <?php echo $showSpuntiColloquio ? 'checked' : ''; ?>>
                                 <label class="custom-control-label" for="print_spunti"><strong>💬 Spunti Colloquio</strong></label>
                             </div>
                             <div class="custom-control custom-checkbox mb-2">
-                                <input type="checkbox" class="custom-control-input section-check" id="print_overlay" name="print_overlay" value="1">
+                                <input type="checkbox" class="custom-control-input section-check" id="print_overlay" name="print_overlay" value="1" <?php echo $showOverlayRadar ? 'checked' : ''; ?>>
                                 <label class="custom-control-label" for="print_overlay"><strong>🔀 Overlay Multi-Fonte</strong></label>
                             </div>
                             <div class="custom-control custom-checkbox mb-2">
-                                <input type="checkbox" class="custom-control-input section-check" id="print_suggerimenti" name="print_suggerimenti" value="1">
+                                <input type="checkbox" class="custom-control-input section-check" id="print_suggerimenti" name="print_suggerimenti" value="1" <?php echo $showSuggerimentiRapporto ? 'checked' : ''; ?>>
                                 <label class="custom-control-label" for="print_suggerimenti"><strong>📋 Suggerimenti Rapporto</strong></label>
                                 <small class="d-block text-muted ml-4">Commenti automatici basati sul gap con attivita lavorative</small>
                             </div>

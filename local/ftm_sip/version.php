@@ -17,19 +17,20 @@
 /**
  * Plugin version and dependencies.
  *
- * @package    local_ftm_cpurc
+ * @package    local_ftm_sip
  * @copyright  2026 Fondazione Terzo Millennio
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_ftm_cpurc';
-$plugin->version = 2026032001;  // Report page rewrite - official document structure.
+$plugin->component = 'local_ftm_sip';
+$plugin->version = 2026032002;  // Griglia Valutazione PCI (6 numeric criteria 1-5).
 $plugin->requires = 2024042200; // Moodle 4.4+
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = 'v1.4.0';
+$plugin->release = 'v1.2.0';
 $plugin->dependencies = [
     'local_competencymanager' => ANY_VERSION,
+    'local_coachmanager' => ANY_VERSION,
     'local_ftm_scheduler' => ANY_VERSION,
 ];

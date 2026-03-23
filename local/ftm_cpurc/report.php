@@ -68,11 +68,48 @@ $report = \local_ftm_cpurc\cpurc_manager::get_report($id);
 // Get current user as coach.
 $coach = $USER;
 $coachInitials = strtoupper(substr($coach->firstname, 0, 1) . substr($coach->lastname, 0, 1));
+$coachInitialLower = strtolower(substr($coach->firstname, 0, 1) . substr($coach->lastname, 0, 1));
+
+// Calculate participation days.
+$participationDays = 0;
+if (!empty($student->date_start) && !empty($student->date_end_actual)) {
+    $start = new DateTime();
+    $start->setTimestamp($student->date_start);
+    $end = new DateTime();
+    $end->setTimestamp($student->date_end_actual);
+    $interval = $start->diff($end);
+    // Count weekdays only.
+    $days = 0;
+    $current = clone $start;
+    while ($current <= $end) {
+        $dow = (int)$current->format('N');
+        if ($dow <= 5) {
+            $days++;
+        }
+        $current->modify('+1 day');
+    }
+    $participationDays = $days - ($student->absence_total ?? 0);
+} elseif (!empty($student->date_start) && !empty($student->date_end_planned)) {
+    $start = new DateTime();
+    $start->setTimestamp($student->date_start);
+    $end = new DateTime();
+    $end->setTimestamp($student->date_end_planned);
+    $days = 0;
+    $current = clone $start;
+    while ($current <= $end) {
+        $dow = (int)$current->format('N');
+        if ($dow <= 5) {
+            $days++;
+        }
+        $current->modify('+1 day');
+    }
+    $participationDays = $days - ($student->absence_total ?? 0);
+}
 
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/ftm_cpurc/report.php', ['id' => $id]));
-$PAGE->set_title('Rapporto Finale - ' . fullname($user));
-$PAGE->set_heading('Rapporto Finale');
+$PAGE->set_title('Rapporto finale d\'attivita\' - ' . fullname($user));
+$PAGE->set_heading('Rapporto finale d\'attivita\'');
 $PAGE->set_pagelayout('standard');
 
 echo $OUTPUT->header();
@@ -151,14 +188,15 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
     font-size: 18pt;
     font-weight: bold;
     margin: 0;
-    text-transform: uppercase;
     letter-spacing: 1px;
 }
 
 .doc-header-subtitle {
-    font-size: 11pt;
+    font-size: 10pt;
     color: #555;
-    margin-top: 5px;
+    margin-top: 8px;
+    font-style: italic;
+    line-height: 1.4;
 }
 
 /* Section styling */
@@ -180,7 +218,33 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
     padding: 0 12px;
 }
 
-/* Info table */
+/* Official table - bordered, gray headers */
+.doc-official-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+
+.doc-official-table td,
+.doc-official-table th {
+    border: 1px solid #999;
+    padding: 8px 12px;
+    vertical-align: top;
+    font-size: 13pt;
+}
+
+.doc-official-table .label-cell {
+    font-weight: 600;
+    background: #e8e8e8;
+    width: 220px;
+    white-space: nowrap;
+}
+
+.doc-official-table .value-cell {
+    background: #fafafa;
+}
+
+/* Info table (old style kept for compat) */
 .doc-info-table {
     width: 100%;
     border-collapse: collapse;
@@ -263,7 +327,7 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
     background: #fafafa;
 }
 
-/* Competency table */
+/* Competency table with text scale */
 .doc-competency-table {
     width: 100%;
     border-collapse: collapse;
@@ -273,7 +337,7 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
 .doc-competency-table th,
 .doc-competency-table td {
     border: 1px solid #bbb;
-    padding: 12px;
+    padding: 10px 8px;
     text-align: left;
     font-size: 13pt;
 }
@@ -281,48 +345,55 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
 .doc-competency-table th {
     background: #e8e8e8;
     font-weight: 600;
+    font-size: 11pt;
+    text-align: center;
+}
+
+.doc-competency-table th:first-child {
+    text-align: left;
     font-size: 13pt;
 }
 
 .doc-competency-table .rating-cell {
     text-align: center;
-    width: 40px;
+    width: 110px;
+    padding: 4px;
+    vertical-align: middle;
 }
 
-/* Rating radio buttons */
-.doc-rating {
-    display: flex;
-    gap: 5px;
-    justify-content: center;
+/* Rating radio buttons - styled as table cells */
+.doc-rating-cell {
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-.doc-rating input[type="radio"] {
+.doc-rating-cell input[type="radio"] {
     display: none;
 }
 
-.doc-rating label {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #999;
-    background: white;
+.doc-rating-cell label {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 10px 4px;
     cursor: pointer;
-    font-size: 14pt;
-    font-weight: 600;
+    margin: 0;
+    font-size: 12pt;
     transition: all 0.2s;
-    border-radius: 4px;
 }
 
-.doc-rating label:hover {
+.doc-rating-cell:hover {
     background: #e3f2fd;
 }
 
-.doc-rating input[type="radio"]:checked + label {
+.doc-rating-cell.selected {
     background: #2c3e50;
     color: white;
-    border-color: #2c3e50;
+}
+
+.doc-rating-cell.selected label {
+    color: white;
 }
 
 /* Overall rating scale */
@@ -363,21 +434,16 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
     border-color: #2c3e50;
 }
 
-.doc-rating-number {
-    font-size: 32pt;
-    font-weight: bold;
-}
-
 .doc-rating-label {
-    font-size: 11pt;
-    margin-top: 8px;
+    font-size: 12pt;
+    font-weight: 600;
 }
 
 /* Checkbox styling */
 .doc-checkbox-group {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
     margin: 10px 0;
 }
 
@@ -385,7 +451,7 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 18px;
+    padding: 10px 15px;
     background: #f5f5f5;
     border-radius: 6px;
     cursor: pointer;
@@ -397,9 +463,10 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
 }
 
 .doc-checkbox-item input[type="checkbox"] {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 /* Yes/No toggle */
@@ -438,6 +505,13 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
     margin-bottom: 12px;
 }
 
+.doc-subsection-hint {
+    font-size: 9pt;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 10px;
+}
+
 /* Hired details */
 .doc-hired-details {
     display: none;
@@ -449,14 +523,6 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
 
 .doc-hired-details.visible {
     display: block;
-}
-
-.doc-hired-details table {
-    width: 100%;
-}
-
-.doc-hired-details td {
-    padding: 5px 10px;
 }
 
 /* Alert messages */
@@ -481,6 +547,35 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
     color: #721c24;
 }
 
+/* Signatures section */
+.doc-signatures {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #ccc;
+}
+
+.doc-signatures-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+}
+
+.doc-signature-block {
+    width: 45%;
+}
+
+.doc-signature-line {
+    border-bottom: 1px solid #000;
+    margin-top: 60px;
+    padding-bottom: 5px;
+}
+
+.doc-signature-label {
+    font-size: 11pt;
+    color: #333;
+    margin-top: 5px;
+}
+
 /* Print styles */
 @media print {
     .doc-toolbar { display: none; }
@@ -490,6 +585,15 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
         border: none;
         border-bottom: 1px solid #000;
     }
+    .doc-rating-cell.selected {
+        background: #2c3e50 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .doc-signature-line {
+        margin-top: 80px;
+    }
 }
 </style>
 
@@ -497,17 +601,17 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
     <!-- Toolbar -->
     <div class="doc-toolbar">
         <div class="doc-toolbar-title">
-            Rapporto Finale - <?php echo fullname($user); ?>
+            Rapporto finale d'attivita' - <?php echo fullname($user); ?>
         </div>
         <div class="doc-toolbar-buttons">
             <button type="button" class="doc-toolbar-btn doc-toolbar-btn-secondary" onclick="window.print();">
-                🖨️ Stampa
+                Stampa
             </button>
             <button type="button" id="btn-save" class="doc-toolbar-btn doc-toolbar-btn-primary">
-                💾 Salva
+                Salva
             </button>
             <button type="button" id="btn-export" class="doc-toolbar-btn doc-toolbar-btn-success">
-                📄 Esporta Word
+                Esporta Word
             </button>
         </div>
     </div>
@@ -520,96 +624,104 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
         <div class="doc-page">
             <!-- Document Header -->
             <div class="doc-header">
-                <h1 class="doc-header-title">Rapporto Finale</h1>
-                <p class="doc-header-subtitle">Provvedimento cantonale d'integrazione (PCI)</p>
+                <h1 class="doc-header-title">Rapporto finale d'attivita'</h1>
+                <p class="doc-header-subtitle">
+                    Il formulario dev'essere compilato al termine del provvedimento dalla persona responsabile,
+                    sottoscritto dal partecipante ed inviato al consulente del personale URC (tramite MFT).
+                </p>
             </div>
 
             <div id="save-alert" class="doc-alert"></div>
 
-            <!-- 1. Organizzatore -->
+            <!-- Organizzatore -->
             <div class="doc-section">
-                <h2 class="doc-section-title">1. Organizzatore</h2>
+                <h2 class="doc-section-title">Organizzatore</h2>
                 <div class="doc-section-content">
-                    <table class="doc-info-table">
+                    <table class="doc-official-table">
                         <tr>
-                            <td class="label">Organizzatore:</td>
-                            <td class="value">Fondazione Terzo Millennio</td>
+                            <td class="label-cell">Nome e misura:</td>
+                            <td class="value-cell" colspan="3">Fondazione Terzo Millennio / Rilevamento delle competenze del settore industriale</td>
                         </tr>
                         <tr>
-                            <td class="label">Coach responsabile:</td>
-                            <td class="value"><?php echo fullname($coach); ?> (<?php echo $coachInitials; ?>)</td>
+                            <td class="label-cell">Persona responsabile:</td>
+                            <td class="value-cell"><?php echo fullname($coach); ?></td>
+                            <td class="label-cell">Telefono / e-mail</td>
+                            <td class="value-cell">091 945 01 38 / <?php echo $coachInitialLower; ?>@f3m.ch</td>
                         </tr>
                     </table>
                 </div>
             </div>
 
-            <!-- 2. Partecipante -->
+            <!-- Partecipante -->
             <div class="doc-section">
-                <h2 class="doc-section-title">2. Partecipante</h2>
+                <h2 class="doc-section-title">Partecipante</h2>
                 <div class="doc-section-content">
-                    <table class="doc-info-table">
+                    <table class="doc-official-table">
                         <tr>
-                            <td class="label">Nome e cognome:</td>
-                            <td class="value"><?php echo fullname($user); ?></td>
+                            <td class="label-cell">Cognome, nome</td>
+                            <td class="value-cell" colspan="3"><?php echo s($user->lastname); ?>, <?php echo s($user->firstname); ?></td>
                         </tr>
                         <tr>
-                            <td class="label">Data di nascita:</td>
-                            <td class="value"><?php echo $student->birthdate ? date('d.m.Y', $student->birthdate) : '-'; ?></td>
+                            <td class="label-cell">Indirizzo completo:</td>
+                            <td class="value-cell" colspan="3"><?php
+                                $address_parts = [];
+                                if (!empty($student->address_street)) $address_parts[] = s($student->address_street);
+                                $cap_city = '';
+                                if (!empty($student->address_cap)) $cap_city .= s($student->address_cap);
+                                if (!empty($student->address_city)) $cap_city .= (!empty($cap_city) ? ' ' : '') . s($student->address_city);
+                                if (!empty($cap_city)) $address_parts[] = $cap_city;
+                                echo implode(', ', $address_parts) ?: '-';
+                            ?></td>
                         </tr>
                         <tr>
-                            <td class="label">Indirizzo:</td>
-                            <td class="value"><?php echo s($student->address_street ?? ''); ?></td>
+                            <td class="label-cell">No. AS:</td>
+                            <td class="value-cell"><?php echo s($student->avs_number ?? '-'); ?></td>
+                            <td class="label-cell">Data di nascita:</td>
+                            <td class="value-cell"><?php echo $student->birthdate ? date('d.m.Y', $student->birthdate) : '-'; ?></td>
                         </tr>
                         <tr>
-                            <td class="label">CAP / Località:</td>
-                            <td class="value"><?php echo s($student->address_cap ?? ''); ?> <?php echo s($student->address_city ?? ''); ?></td>
-                        </tr>
-                        <tr>
-                            <td class="label">Nr. AVS:</td>
-                            <td class="value"><?php echo s($student->avs_number ?? ''); ?></td>
+                            <td class="label-cell">Consulente del personale:</td>
+                            <td class="value-cell"><?php echo s($student->urc_consultant ?? '-'); ?></td>
+                            <td class="label-cell">Ufficio regionale di collocamento:</td>
+                            <td class="value-cell"><?php echo s($student->urc_office ?? '-'); ?></td>
                         </tr>
                     </table>
                 </div>
             </div>
 
-            <!-- 3. Partecipazione -->
+            <!-- Partecipazione al provvedimento -->
             <div class="doc-section">
-                <h2 class="doc-section-title">3. Partecipazione</h2>
+                <h2 class="doc-section-title">Partecipazione al provvedimento</h2>
                 <div class="doc-section-content">
-                    <table class="doc-info-table">
+                    <table class="doc-official-table">
                         <tr>
-                            <td class="label">Data inizio:</td>
-                            <td class="value"><?php echo $student->date_start ? date('d.m.Y', $student->date_start) : '-'; ?></td>
-                        </tr>
-                        <tr>
-                            <td class="label">Data fine prevista:</td>
-                            <td class="value"><?php echo $student->date_end_planned ? date('d.m.Y', $student->date_end_planned) : '-'; ?></td>
-                        </tr>
-                        <tr>
-                            <td class="label">Data fine effettiva:</td>
-                            <td class="value"><?php echo $student->date_end_actual ? date('d.m.Y', $student->date_end_actual) : '-'; ?></td>
-                        </tr>
-                        <tr>
-                            <td class="label">Grado occupazione:</td>
-                            <td class="value"><?php echo ($student->occupation_grade ?? 100); ?>%</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Ufficio URC:</td>
-                            <td class="value"><?php echo s($student->urc_office ?? ''); ?></td>
-                        </tr>
-                        <tr>
-                            <td class="label">Consulente URC:</td>
-                            <td class="value"><?php echo s($student->urc_consultant ?? ''); ?></td>
+                            <td class="label-cell">Grado d'occupazione:</td>
+                            <td class="value-cell"><?php echo ($student->occupation_grade ?? 100); ?>%</td>
+                            <td class="label-cell">Giorni e orari di presenza individuali:</td>
+                            <td class="value-cell">30 giorni / 08:30-16:30</td>
                         </tr>
                     </table>
 
-                    <h3 style="font-size: 10pt; font-weight: 600; margin: 15px 0 10px;">Assenze (in giorni)</h3>
+                    <table class="doc-official-table">
+                        <tr>
+                            <td class="label-cell">Data di inizio:</td>
+                            <td class="value-cell"><?php echo $student->date_start ? date('d.m.Y', $student->date_start) : '-'; ?></td>
+                            <td class="label-cell">Data di fine prevista:</td>
+                            <td class="value-cell"><?php echo $student->date_end_planned ? date('d.m.Y', $student->date_end_planned) : '-'; ?></td>
+                            <td class="label-cell">Data di fine effettiva:</td>
+                            <td class="value-cell"><?php echo $student->date_end_actual ? date('d.m.Y', $student->date_end_actual) : '-'; ?></td>
+                            <td class="label-cell">Numero di giorni di partecipazione effettiva in misura:</td>
+                            <td class="value-cell"><?php echo $participationDays; ?></td>
+                        </tr>
+                    </table>
+
+                    <h3 style="font-size: 12pt; font-weight: 600; margin: 15px 0 10px;">N&deg; giorni per tipo di assenza</h3>
                     <table class="doc-absence-table">
                         <tr>
                             <th>Vacanze</th>
                             <th>Malattia</th>
                             <th>Infortunio</th>
-                            <th>Maternità</th>
+                            <th>Maternita'</th>
                             <th>Prot. civile</th>
                             <th>Altro giust.</th>
                             <th>Festivi</th>
@@ -629,91 +741,86 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                 </div>
             </div>
 
-            <!-- 4. Situazione iniziale -->
+            <!-- 1. Situazione iniziale -->
             <div class="doc-section">
-                <h2 class="doc-section-title">4. Situazione iniziale</h2>
+                <h2 class="doc-section-title">1. Situazione iniziale</h2>
                 <div class="doc-section-content">
-                    <p style="font-size: 9pt; color: #666; margin-bottom: 10px;">
-                        Descrivere la situazione iniziale della PCI: obiettivi, storia professionale, aspettative.
-                    </p>
-                    <textarea name="initial_situation" class="doc-field-textarea" rows="6"
-                              placeholder="Inserire la descrizione della situazione iniziale..."><?php echo s($report->initial_situation ?? ''); ?></textarea>
+                    <div class="doc-subsection">
+                        <div class="doc-subsection-title">Qual'e' la situazione iniziale della PCI?</div>
+                        <p class="doc-subsection-hint">
+                            Sintesi situazione iniziale e obiettivi, inserire una storia della carriera professionale e formativa della PCI.
+                        </p>
+                        <textarea name="initial_situation" class="doc-field-textarea" rows="6"
+                                  placeholder="Inserire la descrizione della situazione iniziale..."><?php echo s($report->initial_situation ?? ''); ?></textarea>
+                    </div>
+
+                    <div class="doc-subsection">
+                        <div class="doc-subsection-title">Quale/Quali sono il/i settore/i di riferimento su cui viene effettuato il rilevamento?</div>
+                        <p class="doc-subsection-hint">
+                            Es.: Generico, meccanica, automazione, logistica, elettrico ecc...
+                        </p>
+                        <textarea name="initial_situation_sector" class="doc-field-textarea" rows="3"
+                                  placeholder="Indicare il/i settore/i di riferimento..."><?php echo s($report->initial_situation_sector ?? ''); ?></textarea>
+                    </div>
                 </div>
             </div>
 
-            <!-- 5. Valutazione competenze settore -->
+            <!-- 2. Situazione della persona in cerca d'impiego al termine della misura -->
             <div class="doc-section">
-                <h2 class="doc-section-title">5. Valutazione delle competenze del settore di riferimento
-                    <?php if (!empty($student->sector_detected)): ?>
-                        <span style="font-weight: normal; font-size: 10pt;">(<?php echo s(\local_ftm_cpurc\profession_mapper::get_sector_name($student->sector_detected)); ?>)</span>
-                    <?php endif; ?>
-                </h2>
+                <h2 class="doc-section-title">2. Situazione della persona in cerca d'impiego al termine della misura</h2>
                 <div class="doc-section-content">
                     <div class="doc-subsection">
-                        <div class="doc-subsection-title">Valutazione complessiva</div>
-                        <div class="doc-rating-scale">
-                            <?php
-                            $ratingLabels = ['Insufficiente', 'Sufficiente', 'Discreto', 'Buono', 'Ottimo'];
-                            for ($i = 1; $i <= 5; $i++):
-                            ?>
-                            <div class="doc-rating-option">
-                                <input type="radio" name="sector_competency_rating" id="sector_rating_<?php echo $i; ?>"
-                                       value="<?php echo $i; ?>"
-                                       <?php echo (isset($report->sector_competency_rating) && $report->sector_competency_rating == $i) ? 'checked' : ''; ?>>
-                                <label for="sector_rating_<?php echo $i; ?>">
-                                    <div class="doc-rating-number"><?php echo $i; ?></div>
-                                    <div class="doc-rating-label"><?php echo $ratingLabels[$i-1]; ?></div>
-                                </label>
-                            </div>
-                            <?php endfor; ?>
-                        </div>
+                        <div class="doc-subsection-title">Valutazione delle competenze del settore di riferimento:</div>
+                        <p class="doc-subsection-hint">
+                            (sulla base dei documenti redatti durante il percorso indicare quali competenze tecniche sono state rilevate, inserire qui anche se sono stati fatti anche stage che hanno permesso di rilevare/confermare competenze pratiche)
+                        </p>
+                        <textarea name="sector_competency_text" class="doc-field-textarea" rows="5"
+                                  placeholder="Descrivere le competenze tecniche rilevate..."><?php echo s($report->sector_competency_text ?? ''); ?></textarea>
                     </div>
 
                     <div class="doc-subsection">
-                        <div class="doc-subsection-title">Osservazioni sulle competenze tecniche</div>
-                        <textarea name="sector_competency_text" class="doc-field-textarea" rows="4"
-                                  placeholder="Descrivere le competenze tecniche osservate..."><?php echo s($report->sector_competency_text ?? ''); ?></textarea>
-                    </div>
-
-                    <div class="doc-subsection">
-                        <div class="doc-subsection-title">Possibili settori e ambiti professionali</div>
+                        <div class="doc-subsection-title">Possibili settori e ambiti:</div>
                         <textarea name="possible_sectors" class="doc-field-textarea" rows="3"
-                                  placeholder="Indicare possibili settori e ambiti professionali adatti al partecipante..."><?php echo s($report->possible_sectors ?? ''); ?></textarea>
+                                  placeholder="Indicare possibili settori e ambiti professionali..."><?php echo s($report->possible_sectors ?? ''); ?></textarea>
                     </div>
 
                     <div class="doc-subsection">
-                        <div class="doc-subsection-title">Sintesi conclusiva</div>
+                        <div class="doc-subsection-title">Sintesi conclusiva:</div>
                         <textarea name="final_summary" class="doc-field-textarea" rows="4"
                                   placeholder="Sintesi conclusiva della valutazione..."><?php echo s($report->final_summary ?? ''); ?></textarea>
                     </div>
                 </div>
             </div>
 
-            <!-- 6. Competenze trasversali -->
+            <!-- 3. Verifica delle competenze del partecipante -->
             <div class="doc-section">
-                <h2 class="doc-section-title">6. Competenze trasversali</h2>
+                <h2 class="doc-section-title">3. Verifica delle competenze del partecipante</h2>
                 <div class="doc-section-content">
                     <?php
+                    // Scale for all competency tables.
+                    $scaleLabels = ['Molto buone', 'Buone', 'Sufficienti', 'Insufficienti', 'N.V.'];
+                    $scaleValues = ['molto_buone', 'buone', 'sufficienti', 'insufficienti', 'nv'];
+
                     $competencies = [
                         'personal' => [
-                            'title' => '6.1 Competenze personali',
-                            'items' => ['Affidabilità', 'Puntualità', 'Autonomia', 'Iniziativa', 'Flessibilità'],
+                            'title' => '3.1. Competenze personali',
+                            'items' => ['Impegno, motivazione', 'Iniziativa personale', 'Autonomia', 'Puntualita\'', 'Modo di presentarsi'],
                             'obs_field' => 'obs_personal'
                         ],
                         'social' => [
-                            'title' => '6.2 Competenze sociali',
-                            'items' => ['Lavoro in team', 'Comunicazione', 'Rispetto regole', 'Gestione conflitti'],
+                            'title' => '3.2. Competenze sociali',
+                            'items' => ['Capacita\' di comunicazione', 'Capacita\' di comprensione'],
                             'obs_field' => 'obs_social'
                         ],
                         'methodological' => [
-                            'title' => '6.3 Competenze metodologiche',
-                            'items' => ['Organizzazione', 'Problem solving', 'Gestione tempo', 'Apprendimento'],
+                            'title' => '3.3. Competenze metodologiche',
+                            'items' => ['Ritmo di lavoro', 'Capacita\' di apprendimento', 'Capacita\' di risoluzione dei problemi', 'Organizzazione del lavoro e ordine', 'Cura e precisione'],
                             'obs_field' => 'obs_methodological'
                         ],
                         'tic' => [
-                            'title' => '6.4 Competenze TIC',
-                            'items' => ['Competenze base PC', 'Email', 'Ricerca online', 'Software specifici'],
-                            'obs_field' => null
+                            'title' => '3.4. Competenze TIC',
+                            'items' => ['Conoscenze PC (Windows, Internet, ecc.) e della e-mail per comunicare e inviare documenti in allegato (scansionare, salvare, inviare documenti)'],
+                            'obs_field' => 'obs_tic'
                         ],
                     ];
 
@@ -728,60 +835,112 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                         <div class="doc-subsection-title"><?php echo $data['title']; ?></div>
                         <table class="doc-competency-table">
                             <tr>
-                                <th style="width: 60%;">Competenza</th>
-                                <th colspan="5" style="text-align: center;">Valutazione (1-5)</th>
+                                <th style="width: 40%;">Competenza</th>
+                                <?php foreach ($scaleLabels as $sl): ?>
+                                <th style="width: 12%; text-align: center;"><?php echo $sl; ?></th>
+                                <?php endforeach; ?>
                             </tr>
                             <?php foreach ($data['items'] as $idx => $item): ?>
                             <tr>
-                                <td><?php echo s($item); ?></td>
-                                <?php for ($r = 1; $r <= 5; $r++): ?>
-                                <td class="rating-cell">
-                                    <div class="doc-rating">
-                                        <input type="radio" name="<?php echo $type; ?>_<?php echo $idx; ?>"
-                                               id="<?php echo $type; ?>_<?php echo $idx; ?>_<?php echo $r; ?>"
-                                               value="<?php echo $r; ?>"
-                                               <?php echo (isset($saved[$idx]) && $saved[$idx] == $r) ? 'checked' : ''; ?>>
-                                        <label for="<?php echo $type; ?>_<?php echo $idx; ?>_<?php echo $r; ?>"><?php echo $r; ?></label>
-                                    </div>
+                                <td><?php echo $item; ?></td>
+                                <?php foreach ($scaleValues as $si => $sv): ?>
+                                <td class="rating-cell doc-rating-cell <?php echo (isset($saved[$idx]) && $saved[$idx] === $sv) ? 'selected' : ''; ?>">
+                                    <input type="radio" name="<?php echo $type; ?>_<?php echo $idx; ?>"
+                                           id="<?php echo $type; ?>_<?php echo $idx; ?>_<?php echo $sv; ?>"
+                                           value="<?php echo $sv; ?>"
+                                           <?php echo (isset($saved[$idx]) && $saved[$idx] === $sv) ? 'checked' : ''; ?>>
+                                    <label for="<?php echo $type; ?>_<?php echo $idx; ?>_<?php echo $sv; ?>"><?php echo $scaleLabels[$si]; ?></label>
                                 </td>
-                                <?php endfor; ?>
+                                <?php endforeach; ?>
                             </tr>
                             <?php endforeach; ?>
                         </table>
-                        <?php if ($data['obs_field']): ?>
+                        <p style="margin: 8px 0 4px 0; font-weight: 600;">Osservazioni:</p>
                         <textarea name="<?php echo $data['obs_field']; ?>" class="doc-field-textarea" rows="2"
-                                  style="margin-top: 10px;"
                                   placeholder="Osservazioni..."><?php echo s($report->{$data['obs_field']} ?? ''); ?></textarea>
-                        <?php endif; ?>
                     </div>
                     <?php endforeach; ?>
                 </div>
             </div>
 
-            <!-- 7. Ricerca impiego -->
+            <!-- 4. Valutazione dell'attivita' di ricerca impiego -->
             <div class="doc-section">
-                <h2 class="doc-section-title">7. Ricerca impiego</h2>
+                <h2 class="doc-section-title">4. Valutazione dell'attivita' di ricerca impiego</h2>
                 <div class="doc-section-content">
+
+                    <!-- 4.1 Dossier -->
                     <div class="doc-subsection">
-                        <div class="doc-subsection-title">7.1 Dossier di candidatura</div>
+                        <div class="doc-subsection-title">4.1. E' stato allestito il dossier completo di candidatura?</div>
                         <div class="doc-yesno">
                             <label class="doc-yesno-option">
                                 <input type="radio" name="dossier_complete" value="1"
                                        <?php echo (!empty($report->dossier_complete)) ? 'checked' : ''; ?>>
-                                <span>Completo</span>
+                                <span><strong>Si'</strong></span>
                             </label>
                             <label class="doc-yesno-option">
                                 <input type="radio" name="dossier_complete" value="0"
-                                       <?php echo (empty($report->dossier_complete)) ? 'checked' : ''; ?>>
-                                <span>Incompleto</span>
+                                       <?php echo (isset($report->dossier_complete) && $report->dossier_complete == 0) ? 'checked' : ''; ?>>
+                                <span><strong>No</strong></span>
                             </label>
                         </div>
                     </div>
 
+                    <!-- Competenze ricerca impiego -->
                     <div class="doc-subsection">
-                        <div class="doc-subsection-title">7.2 Canali di ricerca utilizzati</div>
+                        <div class="doc-subsection-title">Competenze ricerca impiego</div>
                         <?php
-                        $channels = ['Portali online', 'Candidature spontanee', 'Rete personale', 'Agenzie interinali', 'Social media', 'Giornali'];
+                        $searchItems = [
+                            'Conoscenza del mercato del lavoro nei settori ricercati',
+                            'Valutazione realistica delle opportunita\' professionali',
+                            'Capacita\' di interpretare / capire correttamente le offerte d\'impiego / il profilo ricercato',
+                            'Capacita\' di presentarsi',
+                            'Capacita\' di usare i canali adeguati per cercare lavoro'
+                        ];
+                        $savedSearch = [];
+                        if (isset($report->search_competencies)) {
+                            $savedSearch = json_decode($report->search_competencies, true) ?: [];
+                        }
+                        ?>
+                        <table class="doc-competency-table">
+                            <tr>
+                                <th style="width: 40%;">Competenza</th>
+                                <?php foreach ($scaleLabels as $sl): ?>
+                                <th style="width: 12%; text-align: center;"><?php echo $sl; ?></th>
+                                <?php endforeach; ?>
+                            </tr>
+                            <?php foreach ($searchItems as $idx => $item): ?>
+                            <tr>
+                                <td><?php echo $item; ?></td>
+                                <?php foreach ($scaleValues as $si => $sv): ?>
+                                <td class="rating-cell doc-rating-cell <?php echo (isset($savedSearch[$idx]) && $savedSearch[$idx] === $sv) ? 'selected' : ''; ?>">
+                                    <input type="radio" name="search_<?php echo $idx; ?>"
+                                           id="search_<?php echo $idx; ?>_<?php echo $sv; ?>"
+                                           value="<?php echo $sv; ?>"
+                                           <?php echo (isset($savedSearch[$idx]) && $savedSearch[$idx] === $sv) ? 'checked' : ''; ?>>
+                                    <label for="search_<?php echo $idx; ?>_<?php echo $sv; ?>"><?php echo $scaleLabels[$si]; ?></label>
+                                </td>
+                                <?php endforeach; ?>
+                            </tr>
+                            <?php endforeach; ?>
+                        </table>
+                    </div>
+
+                    <!-- 4.2 Canali utilizzati -->
+                    <div class="doc-subsection">
+                        <div class="doc-subsection-title">4.2. Canali utilizzati per la ricerca impiego (scegliere)</div>
+                        <?php
+                        $channels = [
+                            'Annunci su quotidiani o riviste',
+                            'Annunci su siti web specializzati o aziendali',
+                            'Concorsi Foglio Ufficiale',
+                            'Personalmente',
+                            'Contatto telefonico',
+                            'Rete di conoscenze personali e professionali',
+                            'Lettere di autocandidature cartacee',
+                            'Autocandidatura online (siti, e-mail)',
+                            'URC',
+                            'Agenzie di collocamento'
+                        ];
                         $savedChannels = [];
                         if (isset($report->search_channels)) {
                             $savedChannels = json_decode($report->search_channels, true) ?: [];
@@ -796,81 +955,109 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                             </label>
                             <?php endforeach; ?>
                         </div>
+                        <p style="margin: 8px 0 4px 0; font-weight: 600;">Osservazioni:</p>
                         <textarea name="obs_search_channels" class="doc-field-textarea" rows="2"
-                                  style="margin-top: 10px;"
                                   placeholder="Osservazioni sui canali di ricerca..."><?php echo s($report->obs_search_channels ?? ''); ?></textarea>
                     </div>
 
+                    <!-- 4.3 Valutazione complessiva -->
                     <div class="doc-subsection">
-                        <div class="doc-subsection-title">7.3 Valutazione complessiva della capacità di ricerca d'impiego</div>
+                        <div class="doc-subsection-title">4.3. Valutazione complessiva della capacita' di ricerca d'impiego</div>
                         <div class="doc-rating-scale">
-                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                            <?php foreach ($scaleValues as $si => $sv): ?>
                             <div class="doc-rating-option">
-                                <input type="radio" name="search_evaluation" id="search_<?php echo $i; ?>"
-                                       value="<?php echo $i; ?>"
-                                       <?php echo (isset($report->search_evaluation) && $report->search_evaluation == $i) ? 'checked' : ''; ?>>
-                                <label for="search_<?php echo $i; ?>">
-                                    <div class="doc-rating-number"><?php echo $i; ?></div>
+                                <input type="radio" name="search_overall" id="search_overall_<?php echo $sv; ?>"
+                                       value="<?php echo $sv; ?>"
+                                       <?php echo (isset($report->search_overall) && $report->search_overall === $sv) ? 'checked' : ''; ?>>
+                                <label for="search_overall_<?php echo $sv; ?>">
+                                    <div class="doc-rating-label"><?php echo $scaleLabels[$si]; ?></div>
                                 </label>
                             </div>
-                            <?php endfor; ?>
+                            <?php endforeach; ?>
                         </div>
+                        <p style="margin: 8px 0 4px 0; font-weight: 600;">Osservazioni:</p>
                         <textarea name="obs_search_evaluation" class="doc-field-textarea" rows="3"
-                                  placeholder="Valutazione complessiva della capacità di ricerca d'impiego..."><?php echo s($report->obs_search_evaluation ?? ''); ?></textarea>
+                                  placeholder="Osservazioni sulla valutazione complessiva..."><?php echo s($report->obs_search_evaluation ?? ''); ?></textarea>
                     </div>
                 </div>
             </div>
 
-            <!-- 8. Colloqui -->
+            <!-- 5. Riepilogo colloqui svolti durante la misura -->
             <div class="doc-section">
-                <h2 class="doc-section-title">8. Colloqui d'assunzione svolti</h2>
+                <h2 class="doc-section-title">5. Riepilogo colloqui svolti durante la misura</h2>
                 <div class="doc-section-content">
-                    <table class="doc-info-table">
-                        <tr>
-                            <td class="label">Numero colloqui:</td>
-                            <td class="value"><?php echo $student->interviews ?? 0; ?></td>
-                        </tr>
-                    </table>
+                    <div class="doc-subsection">
+                        <div class="doc-subsection-title">5.1. Colloqui di lavoro sostenuti dalla PCI durante la partecipazione al PML</div>
+
+                        <table class="doc-official-table" style="margin-bottom: 15px;">
+                            <tr>
+                                <td class="label-cell">Numero di colloqui effettuati:</td>
+                                <td class="value-cell">
+                                    <input type="number" name="interviews_count" class="doc-field" style="width: 100px;"
+                                           min="0" value="<?php echo $report->interviews_count ?? ($student->interviews ?? 0); ?>">
+                                </td>
+                            </tr>
+                        </table>
+
+                        <p style="font-weight: 600; margin-bottom: 8px;">Presso quali datori di lavoro e quando?</p>
+                        <textarea name="interviews_employers" class="doc-field-textarea" rows="4"
+                                  placeholder="Indicare i datori di lavoro e le date dei colloqui..."><?php echo s($report->interviews_employers ?? ''); ?></textarea>
+
+                        <p style="font-weight: 600; margin: 12px 0 8px 0;">Osservazioni:</p>
+                        <textarea name="obs_interviews" class="doc-field-textarea" rows="3"
+                                  placeholder="Osservazioni sui colloqui..."><?php echo s($report->obs_interviews ?? ''); ?></textarea>
+                    </div>
                 </div>
             </div>
 
-            <!-- 9. Esito -->
+            <!-- 6. Esito dell'attivita' di ricerca impiego -->
             <div class="doc-section">
-                <h2 class="doc-section-title">9. Esito</h2>
+                <h2 class="doc-section-title">6. Esito dell'attivita' di ricerca impiego</h2>
                 <div class="doc-section-content">
                     <div class="doc-subsection">
-                        <div class="doc-subsection-title">Il partecipante è stato assunto?</div>
+                        <div class="doc-subsection-title">Nel periodo in cui la PCI ha partecipato alla misura, al piu' tardi entro la conclusione/interruzione della stessa, e' stata assunta da un'azienda?</div>
                         <div class="doc-yesno">
                             <label class="doc-yesno-option">
                                 <input type="radio" name="hired" value="1" onchange="toggleHiredDetails()"
                                        <?php echo (!empty($report->hired)) ? 'checked' : ''; ?>>
-                                <span><strong>Sì</strong></span>
+                                <span><strong>Si'</strong></span>
                             </label>
                             <label class="doc-yesno-option">
                                 <input type="radio" name="hired" value="0" onchange="toggleHiredDetails()"
-                                       <?php echo (empty($report->hired)) ? 'checked' : ''; ?>>
+                                       <?php echo (isset($report->hired) && $report->hired == 0) ? 'checked' : ''; ?>>
                                 <span><strong>No</strong></span>
                             </label>
                         </div>
 
                         <div id="hired-details" class="doc-hired-details <?php echo (!empty($report->hired)) ? 'visible' : ''; ?>">
-                            <table>
-                                <tr>
-                                    <td style="width: 150px;"><strong>Azienda:</strong></td>
-                                    <td><input type="text" name="hired_company" class="doc-field" style="width: 100%;"
-                                               value="<?php echo s($report->hired_company ?? ''); ?>"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Data assunzione:</strong></td>
-                                    <td><input type="date" name="hired_date" class="doc-field"
-                                               value="<?php echo !empty($report->hired_date) ? date('Y-m-d', $report->hired_date) : ''; ?>"></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Percentuale:</strong></td>
-                                    <td><input type="number" name="hired_percentage" class="doc-field" style="width: 80px;"
-                                               min="0" max="100" value="<?php echo $report->hired_percentage ?? ''; ?>"> %</td>
-                                </tr>
-                            </table>
+                            <p style="font-weight: 600; margin-bottom: 8px;">Se si', presso quale datore di lavoro, in quale professione, a partire da quando e con quale forma contrattuale?</p>
+                            <textarea name="hired_details" class="doc-field-textarea" rows="4"
+                                      placeholder="Indicare datore di lavoro, professione, data inizio e forma contrattuale..."><?php echo s($report->hired_details ?? ''); ?></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Firme -->
+            <div class="doc-signatures">
+                <p style="font-size: 13pt;">
+                    <strong>Luogo e data:</strong> Taverne, <?php echo date('d.m.Y'); ?>
+                </p>
+
+                <div class="doc-signatures-row">
+                    <div class="doc-signature-block">
+                        <div class="doc-signature-line"></div>
+                        <div class="doc-signature-label">
+                            <strong>L'organizzatore:</strong><br>
+                            Fondazione Terzo Millennio<br>
+                            <?php echo fullname($coach); ?>
+                        </div>
+                    </div>
+                    <div class="doc-signature-block">
+                        <div class="doc-signature-line"></div>
+                        <div class="doc-signature-label">
+                            <strong>Il partecipante:</strong><br>
+                            <?php echo fullname($user); ?>
                         </div>
                     </div>
                 </div>
@@ -882,81 +1069,103 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
 
 <script>
 function toggleHiredDetails() {
-    const hired = document.querySelector('input[name="hired"]:checked').value === '1';
+    var hiredRadio = document.querySelector('input[name="hired"]:checked');
+    var hired = hiredRadio ? hiredRadio.value === '1' : false;
     document.getElementById('hired-details').classList.toggle('visible', hired);
 }
 
+// Handle rating cell selection styling.
+document.querySelectorAll('.doc-rating-cell input[type="radio"]').forEach(function(radio) {
+    radio.addEventListener('change', function() {
+        // Deselect siblings in same row.
+        var row = this.closest('tr');
+        row.querySelectorAll('.doc-rating-cell').forEach(function(cell) {
+            cell.classList.remove('selected');
+        });
+        // Select this cell.
+        this.closest('.doc-rating-cell').classList.add('selected');
+    });
+});
+
 document.getElementById('btn-save').addEventListener('click', async function() {
-    const form = document.getElementById('report-form');
-    const formData = new FormData(form);
+    var form = document.getElementById('report-form');
+    var formData = new FormData(form);
     formData.append('action', 'save');
 
-    // Collect competency ratings
-    const types = ['personal', 'social', 'methodological', 'tic'];
-    types.forEach(type => {
-        const ratings = [];
-        let idx = 0;
+    // Collect competency ratings (section 3).
+    var types = ['personal', 'social', 'methodological', 'tic'];
+    types.forEach(function(type) {
+        var ratings = [];
+        var idx = 0;
         while (true) {
-            const selected = form.querySelector(`input[name="${type}_${idx}"]:checked`);
+            var selected = form.querySelector('input[name="' + type + '_' + idx + '"]:checked');
             if (!selected && idx > 0) break;
-            ratings.push(selected ? selected.value : '0');
+            ratings.push(selected ? selected.value : '');
             idx++;
             if (idx > 10) break;
         }
         formData.append(type + '_competencies', JSON.stringify(ratings));
     });
 
-    // Collect search channels
-    const channels = [];
-    document.querySelectorAll('input[name^="channel_"]:checked').forEach(cb => {
+    // Collect search competency ratings (section 4).
+    var searchRatings = [];
+    for (var si = 0; si < 5; si++) {
+        var sel = form.querySelector('input[name="search_' + si + '"]:checked');
+        searchRatings.push(sel ? sel.value : '');
+    }
+    formData.append('search_competencies', JSON.stringify(searchRatings));
+
+    // Collect search channels (section 4.2).
+    var channels = [];
+    document.querySelectorAll('input[name^="channel_"]:checked').forEach(function(cb) {
         channels.push(cb.value);
     });
     formData.append('search_channels', JSON.stringify(channels));
 
     this.disabled = true;
-    this.innerHTML = '⏳ Salvataggio...';
+    this.innerHTML = 'Salvataggio...';
 
     try {
-        const response = await fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_save_report.php', {
+        var response = await fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_save_report.php', {
             method: 'POST',
             body: formData
         });
 
-        const data = await response.json();
-        const alert = document.getElementById('save-alert');
+        var data = await response.json();
+        var alertEl = document.getElementById('save-alert');
 
         if (data.success) {
-            alert.className = 'doc-alert success';
-            alert.textContent = '✅ ' + data.message;
+            alertEl.className = 'doc-alert success';
+            alertEl.textContent = data.message;
             if (data.reportid) {
                 document.querySelector('input[name="reportid"]').value = data.reportid;
             }
         } else {
-            alert.className = 'doc-alert error';
-            alert.textContent = '❌ ' + data.message;
+            alertEl.className = 'doc-alert error';
+            alertEl.textContent = data.message;
         }
 
-        setTimeout(() => { alert.className = 'doc-alert'; }, 5000);
+        setTimeout(function() { alertEl.className = 'doc-alert'; }, 5000);
 
     } catch (error) {
         console.error(error);
-        const alert = document.getElementById('save-alert');
-        alert.className = 'doc-alert error';
-        alert.textContent = '❌ Errore di connessione';
+        var alertEl = document.getElementById('save-alert');
+        alertEl.className = 'doc-alert error';
+        alertEl.textContent = 'Errore di connessione';
     }
 
     this.disabled = false;
-    this.innerHTML = '💾 Salva';
+    this.innerHTML = 'Salva';
 });
 
 document.getElementById('btn-export').addEventListener('click', function() {
-    const reportId = document.querySelector('input[name="reportid"]').value;
+    var reportId = document.querySelector('input[name="reportid"]').value;
 
     if (!reportId) {
-        if (confirm('Per esportare in Word è necessario prima salvare il report. Salvare ora?')) {
+        if (confirm('Per esportare in Word e\' necessario prima salvare il report. Salvare ora?')) {
             document.getElementById('btn-save').click();
             setTimeout(function() {
-                const newReportId = document.querySelector('input[name="reportid"]').value;
+                var newReportId = document.querySelector('input[name="reportid"]').value;
                 if (newReportId) {
                     window.location.href = '<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/export_word.php?id=<?php echo $id; ?>';
                 }

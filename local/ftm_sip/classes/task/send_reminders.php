@@ -15,21 +15,38 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and dependencies.
+ * Scheduled task to send SIP reminders and alerts.
  *
- * @package    local_ftm_cpurc
+ * @package    local_ftm_sip
  * @copyright  2026 Fondazione Terzo Millennio
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace local_ftm_sip\task;
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_ftm_cpurc';
-$plugin->version = 2026032001;  // Report page rewrite - official document structure.
-$plugin->requires = 2024042200; // Moodle 4.4+
-$plugin->maturity = MATURITY_BETA;
-$plugin->release = 'v1.4.0';
-$plugin->dependencies = [
-    'local_competencymanager' => ANY_VERSION,
-    'local_ftm_scheduler' => ANY_VERSION,
-];
+class send_reminders extends \core\task\scheduled_task {
+
+    /**
+     * Return the task name.
+     */
+    public function get_name() {
+        return get_string('pluginname', 'local_ftm_sip') . ' - Send Reminders';
+    }
+
+    /**
+     * Execute the task.
+     */
+    public function execute() {
+        require_once(__DIR__ . '/../../lib.php');
+        require_once(__DIR__ . '/../sip_manager.php');
+        require_once(__DIR__ . '/../notification_helper.php');
+
+        mtrace('SIP: Processing reminders...');
+
+        \local_ftm_sip\notification_helper::process_reminders();
+
+        mtrace('SIP: Reminders processed.');
+    }
+}

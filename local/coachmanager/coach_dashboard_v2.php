@@ -2677,6 +2677,59 @@ echo $OUTPUT->header();
 .student-sectors-row .sector-add-wrap {
     display: inline-flex !important;
 }
+
+/* SIP Badge & Styles */
+.sip-badge {
+    background: #06b6d4 !important;
+    color: white !important;
+    padding: 3px 8px !important;
+    border-radius: 10px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    display: inline-block !important;
+    letter-spacing: 0.5px;
+}
+.sip-badge-detail {
+    background: #0891B2;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.sip-week-info {
+    font-size: 10px;
+    color: #155E75;
+    font-weight: 500;
+}
+.student-card.color-sip .student-card-header,
+.student-card-header.color-sip {
+    background: linear-gradient(135deg, #06b6d4, #0891b2) !important;
+}
+.student-row.color-sip {
+    border-left: 4px solid #0891B2 !important;
+}
+.color-chip.sip-chip {
+    background: #0891B2 !important;
+}
+.btn-sip {
+    background: #0891B2 !important;
+    color: white !important;
+    border-color: #06B6D4 !important;
+    font-size: 11px;
+}
+.btn-sip:hover {
+    background: #0E7490 !important;
+}
+.btn-sip-activate {
+    background: #94a3b8 !important;
+    color: white !important;
+    border-color: #64748b !important;
+    font-size: 11px;
+}
+.btn-sip-activate:hover {
+    background: #475569 !important;
+}
 </style>
 
 <div class="coach-dashboard-v2 zoom-<?php echo $zoom; ?>">
@@ -2819,6 +2872,12 @@ echo $OUTPUT->header();
                                  style="background: <?php echo $hex; ?>; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 3px solid <?php echo $colorfilter == $name ? '#333' : 'transparent'; ?>;">
                             </div>
                             <?php endforeach; ?>
+                            <div class="color-chip sip-chip <?php echo ($colorfilter ?? '') == 'sip' ? 'selected' : ''; ?>"
+                                 onclick="setColorFilter('sip')"
+                                 title="Solo SIP"
+                                 style="width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: inline-block; border: 3px solid <?php echo ($colorfilter ?? '') == 'sip' ? '#333' : 'transparent'; ?>; position: relative;">
+                                <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 7px; font-weight: 700; color: white;">SIP</span>
+                            </div>
                         </div>
                         <input type="hidden" name="color" id="colorFilter" value="<?php echo s($colorfilter); ?>">
                     </td>
@@ -2843,6 +2902,8 @@ echo $OUTPUT->header();
                             <option value="no_autoval" <?php echo $statusfilter == 'no_autoval' ? 'selected' : ''; ?>>Manca Autovalutazione</option>
                             <option value="no_lab" <?php echo $statusfilter == 'no_lab' ? 'selected' : ''; ?>>Manca Laboratorio</option>
                             <option value="no_choices" <?php echo $statusfilter == 'no_choices' ? 'selected' : ''; ?>>Mancano Scelte</option>
+                            <option value="sip_active" <?php echo ($statusfilter ?? '') == 'sip_active' ? 'selected' : ''; ?>>SIP Attivi</option>
+                            <option value="sip_draft" <?php echo ($statusfilter ?? '') == 'sip_draft' ? 'selected' : ''; ?>>SIP Bozza</option>
                         </select>
                     </td>
                     <td style="padding: 10px; vertical-align: top; width: 20%;">
@@ -2985,7 +3046,9 @@ function setColorFilter(color) {
     if (input.value === color) {
         input.value = '';
     } else {
-        document.querySelector('.color-chip.' + color).classList.add('selected');
+        var selector = color === 'sip' ? '.color-chip.sip-chip' : '.color-chip.' + color;
+        var chip = document.querySelector(selector);
+        if (chip) chip.classList.add('selected');
         input.value = color;
     }
     document.getElementById('filterForm').submit();
@@ -3918,7 +3981,311 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// SIP Eligibility + Activation Modal - Griglia Valutazione PCI (6 criteri 1-5)
+var sipCurrentUserId = 0;
+var sipRatings = {motivazione: 0, chiarezza_obiettivo: 0, occupabilita: 0, autonomia: 0, bisogno_coaching: 0, comportamento: 0};
+
+function showSipModal(userId, studentName, sector) {
+    sipCurrentUserId = userId;
+    document.getElementById('sipModalStudent').textContent = studentName;
+    var sectorBadge = document.getElementById('sipModalSector').querySelector('.badge');
+    if (sectorBadge) sectorBadge.textContent = sector || 'N/D';
+    // Set default start date to next Monday.
+    var d = new Date();
+    d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7 || 7));
+    document.getElementById('sipStartDate').value = d.toISOString().split('T')[0];
+    // Reset all ratings.
+    sipRatings = {motivazione: 0, chiarezza_obiettivo: 0, occupabilita: 0, autonomia: 0, bisogno_coaching: 0, comportamento: 0};
+    document.querySelectorAll('.elig-rating-btn').forEach(function(b) { b.classList.remove('selected'); });
+    document.getElementById('sipEligTotal').textContent = '0';
+    // Reset other fields.
+    document.getElementById('sipMotivation').value = '';
+    document.getElementById('sipReferralDetail').value = '';
+    document.getElementById('sipNote').value = '';
+    var decRadios = document.querySelectorAll('input[name="sipDecisione"]');
+    decRadios.forEach(function(r) { r.checked = (r.value === 'pending'); });
+    var recRadios = document.querySelectorAll('input[name="sipRecommendation"]');
+    recRadios.forEach(function(r) { r.checked = (r.value === 'activate'); });
+    sipToggleDecisione();
+    sipToggleRecommendation();
+    document.getElementById('sipModal').style.display = 'flex';
+}
+
+function closeSipModal() {
+    document.getElementById('sipModal').style.display = 'none';
+    sipCurrentUserId = 0;
+}
+
+function setEligRating(criterion, value) {
+    sipRatings[criterion] = value;
+    // Update button states for this criterion.
+    var row = document.getElementById('eligRow_' + criterion);
+    if (row) {
+        row.querySelectorAll('.elig-rating-btn').forEach(function(btn) {
+            var v = parseInt(btn.getAttribute('data-value'));
+            if (v === value) {
+                btn.classList.add('selected');
+            } else {
+                btn.classList.remove('selected');
+            }
+        });
+    }
+    // Recalculate total.
+    var total = 0;
+    for (var k in sipRatings) { total += sipRatings[k]; }
+    document.getElementById('sipEligTotal').textContent = total;
+}
+
+function sipToggleDecisione() {
+    var selected = document.querySelector('input[name="sipDecisione"]:checked');
+    var val = selected ? selected.value : 'pending';
+    var activationSection = document.getElementById('sipActivationSection');
+    var btnActivate = document.getElementById('sipBtnActivate');
+    if (activationSection) activationSection.style.display = (val === 'idoneo') ? 'block' : 'none';
+    if (btnActivate) btnActivate.style.display = (val === 'idoneo') ? 'inline-flex' : 'none';
+}
+
+function sipToggleRecommendation() {
+    var selected = document.querySelector('input[name="sipRecommendation"]:checked');
+    var val = selected ? selected.value : 'activate';
+    var referralRow = document.getElementById('sipReferralRow');
+    if (referralRow) referralRow.style.display = (val === 'refer_other') ? 'block' : 'none';
+}
+
+function sipSaveAssessment(andActivate) {
+    // Validate all 6 criteria are rated.
+    var allRated = true;
+    for (var k in sipRatings) {
+        if (sipRatings[k] < 1) { allRated = false; break; }
+    }
+    if (!allRated) { alert('Valutare tutti i 6 criteri (1-5)'); return; }
+
+    // Validate decisione.
+    var decisione = document.querySelector('input[name="sipDecisione"]:checked');
+    if (!decisione) { alert('Seleziona una decisione'); return; }
+
+    // Validate recommendation.
+    var recommendation = document.querySelector('input[name="sipRecommendation"]:checked');
+    var recVal = recommendation ? recommendation.value : '';
+
+    if (recVal === 'refer_other') {
+        var referral = document.getElementById('sipReferralDetail').value.trim();
+        if (!referral) { alert('Specificare la misura di rinvio'); return; }
+    }
+
+    if (andActivate) {
+        var motivation = document.getElementById('sipMotivation').value.trim();
+        if (!motivation) { alert('Inserisci una motivazione dettagliata'); return; }
+        var startDate = document.getElementById('sipStartDate').value;
+        if (!startDate) { alert('Seleziona una data di inizio'); return; }
+    }
+
+    var formData = new FormData();
+    formData.append('userid', sipCurrentUserId);
+    formData.append('sesskey', M.cfg.sesskey);
+    // 6 criteria.
+    formData.append('motivazione', sipRatings.motivazione);
+    formData.append('chiarezza_obiettivo', sipRatings.chiarezza_obiettivo);
+    formData.append('occupabilita', sipRatings.occupabilita);
+    formData.append('autonomia', sipRatings.autonomia);
+    formData.append('bisogno_coaching', sipRatings.bisogno_coaching);
+    formData.append('comportamento', sipRatings.comportamento);
+    formData.append('decisione', decisione.value);
+    formData.append('coach_recommendation', recVal);
+    formData.append('referral_detail', document.getElementById('sipReferralDetail').value.trim());
+    formData.append('note', document.getElementById('sipNote').value.trim());
+    // Activation fields.
+    formData.append('activate', andActivate ? '1' : '0');
+    if (andActivate) {
+        formData.append('motivation', document.getElementById('sipMotivation').value.trim());
+        formData.append('date_start', document.getElementById('sipStartDate').value);
+    }
+
+    // Disable buttons during request.
+    var btns = document.querySelectorAll('#sipModal button');
+    btns.forEach(function(b) { b.disabled = true; });
+
+    fetch(M.cfg.wwwroot + '/local/ftm_sip/ajax_activate_sip.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        btns.forEach(function(b) { b.disabled = false; });
+        if (data.success) {
+            closeSipModal();
+            location.reload();
+        } else {
+            alert('Errore: ' + (data.message || 'Errore sconosciuto'));
+        }
+    })
+    .catch(function(err) {
+        btns.forEach(function(b) { b.disabled = false; });
+        alert('Errore di connessione');
+        console.error(err);
+    });
+}
+
+// Legacy wrapper.
+function confirmSipActivation() {
+    sipSaveAssessment(true);
+}
+
+// Close modal on background click.
+document.getElementById('sipModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeSipModal();
+});
+
 </script>
+
+<style>
+.elig-rating-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 2px solid #DEE2E6; background: white;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.15s; color: #6b7280;
+}
+.elig-rating-btn:hover { border-color: #0891B2; color: #0891B2; }
+.elig-rating-btn.selected { background: #0891B2; color: white; border-color: #0891B2; }
+.elig-criterion-row { padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+.elig-criterion-row:last-child { border-bottom: none; }
+.elig-criterion-name { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 2px; }
+.elig-criterion-hints { font-size: 11px; color: #9ca3af; line-height: 1.3; }
+.elig-criterion-hint-item { display: inline; }
+.elig-buttons-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+</style>
+
+<!-- SIP Eligibility + Activation Modal - Griglia Valutazione PCI -->
+<div id="sipModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center;">
+<div style="background:white; border-radius:12px; padding:30px; max-width:660px; width:94%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <h3 style="margin:0 0 6px; color:#0891B2; font-size:18px;"><?php echo get_string('eligibility_grid_title', 'local_ftm_sip'); ?></h3>
+    <div id="sipModalStudent" style="font-size:16px; font-weight:600; margin-bottom:4px;"></div>
+    <div id="sipModalSector" style="margin-bottom:16px;"><span class="badge" style="background:#6c757d;color:#fff;padding:4px 10px;border-radius:8px;"></span></div>
+
+    <!-- SECTION 1: Rating Grid -->
+    <div style="background:#f8fafb; border:1px solid #e5e7eb; border-radius:8px; padding:18px; margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h4 style="margin:0; font-size:13px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:0.5px;"><?php echo get_string('eligibility_grid_instruction', 'local_ftm_sip'); ?></h4>
+        </div>
+
+        <?php
+        $elig_criteria = [
+            'motivazione' => 'eligibility_criterion_motivazione',
+            'chiarezza_obiettivo' => 'eligibility_criterion_chiarezza',
+            'occupabilita' => 'eligibility_criterion_occupabilita',
+            'autonomia' => 'eligibility_criterion_autonomia',
+            'bisogno_coaching' => 'eligibility_criterion_bisogno_coaching',
+            'comportamento' => 'eligibility_criterion_comportamento',
+        ];
+        $elig_desc_keys = [
+            'motivazione' => 'motivazione',
+            'chiarezza_obiettivo' => 'chiarezza',
+            'occupabilita' => 'occupabilita',
+            'autonomia' => 'autonomia',
+            'bisogno_coaching' => 'bisogno_coaching',
+            'comportamento' => 'comportamento',
+        ];
+        foreach ($elig_criteria as $ckey => $clabel):
+            $dkey = $elig_desc_keys[$ckey];
+        ?>
+        <div class="elig-criterion-row" id="eligRow_<?php echo $ckey; ?>">
+            <div class="elig-criterion-name"><?php echo get_string($clabel, 'local_ftm_sip'); ?></div>
+            <div class="elig-criterion-hints">
+                <span class="elig-criterion-hint-item">1: <?php echo get_string('eligibility_desc_' . $dkey . '_1', 'local_ftm_sip'); ?></span>
+                &middot;
+                <span class="elig-criterion-hint-item">3: <?php echo get_string('eligibility_desc_' . $dkey . '_3', 'local_ftm_sip'); ?></span>
+                &middot;
+                <span class="elig-criterion-hint-item">5: <?php echo get_string('eligibility_desc_' . $dkey . '_5', 'local_ftm_sip'); ?></span>
+            </div>
+            <div class="elig-buttons-row">
+                <?php for ($v = 1; $v <= 5; $v++): ?>
+                <button type="button" class="elig-rating-btn" data-value="<?php echo $v; ?>"
+                        onclick="setEligRating('<?php echo $ckey; ?>', <?php echo $v; ?>)"
+                        aria-label="<?php echo get_string($clabel, 'local_ftm_sip') . ' ' . $v; ?>"><?php echo $v; ?></button>
+                <?php endfor; ?>
+            </div>
+        </div>
+        <?php endforeach; ?>
+
+        <!-- Total -->
+        <div style="margin-top:14px; padding-top:14px; border-top:2px solid #e5e7eb; display:flex; justify-content:flex-end; align-items:center; gap:10px;">
+            <span style="font-size:14px; font-weight:700; color:#374151; text-transform:uppercase;"><?php echo get_string('eligibility_total', 'local_ftm_sip'); ?>:</span>
+            <span id="sipEligTotal" style="font-size:22px; font-weight:800; color:#0891B2;">0</span>
+            <span style="font-size:14px; color:#9ca3af;">/ 30</span>
+        </div>
+    </div>
+
+    <!-- SECTION 2: Decision + Recommendation -->
+    <div style="background:#f8fafb; border:1px solid #e5e7eb; border-radius:8px; padding:18px; margin-bottom:16px;">
+        <!-- Decisione -->
+        <div style="margin-bottom:14px;">
+            <label style="font-size:12px; font-weight:700; color:#374151; display:block; margin-bottom:8px;"><?php echo get_string('eligibility_decisione', 'local_ftm_sip'); ?></label>
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151; cursor:pointer;">
+                    <input type="radio" name="sipDecisione" value="idoneo" onchange="sipToggleDecisione()" style="accent-color:#0891B2;"> <?php echo get_string('eligibility_decisione_idoneo', 'local_ftm_sip'); ?>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151; cursor:pointer;">
+                    <input type="radio" name="sipDecisione" value="non_idoneo" onchange="sipToggleDecisione()" style="accent-color:#0891B2;"> <?php echo get_string('eligibility_decisione_non_idoneo', 'local_ftm_sip'); ?>
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:#374151; cursor:pointer;">
+                    <input type="radio" name="sipDecisione" value="pending" checked onchange="sipToggleDecisione()" style="accent-color:#0891B2;"> <?php echo get_string('eligibility_decisione_pending', 'local_ftm_sip'); ?>
+                </label>
+            </div>
+        </div>
+
+        <!-- Raccomandazione coach (consultiva) -->
+        <div style="border-top:1px solid #e5e7eb; padding-top:14px; margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:700; color:#374151; display:block; margin-bottom:8px;"><?php echo get_string('eligibility_recommendation', 'local_ftm_sip'); ?></label>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#374151; cursor:pointer;">
+                    <input type="radio" name="sipRecommendation" value="activate" checked onchange="sipToggleRecommendation()" style="accent-color:#0891B2;"> <?php echo get_string('eligibility_recommend_activate', 'local_ftm_sip'); ?>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#374151; cursor:pointer;">
+                    <input type="radio" name="sipRecommendation" value="not_activate" onchange="sipToggleRecommendation()" style="accent-color:#0891B2;"> <?php echo get_string('eligibility_recommend_not_activate', 'local_ftm_sip'); ?>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#374151; cursor:pointer;">
+                    <input type="radio" name="sipRecommendation" value="refer_other" onchange="sipToggleRecommendation()" style="accent-color:#0891B2;"> <?php echo get_string('eligibility_recommend_refer', 'local_ftm_sip'); ?>
+                </label>
+            </div>
+            <div id="sipReferralRow" style="display:none; margin-top:8px; margin-left:26px;">
+                <input type="text" id="sipReferralDetail" placeholder="<?php echo get_string('eligibility_referral_detail', 'local_ftm_sip'); ?>"
+                       style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:7px 10px; font-size:13px;">
+            </div>
+        </div>
+
+        <!-- Note -->
+        <div>
+            <label style="font-size:12px; font-weight:600; color:#6b7280; display:block; margin-bottom:4px;"><?php echo get_string('eligibility_note', 'local_ftm_sip'); ?></label>
+            <textarea id="sipNote" rows="2" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:8px; font-size:13px; resize:vertical;"
+                      placeholder="<?php echo get_string('eligibility_note_placeholder', 'local_ftm_sip'); ?>"></textarea>
+        </div>
+    </div>
+
+    <!-- SECTION 3: Activation (shown only if decisione = idoneo) -->
+    <div id="sipActivationSection" style="display:none; background:#f0fdfa; border:1px solid #99f6e4; border-radius:8px; padding:18px; margin-bottom:16px;">
+        <h4 style="margin:0 0 14px; font-size:14px; font-weight:700; color:#0e7490; text-transform:uppercase; letter-spacing:0.5px;"><?php echo get_string('eligibility_activation_title', 'local_ftm_sip'); ?></h4>
+
+        <div style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:600; color:#6b7280; display:block; margin-bottom:4px;"><?php echo get_string('eligibility_motivation_detail', 'local_ftm_sip'); ?> *</label>
+            <textarea id="sipMotivation" rows="3" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:8px; font-size:13px; resize:vertical;"
+                      placeholder="<?php echo get_string('eligibility_motivation_placeholder', 'local_ftm_sip'); ?>"></textarea>
+        </div>
+
+        <div>
+            <label style="font-size:12px; font-weight:600; color:#6b7280; display:block; margin-bottom:4px;"><?php echo get_string('sip_start_date', 'local_ftm_sip'); ?></label>
+            <input type="date" id="sipStartDate" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:7px 10px; font-size:13px;">
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+        <button onclick="closeSipModal()" style="padding:8px 18px; border:1px solid #dee2e6; background:#f8f9fa; border-radius:6px; cursor:pointer; font-size:13px; color:#374151;"><?php echo get_string('cancel', 'local_ftm_sip'); ?></button>
+        <button onclick="sipSaveAssessment(false)" style="padding:8px 18px; background:#6b7280; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500;"><?php echo get_string('eligibility_save_assessment', 'local_ftm_sip'); ?></button>
+        <button id="sipBtnActivate" onclick="sipSaveAssessment(true)" style="display:none; padding:8px 18px; background:#0891B2; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600;"><?php echo get_string('eligibility_save_and_activate', 'local_ftm_sip'); ?></button>
+    </div>
+</div>
+</div>
 
 <?php
 echo $OUTPUT->footer();
@@ -4029,6 +4396,11 @@ function render_view_compatta($students, $dashboard) {
                                 title="S<?php echo $wp_w; ?>"><?php echo $wp_w; ?></button>
                         <?php endfor; ?>
                     </div>
+                    <?php if (!empty($student->sip_enrolled)): ?>
+                    <span class="sip-badge" style="margin-top:3px;">SIP<?php if (!empty($student->sip_data->current_week)): ?> S.<?php echo min($student->sip_data->current_week, 10); ?>/10<?php endif; ?></span>
+                    <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
+                    <span class="sip-badge" style="background: #94a3b8 !important; margin-top:3px;">SIP &#9998;</span>
+                    <?php endif; ?>
                 </div>
                 <div class="competency-cell <?php echo $is_below ? 'danger' : 'success'; ?>">
                     <?php echo round($student->competency_avg ?? 0); ?>%
@@ -4092,6 +4464,12 @@ function render_view_compatta($students, $dashboard) {
                             title="Esporta Word">
                         &#128196;
                     </button>
+                    <?php endif; ?>
+                    <?php if (!empty($student->sip_enrolled)): ?>
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
+                       class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>
+                    <?php elseif (empty($student->sip_enrolled) && ($student->current_week ?? 0) >= 4): ?>
+                    <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
                     <?php endif; ?>
                 </div>
             </div>
@@ -4163,6 +4541,11 @@ function render_view_standard($students, $dashboard) {
                         <span class="badge-below">SOTTO SOGLIA</span>
                         <?php endif; ?>
                         <span class="week-badge <?php echo $header_class; ?>">Sett. <?php echo $current_week; ?></span>
+                        <?php if (!empty($student->sip_enrolled)): ?>
+                        <span class="sip-badge">SIP<?php if (!empty($student->sip_data->current_week)): ?> S.<?php echo min($student->sip_data->current_week, 10); ?>/10<?php endif; ?></span>
+                        <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
+                        <span class="sip-badge" style="background: #94a3b8 !important;">SIP &#9998;</span>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -4214,6 +4597,12 @@ function render_view_standard($students, $dashboard) {
                        class="quick-btn salva" title="Salva Scelte">
                         &#10004; Salva
                     </a>
+                    <?php endif; ?>
+                    <?php if (!empty($student->sip_enrolled)): ?>
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
+                       class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>
+                    <?php elseif (empty($student->sip_enrolled) && ($student->current_week ?? 0) >= 4): ?>
+                    <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
                     <?php endif; ?>
                 </div>
 
@@ -4520,6 +4909,12 @@ function render_view_standard($students, $dashboard) {
                             &#10004; Salva
                         </button>
                         <?php endif; ?>
+                        <?php if (!empty($student->sip_enrolled)): ?>
+                        <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
+                           class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>
+                        <?php elseif (empty($student->sip_enrolled) && ($student->current_week ?? 0) >= 4): ?>
+                        <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -4585,6 +4980,11 @@ function render_view_dettagliata($students, $dashboard) {
                         <span class="badge-6-weeks">&#127937; FINE 6 SETTIMANE</span>
                         <?php endif; ?>
                         <span class="week-badge <?php echo $header_class; ?>">Settimana <?php echo $current_week; ?></span>
+                        <?php if (!empty($student->sip_enrolled)): ?>
+                        <span class="sip-badge">SIP<?php if (!empty($student->sip_data->current_week)): ?> S.<?php echo min($student->sip_data->current_week, 10); ?>/10<?php endif; ?></span>
+                        <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
+                        <span class="sip-badge" style="background: #94a3b8 !important;">SIP &#9998;</span>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -4754,6 +5154,12 @@ function render_view_dettagliata($students, $dashboard) {
                         &#10004; Salva Scelte
                     </button>
                     <?php endif; ?>
+                    <?php if (!empty($student->sip_enrolled)): ?>
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
+                       class="btn btn-sip" title="Apri SIP">&#128221; SIP</a>
+                    <?php elseif (empty($student->sip_enrolled) && ($student->current_week ?? 0) >= 4): ?>
+                    <button class="btn btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
+                    <?php endif; ?>
                 </div>
                 </div><!-- /panel-collapsible -->
             </div>
@@ -4818,6 +5224,11 @@ function render_view_classica($students, $dashboard) {
                         <span class="badge-below">SOTTO SOGLIA</span>
                         <?php endif; ?>
                         <span class="week-badge <?php echo $header_class; ?>">Sett. <?php echo $student->current_week ?? 1; ?></span>
+                        <?php if (!empty($student->sip_enrolled)): ?>
+                        <span class="sip-badge">SIP<?php if (!empty($student->sip_data->current_week)): ?> S.<?php echo min($student->sip_data->current_week, 10); ?>/10<?php endif; ?></span>
+                        <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
+                        <span class="sip-badge" style="background: #94a3b8 !important;">SIP &#9998;</span>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -4921,6 +5332,12 @@ function render_view_classica($students, $dashboard) {
                                 style="background: #7c3aed !important; color: #fff !important; border-color: #6d28d9 !important;">
                             &#128275; Quiz
                         </button>
+                        <?php if (!empty($student->sip_enrolled)): ?>
+                        <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
+                           class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>
+                        <?php elseif (empty($student->sip_enrolled) && ($student->current_week ?? 0) >= 4): ?>
+                        <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

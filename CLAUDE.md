@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida per Claude
 
-**Ultimo aggiornamento:** 02 Marzo 2026
+**Ultimo aggiornamento:** 23 Marzo 2026
 
 ## Panoramica Progetto
 
@@ -12,7 +12,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (27/02/2026)
+## STATO ATTUALE SVILUPPO (23/03/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -52,6 +52,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - Hook System Moodle 4.3+, Bloom Legend, Area Mapping completo
 - **Observer affidabile:** Versioning fallback Moodle 4.x, retroactive assignment safety net in compile.php
 - **Toggle admin:** settings.php con checkbox `popup_enabled` (default OFF per setup produzione)
+- **Fix notifiche email:** Coach riceve notifica quiz/autovalutazione SOLO per studenti assegnati (non piu tutti i coach)
 
 #### 5. Setup Universale Quiz (local_competencyxmlimport) - v1.5
 - Import XML/Word/Excel/CSV, assegnazione competenze, debug integrato
@@ -73,8 +74,15 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Ordinamento studenti:** Dropdown sort (recenti/fine 6 sett./alfabetico) in filtri avanzati
 - Dettagli: `docs/DETAILS_COACH_DASHBOARD.md`
 
-#### 7. Sistema CPURC (local_ftm_cpurc) - 02/03/2026
+#### 7. Sistema CPURC (local_ftm_cpurc) - 23/03/2026 (v1.4.0)
 - Import CSV, Dashboard Segreteria, Student Card (4 tab), Report Word
+- **Report Finale riscritto:** Allineato al documento ufficiale "Rapporto finale PML_V2026.docx"
+  - Titolo: "Rapporto finale d'attivita'"
+  - Scala competenze: Molto buone/Buone/Sufficienti/Insufficienti/N.V. (non piu 1-5)
+  - Item competenze allineati al documento ufficiale (Impegno motivazione, Iniziativa, ecc.)
+  - 10 canali ricerca impiego ufficiali
+  - Sezione firme (Organizzatore + Partecipante)
+  - 8 nuovi campi DB (initial_situation_sector, search_competencies, ecc.)
 - **Bottone Percorso:** Link a student_program.php nell'header della Student Card
 - **Import Produzione:** `import_production.php` - Upload Excel, dedup, anteprima, assegnazione gruppo/coach/settore/corso
 - **Filtri avanzati dashboard:** Data inizio da/a, Gruppo colore (giallo/grigio/rosso/marrone/viola)
@@ -116,10 +124,35 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 
 ---
 
-## Plugin (13 totali)
+#### 8. SIP - Sostegno Individuale Personalizzato (local_ftm_sip) - 23/03/2026 (v1.2.0) NUOVO
+- Percorso 10 settimane post-rilevamento per PCI con potenziale di collocamento
+- **Griglia Valutazione PCI:** 6 criteri numerici 1-5 (Motivazione, Chiarezza Obiettivo, Occupabilita, Autonomia, Bisogno Coaching, Comportamento)
+- **Piano d'Azione:** 7 aree attivazione (scala 0-6), baseline congelata, radar SVG overlay
+- **Diario Coaching:** Timeline incontri, azioni assegnate con scadenze e stati
+- **Calendario Appuntamenti:** CRUD con notifiche automatiche
+- **KPI:** Candidature inviate, contatti aziende, opportunita generate
+- **Chiusura:** 4 prerequisiti obbligatori, 8 classificazioni esito, blocco senza dati
+- **Dashboard Aggregata:** Statistiche per direzione/URC (tassi inserimento, evoluzione livelli)
+- **Report Word:** 9 sezioni esportabili
+- **Notifiche:** 7 tipi (appuntamenti, azioni, inattivita, frequenza incontri)
+- **Registro Aziende:** Condiviso, crescita organica, autocomplete
+- **Area Studente:** sip_my.php con inserimento KPI autonomo
+- **12 tabelle DB, 31 file, ~11.000 righe, 500+ stringhe EN/IT**
+- Integrato nella Coach Dashboard V2 (badge teal, filtri, modal attivazione)
+- Dettagli: `docs/MANUALE_SIP.md`, `docs/REPORT_ISTITUZIONALE_SIP.md`
 
-### Local (11)
-competencymanager, coachmanager, competencyreport, competencyxmlimport, ftm_ai (STANDBY), ftm_hub, ftm_scheduler, ftm_testsuite, ftm_cpurc, labeval, selfassessment
+---
+
+#### 9. Student Report PDF Fix - 20/03/2026
+- **Fix punti interrogativi:** Rimossi emoji Unicode (TCPDF non li supporta) tramite `pdf_strip_emoji()`
+- **Fix tabelle strette:** Width da px fissi a percentuali (dual legend, gap analysis, overlay)
+
+---
+
+## Plugin (14 totali)
+
+### Local (12)
+competencymanager, coachmanager, competencyreport, competencyxmlimport, ftm_ai (STANDBY), ftm_hub, ftm_scheduler, ftm_testsuite, ftm_cpurc, ftm_sip (NUOVO), labeval, selfassessment
 
 ### Block (1): ftm_tools | Question Bank (1): competenciesbyquestion
 
@@ -299,16 +332,20 @@ ftm_hub (centrale)
 │   ├── competencyreport
 │   ├── competencyxmlimport (+ setup_universale)
 │   ├── selfassessment (+ observer settori + filtro primario)
-│   ├── coachmanager (+ dashboard V2)
+│   ├── coachmanager (+ dashboard V2 + badge SIP)
 │   └── ftm_ai [STANDBY]
 ├── labeval
 ├── ftm_scheduler (+ local_ftm_coaches)
 ├── ftm_testsuite
-└── ftm_cpurc
+├── ftm_cpurc (+ report finale ufficiale)
+└── ftm_sip (NUOVO - 12 tabelle, 31 file)
+    ├── Integrato in coachmanager (badge, filtri, modal)
+    ├── Legge da: competencymanager, selfassessment, ftm_scheduler
+    └── 7 tipi notifica + cron task
 
 Tabelle Condivise:
-├── local_student_coaching (coachmanager <-> ftm_cpurc)
-├── local_student_sectors (competencymanager <-> ftm_cpurc <-> selfassessment)
+├── local_student_coaching (coachmanager <-> ftm_cpurc <-> ftm_sip)
+├── local_student_sectors (competencymanager <-> ftm_cpurc <-> selfassessment <-> ftm_sip)
 ├── local_ftm_coaches (ftm_scheduler -> tutti)
 └── local_ftm_ai_usage (ftm_ai)
 ```
@@ -326,6 +363,11 @@ Tabelle Condivise:
 - Scheduler: /local/ftm_scheduler/index.php
 - Sector Admin: /local/competencymanager/sector_admin.php
 - Test Suite: /local/ftm_testsuite/agent_tests.php
+- SIP Dashboard: /local/ftm_sip/sip_dashboard.php
+- SIP Studente: /local/ftm_sip/sip_student.php?userid=X
+- SIP Statistiche: /local/ftm_sip/sip_stats.php
+- SIP Area Studente: /local/ftm_sip/sip_my.php
+- Registro Aziende: /local/ftm_sip/companies.php
 
 ---
 
@@ -339,3 +381,5 @@ Per dettagli implementativi specifici, consultare:
 - `docs/DETAILS_CPURC.md` - Sistema CPURC (tabelle DB, student card, report Word)
 - `docs/DETAILS_GAP_COMMENTS.md` - Gap Comments (funzione, toni, 79 aree)
 - `docs/DETAILS_FTM_AI.md` - FTM AI Integration (Azure, anonimizzazione, API)
+- `docs/MANUALE_SIP.md` - Manuale utente SIP per coach (16 sezioni)
+- `docs/REPORT_ISTITUZIONALE_SIP.md` - Report tecnico-istituzionale per UMA (16 sezioni)

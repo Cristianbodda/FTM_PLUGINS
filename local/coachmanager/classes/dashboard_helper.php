@@ -93,9 +93,15 @@ class dashboard_helper {
 
         // Apply filters that need enriched data
         if (!empty($colorfilter)) {
-            $students = array_filter($students, function($s) use ($colorfilter) {
-                return ($s->group_color ?? '') === $colorfilter;
-            });
+            if ($colorfilter === 'sip') {
+                $students = array_filter($students, function($s) {
+                    return !empty($s->sip_enrolled);
+                });
+            } else {
+                $students = array_filter($students, function($s) use ($colorfilter) {
+                    return ($s->group_color ?? '') === $colorfilter;
+                });
+            }
         }
 
         if ($weekfilter > 0) {
@@ -195,6 +201,10 @@ class dashboard_helper {
 
         // Needs choices for next week?
         $student->needs_choices = $this->needs_week_choices($student->id, $student->current_week);
+
+        // SIP enrollment data.
+        $student->sip_enrolled = $this->get_student_sip_enrolled($student->id);
+        $student->sip_data = $this->get_student_sip_data($student->id);
     }
 
     /**
@@ -545,9 +555,82 @@ class dashboard_helper {
                 return array_filter($students, fn($s) => !($s->lab_done ?? false));
             case 'no_choices':
                 return array_filter($students, fn($s) => ($s->needs_choices ?? false));
+            case 'sip_active':
+                return array_filter($students, fn($s) => ($s->sip_enrolled ?? false));
+            case 'sip_draft':
+                return array_filter($students, fn($s) => !empty($s->sip_data) && ($s->sip_data->is_draft ?? false));
             default:
                 return $students;
         }
+    }
+
+    /**
+     * Check if student has active SIP enrollment.
+     * @param int $userid
+     * @return bool
+     */
+    private function get_student_sip_enrolled($userid) {
+        if (!$this->db->get_manager()->table_exists('local_ftm_sip_enrollments')) {
+            return false;
+        }
+        return $this->db->record_exists('local_ftm_sip_enrollments', [
+            'userid' => $userid,
+            'status' => 'active',
+        ]);
+    }
+
+    /**
+     * Get SIP data for student (for dashboard display).
+     * @param int $userid
+     * @return object|null
+     */
+    private function get_student_sip_data($userid) {
+        if (!$this->db->get_manager()->table_exists('local_ftm_sip_enrollments')) {
+            return null;
+        }
+        $enrollment = $this->db->get_record('local_ftm_sip_enrollments', ['userid' => $userid]);
+        if (!$enrollment) {
+            return null;
+        }
+
+        $data = new \stdClass();
+        $data->id = $enrollment->id;
+        $data->status = $enrollment->status;
+        $data->is_active = ($enrollment->status === 'active');
+        $data->is_draft = ($enrollment->plan_status === 'draft');
+        $data->student_visible = (bool)$enrollment->student_visible;
+        $data->current_week = 0;
+        $data->current_phase = 0;
+        $data->phase_name = '';
+
+        if ($data->is_active && $enrollment->date_start > 0) {
+            $diff = time() - $enrollment->date_start;
+            $data->current_week = max(1, floor($diff / (7 * 86400)) + 1);
+
+            // Calculate phase.
+            $w = $data->current_week;
+            if ($w <= 1) { $data->current_phase = 1; }
+            elseif ($w <= 2) { $data->current_phase = 2; }
+            elseif ($w <= 4) { $data->current_phase = 3; }
+            elseif ($w <= 6) { $data->current_phase = 4; }
+            elseif ($w <= 8) { $data->current_phase = 5; }
+            else { $data->current_phase = 6; }
+        }
+
+        // Get next appointment.
+        if ($this->db->get_manager()->table_exists('local_ftm_sip_appointments')) {
+            $now = time();
+            $data->next_appointment = $this->db->get_record_sql(
+                "SELECT appointment_date, time_start
+                 FROM {local_ftm_sip_appointments}
+                 WHERE enrollmentid = ? AND appointment_date >= ? AND status IN ('scheduled', 'confirmed')
+                 ORDER BY appointment_date ASC, time_start ASC
+                 LIMIT 1",
+                [$enrollment->id, $now]
+            );
+        }
+
+        return $data;
     }
 
     /**
@@ -902,9 +985,15 @@ class dashboard_helper {
 
         // Apply post-enrichment filters
         if (!empty($colorfilter)) {
-            $enrolled = array_filter($enrolled, function($s) use ($colorfilter) {
-                return ($s->group_color ?? '') === $colorfilter;
-            });
+            if ($colorfilter === 'sip') {
+                $enrolled = array_filter($enrolled, function($s) {
+                    return !empty($s->sip_enrolled);
+                });
+            } else {
+                $enrolled = array_filter($enrolled, function($s) use ($colorfilter) {
+                    return ($s->group_color ?? '') === $colorfilter;
+                });
+            }
         }
 
         if ($weekfilter > 0) {

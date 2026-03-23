@@ -805,16 +805,9 @@ class observer {
             }
         }
 
-        // 3. Tutti i coach registrati.
-        $allcoaches = $DB->get_records('local_ftm_coaches');
-        foreach ($allcoaches as $fc) {
-            if ($fc->userid > 0 && !isset($recipients[$fc->userid])) {
-                $coachuser = $DB->get_record('user', ['id' => $fc->userid, 'deleted' => 0, 'suspended' => 0]);
-                if ($coachuser && !empty($coachuser->email)) {
-                    $recipients[$coachuser->id] = $coachuser;
-                }
-            }
-        }
+        // 3. NON notificare tutti i coach: solo il coach assegnato riceve la notifica.
+        // I coach registrati in local_ftm_coaches non vengono piu notificati per tutti gli studenti,
+        // ma solo per quelli a loro assegnati tramite local_student_coaching (punto 1).
 
         // Non notificare lo studente stesso.
         unset($recipients[$userid]);

@@ -85,5 +85,58 @@ function xmldb_local_ftm_cpurc_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026012305, 'local', 'ftm_cpurc');
     }
 
+    // Add new report fields for official document structure (Rapporto finale d'attivita').
+    if ($oldversion < 2026032001) {
+        $table = new xmldb_table('local_ftm_cpurc_reports');
+
+        // Section 1: Settore di riferimento.
+        $field = new xmldb_field('initial_situation_sector', XMLDB_TYPE_TEXT, null, null, null, null, null, 'initial_situation');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Section 3: Osservazioni TIC.
+        $field = new xmldb_field('obs_tic', XMLDB_TYPE_TEXT, null, null, null, null, null, 'obs_methodological');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Section 4: Competenze ricerca impiego (JSON).
+        $field = new xmldb_field('search_competencies', XMLDB_TYPE_TEXT, null, null, null, null, null, 'dossier_complete');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Section 4.3: Valutazione complessiva ricerca (text scale value).
+        $field = new xmldb_field('search_overall', XMLDB_TYPE_CHAR, '30', null, null, null, null, 'search_channels');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Section 5: Colloqui.
+        $field = new xmldb_field('interviews_count', XMLDB_TYPE_INTEGER, '3', null, null, null, '0', 'obs_search_evaluation');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('interviews_employers', XMLDB_TYPE_TEXT, null, null, null, null, null, 'interviews_count');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('obs_interviews', XMLDB_TYPE_TEXT, null, null, null, null, null, 'interviews_employers');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Section 6: Hired details (replaces hired_company/hired_date/hired_percentage with single textarea).
+        $field = new xmldb_field('hired_details', XMLDB_TYPE_TEXT, null, null, null, null, null, 'hired');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026032001, 'local', 'ftm_cpurc');
+    }
+
     return true;
 }

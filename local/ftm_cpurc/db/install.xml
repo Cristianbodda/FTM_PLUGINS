@@ -111,45 +111,53 @@
         <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK to cpurc_students"/>
         <FIELD NAME="coachid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Coach who created the report"/>
 
-        <!-- SEZIONE 4: Situazione iniziale -->
+        <!-- SEZIONE 1: Situazione iniziale -->
         <FIELD NAME="initial_situation" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="initial_situation_sector" TYPE="text" NOTNULL="false" COMMENT="Settore/i di riferimento"/>
 
-        <!-- SEZIONE 5: Verifica competenze settore -->
-        <FIELD NAME="sector_competency_rating" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Rating 1-5"/>
+        <!-- SEZIONE 2: Valutazione competenze settore -->
+        <FIELD NAME="sector_competency_rating" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Rating 1-5 (legacy)"/>
         <FIELD NAME="sector_competency_text" TYPE="text" NOTNULL="false"/>
 
-        <!-- SEZIONE 5b: Possibili settori e sintesi -->
+        <!-- SEZIONE 2b: Possibili settori e sintesi -->
         <FIELD NAME="possible_sectors" TYPE="text" NOTNULL="false" COMMENT="Possibili settori e ambiti professionali"/>
         <FIELD NAME="final_summary" TYPE="text" NOTNULL="false" COMMENT="Sintesi conclusiva"/>
 
-        <!-- SEZIONE 6: Competenze trasversali (JSON) -->
-        <FIELD NAME="personal_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of ratings"/>
-        <FIELD NAME="social_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of ratings"/>
-        <FIELD NAME="methodological_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of ratings"/>
-        <FIELD NAME="tic_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of ratings"/>
+        <!-- SEZIONE 3: Competenze trasversali (JSON with text scale values) -->
+        <FIELD NAME="personal_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of text scale values"/>
+        <FIELD NAME="social_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of text scale values"/>
+        <FIELD NAME="methodological_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of text scale values"/>
+        <FIELD NAME="tic_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of text scale values"/>
 
-        <!-- SEZIONE 6b: Osservazioni competenze trasversali -->
+        <!-- SEZIONE 3b: Osservazioni competenze trasversali -->
         <FIELD NAME="obs_personal" TYPE="text" NOTNULL="false" COMMENT="Osservazioni competenze personali"/>
         <FIELD NAME="obs_social" TYPE="text" NOTNULL="false" COMMENT="Osservazioni competenze sociali"/>
         <FIELD NAME="obs_methodological" TYPE="text" NOTNULL="false" COMMENT="Osservazioni competenze metodologiche"/>
+        <FIELD NAME="obs_tic" TYPE="text" NOTNULL="false" COMMENT="Osservazioni competenze TIC"/>
 
-        <!-- SEZIONE 7: Ricerca impiego -->
+        <!-- SEZIONE 4: Ricerca impiego -->
         <FIELD NAME="dossier_complete" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="0/1"/>
+        <FIELD NAME="search_competencies" TYPE="text" NOTNULL="false" COMMENT="JSON array of search competency text scale values"/>
         <FIELD NAME="search_channels" TYPE="text" NOTNULL="false" COMMENT="JSON array"/>
-        <FIELD NAME="search_evaluation" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Rating 1-5"/>
+        <FIELD NAME="search_overall" TYPE="char" LENGTH="30" NOTNULL="false" COMMENT="Overall search capability text scale value"/>
+        <FIELD NAME="search_evaluation" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Rating 1-5 (legacy)"/>
 
-        <!-- SEZIONE 7b: Osservazioni ricerca impiego -->
+        <!-- SEZIONE 4b: Osservazioni ricerca impiego -->
         <FIELD NAME="obs_search_channels" TYPE="text" NOTNULL="false" COMMENT="Osservazioni canali ricerca"/>
         <FIELD NAME="obs_search_evaluation" TYPE="text" NOTNULL="false" COMMENT="Osservazioni valutazione ricerca"/>
 
-        <!-- SEZIONE 8: Colloqui svolti -->
-        <FIELD NAME="interviews_json" TYPE="text" NOTNULL="false" COMMENT="JSON array of interviews"/>
+        <!-- SEZIONE 5: Colloqui svolti -->
+        <FIELD NAME="interviews_count" TYPE="int" LENGTH="3" NOTNULL="false" DEFAULT="0" COMMENT="Numero colloqui"/>
+        <FIELD NAME="interviews_employers" TYPE="text" NOTNULL="false" COMMENT="Datori di lavoro e date"/>
+        <FIELD NAME="obs_interviews" TYPE="text" NOTNULL="false" COMMENT="Osservazioni colloqui"/>
+        <FIELD NAME="interviews_json" TYPE="text" NOTNULL="false" COMMENT="JSON array of interviews (legacy)"/>
 
-        <!-- SEZIONE 9: Esito -->
+        <!-- SEZIONE 6: Esito -->
         <FIELD NAME="hired" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="0/1"/>
-        <FIELD NAME="hired_company" TYPE="char" LENGTH="255" NOTNULL="false"/>
-        <FIELD NAME="hired_date" TYPE="int" LENGTH="10" NOTNULL="false"/>
-        <FIELD NAME="hired_percentage" TYPE="int" LENGTH="3" NOTNULL="false"/>
+        <FIELD NAME="hired_details" TYPE="text" NOTNULL="false" COMMENT="Dettagli assunzione (datore, professione, data, contratto)"/>
+        <FIELD NAME="hired_company" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="(legacy)"/>
+        <FIELD NAME="hired_date" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="(legacy)"/>
+        <FIELD NAME="hired_percentage" TYPE="int" LENGTH="3" NOTNULL="false" COMMENT="(legacy)"/>
 
         <!-- Metadati -->
         <FIELD NAME="file_path" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Path to generated file"/>
