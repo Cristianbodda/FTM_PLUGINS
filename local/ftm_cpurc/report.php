@@ -65,45 +65,50 @@ $user = $DB->get_record('user', ['id' => $student->userid]);
 // Get existing report if any.
 $report = \local_ftm_cpurc\cpurc_manager::get_report($id);
 
-// Get current user as coach.
-$coach = $USER;
+// Get ASSIGNED coach for this student (not current user).
+$assignedCoach = \local_ftm_cpurc\cpurc_manager::get_student_coach($student->userid);
+if ($assignedCoach) {
+    $coach = $assignedCoach;
+} else {
+    // Fallback to current user if no coach assigned.
+    $coach = $USER;
+}
 $coachInitials = strtoupper(substr($coach->firstname, 0, 1) . substr($coach->lastname, 0, 1));
-$coachInitialLower = strtolower(substr($coach->firstname, 0, 1) . substr($coach->lastname, 0, 1));
+$coachEmail = strtolower($coach->firstname) . '.' . strtolower($coach->lastname) . '@f3m.ch';
+// Clean accents/spaces from email.
+$coachEmail = str_replace(' ', '', $coachEmail);
+$coachEmail = strtr($coachEmail, [
+    'à' => 'a', 'è' => 'e', 'é' => 'e', 'ì' => 'i', 'ò' => 'o', 'ù' => 'u',
+    'ä' => 'a', 'ö' => 'o', 'ü' => 'u',
+]);
 
-// Calculate participation days.
-$participationDays = 0;
-if (!empty($student->date_start) && !empty($student->date_end_actual)) {
-    $start = new DateTime();
-    $start->setTimestamp($student->date_start);
-    $end = new DateTime();
-    $end->setTimestamp($student->date_end_actual);
-    $interval = $start->diff($end);
-    // Count weekdays only.
-    $days = 0;
-    $current = clone $start;
-    while ($current <= $end) {
-        $dow = (int)$current->format('N');
-        if ($dow <= 5) {
-            $days++;
+// Calculate participation days: X + O (real attendance from Aladino data, supports half-days).
+$presenze_x = (float) ($student->absence_x ?? 0);
+$presenze_o = (float) ($student->absence_o ?? 0);
+$participationDays = $presenze_x + $presenze_o;
+
+// Fallback to date-based calculation if no Aladino data loaded yet.
+// Format: show decimal only if needed (22 not 22.0, but 6.5 stays 6.5).
+$participationDays = (floor($participationDays) == $participationDays)
+    ? (int) $participationDays : $participationDays;
+
+if ($participationDays == 0 && !empty($student->date_start)) {
+    $end_ts = $student->date_end_actual ?? $student->date_end_planned ?? 0;
+    if ($end_ts > 0) {
+        $start = new DateTime();
+        $start->setTimestamp($student->date_start);
+        $end = new DateTime();
+        $end->setTimestamp($end_ts);
+        $days = 0;
+        $current = clone $start;
+        while ($current <= $end) {
+            if ((int)$current->format('N') <= 5) {
+                $days++;
+            }
+            $current->modify('+1 day');
         }
-        $current->modify('+1 day');
+        $participationDays = $days - (int)($student->absence_total ?? 0);
     }
-    $participationDays = $days - ($student->absence_total ?? 0);
-} elseif (!empty($student->date_start) && !empty($student->date_end_planned)) {
-    $start = new DateTime();
-    $start->setTimestamp($student->date_start);
-    $end = new DateTime();
-    $end->setTimestamp($student->date_end_planned);
-    $days = 0;
-    $current = clone $start;
-    while ($current <= $end) {
-        $dow = (int)$current->format('N');
-        if ($dow <= 5) {
-            $days++;
-        }
-        $current->modify('+1 day');
-    }
-    $participationDays = $days - ($student->absence_total ?? 0);
 }
 
 $PAGE->set_context($context);
@@ -167,6 +172,7 @@ echo $OUTPUT->header();
 .doc-toolbar-btn-primary { background: #3498db; color: white !important; }
 .doc-toolbar-btn-success { background: #27ae60; color: white !important; }
 .doc-toolbar-btn-secondary { background: #95a5a6; color: white !important; }
+.doc-toolbar-btn-aladino { background: #e67e22; color: white !important; }
 .doc-toolbar-btn:hover { opacity: 0.9; color: white !important; }
 a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: white !important; text-decoration: none !important; }
 
@@ -573,6 +579,20 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
     margin-top: 5px;
 }
 
+/* Reinsertion cell */
+.reinsertion-cell {
+    transition: all 0.2s;
+}
+
+.reinsertion-cell:hover {
+    background: #e3f2fd;
+}
+
+.reinsertion-cell.selected {
+    background: #2c3e50;
+    color: white;
+}
+
 /* Print styles */
 @media print {
     .doc-toolbar { display: none; }
@@ -590,6 +610,12 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
     }
     .doc-signature-line {
         margin-top: 80px;
+    }
+    .reinsertion-cell.selected {
+        background: #2c3e50 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 }
 </style>
@@ -610,6 +636,46 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
             <button type="button" id="btn-export" class="doc-toolbar-btn doc-toolbar-btn-success">
                 Esporta Word
             </button>
+            <button type="button" id="btn-aladino" class="doc-toolbar-btn doc-toolbar-btn-aladino" onclick="document.getElementById('aladino-modal').style.display='flex';">
+                Carica dati Aladino
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Aladino -->
+    <div id="aladino-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:white; border-radius:12px; padding:30px; max-width:800px; width:90%; max-height:85vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0; font-size:18px;">Carica dati Aladino - <?php echo fullname($user); ?></h3>
+                <button type="button" onclick="document.getElementById('aladino-modal').style.display='none';"
+                        style="background:none; border:none; font-size:24px; cursor:pointer; color:#666;">&times;</button>
+            </div>
+
+            <div id="aladino-upload" style="border:2px dashed #ccc; border-radius:8px; padding:40px; text-align:center; cursor:pointer; transition:all 0.2s;"
+                 ondragover="event.preventDefault(); this.style.borderColor='#e67e22'; this.style.background='#fef5ec';"
+                 ondragleave="this.style.borderColor='#ccc'; this.style.background='white';"
+                 ondrop="event.preventDefault(); this.style.borderColor='#ccc'; this.style.background='white'; handleAladinoFile(event.dataTransfer.files[0]);"
+                 onclick="document.getElementById('aladino-file-input').click();">
+                <div style="font-size:40px; color:#e67e22; margin-bottom:10px;">&#128196;</div>
+                <p style="font-size:14px; color:#666; margin:0;">Trascina il file Excel Aladino qui oppure <strong>clicca per selezionare</strong></p>
+                <p style="font-size:12px; color:#999; margin-top:8px;">Formato: .xlsx / .xls</p>
+                <input type="file" id="aladino-file-input" accept=".xlsx,.xls" style="display:none;"
+                       onchange="if(this.files[0]) handleAladinoFile(this.files[0]);">
+            </div>
+
+            <div id="aladino-preview" style="display:none; margin-top:20px;">
+                <h4 style="margin:0 0 12px 0; color:#27ae60;">Dati trovati per <?php echo fullname($user); ?></h4>
+                <div id="aladino-preview-content"></div>
+                <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end;">
+                    <button type="button" onclick="resetAladinoModal();"
+                            style="padding:10px 20px; border:1px solid #ccc; border-radius:6px; background:white; cursor:pointer; font-size:14px;">Annulla</button>
+                    <button type="button" id="btn-aladino-confirm"
+                            style="padding:10px 20px; border:none; border-radius:6px; background:#e67e22; color:white; cursor:pointer; font-size:14px; font-weight:600;">Importa dati</button>
+                </div>
+            </div>
+
+            <div id="aladino-result" style="display:none; margin-top:20px;"></div>
+            <div id="aladino-error" style="display:none; margin-top:20px; padding:15px; background:#f8d7da; border:1px solid #f5c6cb; border-radius:6px; color:#721c24;"></div>
         </div>
     </div>
 
@@ -643,7 +709,7 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                             <td class="label-cell">Persona responsabile:</td>
                             <td class="value-cell"><?php echo fullname($coach); ?></td>
                             <td class="label-cell">Telefono / e-mail</td>
-                            <td class="value-cell">091 945 01 38 / <?php echo $coachInitialLower; ?>@f3m.ch</td>
+                            <td class="value-cell">091 945 01 38 / <?php echo s($coachEmail); ?></td>
                         </tr>
                     </table>
                 </div>
@@ -750,8 +816,7 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                     <table style="width:100%; border-collapse:collapse; margin-top:15px; font-size:12pt;">
                         <tr>
                             <td style="border:1px solid #999; padding:12px; width:70%;">
-                                La PCI conferma la volonta' di avvalersi del servizio personalizzato di coaching per le successive 10 settimane
-                                <span style="font-size:9pt;">(se si', apponendo la propria firma si dichiara d'accordo sulla gestione dei propri dati personali per un periodo massimo di 10 settimane dopo la data di fine misura)</span>
+                                La PCI ha svolto il sostegno al collocamento individuale personalizzato nel settore industriale
                             </td>
                             <td style="border:1px solid #999; padding:12px; text-align:center; width:15%;">
                                 <strong>Si'</strong><br>
@@ -802,6 +867,39 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
             <div class="doc-section">
                 <h2 class="doc-section-title">2. Situazione della persona in cerca d'impiego al termine della misura</h2>
                 <div class="doc-section-content">
+
+                    <!-- Tabella reinserimento -->
+                    <?php $reinsertion = $report->reinsertion_assessment ?? ''; ?>
+                    <table class="doc-official-table" style="margin-bottom: 20px;">
+                        <tr>
+                            <td style="border: 1px solid #999; padding: 12px; font-size: 13pt;">
+                                Competenze/esperienze della PCI che fanno presupporre <strong>un reinserimento a breve termine</strong> nel settore industriale
+                            </td>
+                            <td style="border: 1px solid #999; padding: 12px; text-align: center; width: 60px; cursor: pointer;" class="reinsertion-cell <?php echo ($reinsertion === 'breve_termine') ? 'selected' : ''; ?>" onclick="selectReinsertion('breve_termine', this)">
+                                <input type="radio" name="reinsertion_assessment" value="breve_termine" style="display:none;" <?php echo ($reinsertion === 'breve_termine') ? 'checked' : ''; ?>>
+                                <span style="font-size: 16pt; font-weight: bold;"><?php echo ($reinsertion === 'breve_termine') ? 'X' : ''; ?></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #999; padding: 12px; font-size: 13pt;">
+                                Competenze/esperienze della PCI che fanno presupporre un <strong>reinserimento a medio termine</strong> nel settore industriale
+                            </td>
+                            <td style="border: 1px solid #999; padding: 12px; text-align: center; width: 60px; cursor: pointer;" class="reinsertion-cell <?php echo ($reinsertion === 'medio_termine') ? 'selected' : ''; ?>" onclick="selectReinsertion('medio_termine', this)">
+                                <input type="radio" name="reinsertion_assessment" value="medio_termine" style="display:none;" <?php echo ($reinsertion === 'medio_termine') ? 'checked' : ''; ?>>
+                                <span style="font-size: 16pt; font-weight: bold;"><?php echo ($reinsertion === 'medio_termine') ? 'X' : ''; ?></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #999; padding: 12px; font-size: 13pt;">
+                                Competenze/esperienze della PCI che <strong>non fanno presupporre un reinserimento</strong> nel settore industriale
+                            </td>
+                            <td style="border: 1px solid #999; padding: 12px; text-align: center; width: 60px; cursor: pointer;" class="reinsertion-cell <?php echo ($reinsertion === 'no_reinserimento') ? 'selected' : ''; ?>" onclick="selectReinsertion('no_reinserimento', this)">
+                                <input type="radio" name="reinsertion_assessment" value="no_reinserimento" style="display:none;" <?php echo ($reinsertion === 'no_reinserimento') ? 'checked' : ''; ?>>
+                                <span style="font-size: 16pt; font-weight: bold;"><?php echo ($reinsertion === 'no_reinserimento') ? 'X' : ''; ?></span>
+                            </td>
+                        </tr>
+                    </table>
+
                     <div class="doc-subsection">
                         <div class="doc-subsection-title">Valutazione delle competenze del settore di riferimento:</div>
                         <p class="doc-subsection-hint">
@@ -1063,9 +1161,36 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                         </div>
 
                         <div id="hired-details" class="doc-hired-details <?php echo (!empty($report->hired)) ? 'visible' : ''; ?>">
-                            <p style="font-weight: 600; margin-bottom: 8px;">Se si', presso quale datore di lavoro, in quale professione, a partire da quando e con quale forma contrattuale?</p>
-                            <textarea name="hired_details" class="doc-field-textarea" rows="4"
-                                      placeholder="Indicare datore di lavoro, professione, data inizio e forma contrattuale..."><?php echo s($report->hired_details ?? ''); ?></textarea>
+                            <p style="font-weight: 600; margin-bottom: 12px;">Se si', presso quale datore di lavoro, in quale professione, a partire da quando e con quale forma contrattuale?</p>
+                            <table class="doc-official-table">
+                                <tr>
+                                    <td class="label-cell">Azienda (ragione sociale):</td>
+                                    <td class="value-cell">
+                                        <input type="text" name="hired_details" class="doc-field" style="width: 100%;"
+                                               placeholder="Ragione sociale dell'azienda..."
+                                               value="<?php echo s($report->hired_details ?? ''); ?>">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="label-cell">Professione; a partire dal:</td>
+                                    <td class="value-cell">
+                                        <input type="text" name="hired_profession" class="doc-field" style="width: 100%;"
+                                               placeholder="Es.: Meccanico; 01.05.2026"
+                                               value="<?php echo s($report->hired_profession ?? ''); ?>">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="label-cell">
+                                        Forma contrattuale:<br>
+                                        <span style="font-size: 11pt; font-style: italic; font-weight: normal;">contratto a tempo indeterminato, a tempo determinato o assunzione ad ore o su chiamata</span>
+                                    </td>
+                                    <td class="value-cell">
+                                        <input type="text" name="hired_contract" class="doc-field" style="width: 100%;"
+                                               placeholder="Es.: Contratto a tempo indeterminato"
+                                               value="<?php echo s($report->hired_contract ?? ''); ?>">
+                                    </td>
+                                </tr>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -1110,6 +1235,19 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
 </div><!-- end doc-container -->
 
 <script>
+function selectReinsertion(value, cell) {
+    // Deselect all reinsertion cells.
+    document.querySelectorAll('.reinsertion-cell').forEach(function(c) {
+        c.classList.remove('selected');
+        c.querySelector('span').textContent = '';
+        c.querySelector('input').checked = false;
+    });
+    // Select clicked cell.
+    cell.classList.add('selected');
+    cell.querySelector('span').textContent = 'X';
+    cell.querySelector('input').checked = true;
+}
+
 function toggleHiredDetails() {
     var hiredRadio = document.querySelector('input[name="hired"]:checked');
     var hired = hiredRadio ? hiredRadio.value === '1' : false;
@@ -1217,6 +1355,166 @@ document.getElementById('btn-export').addEventListener('click', function() {
         window.location.href = '<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/export_word.php?id=<?php echo $id; ?>';
     }
 });
+
+// === ALADINO IMPORT ===
+var aladinoFileData = null;
+
+function handleAladinoFile(file) {
+    if (!file) return;
+    var ext = file.name.split('.').pop().toLowerCase();
+    if (ext !== 'xlsx' && ext !== 'xls') {
+        showAladinoError('Formato non supportato. Usare .xlsx o .xls');
+        return;
+    }
+
+    aladinoFileData = file;
+    document.getElementById('aladino-upload').innerHTML =
+        '<div style="color:#27ae60; font-size:16px; font-weight:600;">' + file.name + '</div>' +
+        '<p style="font-size:13px; color:#666; margin-top:5px;">Caricamento in corso...</p>';
+    document.getElementById('aladino-error').style.display = 'none';
+
+    // Send preview request.
+    var formData = new FormData();
+    formData.append('sesskey', '<?php echo sesskey(); ?>');
+    formData.append('studentid', '<?php echo $id; ?>');
+    formData.append('action', 'preview');
+    formData.append('excelfile', file);
+
+    fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_import_aladino.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            showAladinoPreview(result.data);
+        } else {
+            showAladinoError(result.message);
+        }
+    })
+    .catch(function(err) {
+        showAladinoError('Errore di connessione: ' + err.message);
+    });
+}
+
+function showAladinoPreview(data) {
+    var labels = {
+        'absence_x': 'Presenze X', 'absence_o': 'Presenze O',
+        'absence_a': 'A - Vacanze', 'absence_b': 'B - Malattia/gravidanza',
+        'absence_c': 'C - Infortunio', 'absence_d': 'D - Congedo maternita\'',
+        'absence_e': 'E - Servizio militare/civile', 'absence_f': 'F - Guadagno intermedio',
+        'absence_g': 'G - Altre giustificate', 'absence_h': 'H - Festivi',
+        'absence_i': 'I - Non giustificate', 'absence_total': 'Totale giorni assenza',
+        'effective_days': 'Giorni partecipazione effettiva',
+        'interviews': 'Colloqui di assunzione',
+        'interview_date': 'Data colloquio', 'interview_company': 'Ditta colloquio',
+        'interviews_detail': 'Dettaglio colloqui (salvato nel report)',
+        'stages_count': 'Stage svolti',
+        'stage_days': 'Giorni stage', 'date_start': 'Inizio', 'date_end_planned': 'Fine prevista',
+        'date_end_actual': 'Fine effettiva', 'last_profession': 'Ultima professione',
+        'urc_office': 'Ufficio URC', 'urc_consultant': 'Consulente URC',
+        'occupation_grade': 'Grado occupazione', 'status_text': 'Stato',
+        'avs_number': 'Nr. AVS', 'address_street': 'Via', 'address_cap': 'CAP',
+        'address_city': 'Localita\'', 'birthdate': 'Data di nascita',
+        'personal_number': 'Numero personale', 'exit_reason': 'Motivo',
+        'observations': 'Osservazioni', 'priority': 'Priorita\''
+    };
+
+    // Group fields for display.
+    var groups = {
+        'Assenze e presenze': ['absence_x', 'absence_o', 'absence_a', 'absence_b', 'absence_c',
+            'absence_d', 'absence_e', 'absence_f', 'absence_g', 'absence_h', 'absence_i',
+            'absence_total', 'effective_days'],
+        'Percorso': ['date_start', 'date_end_planned', 'date_end_actual', 'occupation_grade',
+            'status_text', 'exit_reason', 'last_profession'],
+        'Colloqui e stage': ['interviews', 'interview_date', 'interview_company', 'interviews_detail', 'stages_count', 'stage_days'],
+        'URC': ['urc_office', 'urc_consultant', 'personal_number'],
+    };
+
+    var html = '';
+    for (var groupName in groups) {
+        html += '<h5 style="margin:15px 0 8px; font-size:13px; color:#555; border-bottom:1px solid #eee; padding-bottom:4px;">' + groupName + '</h5>';
+        html += '<table style="width:100%; font-size:13px; border-collapse:collapse;">';
+        groups[groupName].forEach(function(key) {
+            var val = data[key];
+            if (val !== undefined && val !== null && val !== '') {
+                var label = labels[key] || key;
+                var highlight = (key === 'effective_days') ? ' style="background:#e8f5e9; font-weight:600;"' : '';
+                html += '<tr' + highlight + '><td style="padding:4px 8px; border-bottom:1px solid #f0f0f0; width:45%; color:#333;">' +
+                    label + '</td><td style="padding:4px 8px; border-bottom:1px solid #f0f0f0; font-weight:500;">' +
+                    val + '</td></tr>';
+            }
+        });
+        html += '</table>';
+    }
+
+    document.getElementById('aladino-preview-content').innerHTML = html;
+    document.getElementById('aladino-preview').style.display = 'block';
+
+    // Bind confirm button.
+    document.getElementById('btn-aladino-confirm').onclick = function() {
+        confirmAladinoImport();
+    };
+}
+
+function confirmAladinoImport() {
+    if (!aladinoFileData) return;
+
+    var btn = document.getElementById('btn-aladino-confirm');
+    btn.disabled = true;
+    btn.textContent = 'Importazione...';
+
+    var formData = new FormData();
+    formData.append('sesskey', '<?php echo sesskey(); ?>');
+    formData.append('studentid', '<?php echo $id; ?>');
+    formData.append('action', 'import');
+    formData.append('excelfile', aladinoFileData);
+
+    fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_import_aladino.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            document.getElementById('aladino-preview').style.display = 'none';
+            document.getElementById('aladino-result').style.display = 'block';
+            document.getElementById('aladino-result').innerHTML =
+                '<div style="padding:15px; background:#d4edda; border:1px solid #c3e6cb; border-radius:6px; color:#155724;">' +
+                '<strong>Importazione completata!</strong> I dati sono stati aggiornati. La pagina si ricarichera\'.' +
+                '</div>';
+            setTimeout(function() { location.reload(); }, 2000);
+        } else {
+            showAladinoError(result.message);
+            btn.disabled = false;
+            btn.textContent = 'Importa dati';
+        }
+    })
+    .catch(function(err) {
+        showAladinoError('Errore: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Importa dati';
+    });
+}
+
+function showAladinoError(msg) {
+    var el = document.getElementById('aladino-error');
+    el.style.display = 'block';
+    el.textContent = msg;
+    document.getElementById('aladino-preview').style.display = 'none';
+}
+
+function resetAladinoModal() {
+    aladinoFileData = null;
+    document.getElementById('aladino-upload').innerHTML =
+        '<div style="font-size:40px; color:#e67e22; margin-bottom:10px;">&#128196;</div>' +
+        '<p style="font-size:14px; color:#666; margin:0;">Trascina il file Excel Aladino qui oppure <strong>clicca per selezionare</strong></p>' +
+        '<p style="font-size:12px; color:#999; margin-top:8px;">Formato: .xlsx / .xls</p>' +
+        '<input type="file" id="aladino-file-input" accept=".xlsx,.xls" style="display:none;" onchange="if(this.files[0]) handleAladinoFile(this.files[0]);">';
+    document.getElementById('aladino-preview').style.display = 'none';
+    document.getElementById('aladino-result').style.display = 'none';
+    document.getElementById('aladino-error').style.display = 'none';
+}
 </script>
 
 <?php

@@ -46,6 +46,9 @@ class word_template_processor {
     /** @var array Text replacements (find exact text, replace with value) */
     private $textReplacements = [];
 
+    /** @var int|null SIP consent value (1=Sì, 0=No, null=not set) */
+    private $sipConsent = null;
+
     /**
      * Constructor.
      *
@@ -106,6 +109,17 @@ class word_template_processor {
      */
     public function replaceText($findText, $replaceWith) {
         $this->textReplacements[$findText] = $replaceWith;
+        return $this;
+    }
+
+    /**
+     * Set SIP consent checkbox state.
+     *
+     * @param int $value 1 for Sì, 0 for No.
+     * @return self
+     */
+    public function setSipConsent($value) {
+        $this->sipConsent = (int) $value;
         return $this;
     }
 
@@ -207,6 +221,9 @@ class word_template_processor {
 
         // Replace text content.
         $content = $this->replaceTextContent($content);
+
+        // Replace SIP consent checkboxes.
+        $content = $this->replaceSipCheckboxes($content);
 
         return $content;
     }
@@ -351,5 +368,67 @@ class word_template_processor {
         }
 
         return $content;
+    }
+
+    /**
+     * Replace SIP consent checkboxes in the row containing "collocamento individuale".
+     *
+     * The row has: [text] | Sì ☐ | No ☐
+     * If sipConsent=1: Sì ☒, No ☐
+     * If sipConsent=0: Sì ☐, No ☒
+     *
+     * @param string $content XML content.
+     * @return string Processed content.
+     */
+    private function replaceSipCheckboxes($content) {
+        if ($this->sipConsent === null) {
+            return $content;
+        }
+
+        // Find the unique SIP text.
+        $anchor = 'collocamento individuale';
+        $pos = strpos($content, $anchor);
+        if ($pos === false) {
+            return $content;
+        }
+
+        // Find the table row containing this text.
+        $rowStart = strrpos(substr($content, 0, $pos), '<w:tr');
+        $rowEnd = strpos($content, '</w:tr>', $pos);
+        if ($rowStart === false || $rowEnd === false) {
+            return $content;
+        }
+        $rowEnd += 7; // Include </w:tr>.
+
+        $row = substr($content, $rowStart, $rowEnd - $rowStart);
+
+        // The row has two ☐ characters: first after "Sì", second after "No".
+        // ☐ = \xE2\x98\x90 (UTF-8), ☒ = \xE2\x98\x92 (UTF-8).
+        $unchecked = "\xE2\x98\x90"; // ☐
+        $checked = "\xE2\x98\x92";   // ☒
+
+        // Find positions of all ☐ in the row.
+        $positions = [];
+        $offset = 0;
+        while (($p = strpos($row, $unchecked, $offset)) !== false) {
+            $positions[] = $p;
+            $offset = $p + 3; // UTF-8 is 3 bytes.
+        }
+
+        if (count($positions) < 2) {
+            return $content;
+        }
+
+        // Replace the correct checkbox.
+        if ($this->sipConsent == 1) {
+            // Check "Sì" (first ☐).
+            $row = substr_replace($row, $checked, $positions[0], 3);
+        } else {
+            // Check "No" (second ☐).
+            $row = substr_replace($row, $checked, $positions[1], 3);
+        }
+
+        // Put the modified row back.
+        return substr($content, 0, $rowStart) . $row . substr($content, $rowEnd);
     }
 }

@@ -57,7 +57,8 @@ try {
     $data->initial_situation = optional_param('initial_situation', '', PARAM_TEXT);
     $data->initial_situation_sector = optional_param('initial_situation_sector', '', PARAM_TEXT);
 
-    // Section 2: Valutazione competenze settore.
+    // Section 2: Reinsertion assessment + Valutazione competenze settore.
+    $data->reinsertion_assessment = optional_param('reinsertion_assessment', '', PARAM_ALPHANUMEXT);
     $data->sector_competency_rating = optional_param('sector_competency_rating', null, PARAM_INT);
     $data->sector_competency_text = optional_param('sector_competency_text', '', PARAM_TEXT);
     $data->possible_sectors = optional_param('possible_sectors', '', PARAM_TEXT);
@@ -93,6 +94,8 @@ try {
     // Section 6: Esito.
     $data->hired = optional_param('hired', 0, PARAM_INT);
     $data->hired_details = optional_param('hired_details', '', PARAM_TEXT);
+    $data->hired_profession = optional_param('hired_profession', '', PARAM_TEXT);
+    $data->hired_contract = optional_param('hired_contract', '', PARAM_TEXT);
 
     // SIP consent + Allegati.
     $data->sip_consent = optional_param('sip_consent', null, PARAM_INT);

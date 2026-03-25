@@ -156,5 +156,61 @@ function xmldb_local_ftm_cpurc_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026032301, 'local', 'ftm_cpurc');
     }
 
+    if ($oldversion < 2026032501) {
+        $table = new xmldb_table('local_ftm_cpurc_reports');
+
+        // Reinsertion assessment (breve_termine/medio_termine/no_reinserimento).
+        $field = new xmldb_field('reinsertion_assessment', XMLDB_TYPE_CHAR, '30', null, null, null, null, 'initial_situation_sector');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Hired structured fields (Section 6).
+        $field = new xmldb_field('hired_profession', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'hired_details');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('hired_contract', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'hired_profession');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026032501, 'local', 'ftm_cpurc');
+    }
+
+    if ($oldversion < 2026032502) {
+        $table = new xmldb_table('local_ftm_cpurc_students');
+
+        // Convert absence fields from INT to NUMBER(5,1) for half-day support.
+        $absenceFields = [
+            'absence_x', 'absence_o',
+            'absence_a', 'absence_b', 'absence_c', 'absence_d', 'absence_e',
+            'absence_f', 'absence_g', 'absence_h', 'absence_i', 'absence_total',
+        ];
+
+        foreach ($absenceFields as $fname) {
+            $field = new xmldb_field($fname, XMLDB_TYPE_NUMBER, '5, 1', null, XMLDB_NOTNULL, null, '0');
+            if ($dbman->field_exists($table, $field)) {
+                $dbman->change_field_type($table, $field);
+            }
+        }
+
+        // Also add hired_profession and hired_contract if missing from previous failed upgrade.
+        $reportstable = new xmldb_table('local_ftm_cpurc_reports');
+
+        $field = new xmldb_field('hired_profession', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'hired_details');
+        if (!$dbman->field_exists($reportstable, $field)) {
+            $dbman->add_field($reportstable, $field);
+        }
+
+        $field = new xmldb_field('hired_contract', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'hired_profession');
+        if (!$dbman->field_exists($reportstable, $field)) {
+            $dbman->add_field($reportstable, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026032502, 'local', 'ftm_cpurc');
+    }
+
     return true;
 }

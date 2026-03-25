@@ -41,19 +41,19 @@
         <FIELD NAME="company" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="Ditta"/>
         <FIELD NAME="observations" TYPE="text" NOTNULL="false"/>
 
-        <!-- ASSENZE (X, O, A-I) -->
-        <FIELD NAME="absence_x" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
-        <FIELD NAME="absence_o" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
-        <FIELD NAME="absence_a" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
-        <FIELD NAME="absence_b" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
-        <FIELD NAME="absence_c" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
-        <FIELD NAME="absence_d" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
-        <FIELD NAME="absence_e" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
-        <FIELD NAME="absence_f" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
-        <FIELD NAME="absence_g" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
-        <FIELD NAME="absence_h" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
-        <FIELD NAME="absence_i" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
-        <FIELD NAME="absence_total" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <!-- ASSENZE (X, O, A-I) - NUMBER per supportare mezze giornate -->
+        <FIELD NAME="absence_x" TYPE="number" LENGTH="5" DECIMALS="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_o" TYPE="number" LENGTH="5" DECIMALS="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_a" TYPE="number" LENGTH="5" DECIMALS="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_b" TYPE="number" LENGTH="5" DECIMALS="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_c" TYPE="number" LENGTH="5" DECIMALS="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_d" TYPE="number" LENGTH="5" DECIMALS="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_e" TYPE="number" LENGTH="5" DECIMALS="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_f" TYPE="number" LENGTH="5" DECIMALS="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_g" TYPE="number" LENGTH="5" DECIMALS="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_h" TYPE="number" LENGTH="5" DECIMALS="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_i" TYPE="number" LENGTH="5" DECIMALS="1" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="absence_total" TYPE="number" LENGTH="5" DECIMALS="1" NOTNULL="true" DEFAULT="0"/>
 
         <!-- ALTRI DATI PERCORSO -->
         <FIELD NAME="interviews" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" COMMENT="Colloqui assunzione"/>
@@ -115,7 +115,8 @@
         <FIELD NAME="initial_situation" TYPE="text" NOTNULL="false"/>
         <FIELD NAME="initial_situation_sector" TYPE="text" NOTNULL="false" COMMENT="Settore/i di riferimento"/>
 
-        <!-- SEZIONE 2: Valutazione competenze settore -->
+        <!-- SEZIONE 2: Valutazione reinserimento + competenze settore -->
+        <FIELD NAME="reinsertion_assessment" TYPE="char" LENGTH="30" NOTNULL="false" COMMENT="breve_termine/medio_termine/no_reinserimento"/>
         <FIELD NAME="sector_competency_rating" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="Rating 1-5 (legacy)"/>
         <FIELD NAME="sector_competency_text" TYPE="text" NOTNULL="false"/>
 
@@ -155,6 +156,8 @@
         <!-- SEZIONE 6: Esito -->
         <FIELD NAME="hired" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="0/1"/>
         <FIELD NAME="hired_details" TYPE="text" NOTNULL="false" COMMENT="Dettagli assunzione (datore, professione, data, contratto)"/>
+        <FIELD NAME="hired_profession" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Professione e data inizio"/>
+        <FIELD NAME="hired_contract" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Forma contrattuale"/>
         <FIELD NAME="sip_consent" TYPE="int" LENGTH="1" NOTNULL="false" COMMENT="PCI consent for 10-week SIP coaching 0/1"/>
         <FIELD NAME="allegati" TYPE="text" NOTNULL="false" COMMENT="Eventuali allegati inviati al CP URC"/>
         <FIELD NAME="hired_company" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="(legacy)"/>

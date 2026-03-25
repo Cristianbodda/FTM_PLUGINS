@@ -65,8 +65,11 @@ class word_exporter {
         // Get Moodle user data.
         $this->user = $DB->get_record('user', ['id' => $student->userid]);
 
-        // Get coach data.
-        if (!empty($report->coachid)) {
+        // Get ASSIGNED coach for this student (not current user or report author).
+        $assignedCoach = \local_ftm_cpurc\cpurc_manager::get_student_coach($student->userid);
+        if ($assignedCoach) {
+            $this->coach = $assignedCoach;
+        } else if (!empty($report->coachid)) {
             $this->coach = $DB->get_record('user', ['id' => $report->coachid]);
         } else {
             $this->coach = $USER;
@@ -123,7 +126,8 @@ class word_exporter {
         $values = [];
 
         // === ORGANIZZATORE ===
-        $values['F20'] = $this->getCoachInitials();
+        $values['F20'] = $this->getCoachFullName();
+        $values['COACH_EMAIL'] = $this->getCoachEmail();
 
         // === PARTECIPANTE - DATI ANAGRAFICI BASE ===
         // Template has «F3», «DATI_ANAGRAFICI_base» in same cell.
@@ -166,17 +170,29 @@ class word_exporter {
 
         // === COLLOQUI ===
         $values['F44'] = $this->student->interviews ?? '0';
-        $values['F74'] = $this->getInterviewsDetail();
-        $values['COLLOQUI_DASSUNZIONE'] = $this->getInterviewsDetail();
+        // Section 5.1 interview table: F74 = company name, COLLOQUI_DASSUNZIONE = interview date.
+        $interviewData = $this->getInterviewsData();
+        $values['F74'] = $interviewData['company'] ?? '';
+        $values['COLLOQUI_DASSUNZIONE'] = $interviewData['date'] ?? '';
 
         // === ESITO ===
         $values['DATI_PERCORSO_altri'] = $this->student->last_profession ?? '';
         $values['F29'] = $this->student->last_profession ?? '';
-        $values['F30'] = $this->report->hired_company ?? '';
+        // Azienda: form saves to hired_details, legacy field was hired_company.
+        $values['F30'] = $this->report->hired_details ?? ($this->report->hired_company ?? '');
+        $values['HIRED_PROFESSION'] = $this->report->hired_profession ?? '';
+        $values['HIRED_CONTRACT'] = $this->report->hired_contract ?? '';
+
+        // === VALUTAZIONE REINSERIMENTO (Section 2 - table) ===
+        $reinsertion = $this->report->reinsertion_assessment ?? '';
+        $values['REINS_BREVE'] = ($reinsertion === 'breve_termine') ? 'X' : '';
+        $values['REINS_MEDIO'] = ($reinsertion === 'medio_termine') ? 'X' : '';
+        $values['REINS_NO'] = ($reinsertion === 'no_reinserimento') ? 'X' : '';
 
         // === SEZIONI NARRATIVE ===
         // Situazione iniziale.
         $values['SITUAZIONE_INIZIALE'] = $this->report->initial_situation ?? '';
+        $values['SETTORE_RIFERIMENTO'] = $this->report->initial_situation_sector ?? '';
 
         // Valutazione competenze settore.
         $values['VALUTAZIONE_SETTORE'] = $this->report->sector_competency_text ?? '';
@@ -269,7 +285,10 @@ class word_exporter {
         $processor->setCheckbox('hired_si', $hired);
         $processor->setCheckbox('hired_no', !$hired);
 
-        // Competency ratings are handled via 'x' markers in tables.
+        // SIP consent (sostegno al collocamento): Sì=1, No=0.
+        if (isset($this->report->sip_consent)) {
+            $processor->setSipConsent((int) $this->report->sip_consent);
+        }
     }
 
     /**
@@ -301,9 +320,15 @@ class word_exporter {
             );
         }
 
+        // Section 1 - Settore di riferimento: now handled by «SETTORE_RIFERIMENTO» guillemet tag.
+        // Hint text replacement kept as fallback for older templates.
         if (!empty($this->report->initial_situation_sector)) {
             $processor->replaceText(
                 'Es.: Generico, meccanica, automazione, logistica, elettrico ecc',
+                ''
+            );
+            $processor->replaceText(
+                'Indicare eventuali settori in cui si svolge un rilevamento approfondito teorico o pratico',
                 ''
             );
         }
@@ -338,6 +363,43 @@ class word_exporter {
     }
 
     /**
+     * Get coach full name (e.g., "Roberto Bravo").
+     *
+     * @return string Coach full name.
+     */
+    private function getCoachFullName() {
+        if (!$this->coach) {
+            return '';
+        }
+
+        return trim($this->coach->firstname . ' ' . $this->coach->lastname);
+    }
+
+    /**
+     * Get coach email in format nome.cognome@f3m.ch.
+     *
+     * @return string Coach email.
+     */
+    private function getCoachEmail() {
+        if (!$this->coach) {
+            return '';
+        }
+
+        $first = mb_strtolower($this->coach->firstname, 'UTF-8');
+        $last = mb_strtolower($this->coach->lastname, 'UTF-8');
+
+        // Clean accents and spaces.
+        $email = $first . '.' . $last;
+        $email = str_replace(' ', '', $email);
+        $email = strtr($email, [
+            'à' => 'a', 'è' => 'e', 'é' => 'e', 'ì' => 'i', 'ò' => 'o', 'ù' => 'u',
+            'ä' => 'a', 'ö' => 'o', 'ü' => 'u',
+        ]);
+
+        return $email . '@f3m.ch';
+    }
+
+    /**
      * Get full name from Moodle user.
      *
      * @return string Full name.
@@ -368,30 +430,35 @@ class word_exporter {
      * @return string Number of days.
      */
     private function calculateEffectiveDays() {
+        // Use real attendance data from Aladino: X + O = effective days (supports half-days).
+        $presenze_x = (float) ($this->student->absence_x ?? 0);
+        $presenze_o = (float) ($this->student->absence_o ?? 0);
+        $effective = $presenze_x + $presenze_o;
+
+        if ($effective > 0) {
+            // Format: 22 not 22.0, but 6.5 stays 6.5.
+            return (floor($effective) == $effective) ? (string) (int) $effective : (string) $effective;
+        }
+
+        // Fallback to date-based calculation.
         $start = $this->student->date_start ?? 0;
         $end = $this->student->date_end_actual ?? $this->student->date_end_planned ?? time();
 
         if (empty($start)) {
-            return '30'; // Default.
+            return '30';
         }
 
-        // Calculate working days (excluding weekends).
         $days = 0;
         $current = $start;
-
         while ($current <= $end) {
-            $dayOfWeek = date('N', $current);
-            if ($dayOfWeek < 6) { // Mon-Fri.
+            if (date('N', $current) < 6) {
                 $days++;
             }
-            $current += 86400; // +1 day.
+            $current += 86400;
         }
 
-        // Subtract absences.
         $absences = $this->student->absence_total ?? 0;
-        $effective = max(0, $days - $absences);
-
-        return (string) $effective;
+        return (string) max(0, $days - $absences);
     }
 
     /**
@@ -400,21 +467,53 @@ class word_exporter {
      * @return string Interviews detail.
      */
     private function getInterviewsDetail() {
+        $data = $this->getInterviewsData();
+        $parts = [];
+        if (!empty($data['company'])) {
+            $parts[] = $data['company'];
+        }
+        if (!empty($data['date'])) {
+            $parts[] = $data['date'];
+        }
+        return implode(' - ', $parts);
+    }
+
+    /**
+     * Get structured interview data (company and date separately).
+     *
+     * Reads from interviews_employers field which contains "Company - dd.mm.yyyy"
+     * format set by the Aladino import, or free text entered by the coach.
+     *
+     * @return array ['company' => string, 'date' => string]
+     */
+    private function getInterviewsData() {
+        $result = ['company' => '', 'date' => ''];
+
+        // Try interviews_employers (set by Aladino import as "Company - dd.mm.yyyy").
+        $employers = $this->report->interviews_employers ?? '';
+        if (!empty($employers)) {
+            // Try to split "Company - dd.mm.yyyy" format.
+            if (preg_match('/^(.+?)\s*-\s*(\d{2}\.\d{2}\.\d{4})$/', $employers, $m)) {
+                $result['company'] = trim($m[1]);
+                $result['date'] = trim($m[2]);
+            } else {
+                // Free text: put it all in company.
+                $result['company'] = $employers;
+            }
+            return $result;
+        }
+
+        // Legacy: try interviews_json.
         if (!empty($this->report->interviews_json)) {
             $interviews = json_decode($this->report->interviews_json, true);
             if (is_array($interviews) && !empty($interviews)) {
-                $details = [];
-                foreach ($interviews as $interview) {
-                    $company = $interview['company'] ?? '';
-                    $date = $interview['date'] ?? '';
-                    if ($company) {
-                        $details[] = $company . ($date ? ' (' . $date . ')' : '');
-                    }
-                }
-                return implode(', ', $details);
+                $first = $interviews[0];
+                $result['company'] = $first['company'] ?? '';
+                $result['date'] = $first['date'] ?? '';
             }
         }
-        return '';
+
+        return $result;
     }
 
     /**

@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_ftm_cpurc';
-$plugin->version = 2026032301;  // SIP consent box + absence table update + allegati field.
+$plugin->version = 2026032502;  // Aladino import + half-day absences + hired_profession/contract.
 $plugin->requires = 2024042200; // Moodle 4.4+
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = 'v1.4.1';
+$plugin->release = 'v1.5.0';
 $plugin->dependencies = [
     'local_competencymanager' => ANY_VERSION,
     'local_ftm_scheduler' => ANY_VERSION,
