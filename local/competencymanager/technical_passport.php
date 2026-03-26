@@ -18,6 +18,7 @@ require_login();
 
 $userid = required_param('userid', PARAM_INT);
 $courseid = required_param('courseid', PARAM_INT);
+$cm_sector_filter = optional_param('cm_sector', 'all', PARAM_ALPHANUMEXT);
 
 $student = $DB->get_record('user', ['id' => $userid, 'deleted' => 0], '*', MUST_EXIST);
 $course = get_course($courseid);
@@ -317,6 +318,27 @@ if (empty($sector) && !empty($courseSector)) {
     $sectorsFound[$courseSector] = true;
 }
 
+// Effective sector filter: use cm_sector param, or auto-detect if single sector.
+if ($cm_sector_filter !== 'all') {
+    $effectiveSectorFilter = $cm_sector_filter;
+} else if (count($sectorsFound) === 1 && !empty($sector)) {
+    $effectiveSectorFilter = $sector;
+} else {
+    $effectiveSectorFilter = 'all';
+}
+
+// Filter competencies by sector BEFORE aggregating (same logic as student_report.php).
+if ($effectiveSectorFilter !== 'all') {
+    $normalizedFilter = normalize_sector_name($effectiveSectorFilter);
+    $competencies = array_filter($competencies, function($comp) use ($normalizedFilter) {
+        $idnumber = $comp['idnumber'] ?? '';
+        $parts = explode('_', $idnumber);
+        $compSector = normalize_sector_name($parts[0] ?? '');
+        return strcasecmp($compSector, $normalizedFilter) === 0;
+    });
+    $competencies = array_values($competencies);
+}
+
 // Load area descriptions for all detected sectors.
 $areaDescriptions = [];
 foreach (array_keys($sectorsFound) as $sec) {
@@ -349,10 +371,11 @@ foreach ($areasData as $areaKey => $area) {
     ];
 }
 
-// Sector display name.
+// Sector display name (use effective filter if set).
 $sectorDisplay = '';
-if ($sector) {
-    $sectorDisplay = get_sector_display_name($sector);
+$displaySector = ($effectiveSectorFilter !== 'all') ? $effectiveSectorFilter : $sector;
+if ($displaySector) {
+    $sectorDisplay = get_sector_display_name($displaySector);
 }
 
 // Overall percentage.
