@@ -185,6 +185,13 @@ $string['cannotopentempate'] = 'Impossibile aprire il file template';
 $string['invaliddocument'] = 'Struttura documento non valida';
 $string['cannotcreateoutput'] = 'Impossibile creare file di output';
 
+// Annullamento iscrizione.
+$string['cancel_enrollment'] = 'Annulla Iscrizione';
+$string['cancel_enrollment_confirm'] = 'Sei sicura di voler annullare l\'iscrizione di questo studente?';
+$string['enrollment_cancelled'] = 'Iscrizione annullata con successo';
+$string['enrollment_already_cancelled'] = 'Iscrizione gia annullata';
+$string['student_cancelled'] = 'Iscrizione annullata - studente non piu accessibile.';
+
 // Inline editing.
 $string['field_saved'] = 'Campo salvato con successo';
 $string['field_save_error'] = 'Errore nel salvataggio';

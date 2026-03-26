@@ -60,6 +60,16 @@ if (!$student) {
     throw new moodle_exception('Student not found');
 }
 
+// Block access to cancelled students - redirect to dashboard.
+if ($student->status === 'cancelled') {
+    redirect(
+        new moodle_url('/local/ftm_cpurc/index.php'),
+        'Iscrizione annullata - studente non piu accessibile.',
+        null,
+        \core\output\notification::NOTIFY_WARNING
+    );
+}
+
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/ftm_cpurc/student_card.php', ['id' => $id, 'tab' => $tab]));
 $PAGE->set_title(get_string('student_card', 'local_ftm_cpurc') . ': ' . fullname($student));
@@ -149,6 +159,8 @@ echo $OUTPUT->header();
 .cpurc-btn-secondary { background: #6c757d; color: white !important; }
 .cpurc-btn-percorso { background: #f59e0b; color: white !important; border-color: #d97706; }
 .cpurc-btn-percorso:hover { background: #d97706; }
+.cpurc-btn-danger { background: #dc3545; color: white !important; }
+.cpurc-btn-danger:hover { background: #c82333; }
 .cpurc-btn:hover { opacity: 0.9; text-decoration: none !important; color: white !important; }
 a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc-btn:focus { color: white !important; text-decoration: none !important; }
 
@@ -452,6 +464,11 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
             <a href="<?php echo new moodle_url('/local/ftm_cpurc/index.php'); ?>" class="cpurc-btn cpurc-btn-secondary">
                 Torna
             </a>
+            <?php if (has_capability('local/ftm_cpurc:import', $context)): ?>
+            <button class="cpurc-btn cpurc-btn-danger" onclick="document.getElementById('cancelEnrollmentModal').style.display='flex'">
+                Annulla Iscrizione
+            </button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -1002,6 +1019,102 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
         <?php endif; ?>
     </div>
 </div>
+
+<?php if (has_capability('local/ftm_cpurc:import', $context)): ?>
+<!-- Cancel Enrollment Modal -->
+<div id="cancelEnrollmentModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:12px; width:480px; max-width:90vw; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden;">
+        <div style="background:#dc3545; color:white; padding:20px 24px; display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; font-size:18px;">Annulla Iscrizione</h3>
+            <button onclick="document.getElementById('cancelEnrollmentModal').style.display='none'" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
+        </div>
+        <div style="padding:24px;">
+            <p style="font-size:15px; margin-bottom:15px;">
+                Stai per <strong>annullare l'iscrizione</strong> di:
+            </p>
+            <div style="background:#f8f9fa; border-radius:8px; padding:15px; margin-bottom:20px; border-left:4px solid #dc3545;">
+                <strong style="font-size:16px;"><?php echo s($student->lastname . ' ' . $student->firstname); ?></strong><br>
+                <small style="color:#666;"><?php echo s($student->email); ?></small>
+            </div>
+            <p style="font-size:14px; color:#666; margin-bottom:5px;">Questa azione:</p>
+            <ul style="font-size:14px; color:#555; margin-bottom:20px; padding-left:20px;">
+                <li>Rimuove lo studente dalla dashboard CPURC</li>
+                <li>Disiscrizione dal corso</li>
+                <li>Rimuove dal gruppo colore</li>
+                <li>Rimuove l'assegnazione coach</li>
+                <li>Rimuove i settori assegnati</li>
+            </ul>
+            <p style="font-size:13px; color:#999; margin-bottom:20px;">L'utente Moodle non viene eliminato.</p>
+            <div id="cancelResult" style="display:none; padding:12px; border-radius:8px; margin-bottom:15px;"></div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button onclick="document.getElementById('cancelEnrollmentModal').style.display='none'" style="padding:10px 20px; border:1px solid #dee2e6; border-radius:6px; background:white; cursor:pointer; font-size:14px;">
+                    Annulla
+                </button>
+                <button id="btnConfirmCancel" onclick="confirmCancelEnrollment()" style="padding:10px 24px; border:none; border-radius:6px; background:#dc3545; color:white; cursor:pointer; font-size:14px; font-weight:600;">
+                    Conferma Annullamento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmCancelEnrollment() {
+    var btn = document.getElementById('btnConfirmCancel');
+    var resultDiv = document.getElementById('cancelResult');
+    btn.disabled = true;
+    btn.textContent = 'Annullamento in corso...';
+    btn.style.background = '#999';
+    resultDiv.style.display = 'none';
+
+    fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_cancel_enrollment.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'sesskey=<?php echo sesskey(); ?>&userid=<?php echo $student->userid; ?>'
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        resultDiv.style.display = 'block';
+        if (data.success) {
+            resultDiv.style.background = '#d4edda';
+            resultDiv.style.color = '#155724';
+            resultDiv.style.border = '1px solid #c3e6cb';
+            var html = '<strong>' + data.message + '</strong>';
+            if (data.details && data.details.length > 0) {
+                html += '<br><small>' + data.details.join(' | ') + '</small>';
+            }
+            resultDiv.innerHTML = html;
+            btn.textContent = 'Reindirizzamento...';
+            setTimeout(function() {
+                window.location.href = '<?php echo new moodle_url('/local/ftm_cpurc/index.php'); ?>';
+            }, 2000);
+        } else {
+            resultDiv.style.background = '#f8d7da';
+            resultDiv.style.color = '#721c24';
+            resultDiv.style.border = '1px solid #f5c6cb';
+            resultDiv.innerHTML = '<strong>Errore:</strong> ' + data.message;
+            btn.disabled = false;
+            btn.textContent = 'Conferma Annullamento';
+            btn.style.background = '#dc3545';
+        }
+    })
+    .catch(function(error) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = '#f8d7da';
+        resultDiv.style.color = '#721c24';
+        resultDiv.innerHTML = '<strong>Errore di connessione</strong>';
+        btn.disabled = false;
+        btn.textContent = 'Conferma Annullamento';
+        btn.style.background = '#dc3545';
+    });
+}
+
+// Close modal on backdrop click.
+document.getElementById('cancelEnrollmentModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+</script>
+<?php endif; ?>
 
 <script>
 // Clear sector dropdown buttons

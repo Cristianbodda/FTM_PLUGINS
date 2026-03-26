@@ -37,6 +37,16 @@ if (!$student) {
     throw new moodle_exception('studentnotfound', 'local_ftm_cpurc');
 }
 
+// Block cancelled students.
+if ($student->status === 'cancelled') {
+    redirect(
+        new moodle_url('/local/ftm_cpurc/index.php'),
+        'Iscrizione annullata - studente non piu accessibile.',
+        null,
+        \core\output\notification::NOTIFY_WARNING
+    );
+}
+
 // Get report data.
 $report = \local_ftm_cpurc\cpurc_manager::get_report($id);
 

@@ -185,6 +185,13 @@ $string['cannotopentempate'] = 'Cannot open template file';
 $string['invaliddocument'] = 'Invalid document structure';
 $string['cannotcreateoutput'] = 'Cannot create output file';
 
+// Enrollment cancellation.
+$string['cancel_enrollment'] = 'Cancel Enrollment';
+$string['cancel_enrollment_confirm'] = 'Are you sure you want to cancel the enrollment for this student?';
+$string['enrollment_cancelled'] = 'Enrollment cancelled successfully';
+$string['enrollment_already_cancelled'] = 'Enrollment already cancelled';
+$string['student_cancelled'] = 'Cancelled - student no longer accessible.';
+
 // Inline editing.
 $string['field_saved'] = 'Field saved successfully';
 $string['field_save_error'] = 'Error saving field';

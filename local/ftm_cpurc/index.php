@@ -613,6 +613,7 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
                         <option value="">Tutti</option>
                         <option value="active" <?php echo $status === 'active' ? 'selected' : ''; ?>>Attivi</option>
                         <option value="closed" <?php echo $status === 'closed' ? 'selected' : ''; ?>>Chiusi</option>
+                        <option value="cancelled" <?php echo $status === 'cancelled' ? 'selected' : ''; ?>>Annullati</option>
                     </select>
                 </div>
                 <div class="filter-group">

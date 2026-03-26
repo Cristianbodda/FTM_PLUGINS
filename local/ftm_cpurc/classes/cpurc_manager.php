@@ -41,8 +41,11 @@ class cpurc_manager {
 
         $stats = new \stdClass();
 
-        // Total CPURC students.
-        $stats->total = $DB->count_records('local_ftm_cpurc_students');
+        // Total CPURC students (exclude cancelled).
+        $stats->total = $DB->count_records_select(
+            'local_ftm_cpurc_students',
+            "status IS NULL OR status != 'cancelled'"
+        );
 
         // Active students (status = active or Aperto).
         $stats->active = $DB->count_records_select(
@@ -59,20 +62,22 @@ class cpurc_manager {
             "status = 'final' OR status = 'sent'"
         );
 
-        // Students by URC.
+        // Students by URC (exclude cancelled).
         $stats->by_urc = $DB->get_records_sql(
             "SELECT urc_office, COUNT(*) as cnt
              FROM {local_ftm_cpurc_students}
              WHERE urc_office IS NOT NULL AND urc_office != ''
+               AND (status IS NULL OR status != 'cancelled')
              GROUP BY urc_office
              ORDER BY cnt DESC"
         );
 
-        // Students by sector.
+        // Students by sector (exclude cancelled).
         $stats->by_sector = $DB->get_records_sql(
             "SELECT sector_detected, COUNT(*) as cnt
              FROM {local_ftm_cpurc_students}
              WHERE sector_detected IS NOT NULL AND sector_detected != ''
+               AND (status IS NULL OR status != 'cancelled')
              GROUP BY sector_detected
              ORDER BY cnt DESC"
         );
@@ -119,10 +124,15 @@ class cpurc_manager {
         if (!empty($filters['status'])) {
             if ($filters['status'] === 'active') {
                 $where[] = "(cs.status = 'active' OR cs.status = 'Aperto' OR cs.status IS NULL)";
+            } else if ($filters['status'] === 'cancelled') {
+                $where[] = "cs.status = 'cancelled'";
             } else {
                 $where[] = "cs.status = :status";
                 $params['status'] = $filters['status'];
             }
+        } else {
+            // By default, exclude cancelled students.
+            $where[] = "(cs.status IS NULL OR cs.status != 'cancelled')";
         }
 
         // Report status filter.
