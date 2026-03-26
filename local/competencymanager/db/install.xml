@@ -225,5 +225,25 @@
         <INDEX NAME="student_course_sector_item_idx" UNIQUE="true" FIELDS="studentid, courseid, sector, level_type, item_code"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="local_passport_comments" COMMENT="Coach comments per area for Technical Passport">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Student user ID"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Course ID"/>
+        <FIELD NAME="area_code" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="Area key e.g. AUTOMOBILE_A"/>
+        <FIELD NAME="comment" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Coach comment for this area"/>
+        <FIELD NAME="coachid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Coach who wrote the comment"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="coachid_fk" TYPE="foreign" FIELDS="coachid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_courseid_area_idx" UNIQUE="true" FIELDS="userid, courseid, area_code"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>

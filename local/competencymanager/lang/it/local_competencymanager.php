@@ -159,3 +159,10 @@ $string['evaluated_by'] = 'Valutato da: {$a}';
 $string['select_sector_first'] = 'Seleziona prima un settore.';
 $string['no_competencies_found'] = 'Nessuna competenza trovata per questo settore.';
 $string['missing_required_ratings'] = 'Valuta tutte le competenze prima di completare la valutazione.';
+
+// Passaporto Tecnico
+$string['technical_passport'] = 'Passaporto Tecnico';
+$string['passport_comments_saved'] = 'Commenti passaporto salvati con successo';
+$string['passport_print'] = 'Stampa Passaporto Tecnico';
+$string['passport_save_comments'] = 'Salva Commenti';
+$string['passport_back'] = 'Torna allo Student Report';

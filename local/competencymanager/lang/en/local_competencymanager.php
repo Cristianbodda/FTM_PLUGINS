@@ -163,3 +163,10 @@ $string['evaluated_by'] = 'Evaluated by: {$a}';
 $string['select_sector_first'] = 'Please select a sector first.';
 $string['no_competencies_found'] = 'No competencies found for this sector.';
 $string['missing_required_ratings'] = 'Please rate all competencies before completing the evaluation.';
+
+// Technical Passport
+$string['technical_passport'] = 'Technical Passport';
+$string['passport_comments_saved'] = 'Passport comments saved successfully';
+$string['passport_print'] = 'Print Technical Passport';
+$string['passport_save_comments'] = 'Save Comments';
+$string['passport_back'] = 'Back to Student Report';
