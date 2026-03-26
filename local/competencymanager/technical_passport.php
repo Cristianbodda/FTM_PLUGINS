@@ -17,14 +17,19 @@ require_once(__DIR__ . '/area_mapping.php');
 require_login();
 
 $userid = required_param('userid', PARAM_INT);
-$courseid = required_param('courseid', PARAM_INT);
+$courseid = optional_param('courseid', 0, PARAM_INT);
 $cm_sector_filter = optional_param('cm_sector', 'all', PARAM_ALPHANUMEXT);
 
 $student = $DB->get_record('user', ['id' => $userid, 'deleted' => 0], '*', MUST_EXIST);
-$course = get_course($courseid);
-$context = context_course::instance($courseid);
+$course = $courseid ? get_course($courseid) : null;
 
-// Check permissions: must be able to view competency reports.
+if ($courseid) {
+    $context = context_course::instance($courseid);
+} else {
+    $context = context_system::instance();
+}
+
+// Check permissions.
 $canviewall = has_capability('moodle/grade:viewall', $context);
 $isadmin = is_siteadmin();
 $isownreport = ($USER->id == $userid);
@@ -312,7 +317,7 @@ foreach ($competencies as $comp) {
 $sector = !empty($sectorsFound) ? array_key_first($sectorsFound) : null;
 
 // Fallback: detect sector from course name.
-$courseSector = get_sector_from_course_name($course->fullname);
+$courseSector = $course ? get_sector_from_course_name($course->fullname) : '';
 if (empty($sector) && !empty($courseSector)) {
     $sector = $courseSector;
     $sectorsFound[$courseSector] = true;
