@@ -530,23 +530,25 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
 
 /* Alert messages */
 .doc-alert {
-    padding: 12px 15px;
-    border-radius: 4px;
+    padding: 18px 20px;
+    border-radius: 6px;
     margin-bottom: 15px;
     display: none;
+    font-size: 14pt;
+    line-height: 1.6;
 }
 
 .doc-alert.success {
     display: block;
     background: #d4edda;
-    border: 1px solid #c3e6cb;
+    border: 2px solid #28a745;
     color: #155724;
 }
 
 .doc-alert.error {
     display: block;
     background: #f8d7da;
-    border: 1px solid #f5c6cb;
+    border: 2px solid #dc3545;
     color: #721c24;
 }
 
@@ -1235,6 +1237,15 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
 </div><!-- end doc-container -->
 
 <script>
+// Keep Moodle session alive every 5 minutes while working on the report.
+setInterval(function() {
+    fetch('<?php echo $CFG->wwwroot; ?>/lib/ajax/service.php?sesskey=<?php echo sesskey(); ?>&info=core_session_touch', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify([{index: 0, methodname: 'core_session_touch', args: {}}])
+    }).catch(function() {});
+}, 300000);
+
 function selectReinsertion(value, cell) {
     // Deselect all reinsertion cells.
     document.querySelectorAll('.reinsertion-cell').forEach(function(c) {
@@ -1302,8 +1313,14 @@ document.getElementById('btn-save').addEventListener('click', async function() {
     });
     formData.append('search_channels', JSON.stringify(channels));
 
-    this.disabled = true;
-    this.innerHTML = 'Salvataggio...';
+    var btn = this;
+    btn.disabled = true;
+    btn.innerHTML = 'Salvataggio in corso...';
+    btn.style.background = '#f39c12';
+
+    var alertEl = document.getElementById('save-alert');
+    alertEl.className = 'doc-alert';
+    alertEl.style.display = 'none';
 
     try {
         var response = await fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_save_report.php', {
@@ -1311,31 +1328,70 @@ document.getElementById('btn-save').addEventListener('click', async function() {
             body: formData
         });
 
+        if (!response.ok) {
+            throw new Error('Server error: ' + response.status + ' ' + response.statusText);
+        }
+
         var data = await response.json();
-        var alertEl = document.getElementById('save-alert');
 
         if (data.success) {
-            alertEl.className = 'doc-alert success';
-            alertEl.textContent = data.message;
+            // Update report ID.
             if (data.reportid) {
                 document.querySelector('input[name="reportid"]').value = data.reportid;
             }
+
+            // Flash all sections green.
+            document.querySelectorAll('.doc-section').forEach(function(section) {
+                section.style.transition = 'background-color 0.3s';
+                section.style.backgroundColor = '#d4edda';
+            });
+            setTimeout(function() {
+                document.querySelectorAll('.doc-section').forEach(function(section) {
+                    section.style.backgroundColor = '';
+                });
+            }, 1500);
+
+            // Show success banner.
+            alertEl.style.display = 'block';
+            alertEl.className = 'doc-alert success';
+            alertEl.innerHTML = '<strong>Salvataggio completato!</strong> Tutti i dati sono stati salvati correttamente. (' + new Date().toLocaleTimeString('it-CH') + ')';
+
+            // Change save button to green temporarily.
+            btn.style.background = '#27ae60';
+            btn.innerHTML = 'Salvato!';
+            setTimeout(function() {
+                btn.style.background = '#3498db';
+                btn.innerHTML = 'Salva';
+            }, 3000);
+
+            // Hide alert after 10 seconds.
+            setTimeout(function() { alertEl.style.display = 'none'; }, 10000);
+
         } else {
+            // Show error.
+            alertEl.style.display = 'block';
             alertEl.className = 'doc-alert error';
-            alertEl.textContent = data.message;
+            alertEl.innerHTML = '<strong>ERRORE nel salvataggio!</strong> ' + (data.message || 'Errore sconosciuto') + '<br>Riprovare. Se il problema persiste, ricaricare la pagina (F5).';
+            btn.style.background = '#e74c3c';
+            btn.innerHTML = 'Errore - Riprova';
+            setTimeout(function() {
+                btn.style.background = '#3498db';
+                btn.innerHTML = 'Salva';
+            }, 5000);
         }
 
-        setTimeout(function() { alertEl.className = 'doc-alert'; }, 5000);
-
     } catch (error) {
-        console.error(error);
-        var alertEl = document.getElementById('save-alert');
+        console.error('Save error:', error);
+        alertEl.style.display = 'block';
         alertEl.className = 'doc-alert error';
-        alertEl.textContent = 'Errore di connessione';
+        alertEl.innerHTML = '<strong>ERRORE di connessione!</strong> Il salvataggio non e\' andato a buon fine.<br>' +
+            'Possibile causa: sessione scaduta. <strong>Ricaricare la pagina (F5)</strong> e riprovare.<br>' +
+            '<small>Dettaglio: ' + error.message + '</small>';
+        btn.style.background = '#e74c3c';
+        btn.innerHTML = 'Errore - Ricarica pagina';
     }
 
-    this.disabled = false;
-    this.innerHTML = 'Salva';
+    btn.disabled = false;
 });
 
 document.getElementById('btn-export').addEventListener('click', function() {
