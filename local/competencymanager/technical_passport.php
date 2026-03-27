@@ -744,7 +744,7 @@ echo $OUTPUT->header();
         margin: 0 auto;
         max-width: 100%;
         height: auto;
-        transform: scale(0.85);
+        transform: scale(1.1);
         transform-origin: top center;
     }
 
