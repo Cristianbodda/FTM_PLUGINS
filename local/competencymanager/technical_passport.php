@@ -632,9 +632,10 @@ echo $OUTPUT->header();
    PRINT STYLES
    ======================================== */
 @media print {
-    body { background: #fff !important; margin: 0; padding: 0; font-size: 11pt; }
+    @page { size: portrait; margin: 10mm; }
+    body { background: #fff !important; margin: 0; padding: 0; font-size: 10pt; }
 
-    /* Hide all Moodle UI + screen-only elements */
+    /* Hide Moodle UI + screen-only elements */
     .no-print,
     #page-header,
     #nav-drawer,
@@ -664,51 +665,52 @@ echo $OUTPUT->header();
         margin: 0;
     }
 
-    /* ---- FTM Branded Print Header (red bar) ---- */
+    /* ---- FTM Red Header Bar ---- */
     .passport-print-header {
         display: flex !important;
         align-items: center;
         justify-content: space-between;
         background: #c0392b !important;
         color: #fff !important;
-        padding: 10px 20px;
-        margin-bottom: 15px;
-        border-radius: 0;
+        padding: 8px 15px;
+        margin-bottom: 8px;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
     .passport-print-header .print-logo {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
     }
     .passport-print-header .print-logo-box {
         background: #fff;
-        border-radius: 4px;
-        padding: 4px 10px;
-        font-size: 9pt;
+        border-radius: 3px;
+        padding: 3px 8px;
+        font-size: 7pt;
         color: #c0392b;
         font-weight: 700;
         line-height: 1.2;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
     .passport-print-header .print-student-name {
-        font-size: 13pt;
+        font-size: 11pt;
         font-weight: 700;
         color: #fff;
     }
     .passport-print-header .print-sector-badge {
         background: #e74c3c;
         color: #fff;
-        padding: 3px 12px;
-        border-radius: 4px;
-        font-size: 9pt;
+        padding: 2px 10px;
+        border-radius: 3px;
+        font-size: 8pt;
         font-weight: 600;
         text-transform: uppercase;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
     .passport-print-header .print-title {
-        font-size: 11pt;
+        font-size: 9pt;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 1px;
@@ -719,73 +721,80 @@ echo $OUTPUT->header();
         color: #fff;
     }
     .passport-print-header .print-score .score-value {
-        font-size: 13pt;
+        font-size: 11pt;
         font-weight: 700;
     }
     .passport-print-header .print-score .score-date {
-        font-size: 8pt;
+        font-size: 7pt;
         opacity: 0.9;
     }
 
-    /* ---- Radar section in print ---- */
+    /* ---- Radar ---- */
     .passport-radar-section {
-        page-break-inside: avoid;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
     }
     .passport-radar-section h2 {
-        font-size: 12pt;
+        font-size: 11pt;
         text-align: center;
-        margin: 10px 0 5px 0;
+        margin: 5px 0 0 0;
     }
     .passport-radar-section svg {
         display: block;
         margin: 0 auto;
         width: 100%;
-        max-width: 580px;
+        max-width: 480px;
         height: auto;
     }
 
-    /* ---- Table in print ---- */
-    .passport-table-section {
-        page-break-inside: avoid;
-    }
+    /* ---- Table with comments ---- */
     .passport-table-section h2 {
         display: none;
     }
     .passport-table {
-        font-size: 10pt;
+        font-size: 9pt;
         border-collapse: collapse;
+        width: 100%;
     }
     .passport-table thead th {
         background: #f5f5f5 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
-        padding: 6px 10px;
-        font-size: 9pt;
+        padding: 4px 8px;
+        font-size: 8pt;
         border: 1px solid #ccc;
     }
     .passport-table td {
-        padding: 5px 10px;
+        padding: 3px 8px;
         border: 1px solid #ccc;
+        vertical-align: top;
+    }
+    .passport-table .area-name {
+        font-size: 9pt;
     }
 
-    /* Hide comment column in print */
-    .passport-table th.col-comment,
-    .passport-table td.col-comment {
-        display: none !important;
+    /* Show comments in print as plain text */
+    .passport-table textarea {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        padding: 0;
+        margin: 0;
+        font-size: 8pt;
+        font-family: inherit;
+        resize: none;
+        overflow: visible;
+        height: auto !important;
+        min-height: 14px;
+        width: 100%;
+        color: #333;
     }
 
     /* Badge colors */
     .pct-badge {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
-        padding: 2px 10px;
-        font-size: 9pt;
-    }
-
-    /* Area code column compact */
-    .passport-table .area-code {
-        font-size: 10pt;
+        padding: 1px 8px;
+        font-size: 8pt;
     }
 }
 
