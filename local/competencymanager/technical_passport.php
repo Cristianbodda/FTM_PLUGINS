@@ -731,7 +731,8 @@ echo $OUTPUT->header();
 
     /* ---- Radar ---- */
     .passport-radar-section {
-        margin-bottom: 5px;
+        margin-bottom: 15px;
+        overflow: hidden;
     }
     .passport-radar-section h2 {
         font-size: 11pt;
@@ -741,9 +742,10 @@ echo $OUTPUT->header();
     .passport-radar-section svg {
         display: block;
         margin: 0 auto;
-        width: 100%;
-        max-width: 480px;
+        max-width: 100%;
         height: auto;
+        transform: scale(0.7);
+        transform-origin: top center;
     }
 
     /* ---- Table with comments ---- */
