@@ -744,7 +744,7 @@ echo $OUTPUT->header();
         margin: 0 auto;
         max-width: 100%;
         height: auto;
-        transform: scale(0.7);
+        transform: scale(0.85);
         transform-origin: top center;
     }
 
@@ -753,7 +753,7 @@ echo $OUTPUT->header();
         display: none;
     }
     .passport-table {
-        font-size: 9pt;
+        font-size: 11pt;
         border-collapse: collapse;
         width: 100%;
     }
@@ -761,17 +761,17 @@ echo $OUTPUT->header();
         background: #f5f5f5 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
-        padding: 4px 8px;
-        font-size: 8pt;
+        padding: 6px 10px;
+        font-size: 10pt;
         border: 1px solid #ccc;
     }
     .passport-table td {
-        padding: 3px 8px;
+        padding: 5px 10px;
         border: 1px solid #ccc;
         vertical-align: top;
     }
     .passport-table .area-name {
-        font-size: 9pt;
+        font-size: 11pt;
     }
 
     /* Show comments in print as plain text */
@@ -781,12 +781,12 @@ echo $OUTPUT->header();
         box-shadow: none !important;
         padding: 0;
         margin: 0;
-        font-size: 8pt;
+        font-size: 10pt;
         font-family: inherit;
         resize: none;
         overflow: visible;
         height: auto !important;
-        min-height: 14px;
+        min-height: 16px;
         width: 100%;
         color: #333;
     }
@@ -795,8 +795,8 @@ echo $OUTPUT->header();
     .pct-badge {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
-        padding: 1px 8px;
-        font-size: 8pt;
+        padding: 2px 10px;
+        font-size: 10pt;
     }
 }
 
