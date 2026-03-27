@@ -665,67 +665,104 @@ echo $OUTPUT->header();
         margin: 0;
     }
 
-    /* ---- FTM Red Header Bar ---- */
+    /* ---- FTM Red Header Block ---- */
     .passport-print-header {
-        display: flex !important;
-        align-items: center;
-        justify-content: space-between;
-        background: #c0392b !important;
+        display: block !important;
+        background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%) !important;
         color: #fff !important;
-        padding: 8px 15px;
-        margin-bottom: 8px;
+        padding: 20px 25px 18px 25px;
+        margin-bottom: 12px;
+        border-radius: 8px;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+        position: relative;
     }
-    .passport-print-header .print-logo {
+    /* Top logo row */
+    .print-logos {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 15px;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.3);
     }
-    .passport-print-header .print-logo-box {
-        background: #fff;
-        border-radius: 3px;
-        padding: 3px 8px;
-        font-size: 7pt;
-        color: #c0392b;
-        font-weight: 700;
-        line-height: 1.2;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    .passport-print-header .print-student-name {
-        font-size: 11pt;
-        font-weight: 700;
-        color: #fff;
-    }
-    .passport-print-header .print-sector-badge {
-        background: #e74c3c;
-        color: #fff;
-        padding: 2px 10px;
-        border-radius: 3px;
-        font-size: 8pt;
-        font-weight: 600;
-        text-transform: uppercase;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    .passport-print-header .print-title {
+    .print-logo-box {
+        background: #fff !important;
+        border-radius: 4px;
+        padding: 8px 15px;
         font-size: 9pt;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #fff;
+        color: #c0392b !important;
+        font-weight: 700;
+        line-height: 1.3;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
-    .passport-print-header .print-score {
+    .print-logo-box small {
+        display: block;
+        font-size: 6pt;
+        font-weight: 400;
+        color: #666 !important;
+    }
+    .print-org-box {
+        background: #fff !important;
+        border-radius: 4px;
+        padding: 8px 15px;
+        color: #333 !important;
+        font-size: 10pt;
+        font-weight: 700;
+        line-height: 1.3;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .print-org-box span {
+        display: block;
+        font-size: 9pt;
+        font-weight: 400;
+        color: #e74c3c !important;
+    }
+    /* Title + details */
+    .print-main-title {
+        font-size: 16pt;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 8px 0;
+        text-transform: uppercase;
+    }
+    .print-details {
+        font-size: 10pt;
+        color: #fff;
+        line-height: 1.8;
+    }
+    .print-details strong {
+        font-weight: 700;
+    }
+    .print-sector-badge {
+        display: inline-block;
+        background: rgba(0,0,0,0.25) !important;
+        color: #fff !important;
+        padding: 2px 12px;
+        border-radius: 4px;
+        font-size: 9pt;
+        font-weight: 700;
+        text-transform: uppercase;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    /* Score on the right */
+    .print-score-block {
+        position: absolute;
+        right: 25px;
+        bottom: 20px;
         text-align: right;
         color: #fff;
     }
-    .passport-print-header .print-score .score-value {
-        font-size: 11pt;
+    .print-score-block .score-pct {
+        font-size: 28pt;
         font-weight: 700;
+        line-height: 1;
     }
-    .passport-print-header .print-score .score-date {
-        font-size: 7pt;
+    .print-score-block .score-label {
+        font-size: 9pt;
         opacity: 0.9;
     }
 
@@ -808,19 +845,34 @@ echo $OUTPUT->header();
 
 <div class="passport-container">
 
-    <!-- Print-only header (FTM red bar) -->
+    <!-- Print-only header (FTM red block) -->
     <div class="passport-print-header">
-        <div class="print-logo">
-            <div class="print-logo-box">fondazione<br><strong>Millennio</strong></div>
-            <span class="print-student-name"><?php echo s(fullname($student)); ?></span>
-            <?php if ($sectorDisplay): ?>
-            <span class="print-sector-badge"><?php echo s($sectorDisplay); ?></span>
-            <?php endif; ?>
+        <div class="print-logos">
+            <div class="print-logo-box">
+                fondazione <strong>Millennio</strong>
+                <small>Unita formativa di Aiti - Associazione industrie ticinesi</small>
+            </div>
+            <div class="print-org-box">
+                Fondazione Terzo Millennio
+                <span>Formazione Professionale</span>
+            </div>
         </div>
-        <span class="print-title">PASSAPORTO TECNICO</span>
-        <div class="print-score">
-            <div class="score-value">Score: <?php echo $overallPct; ?>%</div>
-            <div class="score-date"><?php echo date('d/m/Y'); ?></div>
+        <h2 class="print-main-title">Passaporto Tecnico</h2>
+        <div class="print-details">
+            <strong>Studente:</strong> <?php echo s(fullname($student)); ?><br>
+            <strong>Email:</strong> <?php echo s($student->email); ?><br>
+            <strong>Settore:</strong>
+            <?php if ($sectorDisplay): ?>
+                <span class="print-sector-badge"><?php echo s($sectorDisplay); ?></span>
+            <?php else: ?>
+                -
+            <?php endif; ?>
+            <br>
+            <strong>Data stampa:</strong> <?php echo date('d/m/Y H:i'); ?>
+        </div>
+        <div class="print-score-block">
+            <div class="score-pct"><?php echo $overallPct; ?>%</div>
+            <div class="score-label">Punteggio Globale</div>
         </div>
     </div>
 
