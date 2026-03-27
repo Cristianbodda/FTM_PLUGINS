@@ -242,6 +242,7 @@ function normalize_sector_name($sector) {
         'ELETTR' => 'ELETTRICITA',
         'ELETT' => 'ELETTRICITA',
         'ELETTRICITA' => 'ELETTRICITA', // Normalizza accenti
+        'ELETTRICIT' => 'ELETTRICITA', // Accento troncato da PARAM_ALPHANUMEXT
         // Chimfarm
         'CHIM' => 'CHIMFARM',
         'CHIMICA' => 'CHIMFARM',

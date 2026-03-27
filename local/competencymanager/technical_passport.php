@@ -335,13 +335,16 @@ if ($cm_sector_filter !== 'all') {
 // Filter competencies by sector BEFORE aggregating (same logic as student_report.php).
 if ($effectiveSectorFilter !== 'all') {
     $normalizedFilter = normalize_sector_name($effectiveSectorFilter);
-    $competencies = array_filter($competencies, function($comp) use ($normalizedFilter) {
+    $filtered = array_filter($competencies, function($comp) use ($normalizedFilter) {
         $idnumber = $comp['idnumber'] ?? '';
         $parts = explode('_', $idnumber);
         $compSector = normalize_sector_name($parts[0] ?? '');
         return strcasecmp($compSector, $normalizedFilter) === 0;
     });
-    $competencies = array_values($competencies);
+    // Only apply filter if it matches something; otherwise show all data.
+    if (!empty($filtered)) {
+        $competencies = array_values($filtered);
+    }
 }
 
 // Load area descriptions for all detected sectors.
