@@ -975,6 +975,8 @@ $debugMode = optional_param('debug', 0, PARAM_INT);
 if ($debugMode) {
     echo '<div class="alert alert-info mt-2" style="font-size: 12px; font-family: monospace;">';
     echo '<strong>🔍 DEBUG INFO:</strong><br>';
+    echo 'courseid: ' . $courseid . '<br>';
+    echo 'Available Quizzes: ' . count($availableQuizzes) . '<br>';
     echo 'Selected Quiz IDs: ' . ($quizIdsForQuery ? implode(', ', $quizIdsForQuery) : 'TUTTI') . '<br>';
     echo 'Attempt Filter: ' . $attemptFilter . '<br>';
     echo 'Competencies found: ' . count($competencies) . '<br>';
