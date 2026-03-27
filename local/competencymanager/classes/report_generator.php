@@ -416,8 +416,15 @@ class report_generator {
     
     public static function get_available_quizzes($userid, $courseid) {
         global $DB;
-        
-        $sql = "SELECT DISTINCT 
+
+        $params = ['userid' => $userid];
+        $coursecondition = '';
+        if ($courseid) {
+            $coursecondition = 'AND q.course = :courseid';
+            $params['courseid'] = $courseid;
+        }
+
+        $sql = "SELECT DISTINCT
                     q.id,
                     q.name,
                     COUNT(DISTINCT qa.id) as attempts,
@@ -425,12 +432,12 @@ class report_generator {
                 FROM {quiz} q
                 JOIN {quiz_attempts} qa ON qa.quiz = q.id
                 WHERE qa.userid = :userid
-                AND q.course = :courseid
+                {$coursecondition}
                 AND qa.state = 'finished'
                 GROUP BY q.id, q.name
                 ORDER BY q.name";
-        
-        return $DB->get_records_sql($sql, ['userid' => $userid, 'courseid' => $courseid]);
+
+        return $DB->get_records_sql($sql, $params);
     }
     
     public static function get_available_areas($userid, $courseid = null) {
