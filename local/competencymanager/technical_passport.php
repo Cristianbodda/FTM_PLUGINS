@@ -852,8 +852,7 @@ echo $OUTPUT->header();
     <div class="passport-print-header">
         <div class="print-logos">
             <div class="print-logo-box">
-                fondazione <strong>Millennio</strong>
-                <small>Unita formativa di Aiti - Associazione industrie ticinesi</small>
+                <img src="<?php echo $CFG->wwwroot; ?>/local/competencymanager/pix/ftm_logo.png" alt="Fondazione Millennio" style="height: 45px; display: block;">
             </div>
             <div class="print-org-box">
                 Fondazione Terzo Millennio
