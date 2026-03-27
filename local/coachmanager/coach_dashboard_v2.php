@@ -4456,6 +4456,14 @@ function render_view_compatta($students, $dashboard) {
                         &#128197;
                     </button>
                     <?php endif; ?>
+                    <?php if (has_capability('moodle/user:loginas', context_system::instance())): ?>
+                    <button class="btn btn-sm"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/course/loginas.php?id=1&amp;user=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>'"
+                            title="Accedi come Studente"
+                            style="background: #3b82f6 !important; color: #fff !important; border-color: #2563eb !important;">
+                        &#128100;
+                    </button>
+                    <?php endif; ?>
                     <button class="btn btn-sm"
                             onclick="event.stopPropagation(); openQuizUnlock(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>')"
                             title="Sblocca Quiz"
@@ -4585,6 +4593,12 @@ function render_view_standard($students, $dashboard) {
                        class="quick-btn" title="Sblocca Quiz" style="background:#7c3aed;color:#fff;">
                         &#128275; Quiz
                     </a>
+                    <?php if (has_capability('moodle/user:loginas', context_system::instance())): ?>
+                    <a href="<?php echo $CFG->wwwroot; ?>/course/loginas.php?id=1&amp;user=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>"
+                       class="quick-btn" title="Accedi come Studente" style="background:#3b82f6;color:#fff;">
+                        &#128100; Accedi
+                    </a>
+                    <?php endif; ?>
                     <?php if ($is_end6): ?>
                     <a href="#" onclick="exportWord(<?php echo $student->id; ?>); return false;"
                        class="quick-btn word" title="Esporta Word">
@@ -5147,6 +5161,13 @@ function render_view_dettagliata($students, $dashboard) {
                         &#128197; Percorso
                     </button>
                     <?php endif; ?>
+                    <?php if (has_capability('moodle/user:loginas', context_system::instance())): ?>
+                    <button class="btn"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/course/loginas.php?id=1&amp;user=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>'"
+                            style="background: #3b82f6 !important; color: #fff !important; border-color: #2563eb !important;">
+                        &#128100; Accedi come Studente
+                    </button>
+                    <?php endif; ?>
                     <?php if ($is_end6): ?>
                     <button class="btn btn-warning"
                             onclick="exportWord(<?php echo $student->id; ?>)">
@@ -5336,6 +5357,13 @@ function render_view_classica($students, $dashboard) {
                                 style="background: #7c3aed !important; color: #fff !important; border-color: #6d28d9 !important;">
                             &#128275; Quiz
                         </button>
+                        <?php if (has_capability('moodle/user:loginas', context_system::instance())): ?>
+                        <button class="btn btn-sm"
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/course/loginas.php?id=1&amp;user=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>'"
+                                style="background: #3b82f6 !important; color: #fff !important; border-color: #2563eb !important;">
+                            &#128100; Accedi
+                        </button>
+                        <?php endif; ?>
                         <?php if (!empty($student->sip_enrolled)): ?>
                         <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
                            class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>

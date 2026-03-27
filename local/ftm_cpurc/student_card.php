@@ -461,6 +461,11 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
                 &#128197; Percorso
             </a>
             <?php endif; ?>
+            <?php if (has_capability('moodle/user:loginas', context_system::instance())): ?>
+            <a href="<?php echo new moodle_url('/course/loginas.php', ['id' => 1, 'user' => $student->userid, 'sesskey' => sesskey()]); ?>" class="cpurc-btn" style="background:#3b82f6; color:#fff !important;">
+                Accedi come Studente
+            </a>
+            <?php endif; ?>
             <a href="<?php echo new moodle_url('/local/ftm_cpurc/index.php'); ?>" class="cpurc-btn cpurc-btn-secondary">
                 Torna
             </a>
