@@ -632,7 +632,9 @@ echo $OUTPUT->header();
    PRINT STYLES
    ======================================== */
 @media print {
-    body { background: #fff !important; }
+    body { background: #fff !important; margin: 0; padding: 0; font-size: 11pt; }
+
+    /* Hide all Moodle UI + screen-only elements */
     .no-print,
     #page-header,
     #nav-drawer,
@@ -642,72 +644,148 @@ echo $OUTPUT->header();
     .footer-popover,
     nav,
     .breadcrumb,
-    .passport-header-right,
+    .passport-header,
+    .passport-summary,
     .passport-save-feedback {
         display: none !important;
     }
+
     .passport-container {
         max-width: 100%;
         padding: 0;
         margin: 0;
     }
-    .passport-header,
-    .passport-summary,
+
     .passport-radar-section,
     .passport-table-section {
         box-shadow: none;
         border: none;
-        page-break-inside: avoid;
+        padding: 0;
+        margin: 0;
     }
 
-    /* Print header branding */
+    /* ---- FTM Branded Print Header (red bar) ---- */
     .passport-print-header {
-        display: block !important;
-        text-align: center;
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 3px solid #0066cc;
-    }
-    .passport-print-header h1 {
-        font-size: 1.8rem;
-        color: #0066cc;
-        margin: 0 0 5px 0;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-    }
-    .passport-print-header .print-meta {
-        font-size: 0.9rem;
-        color: #555;
-    }
-
-    /* Expand textareas to show full content */
-    .passport-table textarea {
-        border: 1px solid #ccc;
-        height: auto !important;
-        min-height: 40px;
-        overflow: visible;
-        resize: none;
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        background: #c0392b !important;
+        color: #fff !important;
+        padding: 10px 20px;
+        margin-bottom: 15px;
+        border-radius: 0;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
-
-    /* Ensure table borders print */
-    .passport-table,
-    .passport-table th,
-    .passport-table td {
-        border: 1px solid #ccc !important;
+    .passport-print-header .print-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .passport-print-header .print-logo-box {
+        background: #fff;
+        border-radius: 4px;
+        padding: 4px 10px;
+        font-size: 9pt;
+        color: #c0392b;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .passport-print-header .print-student-name {
+        font-size: 13pt;
+        font-weight: 700;
+        color: #fff;
+    }
+    .passport-print-header .print-sector-badge {
+        background: #e74c3c;
+        color: #fff;
+        padding: 3px 12px;
+        border-radius: 4px;
+        font-size: 9pt;
+        font-weight: 600;
+        text-transform: uppercase;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .passport-print-header .print-title {
+        font-size: 11pt;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #fff;
+    }
+    .passport-print-header .print-score {
+        text-align: right;
+        color: #fff;
+    }
+    .passport-print-header .print-score .score-value {
+        font-size: 13pt;
+        font-weight: 700;
+    }
+    .passport-print-header .print-score .score-date {
+        font-size: 8pt;
+        opacity: 0.9;
     }
 
-    /* Badge colors print */
+    /* ---- Radar section in print ---- */
+    .passport-radar-section {
+        page-break-inside: avoid;
+        margin-bottom: 10px;
+    }
+    .passport-radar-section h2 {
+        font-size: 12pt;
+        text-align: center;
+        margin: 10px 0 5px 0;
+    }
+    .passport-radar-section svg {
+        display: block;
+        margin: 0 auto;
+        width: 100%;
+        max-width: 580px;
+        height: auto;
+    }
+
+    /* ---- Table in print ---- */
+    .passport-table-section {
+        page-break-inside: avoid;
+    }
+    .passport-table-section h2 {
+        display: none;
+    }
+    .passport-table {
+        font-size: 10pt;
+        border-collapse: collapse;
+    }
+    .passport-table thead th {
+        background: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        padding: 6px 10px;
+        font-size: 9pt;
+        border: 1px solid #ccc;
+    }
+    .passport-table td {
+        padding: 5px 10px;
+        border: 1px solid #ccc;
+    }
+
+    /* Hide comment column in print */
+    .passport-table th.col-comment,
+    .passport-table td.col-comment {
+        display: none !important;
+    }
+
+    /* Badge colors */
     .pct-badge {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+        padding: 2px 10px;
+        font-size: 9pt;
     }
 
-    /* SVG prints natively */
-    .passport-radar-section svg {
-        width: 100%;
-        max-width: 700px;
+    /* Area code column compact */
+    .passport-table .area-code {
+        font-size: 10pt;
     }
 }
 
@@ -719,16 +797,19 @@ echo $OUTPUT->header();
 
 <div class="passport-container">
 
-    <!-- Print-only header -->
+    <!-- Print-only header (FTM red bar) -->
     <div class="passport-print-header">
-        <h1>Passaporto Tecnico</h1>
-        <div class="print-meta">
-            <?php echo s(fullname($student)); ?>
+        <div class="print-logo">
+            <div class="print-logo-box">fondazione<br><strong>Millennio</strong></div>
+            <span class="print-student-name"><?php echo s(fullname($student)); ?></span>
             <?php if ($sectorDisplay): ?>
-                &mdash; Settore: <?php echo s($sectorDisplay); ?>
+            <span class="print-sector-badge"><?php echo s($sectorDisplay); ?></span>
             <?php endif; ?>
-            &mdash; <?php echo date('d/m/Y'); ?>
-            &mdash; FTM Academy
+        </div>
+        <span class="print-title">PASSAPORTO TECNICO</span>
+        <div class="print-score">
+            <div class="score-value">Score: <?php echo $overallPct; ?>%</div>
+            <div class="score-date"><?php echo date('d/m/Y'); ?></div>
         </div>
     </div>
 
@@ -794,7 +875,7 @@ echo $OUTPUT->header();
 
     <!-- Radar chart -->
     <div class="passport-radar-section">
-        <h2>Profilo Competenze per Area</h2>
+        <h2>Panoramica Aree</h2>
         <?php
         if (!empty($radarItems)) {
             echo passport_generate_svg_radar($radarItems, '', 400);
@@ -811,12 +892,11 @@ echo $OUTPUT->header();
         <table class="passport-table" id="passport-areas-table">
             <thead>
                 <tr>
-                    <th style="width: 60px;">Area</th>
-                    <th>Descrizione</th>
-                    <th style="width: 90px; text-align: center;">N. Comp.</th>
-                    <th style="width: 120px; text-align: center;">Risposte</th>
+                    <th>Area</th>
+                    <th style="width: 100px; text-align: center;">Competenze</th>
+                    <th style="width: 100px; text-align: center;">Risposte</th>
                     <th style="width: 100px; text-align: center;">Punteggio</th>
-                    <th style="width: 35%;">Commento Coach</th>
+                    <th style="width: 35%;" class="col-comment">Commento Coach</th>
                 </tr>
             </thead>
             <tbody>
@@ -827,8 +907,7 @@ echo $OUTPUT->header();
                     $existingComment = $existingComments[$areaKey] ?? '';
                 ?>
                 <tr>
-                    <td class="area-code"><?php echo s($area['code']); ?></td>
-                    <td class="area-name"><?php echo s($area['name']); ?></td>
+                    <td class="area-name"><?php echo s($area['code']); ?>. <?php echo s($area['name']); ?></td>
                     <td style="text-align: center;"><?php echo (int)$area['count']; ?></td>
                     <td style="text-align: center;">
                         <?php echo (int)$area['correct_questions']; ?> / <?php echo (int)$area['total_questions']; ?>
@@ -836,7 +915,7 @@ echo $OUTPUT->header();
                     <td style="text-align: center;">
                         <span class="pct-badge <?php echo $pctClass; ?>"><?php echo $pct; ?>%</span>
                     </td>
-                    <td>
+                    <td class="col-comment">
                         <textarea
                             name="comment_<?php echo s($areaKey); ?>"
                             data-area="<?php echo s($areaKey); ?>"
