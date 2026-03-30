@@ -4458,7 +4458,7 @@ function render_view_compatta($students, $dashboard) {
                     <?php endif; ?>
                     <?php if (has_capability('moodle/user:loginas', context_system::instance())): ?>
                     <button class="btn btn-sm"
-                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/course/loginas.php?id=1&amp;user=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>'"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/loginas_student.php?userid=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>'"
                             title="Accedi come Studente"
                             style="background: #3b82f6 !important; color: #fff !important; border-color: #2563eb !important;">
                         &#128100;
@@ -4594,7 +4594,7 @@ function render_view_standard($students, $dashboard) {
                         &#128275; Quiz
                     </a>
                     <?php if (has_capability('moodle/user:loginas', context_system::instance())): ?>
-                    <a href="<?php echo $CFG->wwwroot; ?>/course/loginas.php?id=1&amp;user=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>"
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/loginas_student.php?userid=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>"
                        class="quick-btn" title="Accedi come Studente" style="background:#3b82f6;color:#fff;">
                         &#128100; Accedi
                     </a>
@@ -5163,7 +5163,7 @@ function render_view_dettagliata($students, $dashboard) {
                     <?php endif; ?>
                     <?php if (has_capability('moodle/user:loginas', context_system::instance())): ?>
                     <button class="btn"
-                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/course/loginas.php?id=1&amp;user=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>'"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/loginas_student.php?userid=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>'"
                             style="background: #3b82f6 !important; color: #fff !important; border-color: #2563eb !important;">
                         &#128100; Accedi come Studente
                     </button>
@@ -5359,7 +5359,7 @@ function render_view_classica($students, $dashboard) {
                         </button>
                         <?php if (has_capability('moodle/user:loginas', context_system::instance())): ?>
                         <button class="btn btn-sm"
-                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/course/loginas.php?id=1&amp;user=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>'"
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/loginas_student.php?userid=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>'"
                                 style="background: #3b82f6 !important; color: #fff !important; border-color: #2563eb !important;">
                             &#128100; Accedi
                         </button>

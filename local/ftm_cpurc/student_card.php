@@ -466,7 +466,7 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
                        || has_capability('local/ftm_cpurc:import', $context)
                        || is_siteadmin();
             if ($canloginas): ?>
-            <a href="<?php echo new moodle_url('/course/loginas.php', ['id' => 1, 'user' => $student->userid, 'sesskey' => sesskey()]); ?>" class="cpurc-btn" style="background:#3b82f6; color:#fff !important;">
+            <a href="<?php echo new moodle_url('/local/ftm_cpurc/loginas_student.php', ['userid' => $student->userid, 'sesskey' => sesskey()]); ?>" class="cpurc-btn" style="background:#3b82f6; color:#fff !important;">
                 Accedi come Studente
             </a>
             <?php endif; ?>

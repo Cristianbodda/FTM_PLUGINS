@@ -724,7 +724,7 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
                         <td>
                             <strong><?php echo s($student->lastname); ?></strong> <?php echo s($student->firstname); ?>
                             <?php if ($canimport || has_capability('moodle/user:loginas', context_system::instance())): ?>
-                            <a href="<?php echo new moodle_url('/course/loginas.php', ['id' => 1, 'user' => $student->userid, 'sesskey' => sesskey()]); ?>"
+                            <a href="<?php echo new moodle_url('/local/ftm_cpurc/loginas_student.php', ['userid' => $student->userid, 'sesskey' => sesskey()]); ?>"
                                title="Accedi come <?php echo s($student->firstname); ?>"
                                style="display:inline-block; margin-left:6px; padding:1px 7px; background:#3b82f6; color:#fff; border-radius:4px; font-size:11px; text-decoration:none; vertical-align:middle;">&#128100;</a>
                             <?php endif; ?>
