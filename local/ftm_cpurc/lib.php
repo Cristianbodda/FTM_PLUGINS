@@ -69,6 +69,53 @@ function local_ftm_cpurc_extend_settings_navigation(settings_navigation $setting
 }
 
 /**
+ * Inject a floating "Return to your account" banner when logged in as another user.
+ * Workaround for Adaptable theme not showing the standard Moodle loginas return link.
+ */
+function local_ftm_cpurc_before_footer() {
+    global $USER, $CFG;
+
+    if (\core\session\manager::is_loggedinas()) {
+        $realuser = \core\session\manager::get_realuser();
+        $returnurl = $CFG->wwwroot . '/course/loginas.php?id=1&sesskey=' . sesskey();
+        echo '<div id="ftm-loginas-banner" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 99999;
+            background: linear-gradient(135deg, #dc3545, #c0392b);
+            color: #fff;
+            padding: 8px 20px;
+            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        ">
+            <span>
+                <strong>Stai operando come:</strong> ' . s(fullname($USER)) . '
+                &nbsp;|&nbsp;
+                <strong>Il tuo account:</strong> ' . s(fullname($realuser)) . '
+            </span>
+            <a href="' . $returnurl . '" style="
+                background: #fff;
+                color: #dc3545;
+                padding: 6px 18px;
+                border-radius: 6px;
+                text-decoration: none;
+                font-weight: 700;
+                font-size: 13px;
+            ">Ritorna al tuo account</a>
+        </div>
+        <div style="height: 42px;"></div>';
+    }
+}
+
+/**
  * URC office codes and names.
  *
  * @return array Array of URC offices.
