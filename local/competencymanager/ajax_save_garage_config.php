@@ -29,6 +29,8 @@ try {
     $show_autovalutazione = optional_param('show_autovalutazione', 1, PARAM_INT);
     $show_coach_eval = optional_param('show_coach_eval', 1, PARAM_INT);
     $custom_threshold = optional_param('custom_threshold', '', PARAM_RAW);
+    $enabled_sections = optional_param('enabled_sections', '[]', PARAM_RAW);
+    $section_order = optional_param('section_order', '[]', PARAM_RAW);
 
     // Validate user exists.
     $user = $DB->get_record('user', ['id' => $userid, 'deleted' => 0]);
@@ -59,6 +61,12 @@ try {
         'courseid' => $courseid,
     ]);
 
+    // Validate section arrays.
+    $enabledSecs = json_decode($enabled_sections, true);
+    $orderSecs = json_decode($section_order, true);
+    if (!is_array($enabledSecs)) $enabledSecs = [];
+    if (!is_array($orderSecs)) $orderSecs = [];
+
     if ($existing) {
         $existing->selected_areas = json_encode($areas);
         $existing->selected_competencies = json_encode($comps);
@@ -68,6 +76,8 @@ try {
         $existing->show_autovalutazione = $show_autovalutazione ? 1 : 0;
         $existing->show_coach_eval = $show_coach_eval ? 1 : 0;
         $existing->custom_threshold = $custom_threshold_val;
+        $existing->enabled_sections = json_encode($enabledSecs);
+        $existing->section_order = json_encode($orderSecs);
         $existing->coachid = $coachid;
         $existing->timemodified = $now;
         $DB->update_record('local_garage_config', $existing);
@@ -84,6 +94,8 @@ try {
         $record->show_autovalutazione = $show_autovalutazione ? 1 : 0;
         $record->show_coach_eval = $show_coach_eval ? 1 : 0;
         $record->custom_threshold = $custom_threshold_val;
+        $record->enabled_sections = json_encode($enabledSecs);
+        $record->section_order = json_encode($orderSecs);
         $record->coachid = $coachid;
         $record->timecreated = $now;
         $record->timemodified = $now;

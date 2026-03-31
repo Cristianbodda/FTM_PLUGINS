@@ -330,5 +330,22 @@ function xmldb_local_competencymanager_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026033101, 'local', 'competencymanager');
     }
 
+    // Versione 2026033102: Campo section_order + enabled_sections nel garage config
+    if ($oldversion < 2026033102) {
+        $table = new xmldb_table('local_garage_config');
+
+        $field1 = new xmldb_field('enabled_sections', XMLDB_TYPE_TEXT, null, null, null, null, null, 'custom_threshold');
+        if (!$dbman->field_exists($table, $field1)) {
+            $dbman->add_field($table, $field1);
+        }
+
+        $field2 = new xmldb_field('section_order', XMLDB_TYPE_TEXT, null, null, null, null, null, 'enabled_sections');
+        if (!$dbman->field_exists($table, $field2)) {
+            $dbman->add_field($table, $field2);
+        }
+
+        upgrade_plugin_savepoint(true, 2026033102, 'local', 'competencymanager');
+    }
+
     return true;
 }

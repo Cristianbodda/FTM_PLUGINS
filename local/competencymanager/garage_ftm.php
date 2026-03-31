@@ -330,6 +330,55 @@ if ($garageConfig) {
     $savedAutoval = (int)$garageConfig->show_autovalutazione;
     $savedCoachEval = (int)$garageConfig->show_coach_eval;
     $savedCustomThreshold = $garageConfig->custom_threshold;
+    $savedEnabledSections = json_decode($garageConfig->enabled_sections ?? '[]', true) ?: [];
+    $savedSectionOrder = json_decode($garageConfig->section_order ?? '[]', true) ?: [];
+}
+
+// All available sections with default order.
+$allSections = [
+    'valutazione'    => ['label' => 'Panoramica Valutazione', 'icon' => '&#128202;', 'default' => true],
+    'progressi'      => ['label' => 'Progressi Certificazione', 'icon' => '&#128200;', 'default' => true],
+    'radar_aree'     => ['label' => 'Radar Aree', 'icon' => '&#127919;', 'default' => true],
+    'radar_dettagli' => ['label' => 'Radar Dettagli per Area', 'icon' => '&#128269;', 'default' => false],
+    'piano'          => ['label' => 'Piano d\'Azione', 'icon' => '&#128203;', 'default' => true],
+    'dettagli'       => ['label' => 'Dettagli Competenze', 'icon' => '&#128220;', 'default' => true],
+    'dual_radar'     => ['label' => 'Radar Duale (Quiz vs Auto)', 'icon' => '&#128200;', 'default' => false],
+    'overlay_radar'  => ['label' => 'Overlay Multi-Fonte', 'icon' => '&#127912;', 'default' => false],
+    'gap_analysis'   => ['label' => 'Gap Analysis', 'icon' => '&#9888;', 'default' => false],
+    'spunti'         => ['label' => 'Spunti Colloquio', 'icon' => '&#128172;', 'default' => false],
+    'suggerimenti'   => ['label' => 'Suggerimenti Rapporto', 'icon' => '&#128161;', 'default' => false],
+    'coach_eval'     => ['label' => 'Valutazione Coach', 'icon' => '&#128100;', 'default' => false],
+];
+
+// Build ordered section list (saved order or default).
+$orderedSections = [];
+if (!empty($savedSectionOrder)) {
+    foreach ($savedSectionOrder as $key) {
+        if (isset($allSections[$key])) {
+            $orderedSections[$key] = $allSections[$key];
+        }
+    }
+    // Add any missing sections at the end.
+    foreach ($allSections as $key => $info) {
+        if (!isset($orderedSections[$key])) {
+            $orderedSections[$key] = $info;
+        }
+    }
+} else {
+    $orderedSections = $allSections;
+}
+
+// Determine which sections are enabled.
+$enabledSections = [];
+if (!empty($savedEnabledSections)) {
+    $enabledSections = $savedEnabledSections;
+} else {
+    // Default: enable sections marked as default.
+    foreach ($allSections as $key => $info) {
+        if ($info['default']) {
+            $enabledSections[] = $key;
+        }
+    }
 }
 
 // Effective threshold (custom or global).
@@ -1047,6 +1096,31 @@ echo $OUTPUT->header();
         <?php endif; ?>
     </div>
 
+    <!-- Sections & Order -->
+    <div class="garage-card" style="margin-bottom: 24px;">
+        <h2 style="font-size: 1.2rem; color: #333; margin: 0 0 8px 0;">Sezioni e Ordine Stampa</h2>
+        <p style="font-size: 0.85rem; color: #888; margin-bottom: 16px;">Attiva/disattiva le sezioni e trascinale per cambiare l'ordine di stampa nel passaporto.</p>
+
+        <div id="garage-sections-list" style="display: flex; flex-direction: column; gap: 6px;">
+            <?php $idx = 1; foreach ($orderedSections as $sKey => $sInfo):
+                $isEnabled = in_array($sKey, $enabledSections);
+            ?>
+            <div class="garage-section-item" data-section="<?php echo s($sKey); ?>" draggable="true"
+                 style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: <?php echo $isEnabled ? '#fff' : '#f9fafb'; ?>; border: 1px solid <?php echo $isEnabled ? '#dee2e6' : '#eee'; ?>; border-radius: 6px; cursor: grab; user-select: none;">
+                <span class="drag-handle" style="color: #aaa; font-size: 16px; cursor: grab;">&#9776;</span>
+                <span style="background: #f0f0f0; color: #666; border-radius: 4px; padding: 1px 8px; font-size: 11px; min-width: 22px; text-align: center;"><?php echo $idx; ?></span>
+                <label style="display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; flex: 1; font-size: 0.9rem;">
+                    <input type="checkbox" class="garage-section-checkbox" data-section="<?php echo s($sKey); ?>"
+                           <?php echo $isEnabled ? 'checked' : ''; ?>
+                           style="width: 16px; height: 16px; cursor: pointer;">
+                    <span><?php echo $sInfo['icon']; ?></span>
+                    <span style="color: <?php echo $isEnabled ? '#333' : '#aaa'; ?>;"><?php echo s($sInfo['label']); ?></span>
+                </label>
+            </div>
+            <?php $idx++; endforeach; ?>
+        </div>
+    </div>
+
     <!-- Preview button (bottom) -->
     <?php if (!empty($areasData)): ?>
     <div style="text-align: center; margin-bottom: 30px;">
@@ -1065,7 +1139,87 @@ echo $OUTPUT->header();
 (function() {
     // Update selected count on load.
     updateSelectedCount();
+
+    // ---- Drag & Drop for sections ----
+    var list = document.getElementById('garage-sections-list');
+    if (list) {
+        var dragItem = null;
+
+        list.addEventListener('dragstart', function(e) {
+            dragItem = e.target.closest('.garage-section-item');
+            if (dragItem) {
+                dragItem.style.opacity = '0.4';
+                e.dataTransfer.effectAllowed = 'move';
+            }
+        });
+
+        list.addEventListener('dragend', function(e) {
+            if (dragItem) {
+                dragItem.style.opacity = '1';
+                dragItem = null;
+            }
+            // Update order numbers.
+            list.querySelectorAll('.garage-section-item').forEach(function(item, idx) {
+                var numSpan = item.querySelector('span:nth-child(2)');
+                if (numSpan) numSpan.textContent = idx + 1;
+            });
+        });
+
+        list.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            var target = e.target.closest('.garage-section-item');
+            if (target && target !== dragItem) {
+                var rect = target.getBoundingClientRect();
+                var midY = rect.top + rect.height / 2;
+                if (e.clientY < midY) {
+                    list.insertBefore(dragItem, target);
+                } else {
+                    list.insertBefore(dragItem, target.nextSibling);
+                }
+            }
+        });
+
+        // Checkbox visual update.
+        list.addEventListener('change', function(e) {
+            if (e.target.classList.contains('garage-section-checkbox')) {
+                var item = e.target.closest('.garage-section-item');
+                var label = item.querySelector('label span:last-child');
+                if (e.target.checked) {
+                    item.style.background = '#fff';
+                    item.style.borderColor = '#dee2e6';
+                    if (label) label.style.color = '#333';
+                } else {
+                    item.style.background = '#f9fafb';
+                    item.style.borderColor = '#eee';
+                    if (label) label.style.color = '#aaa';
+                }
+            }
+        });
+    }
 })();
+
+/**
+ * Get enabled section keys from checkboxes.
+ */
+function getEnabledSections() {
+    var enabled = [];
+    document.querySelectorAll('.garage-section-checkbox:checked').forEach(function(cb) {
+        enabled.push(cb.getAttribute('data-section'));
+    });
+    return enabled;
+}
+
+/**
+ * Get section order from DOM order.
+ */
+function getSectionOrder() {
+    var order = [];
+    document.querySelectorAll('.garage-section-item').forEach(function(item) {
+        order.push(item.getAttribute('data-section'));
+    });
+    return order;
+}
 
 /**
  * Toggle custom threshold input enabled/disabled.
@@ -1216,7 +1370,9 @@ function saveGarageConfig() {
         + '&show_overlay=' + showOverlay
         + '&show_autovalutazione=' + showAutoval
         + '&show_coach_eval=' + showCoachEval
-        + '&custom_threshold=' + encodeURIComponent(customThreshold);
+        + '&custom_threshold=' + encodeURIComponent(customThreshold)
+        + '&enabled_sections=' + encodeURIComponent(JSON.stringify(getEnabledSections()))
+        + '&section_order=' + encodeURIComponent(JSON.stringify(getSectionOrder()));
 
     xhr.open('POST', url, true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
