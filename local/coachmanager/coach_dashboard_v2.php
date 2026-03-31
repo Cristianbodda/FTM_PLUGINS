@@ -4004,6 +4004,7 @@ function showSipModal(userId, studentName, sector) {
     document.getElementById('sipEligTotal').textContent = '0';
     // Reset other fields.
     document.getElementById('sipMotivation').value = '';
+    document.getElementById('sipLadiIndemnity').value = '';
     document.getElementById('sipReferralDetail').value = '';
     document.getElementById('sipNote').value = '';
     var decRadios = document.querySelectorAll('input[name="sipDecisione"]');
@@ -4078,6 +4079,8 @@ function sipSaveAssessment(andActivate) {
     }
 
     if (andActivate) {
+        var ladiVal = parseInt(document.getElementById('sipLadiIndemnity').value) || 0;
+        if (ladiVal <= 0) { alert('Inserire le indennita LADI rimanenti (obbligatorio)'); return; }
         var motivation = document.getElementById('sipMotivation').value.trim();
         if (!motivation) { alert('Inserisci una motivazione dettagliata'); return; }
         var startDate = document.getElementById('sipStartDate').value;
@@ -4103,6 +4106,7 @@ function sipSaveAssessment(andActivate) {
     if (andActivate) {
         formData.append('motivation', document.getElementById('sipMotivation').value.trim());
         formData.append('date_start', document.getElementById('sipStartDate').value);
+        formData.append('ladi_indemnity', document.getElementById('sipLadiIndemnity').value);
     }
 
     // Disable buttons during request.
@@ -4276,9 +4280,15 @@ document.getElementById('sipModal')?.addEventListener('click', function(e) {
                       placeholder="<?php echo get_string('eligibility_motivation_placeholder', 'local_ftm_sip'); ?>"></textarea>
         </div>
 
-        <div>
+        <div style="margin-bottom:12px;">
             <label style="font-size:12px; font-weight:600; color:#6b7280; display:block; margin-bottom:4px;"><?php echo get_string('sip_start_date', 'local_ftm_sip'); ?></label>
             <input type="date" id="sipStartDate" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:7px 10px; font-size:13px;">
+        </div>
+
+        <div>
+            <label style="font-size:12px; font-weight:600; color:#6b7280; display:block; margin-bottom:4px;"><?php echo get_string('ladi_indemnity', 'local_ftm_sip'); ?> *</label>
+            <input type="number" id="sipLadiIndemnity" min="1" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:7px 10px; font-size:13px;" placeholder="Es. 120">
+            <small style="color:#9ca3af; font-size:11px;"><?php echo get_string('ladi_indemnity_help', 'local_ftm_sip'); ?></small>
         </div>
     </div>
 
