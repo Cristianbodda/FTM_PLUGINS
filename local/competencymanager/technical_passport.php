@@ -1277,11 +1277,26 @@ echo $OUTPUT->header();
     .passport-section,
     .passport-radar-section,
     .passport-table-section {
-        box-shadow: none;
-        border: none;
+        box-shadow: none !important;
+        border: none !important;
         padding: 10px 0;
         margin: 0 0 10px 0;
-        page-break-inside: avoid;
+        overflow: visible !important;
+    }
+
+    /* Allow content to flow across pages */
+    .passport-container,
+    #page-content,
+    #region-main,
+    #region-main-box,
+    [role="main"],
+    .pagelayout-report #page,
+    .pagelayout-report #page-content,
+    .pagelayout-standard #page,
+    .pagelayout-standard #page-content {
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
     }
 
     /* ---- FTM Red Header Block ---- */
