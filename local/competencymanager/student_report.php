@@ -2735,6 +2735,13 @@ if (!empty($quizComparison)) {
                 <span class="toggle-icon">▶</span>
             </div>
         </div>
+        <div class="ftm-mini-accordion" data-section="garage">
+            <a href="<?php echo new moodle_url('/local/competencymanager/garage_ftm.php', ['userid' => $userid, 'courseid' => $courseid]); ?>"
+               class="ftm-mini-accordion-header" style="text-decoration:none; color:inherit; background:#fff7ed; border-left:3px solid #f59e0b;">
+                <h6>🔧 Garage FTM</h6>
+                <span class="toggle-icon">→</span>
+            </a>
+        </div>
         <div class="ftm-mini-accordion" data-section="passport">
             <a href="<?php echo new moodle_url('/local/competencymanager/technical_passport.php', ['userid' => $userid, 'courseid' => $courseid, 'cm_sector' => $effectiveSectorFilter]); ?>"
                class="ftm-mini-accordion-header" style="text-decoration:none; color:inherit; background:#f0fdf4; border-left:3px solid #28a745;">

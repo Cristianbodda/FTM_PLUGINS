@@ -141,6 +141,12 @@ try {
     // -------------------------------------------------------
     $motivation = required_param('motivation', PARAM_TEXT);
     $date_start_str = required_param('date_start', PARAM_TEXT);
+    $ladi_indemnity = optional_param('ladi_indemnity', 0, PARAM_INT);
+
+    // LADI indemnity is mandatory for activation (must be > 0).
+    if ($ladi_indemnity <= 0) {
+        throw new \moodle_exception('ladi_indemnity_required', 'local_ftm_sip');
+    }
 
     // Parse date (YYYY-MM-DD from HTML date input).
     $date_start = strtotime($date_start_str);
@@ -188,6 +194,11 @@ try {
     // Link eligibility to enrollment if we saved one.
     if ($eligibility_id && $enrollmentid) {
         $DB->set_field('local_ftm_sip_enrollments', 'eligibility_id', $eligibility_id, ['id' => $enrollmentid]);
+    }
+
+    // Save LADI indemnity on the enrollment record.
+    if ($enrollmentid && $ladi_indemnity > 0) {
+        $DB->set_field('local_ftm_sip_enrollments', 'ladi_indemnity', $ladi_indemnity, ['id' => $enrollmentid]);
     }
 
     echo json_encode([

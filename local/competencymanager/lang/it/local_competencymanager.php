@@ -166,3 +166,5 @@ $string['passport_comments_saved'] = 'Commenti passaporto salvati con successo';
 $string['passport_print'] = 'Stampa Passaporto Tecnico';
 $string['passport_save_comments'] = 'Salva Commenti';
 $string['passport_back'] = 'Torna allo Student Report';
+$string['passport_threshold'] = 'Soglia minima passaporto (%)';
+$string['passport_threshold_desc'] = 'Percentuale minima per includere una competenza nel Passaporto Tecnico. Default: 60';

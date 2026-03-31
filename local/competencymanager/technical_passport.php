@@ -354,6 +354,29 @@ foreach (array_keys($sectorsFound) as $sec) {
     $areaDescriptions = array_merge($areaDesc, $areaDescriptions);
 }
 
+// Load garage config if available - filter competencies based on garage selection.
+$garageConfig = null;
+if ($DB->get_manager()->table_exists('local_garage_config')) {
+    $garageConfig = $DB->get_record('local_garage_config', [
+        'userid' => $userid,
+        'courseid' => $courseid,
+    ]);
+}
+
+if ($garageConfig && !empty($garageConfig->selected_competencies)) {
+    // Filter to only show competencies selected in the garage.
+    $selectedComps = json_decode($garageConfig->selected_competencies, true);
+    if (is_array($selectedComps) && !empty($selectedComps)) {
+        $competencies = array_filter($competencies, function($comp) use ($selectedComps) {
+            return in_array($comp['idnumber'] ?? '', $selectedComps);
+        });
+        $competencies = array_values($competencies);
+    }
+}
+
+// Display format from garage config.
+$displayFormat = ($garageConfig && !empty($garageConfig->display_format)) ? $garageConfig->display_format : 'percentage';
+
 // Aggregate competencies by area.
 $areasData = passport_aggregate_by_area($competencies, $areaDescriptions, $sector);
 
@@ -897,6 +920,12 @@ echo $OUTPUT->header();
                 &#8592; Torna allo Student Report
             </a>
             <?php if ($canEvaluate): ?>
+            <a href="<?php echo (new moodle_url('/local/competencymanager/garage_ftm.php', [
+                'userid' => $userid,
+                'courseid' => $courseid,
+            ]))->out(false); ?>" class="passport-btn" style="background:#f59e0b; color:#fff;">
+                Garage FTM
+            </a>
             <button type="button" class="passport-btn passport-btn-success" onclick="savePassportComments()">
                 Salva Commenti
             </button>
@@ -978,7 +1007,13 @@ echo $OUTPUT->header();
                         <?php echo (int)$area['correct_questions']; ?> / <?php echo (int)$area['total_questions']; ?>
                     </td>
                     <td style="text-align: center;">
+                        <?php if ($displayFormat === 'qualitative'):
+                            $qualLabel = $pct >= 80 ? 'Eccellente' : ($pct >= 60 ? 'Buono' : ($pct >= 50 ? 'Sufficiente' : 'Insufficiente'));
+                        ?>
+                        <span class="pct-badge <?php echo $pctClass; ?>"><?php echo $qualLabel; ?></span>
+                        <?php else: ?>
                         <span class="pct-badge <?php echo $pctClass; ?>"><?php echo $pct; ?>%</span>
+                        <?php endif; ?>
                     </td>
                     <td class="col-comment">
                         <textarea

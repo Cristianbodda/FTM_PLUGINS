@@ -12,6 +12,7 @@
         <FIELD NAME="coachid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id - assigned coach"/>
         <FIELD NAME="activatedby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id - who activated SIP (coach or secretary)"/>
         <FIELD NAME="motivation" TYPE="text" NOTNULL="false" COMMENT="Motivation for SIP activation"/>
+        <FIELD NAME="ladi_indemnity" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="LADI daily indemnities remaining at activation"/>
         <FIELD NAME="date_start" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="SIP start date timestamp"/>
         <FIELD NAME="date_end_planned" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Planned end date (start + 10 weeks)"/>
         <FIELD NAME="date_end_actual" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Actual end date"/>

@@ -170,3 +170,5 @@ $string['passport_comments_saved'] = 'Passport comments saved successfully';
 $string['passport_print'] = 'Print Technical Passport';
 $string['passport_save_comments'] = 'Save Comments';
 $string['passport_back'] = 'Back to Student Report';
+$string['passport_threshold'] = 'Passport minimum threshold (%)';
+$string['passport_threshold_desc'] = 'Minimum competency percentage to appear in the Technical Passport. Default: 60';

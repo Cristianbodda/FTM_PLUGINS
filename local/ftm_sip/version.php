@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_ftm_sip';
-$plugin->version = 2026032002;  // Griglia Valutazione PCI (6 numeric criteria 1-5).
+$plugin->version = 2026032601;  // Add ladi_indemnity field to enrollments.
 $plugin->requires = 2024042200; // Moodle 4.4+
 $plugin->maturity = MATURITY_BETA;
 $plugin->release = 'v1.2.0';

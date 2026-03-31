@@ -227,5 +227,21 @@ function xmldb_local_ftm_sip_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026032002, 'local', 'ftm_sip');
     }
 
+    if ($oldversion < 2026032601) {
+
+        // -------------------------------------------------------
+        // Add ladi_indemnity field to local_ftm_sip_enrollments.
+        // LADI daily indemnities remaining at activation.
+        // -------------------------------------------------------
+        $table = new xmldb_table('local_ftm_sip_enrollments');
+        $field = new xmldb_field('ladi_indemnity', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'motivation');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Savepoint reached.
+        upgrade_plugin_savepoint(true, 2026032601, 'local', 'ftm_sip');
+    }
+
     return true;
 }

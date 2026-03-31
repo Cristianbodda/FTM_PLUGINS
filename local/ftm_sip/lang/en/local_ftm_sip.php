@@ -618,3 +618,9 @@ $string['eligibility_save_assessment'] = 'Save assessment';
 $string['eligibility_save_and_activate'] = 'Save and Activate Coaching';
 $string['eligibility_report_criterion'] = 'Criterion';
 $string['eligibility_report_score'] = 'Score';
+
+// LADI indemnity.
+$string['ladi_indemnity'] = 'Remaining LADI daily indemnities';
+$string['ladi_indemnity_help'] = 'Number of remaining LADI daily indemnities. Required to activate Individualized Coaching.';
+$string['ladi_indemnity_required'] = 'LADI indemnities are required to activate Individualized Coaching';
+$string['ladi_insufficient'] = 'Insufficient LADI indemnities';

@@ -245,5 +245,31 @@
         <INDEX NAME="userid_courseid_area_idx" UNIQUE="true" FIELDS="userid, courseid, area_code"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="local_garage_config" COMMENT="Garage FTM configurations per student">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Student user ID"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Course ID (0 = all courses)"/>
+        <FIELD NAME="selected_areas" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array of selected area codes"/>
+        <FIELD NAME="selected_competencies" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array of selected competency idnumbers"/>
+        <FIELD NAME="excluded_competencies" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array of explicitly excluded competency idnumbers"/>
+        <FIELD NAME="display_format" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="percentage" SEQUENCE="false" COMMENT="percentage or qualitative"/>
+        <FIELD NAME="show_overlay" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Show 3-source overlay radar"/>
+        <FIELD NAME="show_autovalutazione" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Show self-assessment data"/>
+        <FIELD NAME="show_coach_eval" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Show coach evaluation data"/>
+        <FIELD NAME="custom_threshold" TYPE="int" LENGTH="3" NOTNULL="false" SEQUENCE="false" COMMENT="Custom threshold override (null = use global)"/>
+        <FIELD NAME="coachid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Coach who configured this"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="coachid_fk" TYPE="foreign" FIELDS="coachid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_courseid_idx" UNIQUE="true" FIELDS="userid, courseid"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>

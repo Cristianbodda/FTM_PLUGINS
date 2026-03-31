@@ -297,5 +297,38 @@ function xmldb_local_competencymanager_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026032601, 'local', 'competencymanager');
     }
 
+    // Versione 2026033101: Tabella Garage FTM configurazioni per studente
+    if ($oldversion < 2026033101) {
+
+        $table = new xmldb_table('local_garage_config');
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('selected_areas', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('selected_competencies', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('excluded_competencies', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('display_format', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'percentage');
+        $table->add_field('show_overlay', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('show_autovalutazione', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1');
+        $table->add_field('show_coach_eval', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1');
+        $table->add_field('custom_threshold', XMLDB_TYPE_INTEGER, '3', null, null, null, null);
+        $table->add_field('coachid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('userid_fk', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+        $table->add_key('coachid_fk', XMLDB_KEY_FOREIGN, ['coachid'], 'user', ['id']);
+
+        $table->add_index('userid_courseid_idx', XMLDB_INDEX_UNIQUE, ['userid', 'courseid']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026033101, 'local', 'competencymanager');
+    }
+
     return true;
 }
