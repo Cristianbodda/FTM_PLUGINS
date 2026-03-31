@@ -848,12 +848,9 @@ echo $OUTPUT->header();
                 Salva Configurazione
             </button>
             <?php endif; ?>
-            <a href="<?php echo (new moodle_url('/local/competencymanager/technical_passport.php', [
-                'userid' => $userid,
-                'courseid' => $courseid,
-            ]))->out(false); ?>" class="garage-btn garage-btn-primary">
-                Anteprima Passaporto &#8594;
-            </a>
+            <button onclick="openStudentReportPreview(true)" class="garage-btn garage-btn-primary">
+                Stampa Passaporto &#8594;
+            </button>
         </div>
     </div>
 
@@ -1121,14 +1118,20 @@ echo $OUTPUT->header();
         </div>
     </div>
 
-    <!-- Preview button (bottom) -->
+    <!-- Preview buttons (bottom) -->
     <?php if (!empty($areasData)): ?>
-    <div style="text-align: center; margin-bottom: 30px;">
+    <div style="text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+        <button onclick="openStudentReportPreview(false)" class="garage-btn garage-btn-primary" style="font-size: 1rem; padding: 12px 30px;">
+            Anteprima Student Report &#8594;
+        </button>
+        <button onclick="openStudentReportPreview(true)" class="garage-btn garage-btn-success" style="font-size: 1rem; padding: 12px 30px;">
+            Stampa Passaporto &#8594;
+        </button>
         <a href="<?php echo (new moodle_url('/local/competencymanager/technical_passport.php', [
             'userid' => $userid,
             'courseid' => $courseid,
-        ]))->out(false); ?>" class="garage-btn garage-btn-primary" style="font-size: 1rem; padding: 12px 30px;">
-            Apri Anteprima Passaporto &#8594;
+        ]))->out(false); ?>" class="garage-btn garage-btn-secondary" style="font-size: 1rem; padding: 12px 30px;">
+            Passaporto Semplice &#8594;
         </a>
     </div>
     <?php endif; ?>
@@ -1219,6 +1222,75 @@ function getSectionOrder() {
         order.push(item.getAttribute('data-section'));
     });
     return order;
+}
+
+/**
+ * Open Student Report with garage config as URL parameters.
+ * Maps garage sections to student_report.php print parameters.
+ */
+function openStudentReportPreview(printMode) {
+    var enabled = getEnabledSections();
+    var order = getSectionOrder();
+
+    // Map garage section keys to student_report.php parameter names.
+    var sectionParamMap = {
+        'valutazione':    {print: 'print_panoramica', show: null, order: 'order_valutazione'},
+        'progressi':      {print: 'print_progressi', show: null, order: 'order_progressi'},
+        'radar_aree':     {print: 'print_radar_aree', show: null, order: 'order_radar_aree'},
+        'radar_dettagli': {print: 'print_radar_aree', show: null, order: 'order_radar_dettagli'},
+        'piano':          {print: 'print_piano', show: null, order: 'order_piano'},
+        'dettagli':       {print: 'print_dettagli', show: null, order: 'order_dettagli'},
+        'dual_radar':     {print: 'print_dual_radar', show: 'show_dual_radar', order: 'order_dual_radar'},
+        'overlay_radar':  {print: 'print_overlay', show: 'show_overlay', order: 'order_overlay'},
+        'gap_analysis':   {print: 'print_gap', show: 'show_gap', order: 'order_gap'},
+        'spunti':         {print: 'print_spunti', show: 'show_spunti', order: 'order_spunti'},
+        'suggerimenti':   {print: 'print_suggerimenti', show: 'show_suggerimenti', order: 'order_suggerimenti'},
+        'coach_eval':     {print: 'print_coach_eval', show: 'show_coach_eval', order: 'order_coach_eval'},
+    };
+
+    var baseUrl = '<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php';
+    var params = [];
+    params.push('userid=<?php echo $userid; ?>');
+    params.push('courseid=<?php echo $courseid; ?>');
+    params.push('print_form=1');
+    params.push('viz_configured=1');
+    if (printMode) {
+        params.push('print=1');
+    }
+
+    // Sector filter.
+    <?php if (!empty($displaySector)): ?>
+    params.push('cm_sector=<?php echo urlencode($displaySector); ?>');
+    <?php endif; ?>
+
+    // Set print/show flags based on enabled sections.
+    for (var key in sectionParamMap) {
+        var map = sectionParamMap[key];
+        var isEnabled = enabled.indexOf(key) !== -1;
+
+        // Print flag.
+        params.push(map.print + '=' + (isEnabled ? '1' : '0'));
+
+        // Show flag (for additive sections that need show_X=1 to render).
+        if (map.show) {
+            params.push(map.show + '=' + (isEnabled ? '1' : '0'));
+        }
+    }
+
+    // Set order based on drag & drop position.
+    for (var i = 0; i < order.length; i++) {
+        var sKey = order[i];
+        if (sectionParamMap[sKey]) {
+            params.push(sectionParamMap[sKey].order + '=' + (i + 1));
+        }
+    }
+
+    // Thresholds.
+    params.push('soglia_allineamento=10');
+    params.push('soglia_critico=30');
+    params.push('attempt_filter=all');
+
+    window.open(baseUrl + '?' + params.join('&'), '_blank');
 }
 
 /**
