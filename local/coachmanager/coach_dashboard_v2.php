@@ -2878,9 +2878,9 @@ echo $OUTPUT->header();
                             <?php endforeach; ?>
                             <div class="color-chip sip-chip <?php echo ($colorfilter ?? '') == 'sip' ? 'selected' : ''; ?>"
                                  onclick="setColorFilter('sip')"
-                                 title="Solo SIP"
+                                 title="Solo Coaching Ind."
                                  style="width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: inline-block; border: 3px solid <?php echo ($colorfilter ?? '') == 'sip' ? '#333' : 'transparent'; ?>; position: relative;">
-                                <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 7px; font-weight: 700; color: white;">SIP</span>
+                                <span style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 7px; font-weight: 700; color: white;">CI</span>
                             </div>
                         </div>
                         <input type="hidden" name="color" id="colorFilter" value="<?php echo s($colorfilter); ?>">
@@ -2906,8 +2906,8 @@ echo $OUTPUT->header();
                             <option value="no_autoval" <?php echo $statusfilter == 'no_autoval' ? 'selected' : ''; ?>>Manca Autovalutazione</option>
                             <option value="no_lab" <?php echo $statusfilter == 'no_lab' ? 'selected' : ''; ?>>Manca Laboratorio</option>
                             <option value="no_choices" <?php echo $statusfilter == 'no_choices' ? 'selected' : ''; ?>>Mancano Scelte</option>
-                            <option value="sip_active" <?php echo ($statusfilter ?? '') == 'sip_active' ? 'selected' : ''; ?>>SIP Attivi</option>
-                            <option value="sip_draft" <?php echo ($statusfilter ?? '') == 'sip_draft' ? 'selected' : ''; ?>>SIP Bozza</option>
+                            <option value="sip_active" <?php echo ($statusfilter ?? '') == 'sip_active' ? 'selected' : ''; ?>>CI Attivi</option>
+                            <option value="sip_draft" <?php echo ($statusfilter ?? '') == 'sip_draft' ? 'selected' : ''; ?>>CI Bozza</option>
                         </select>
                     </td>
                     <td style="padding: 10px; vertical-align: top; width: 20%;">
@@ -4401,9 +4401,9 @@ function render_view_compatta($students, $dashboard) {
                         <?php endfor; ?>
                     </div>
                     <?php if (!empty($student->sip_enrolled)): ?>
-                    <span class="sip-badge" style="margin-top:3px;">SIP<?php if (!empty($student->sip_data->current_week)): ?> S.<?php echo min($student->sip_data->current_week, 10); ?>/10<?php endif; ?></span>
+                    <span class="sip-badge" style="margin-top:3px;">CI<?php if (!empty($student->sip_data->current_week)): ?> S.<?php echo min($student->sip_data->current_week, 10); ?>/10<?php endif; ?></span>
                     <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
-                    <span class="sip-badge" style="background: #94a3b8 !important; margin-top:3px;">SIP &#9998;</span>
+                    <span class="sip-badge" style="background: #94a3b8 !important; margin-top:3px;">CI &#9998;</span>
                     <?php endif; ?>
                 </div>
                 <div class="competency-cell <?php echo $is_below ? 'danger' : 'success'; ?>">
@@ -4479,9 +4479,9 @@ function render_view_compatta($students, $dashboard) {
                     <?php endif; ?>
                     <?php if (!empty($student->sip_enrolled)): ?>
                     <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
-                       class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>
+                       class="btn btn-sm btn-sip" title="Apri Coaching Individualizzato">&#128221; CI</a>
                     <?php elseif (empty($student->sip_enrolled)): ?>
-                    <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
+                    <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva Coaching Individualizzato">+ CI</button>
                     <?php endif; ?>
                 </div>
             </div>
@@ -4554,9 +4554,9 @@ function render_view_standard($students, $dashboard) {
                         <?php endif; ?>
                         <span class="week-badge <?php echo $header_class; ?>">Sett. <?php echo $current_week; ?></span>
                         <?php if (!empty($student->sip_enrolled)): ?>
-                        <span class="sip-badge">SIP<?php if (!empty($student->sip_data->current_week)): ?> S.<?php echo min($student->sip_data->current_week, 10); ?>/10<?php endif; ?></span>
+                        <span class="sip-badge">CI<?php if (!empty($student->sip_data->current_week)): ?> S.<?php echo min($student->sip_data->current_week, 10); ?>/10<?php endif; ?></span>
                         <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
-                        <span class="sip-badge" style="background: #94a3b8 !important;">SIP &#9998;</span>
+                        <span class="sip-badge" style="background: #94a3b8 !important;">CI &#9998;</span>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -4618,9 +4618,9 @@ function render_view_standard($students, $dashboard) {
                     <?php endif; ?>
                     <?php if (!empty($student->sip_enrolled)): ?>
                     <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
-                       class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>
+                       class="btn btn-sm btn-sip" title="Apri Coaching Individualizzato">&#128221; CI</a>
                     <?php elseif (empty($student->sip_enrolled)): ?>
-                    <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
+                    <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva Coaching Individualizzato">+ CI</button>
                     <?php endif; ?>
                 </div>
 
@@ -4929,9 +4929,9 @@ function render_view_standard($students, $dashboard) {
                         <?php endif; ?>
                         <?php if (!empty($student->sip_enrolled)): ?>
                         <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
-                           class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>
+                           class="btn btn-sm btn-sip" title="Apri Coaching Individualizzato">&#128221; CI</a>
                         <?php elseif (empty($student->sip_enrolled)): ?>
-                        <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
+                        <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva Coaching Individualizzato">+ CI</button>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -4999,9 +4999,9 @@ function render_view_dettagliata($students, $dashboard) {
                         <?php endif; ?>
                         <span class="week-badge <?php echo $header_class; ?>">Settimana <?php echo $current_week; ?></span>
                         <?php if (!empty($student->sip_enrolled)): ?>
-                        <span class="sip-badge">SIP<?php if (!empty($student->sip_data->current_week)): ?> S.<?php echo min($student->sip_data->current_week, 10); ?>/10<?php endif; ?></span>
+                        <span class="sip-badge">CI<?php if (!empty($student->sip_data->current_week)): ?> S.<?php echo min($student->sip_data->current_week, 10); ?>/10<?php endif; ?></span>
                         <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
-                        <span class="sip-badge" style="background: #94a3b8 !important;">SIP &#9998;</span>
+                        <span class="sip-badge" style="background: #94a3b8 !important;">CI &#9998;</span>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -5181,9 +5181,9 @@ function render_view_dettagliata($students, $dashboard) {
                     <?php endif; ?>
                     <?php if (!empty($student->sip_enrolled)): ?>
                     <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
-                       class="btn btn-sip" title="Apri SIP">&#128221; SIP</a>
+                       class="btn btn-sip" title="Apri Coaching Individualizzato">&#128221; CI</a>
                     <?php elseif (empty($student->sip_enrolled)): ?>
-                    <button class="btn btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
+                    <button class="btn btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva Coaching Individualizzato">+ CI</button>
                     <?php endif; ?>
                 </div>
                 </div><!-- /panel-collapsible -->
@@ -5250,9 +5250,9 @@ function render_view_classica($students, $dashboard) {
                         <?php endif; ?>
                         <span class="week-badge <?php echo $header_class; ?>">Sett. <?php echo $student->current_week ?? 1; ?></span>
                         <?php if (!empty($student->sip_enrolled)): ?>
-                        <span class="sip-badge">SIP<?php if (!empty($student->sip_data->current_week)): ?> S.<?php echo min($student->sip_data->current_week, 10); ?>/10<?php endif; ?></span>
+                        <span class="sip-badge">CI<?php if (!empty($student->sip_data->current_week)): ?> S.<?php echo min($student->sip_data->current_week, 10); ?>/10<?php endif; ?></span>
                         <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
-                        <span class="sip-badge" style="background: #94a3b8 !important;">SIP &#9998;</span>
+                        <span class="sip-badge" style="background: #94a3b8 !important;">CI &#9998;</span>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -5366,9 +5366,9 @@ function render_view_classica($students, $dashboard) {
                         <?php endif; ?>
                         <?php if (!empty($student->sip_enrolled)): ?>
                         <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/sip_student.php?userid=<?php echo $student->id; ?>"
-                           class="btn btn-sm btn-sip" title="Apri SIP">&#128221; SIP</a>
+                           class="btn btn-sm btn-sip" title="Apri Coaching Individualizzato">&#128221; CI</a>
                         <?php elseif (empty($student->sip_enrolled)): ?>
-                        <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva SIP">+ SIP</button>
+                        <button class="btn btn-sm btn-sip-activate" onclick="event.stopPropagation(); showSipModal(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>', '<?php echo s($student->sector ?? ''); ?>');" title="Attiva Coaching Individualizzato">+ CI</button>
                         <?php endif; ?>
                     </div>
                 </div>

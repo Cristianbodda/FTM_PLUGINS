@@ -25,19 +25,19 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Plugin metadata.
-$string['pluginname'] = 'FTM SIP Manager';
-$string['pluginname_desc'] = 'Personalized Individual Support: 10-week coaching program with action plan, diary and KPIs.';
+$string['pluginname'] = 'FTM Individualized Coaching';
+$string['pluginname_desc'] = 'Individualized Coaching: 10-week coaching program with action plan, diary and KPIs.';
 
 // Capabilities.
-$string['ftm_sip:view'] = 'View SIP data';
-$string['ftm_sip:manage'] = 'Manage SIP enrollments';
-$string['ftm_sip:edit'] = 'Edit SIP student data';
+$string['ftm_sip:view'] = 'View Coaching data';
+$string['ftm_sip:manage'] = 'Manage Coaching enrollments';
+$string['ftm_sip:edit'] = 'Edit Coaching student data';
 $string['ftm_sip:coach'] = 'Access coaching features';
-$string['ftm_sip:generatereport'] = 'Generate SIP reports';
-$string['ftm_sip:viewown'] = 'View own SIP data (student)';
+$string['ftm_sip:generatereport'] = 'Generate Coaching reports';
+$string['ftm_sip:viewown'] = 'View own Coaching data (student)';
 
 // Navigation.
-$string['sip_manager'] = 'SIP Manager';
+$string['sip_manager'] = 'Individualized Coaching';
 $string['dashboard'] = 'Dashboard';
 $string['enrollments'] = 'Enrollments';
 $string['action_plan'] = 'Action Plan';
@@ -54,10 +54,10 @@ $string['completed_enrollments'] = 'Completed Enrollments';
 $string['upcoming_appointments'] = 'Upcoming Appointments';
 $string['current_week'] = 'Current Week';
 $string['week_of_10'] = 'Week {$a->current} of {$a->total}';
-$string['dashboard_title'] = 'SIP Dashboard';
+$string['dashboard_title'] = 'Individualized Coaching Dashboard';
 
 // Enrollments.
-$string['enrollment_title'] = 'SIP Enrollments';
+$string['enrollment_title'] = 'Coaching Enrollments';
 $string['new_enrollment'] = 'New Enrollment';
 $string['edit_enrollment'] = 'Edit Enrollment';
 $string['enrollment_start'] = 'Start Date';
@@ -149,11 +149,11 @@ $string['phase_6'] = 'Consolidation and Evaluation';
 $string['phase_6_desc'] = 'Consolidate results and adapt strategy';
 
 // SIP activation.
-$string['activate_sip'] = 'Activate SIP';
-$string['prepare_sip'] = 'Prepare SIP Plan';
-$string['sip_activation_motivation'] = 'Motivation for SIP activation';
-$string['sip_start_date'] = 'SIP Start Date';
-$string['sip_badge'] = 'SIP';
+$string['activate_sip'] = 'Activate Coaching';
+$string['prepare_sip'] = 'Prepare Coaching Plan';
+$string['sip_activation_motivation'] = 'Motivation for Coaching activation';
+$string['sip_start_date'] = 'Coaching Start Date';
+$string['sip_badge'] = 'IC';
 $string['sip_color'] = '#0891B2';
 $string['plan_status_draft'] = 'Draft';
 $string['plan_status_active'] = 'Active';
@@ -229,7 +229,7 @@ $string['add_kpi_entry'] = 'Add KPI Entry';
 $string['kpi_week_label'] = 'Week {$a}';
 
 // Student self-service area.
-$string['student_area_title'] = 'My SIP Area';
+$string['student_area_title'] = 'My Coaching Area';
 $string['my_action_plan'] = 'My Action Plan';
 $string['my_appointments'] = 'My Appointments';
 $string['my_kpis'] = 'My KPIs';
@@ -266,7 +266,7 @@ $string['company_not_found'] = 'Company not found';
 $string['confirm_delete_company'] = 'Are you sure you want to delete this company?';
 $string['no_companies'] = 'No companies registered';
 $string['search_companies'] = 'Search companies...';
-$string['error_already_enrolled'] = 'Student is already enrolled in the SIP program';
+$string['error_already_enrolled'] = 'Student is already enrolled in the Coaching program';
 
 // Company statuses.
 $string['company_status_prospect'] = 'Prospect';
@@ -328,15 +328,15 @@ $string['notification_kpi_reminder'] = 'Reminder: please submit your weekly KPIs
 $string['notification_plan_update'] = 'Your action plan has been updated by your coach';
 
 // Message providers.
-$string['messageprovider:appointment_reminder'] = 'SIP appointment reminders';
-$string['messageprovider:appointment_created'] = 'SIP new appointment notifications';
-$string['messageprovider:plan_updated'] = 'SIP plan update notifications';
-$string['messageprovider:action_reminder'] = 'SIP action reminders';
-$string['messageprovider:student_inactivity'] = 'SIP student inactivity alerts';
-$string['messageprovider:meeting_not_logged'] = 'SIP unlogged meeting reminders';
+$string['messageprovider:appointment_reminder'] = 'Coaching appointment reminders';
+$string['messageprovider:appointment_created'] = 'Coaching new appointment notifications';
+$string['messageprovider:plan_updated'] = 'Coaching plan update notifications';
+$string['messageprovider:action_reminder'] = 'Coaching action reminders';
+$string['messageprovider:student_inactivity'] = 'Coaching student inactivity alerts';
+$string['messageprovider:meeting_not_logged'] = 'Coaching unlogged meeting reminders';
 
 // Reports.
-$string['report_title'] = 'SIP Report';
+$string['report_title'] = 'Coaching Report';
 $string['report_summary'] = 'Summary Report';
 $string['report_progress'] = 'Progress Report';
 $string['report_kpi_chart'] = 'KPI Chart';
@@ -363,7 +363,7 @@ $string['meeting_modality_phone'] = 'Phone Call';
 $string['meeting_modality_email'] = 'Email';
 $string['meeting_summary'] = 'Summary';
 $string['meeting_notes'] = 'Coach Notes';
-$string['meeting_sip_week'] = 'SIP Week';
+$string['meeting_sip_week'] = 'Coaching Week';
 $string['meeting_saved'] = 'Meeting saved successfully';
 $string['meeting_deleted'] = 'Meeting deleted';
 $string['new_meeting'] = 'Log New Meeting';
@@ -428,22 +428,22 @@ $string['eligibility_decisione_non_idoneo'] = 'Not Suitable';
 $string['eligibility_decisione_pending'] = 'Pending';
 $string['eligibility_note'] = 'Notes';
 $string['eligibility_recommendation'] = 'Coach recommendation (advisory)';
-$string['eligibility_recommend_activate'] = 'Activate SIP';
+$string['eligibility_recommend_activate'] = 'Activate Coaching';
 $string['eligibility_recommend_not_activate'] = 'Do not activate';
 $string['eligibility_recommend_refer'] = 'Refer to other measure';
 $string['eligibility_referral_detail'] = 'Referral to';
 $string['eligibility_scale_hint'] = 'Rate each criterion from 1 (lowest) to 5 (highest)';
-$string['eligibility_activation_section'] = 'SIP Activation';
+$string['eligibility_activation_section'] = 'Coaching Activation';
 $string['eligibility_save_only'] = 'Save assessment only';
-$string['eligibility_save_and_activate'] = 'Save and Activate SIP';
+$string['eligibility_save_and_activate'] = 'Save and Activate Coaching';
 $string['eligibility_saved'] = 'PCI evaluation saved';
 $string['eligibility_summary'] = 'PCI Evaluation';
 $string['eligibility_approved'] = 'Approved by secretary';
 $string['eligibility_approved_msg'] = 'Eligibility approved';
 
 // Closure.
-$string['closure_title'] = 'SIP Closure';
-$string['closure_warning'] = 'SIP Closure';
+$string['closure_title'] = 'Coaching Closure';
+$string['closure_warning'] = 'Coaching Closure';
 $string['closure_outcome'] = 'Final outcome';
 $string['closure_outcome_hired'] = 'Hired';
 $string['closure_outcome_stage'] = 'Internship/Stage';
@@ -460,14 +460,14 @@ $string['closure_interruption_placeholder'] = 'Describe the reason for interrupt
 $string['closure_referral'] = 'Referral to another measure';
 $string['closure_referral_placeholder'] = 'Specify the referral measure...';
 $string['closure_coach_evaluation'] = 'Coach final evaluation';
-$string['closure_coach_evaluation_placeholder'] = 'Overall evaluation of the student\'s SIP pathway (min. 100 characters)...';
+$string['closure_coach_evaluation_placeholder'] = 'Overall evaluation of the student\'s Coaching pathway (min. 100 characters)...';
 $string['closure_next_steps'] = 'Next steps';
 $string['closure_next_steps_placeholder'] = 'Recommendations for continuation...';
 $string['closure_validation'] = 'Validation';
-$string['closure_confirm_btn'] = 'Complete SIP';
+$string['closure_confirm_btn'] = 'Complete Coaching';
 $string['closure_cancel'] = 'Cancel';
-$string['closure_complete_sip'] = 'Complete SIP';
-$string['closure_saved'] = 'SIP closure completed';
+$string['closure_complete_sip'] = 'Complete Coaching';
+$string['closure_saved'] = 'Coaching closure completed';
 $string['closure_select_outcome'] = 'Select outcome...';
 
 // Quality indicators.
@@ -497,8 +497,8 @@ $string['sector_no'] = 'No';
 $string['closure_outcome_tryout'] = 'Trial day / Tryout';
 $string['closure_outcome_intermediate'] = 'Intermediate earning';
 $string['closure_outcome_not_placed'] = 'Not placed but more activated';
-$string['closure_complete'] = 'Complete SIP';
-$string['closure_validation_error'] = 'Cannot close SIP. Missing: {$a}';
+$string['closure_complete'] = 'Complete Coaching';
+$string['closure_validation_error'] = 'Cannot close Coaching. Missing: {$a}';
 $string['closure_missing_levels'] = 'final activation levels for all 7 areas';
 $string['closure_missing_meetings'] = 'minimum 3 registered meetings';
 $string['closure_missing_outcome'] = 'final outcome selection';
@@ -515,8 +515,8 @@ $string['quality_meetings_per_week'] = '{$a} meetings/week';
 $string['quality_alert_no_meeting'] = 'No meeting registered this week for {$a}';
 
 // Aggregate statistics.
-$string['stats_title'] = 'SIP Statistics';
-$string['stats_activated'] = 'SIP Activated';
+$string['stats_title'] = 'Coaching Statistics';
+$string['stats_activated'] = 'Coaching Activated';
 $string['stats_completed'] = 'Completed';
 $string['stats_interrupted'] = 'Interrupted';
 $string['stats_completion_rate'] = 'Completion Rate';
@@ -524,7 +524,7 @@ $string['stats_insertion_rate'] = 'Insertion Rate';
 $string['stats_outcome_distribution'] = 'Outcome Distribution';
 $string['stats_level_evolution'] = 'Average Activation Level Evolution';
 $string['stats_coach_performance'] = 'Coach Performance';
-$string['stats_no_completed'] = 'No completed SIP in the selected period';
+$string['stats_no_completed'] = 'No completed Coaching in the selected period';
 $string['stats_no_coach_data'] = 'No coach data in the selected period';
 
 // Data quality - quality_checker.
@@ -535,7 +535,7 @@ $string['quality_missing_outcome'] = 'Outcome not selected';
 $string['quality_missing_evaluation'] = 'Coach final evaluation missing';
 
 // Message provider: meeting frequency alert.
-$string['messageprovider:meeting_frequency_alert'] = 'SIP meeting frequency alerts';
+$string['messageprovider:meeting_frequency_alert'] = 'Coaching meeting frequency alerts';
 
 // Competency assessment results (Gap G integration).
 $string['assessment_results'] = 'Competency Assessment Results (6 weeks)';
@@ -545,10 +545,10 @@ $string['assessment_autoval_avg'] = 'Self-Assessment Average';
 $string['assessment_coach_avg'] = 'Coach Evaluation Average';
 $string['assessment_quiz_count'] = 'Quizzes Completed';
 $string['assessment_comp_count'] = 'Competencies Assessed';
-$string['assessment_baseline_note'] = 'Data from the FTM Competency Assessment system. These values represent the starting baseline for the SIP pathway.';
+$string['assessment_baseline_note'] = 'Data from the FTM Competency Assessment system. These values represent the starting baseline for the Coaching pathway.';
 
 // SIP Final Report export.
-$string['report_sip_title'] = 'Personalized Individual Support Report';
+$string['report_sip_title'] = 'Individualized Coaching Report';
 $string['report_section_pci'] = 'PCI Data';
 $string['report_section_eligibility'] = 'Eligibility Assessment';
 $string['report_section_baseline'] = 'Baseline - Initial Levels';
@@ -611,10 +611,10 @@ $string['eligibility_decisione_non_idoneo'] = 'Not Eligible';
 $string['eligibility_decisione_pending'] = 'Pending';
 $string['eligibility_note'] = 'Notes';
 $string['eligibility_note_placeholder'] = 'Additional notes on the assessment...';
-$string['eligibility_activation_title'] = 'SIP Activation (if eligible)';
+$string['eligibility_activation_title'] = 'Coaching Activation (if eligible)';
 $string['eligibility_motivation_detail'] = 'Detailed motivation';
-$string['eligibility_motivation_placeholder'] = 'Why this person can benefit from SIP...';
+$string['eligibility_motivation_placeholder'] = 'Why this person can benefit from Coaching...';
 $string['eligibility_save_assessment'] = 'Save assessment';
-$string['eligibility_save_and_activate'] = 'Save and Activate SIP';
+$string['eligibility_save_and_activate'] = 'Save and Activate Coaching';
 $string['eligibility_report_criterion'] = 'Criterion';
 $string['eligibility_report_score'] = 'Score';

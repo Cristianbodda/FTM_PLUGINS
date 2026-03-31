@@ -509,7 +509,7 @@ echo $OUTPUT->header();
     <div class="sip-stat-card">
         <div class="stat-top-border" style="background:var(--sip-primary);"></div>
         <div class="stat-value"><?php echo $total_activated; ?></div>
-        <div class="stat-label">SIP Attivati</div>
+        <div class="stat-label">CI Attivati</div>
     </div>
     <div class="sip-stat-card">
         <div class="stat-top-border" style="background:var(--sip-success);"></div>

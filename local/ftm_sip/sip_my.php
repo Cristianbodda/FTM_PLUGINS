@@ -31,7 +31,7 @@ if (!$enrollment || !$enrollment->student_visible) {
     echo '<div style="text-align:center;padding:60px 20px;">';
     echo '<div style="font-size:48px;margin-bottom:12px;">&#128274;</div>';
     echo '<h3 style="color:#6B7280;">' . get_string('error_permission', 'local_ftm_sip') . '</h3>';
-    echo '<p style="color:#9CA3AF;">Il tuo coach non ha ancora abilitato l\'accesso alla tua area SIP.</p>';
+    echo '<p style="color:#9CA3AF;">Il tuo coach non ha ancora abilitato l\'accesso alla tua area Coaching Individualizzato.</p>';
     echo '</div>';
     echo $OUTPUT->footer();
     die();

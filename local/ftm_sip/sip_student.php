@@ -2719,7 +2719,7 @@ var SipStudent = {
         fd.append('next_steps', (document.getElementById('sip-closure-nextsteps') || {}).value || '');
 
         sipAjax(sipConfig.wwwroot + '/local/ftm_sip/ajax_close_sip.php', fd, function() {
-            alert('SIP chiuso con successo');
+            alert('Coaching Individualizzato chiuso con successo');
             location.reload();
         });
     }

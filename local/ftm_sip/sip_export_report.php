@@ -273,7 +273,7 @@ foreach ($opportunities as $o) {
 // ============================================================
 
 $studentname = fullname($student);
-$filename = 'SIP_Report_' . clean_filename($studentname) . '_' . date('Y-m-d') . '.doc';
+$filename = 'CI_Report_' . clean_filename($studentname) . '_' . date('Y-m-d') . '.doc';
 
 header('Content-Type: application/msword');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -741,7 +741,7 @@ $generated_info->user = fullname($USER);
 echo '<div class="footer">';
 echo sip_esc(get_string('report_generated_by', 'local_ftm_sip', $generated_info));
 echo '<br>';
-echo 'Fondazione Terzo Millennio - Sostegno Individuale Personalizzato';
+echo 'Fondazione Terzo Millennio - Coaching Individualizzato';
 echo '</div>';
 
 echo '</body></html>';

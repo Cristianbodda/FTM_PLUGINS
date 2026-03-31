@@ -50,7 +50,7 @@ try {
     echo json_encode([
         'success' => true,
         'data' => ['enrollmentid' => $enrollmentid],
-        'message' => 'Piano SIP creato in bozza',
+        'message' => 'Piano Coaching Individualizzato creato in bozza',
     ]);
 
 } catch (Exception $e) {

@@ -56,7 +56,7 @@ class notification_helper {
 
         $body = '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif; max-width: 600px;">';
         $body .= '<div style="background: #0891B2; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">';
-        $body .= '<h2 style="margin: 0; font-size: 18px;">&#128197; Promemoria Appuntamento SIP</h2>';
+        $body .= '<h2 style="margin: 0; font-size: 18px;">&#128197; Promemoria Appuntamento Coaching Ind.</h2>';
         $body .= '</div>';
         $body .= '<div style="background: white; padding: 20px; border: 1px solid #DEE2E6; border-top: none; border-radius: 0 0 8px 8px;">';
         $body .= '<p style="font-size: 15px;">Hai un appuntamento programmato:</p>';
@@ -89,7 +89,7 @@ class notification_helper {
         $data->date = userdate($appointment->appointment_date, '%d/%m/%Y');
         $data->time = $appointment->time_start;
 
-        $subject = 'Nuovo appuntamento SIP - ' . $data->date . ' alle ' . $data->time;
+        $subject = 'Nuovo appuntamento Coaching Ind. - ' . $data->date . ' alle ' . $data->time;
 
         $body = '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif; max-width: 600px;">';
         $body .= '<div style="background: #059669; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">';
@@ -118,11 +118,11 @@ class notification_helper {
      */
     public static function send_action_reminder($student, $actions, $coach) {
         $count = count($actions);
-        $subject = "SIP: Hai {$count} azioni da completare";
+        $subject = "CI: Hai {$count} azioni da completare";
 
         $body = '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif; max-width: 600px;">';
         $body .= '<div style="background: #F59E0B; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">';
-        $body .= '<h2 style="margin: 0; font-size: 18px;">&#9888; Promemoria Azioni SIP</h2>';
+        $body .= '<h2 style="margin: 0; font-size: 18px;">&#9888; Promemoria Azioni Coaching Ind.</h2>';
         $body .= '</div>';
         $body .= '<div style="background: white; padding: 20px; border: 1px solid #DEE2E6; border-top: none; border-radius: 0 0 8px 8px;">';
         $body .= '<p>Hai <strong>' . $count . '</strong> azioni da completare:</p>';
@@ -147,7 +147,7 @@ class notification_helper {
      */
     public static function send_inactivity_alert($coach, $student, $days_inactive) {
         $student_name = fullname($student);
-        $subject = "SIP: {$student_name} inattivo da {$days_inactive} giorni";
+        $subject = "CI: {$student_name} inattivo da {$days_inactive} giorni";
 
         $body = '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif; max-width: 600px;">';
         $body .= '<div style="background: #DC2626; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">';
@@ -157,7 +157,7 @@ class notification_helper {
         $body .= '<p><strong>' . s($student_name) . '</strong> non registra attivita da <strong>' . $days_inactive . ' giorni</strong>.</p>';
         $body .= '<p style="color: #6B7280;">Nessuna candidatura, contatto o completamento azione rilevato nel periodo.</p>';
         $body .= '<p><a href="' . (new \moodle_url('/local/ftm_sip/sip_student.php', ['userid' => $student->id]))->out(false) . '" ';
-        $body .= 'style="background: #0891B2; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; display: inline-block;">Apri Scheda SIP</a></p>';
+        $body .= 'style="background: #0891B2; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; display: inline-block;">Apri Scheda Coaching Ind.</a></p>';
         $body .= '</div></div>';
 
         // Send to coach (from system).
@@ -174,7 +174,7 @@ class notification_helper {
     public static function send_meeting_not_logged($coach, $appointment, $student) {
         $student_name = fullname($student);
         $date = userdate($appointment->appointment_date, '%d/%m/%Y');
-        $subject = "SIP: Incontro del {$date} con {$student_name} non registrato";
+        $subject = "CI: Incontro del {$date} con {$student_name} non registrato";
 
         $body = '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif; max-width: 600px;">';
         $body .= '<div style="background: #6B7280; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">';
@@ -203,7 +203,7 @@ class notification_helper {
         $body .= '<h2 style="margin: 0; font-size: 18px;">&#128221; Piano d\'Azione Aggiornato</h2>';
         $body .= '</div>';
         $body .= '<div style="background: white; padding: 20px; border: 1px solid #DEE2E6; border-top: none; border-radius: 0 0 8px 8px;">';
-        $body .= '<p>Il tuo coach <strong>' . s(fullname($coach)) . '</strong> ha aggiornato il tuo Piano d\'Azione SIP.</p>';
+        $body .= '<p>Il tuo coach <strong>' . s(fullname($coach)) . '</strong> ha aggiornato il tuo Piano d\'Azione Coaching Ind..</p>';
         $body .= '<p><a href="' . (new \moodle_url('/local/ftm_sip/sip_my.php', ['section' => 'plan']))->out(false) . '" ';
         $body .= 'style="background: #0891B2; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; display: inline-block;">Vedi il mio Piano</a></p>';
         $body .= '</div></div>';
@@ -432,15 +432,15 @@ class notification_helper {
     public static function send_meeting_frequency_alert($coach, $student) {
         $student_name = fullname($student);
         $week_label = date('W/Y');
-        $subject = "SIP: Nessun incontro registrato questa settimana con {$student_name}";
+        $subject = "CI: Nessun incontro registrato questa settimana con {$student_name}";
 
         $body = '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif; max-width: 600px;">';
         $body .= '<div style="background: #F59E0B; color: white; padding: 16px 20px; border-radius: 8px 8px 0 0;">';
-        $body .= '<h2 style="margin: 0; font-size: 18px;">&#9888; Frequenza Incontri SIP</h2>';
+        $body .= '<h2 style="margin: 0; font-size: 18px;">&#9888; Frequenza Incontri Coaching Ind.</h2>';
         $body .= '</div>';
         $body .= '<div style="background: white; padding: 20px; border: 1px solid #DEE2E6; border-top: none; border-radius: 0 0 8px 8px;">';
         $body .= '<p>Nessun incontro registrato questa settimana (KW ' . s($week_label) . ') per lo studente <strong>' . s($student_name) . '</strong>.</p>';
-        $body .= '<p style="color: #6B7280;">Si raccomanda almeno un incontro a settimana per ogni studente SIP attivo.</p>';
+        $body .= '<p style="color: #6B7280;">Si raccomanda almeno un incontro a settimana per ogni studente CI attivo.</p>';
         $body .= '<p><a href="' . (new \moodle_url('/local/ftm_sip/sip_student.php', ['userid' => $student->id, 'tab' => 'diario']))->out(false) . '" ';
         $body .= 'style="background: #0891B2; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; display: inline-block;">Registra Incontro</a></p>';
         $body .= '</div></div>';
