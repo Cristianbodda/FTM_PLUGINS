@@ -286,6 +286,88 @@ function passport_generate_svg_bar_chart($data, $title = '', $width = 400) {
     return $svg;
 }
 
+/**
+ * Generate overlay radar SVG with multiple datasets.
+ */
+function passport_generate_svg_overlay_radar($datasets, $labels, $size = 400, $title = '') {
+    if (empty($datasets) || empty($labels)) return '<p>Nessun dato disponibile</p>';
+
+    $n = count($labels);
+    if ($n < 3) return '<p>Servono almeno 3 aree per il radar</p>';
+
+    $horizontalPadding = 180;
+    $svgWidth = $size + (2 * $horizontalPadding);
+    $cx = $horizontalPadding + ($size / 2);
+    $cy = $size / 2;
+    $margin = 70;
+    $radius = ($size / 2) - $margin;
+    $angleStep = (2 * M_PI) / $n;
+    $offsetY = $title ? 35 : 10;
+
+    $svg = '<svg width="' . $svgWidth . '" height="' . ($size + 80) . '" xmlns="http://www.w3.org/2000/svg" style="font-family: Arial, sans-serif;">';
+
+    if ($title) {
+        $svg .= '<text x="' . $cx . '" y="20" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">' . htmlspecialchars($title) . '</text>';
+    }
+
+    for ($p = 20; $p <= 100; $p += 20) {
+        $r = $radius * ($p / 100);
+        $svg .= '<circle cx="' . $cx . '" cy="' . ($cy + $offsetY) . '" r="' . $r . '" fill="none" stroke="#e0e0e0" stroke-width="1"/>';
+    }
+
+    $svg .= '<circle cx="' . $cx . '" cy="' . ($cy + $offsetY) . '" r="' . ($radius * 0.6) . '" fill="none" stroke="#f39c12" stroke-width="1.5" stroke-dasharray="5,3"/>';
+    $svg .= '<circle cx="' . $cx . '" cy="' . ($cy + $offsetY) . '" r="' . ($radius * 0.8) . '" fill="none" stroke="#27ae60" stroke-width="1.5" stroke-dasharray="5,3"/>';
+
+    for ($i = 0; $i < $n; $i++) {
+        $angle = ($i * $angleStep) - (M_PI / 2);
+        $axisX = $cx + $radius * cos($angle);
+        $axisY = ($cy + $offsetY) + $radius * sin($angle);
+        $svg .= '<line x1="' . $cx . '" y1="' . ($cy + $offsetY) . '" x2="' . $axisX . '" y2="' . $axisY . '" stroke="#ddd" stroke-width="1"/>';
+
+        $labelRadius = $radius + 20;
+        $labelX = $cx + $labelRadius * cos($angle);
+        $labelY = ($cy + $offsetY) + $labelRadius * sin($angle);
+        $anchor = 'middle';
+        if ($labelX < $cx - 20) $anchor = 'end';
+        else if ($labelX > $cx + 20) $anchor = 'start';
+
+        $svg .= '<text x="' . $labelX . '" y="' . $labelY . '" text-anchor="' . $anchor . '" font-size="9" fill="#333">' . htmlspecialchars($labels[$i]) . '</text>';
+    }
+
+    foreach ($datasets as $ds) {
+        $dsData = $ds['data'];
+        $fill = $ds['fill'] ?? 'rgba(0,0,0,0.1)';
+        $stroke = $ds['stroke'] ?? '#333';
+        $points = [];
+
+        for ($i = 0; $i < $n; $i++) {
+            $angle = ($i * $angleStep) - (M_PI / 2);
+            $value = min(100, max(0, $dsData[$i] ?? 0));
+            $pointRadius = $radius * ($value / 100);
+            $px = $cx + $pointRadius * cos($angle);
+            $py = ($cy + $offsetY) + $pointRadius * sin($angle);
+            $points[] = round($px, 1) . ',' . round($py, 1);
+        }
+
+        $svg .= '<polygon points="' . implode(' ', $points) . '" fill="' . $fill . '" stroke="' . $stroke . '" stroke-width="2"/>';
+        foreach ($points as $point) {
+            list($px, $py) = explode(',', $point);
+            $svg .= '<circle cx="' . $px . '" cy="' . $py . '" r="4" fill="' . $stroke . '" stroke="white" stroke-width="1.5"/>';
+        }
+    }
+
+    $legendY = $size + $offsetY + 15;
+    $legendX = $cx - ($svgWidth / 2) + 30;
+    foreach ($datasets as $idx => $ds) {
+        $lx = $legendX + ($idx * 170);
+        $svg .= '<rect x="' . $lx . '" y="' . ($legendY - 5) . '" width="12" height="12" fill="' . ($ds['stroke'] ?? '#333') . '" rx="2"/>';
+        $svg .= '<text x="' . ($lx + 16) . '" y="' . ($legendY + 5) . '" font-size="9" fill="#333">' . htmlspecialchars($ds['label'] ?? '') . '</text>';
+    }
+
+    $svg .= '</svg>';
+    return $svg;
+}
+
 // ========================================
 // DATA LOADING
 // ========================================
@@ -354,17 +436,24 @@ foreach (array_keys($sectorsFound) as $sec) {
     $areaDescriptions = array_merge($areaDesc, $areaDescriptions);
 }
 
-// Load garage config if available - filter competencies based on garage selection.
+// Load garage config if available.
 $garageConfig = null;
 if ($DB->get_manager()->table_exists('local_garage_config')) {
+    // Try exact courseid match first, then fallback to courseid=0.
     $garageConfig = $DB->get_record('local_garage_config', [
         'userid' => $userid,
         'courseid' => $courseid,
     ]);
+    if (!$garageConfig && $courseid != 0) {
+        $garageConfig = $DB->get_record('local_garage_config', [
+            'userid' => $userid,
+            'courseid' => 0,
+        ]);
+    }
 }
 
+// Apply garage selections: filter competencies.
 if ($garageConfig && !empty($garageConfig->selected_competencies)) {
-    // Filter to only show competencies selected in the garage.
     $selectedComps = json_decode($garageConfig->selected_competencies, true);
     if (is_array($selectedComps) && !empty($selectedComps)) {
         $competencies = array_filter($competencies, function($comp) use ($selectedComps) {
@@ -374,8 +463,9 @@ if ($garageConfig && !empty($garageConfig->selected_competencies)) {
     }
 }
 
-// Display format from garage config.
+// Apply garage options.
 $displayFormat = ($garageConfig && !empty($garageConfig->display_format)) ? $garageConfig->display_format : 'percentage';
+$showOverlay = ($garageConfig && !empty($garageConfig->show_overlay)) ? true : false;
 
 // Aggregate competencies by area.
 $areasData = passport_aggregate_by_area($competencies, $areaDescriptions, $sector);
@@ -400,6 +490,119 @@ foreach ($areasData as $areaKey => $area) {
         'label' => $area['code'] . '. ' . $area['name'],
         'value' => $area['percentage'],
     ];
+}
+
+// Load overlay data if enabled in garage config.
+$overlayDatasets = [];
+$overlayLabels = [];
+if ($showOverlay && !empty($areasData)) {
+    // Labels = area names.
+    foreach ($areasData as $areaKey => $area) {
+        $overlayLabels[] = $area['code'] . '. ' . $area['name'];
+    }
+
+    // Dataset 1: Quiz.
+    $quizValues = [];
+    foreach ($areasData as $area) {
+        $quizValues[] = $area['percentage'];
+    }
+    $overlayDatasets[] = [
+        'data' => $quizValues,
+        'label' => 'Quiz',
+        'fill' => 'rgba(102,126,234,0.2)',
+        'stroke' => '#667eea',
+    ];
+
+    // Dataset 2: Autovalutazione (if available).
+    if (function_exists('get_student_self_assessment')) {
+        $autoData = get_student_self_assessment($userid, $courseid, $displaySector ?? '');
+    } else {
+        $autoData = null;
+        if ($DB->get_manager()->table_exists('local_selfassessment')) {
+            $sectorPrefix = ($displaySector ?? '') ? ($displaySector . '_%') : '';
+            $params = ['userid' => $userid];
+            $sectorFilter = '';
+            if ($sectorPrefix) {
+                $sectorFilter = " AND c.idnumber LIKE :sp";
+                $params['sp'] = $sectorPrefix;
+            }
+            $autoRecords = $DB->get_records_sql(
+                "SELECT c.idnumber, sa.level FROM {local_selfassessment} sa
+                 JOIN {competency} c ON sa.competencyid = c.id
+                 WHERE sa.userid = :userid{$sectorFilter}",
+                $params
+            );
+            if (!empty($autoRecords)) {
+                $autoData = ['data' => []];
+                foreach ($autoRecords as $r) {
+                    $autoData['data'][$r->idnumber] = [
+                        'bloom_level' => (int)$r->level,
+                        'percentage' => round(($r->level / 6) * 100, 1),
+                    ];
+                }
+            }
+        }
+    }
+    if ($autoData && !empty($autoData['data'])) {
+        $autoValues = [];
+        foreach ($areasData as $areaKey => $area) {
+            $areaAutoSum = 0;
+            $areaAutoCount = 0;
+            foreach ($area['competencies'] as $comp) {
+                $idnum = $comp['idnumber'] ?? '';
+                if (isset($autoData['data'][$idnum])) {
+                    $areaAutoSum += $autoData['data'][$idnum]['percentage'];
+                    $areaAutoCount++;
+                }
+            }
+            $autoValues[] = $areaAutoCount > 0 ? round($areaAutoSum / $areaAutoCount, 1) : 0;
+        }
+        $overlayDatasets[] = [
+            'data' => $autoValues,
+            'label' => 'Autovalutazione',
+            'fill' => 'rgba(46,204,113,0.15)',
+            'stroke' => '#2ecc71',
+        ];
+    }
+
+    // Dataset 3: Coach evaluation (if available).
+    if ($DB->get_manager()->table_exists('local_coach_evaluations')) {
+        $coachEval = $DB->get_record_sql(
+            "SELECT id FROM {local_coach_evaluations}
+             WHERE studentid = :sid AND status IN ('completed','signed')
+             ORDER BY evaluation_date DESC LIMIT 1",
+            ['sid' => $userid]
+        );
+        if ($coachEval) {
+            $coachRatings = $DB->get_records_sql(
+                "SELECT c.idnumber, r.rating FROM {local_coach_eval_ratings} r
+                 JOIN {competency} c ON c.id = r.competencyid
+                 WHERE r.evaluationid = :eid AND r.rating > 0",
+                ['eid' => $coachEval->id]
+            );
+            if (!empty($coachRatings)) {
+                $coachValues = [];
+                foreach ($areasData as $areaKey => $area) {
+                    $areaCoachSum = 0;
+                    $areaCoachCount = 0;
+                    foreach ($area['competencies'] as $comp) {
+                        $idnum = $comp['idnumber'] ?? '';
+                        if (isset($coachRatings[$idnum])) {
+                            $areaCoachSum += round(($coachRatings[$idnum]->rating / 6) * 100, 1);
+                            $areaCoachCount++;
+                        }
+                    }
+                    $coachValues[] = $areaCoachCount > 0 ? round($areaCoachSum / $areaCoachCount, 1) : 0;
+                }
+                $overlayDatasets[] = [
+                    'data' => $coachValues,
+                    'label' => 'Valutazione Coach',
+                    'fill' => 'rgba(243,156,18,0.15)',
+                    'stroke' => '#f39c12',
+                ];
+            }
+        }
+    }
 }
 
 // Sector display name (use effective filter if set).
@@ -978,6 +1181,14 @@ echo $OUTPUT->header();
         }
         ?>
     </div>
+
+    <?php if ($showOverlay && !empty($overlayDatasets) && count($overlayDatasets) > 1): ?>
+    <!-- Overlay Radar: 3 Sources -->
+    <div class="passport-radar-section">
+        <h2>Confronto Fonti di Valutazione</h2>
+        <?php echo passport_generate_svg_overlay_radar($overlayDatasets, $overlayLabels, 400); ?>
+    </div>
+    <?php endif; ?>
 
     <!-- Areas table with comments -->
     <div class="passport-table-section">
