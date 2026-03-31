@@ -24,13 +24,18 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - Filtri Calendario (Gruppo/KW, Aula, Tipo, Reset)
 - Excel Calendar Import (3 aule, colori celle, coach-group inference) - Dettagli: `docs/DETAILS_SCHEDULER_IMPORT.md`
 
-#### 2. Sector Manager + Student Report (local_competencymanager) - 12/02/2026
+#### 2. Sector Manager + Student Report (local_competencymanager) - 01/04/2026 (v2.8.1)
 - Multi-Settore, sector_admin.php, capability managesectors
 - Gap Comments System (79 aree, 2 toni) - Dettagli: `docs/DETAILS_GAP_COMMENTS.md`
 - Sistema Tab Orizzontale (6 tab, localStorage, auto-submit)
 - Grafico Overlay Multi-Fonte (4 fonti radar, normalizzazione Bloom)
 - Quiz Diagnostics Panel (ultimi 7gg, link Review)
 - Student Report Print v2 (radar 490px, branding FTM) - Dettagli: `docs/DETAILS_STUDENT_REPORT.md`
+- **Passaporto Tecnico:** `technical_passport.php` - Documento personalizzabile con 12 sezioni configurabili
+- **Garage FTM:** `garage_ftm.php` - Area costruzione passaporto (selezione competenze, sezioni, ordine, formato)
+- **Soglia globale:** `settings.php` - Soglia minima % per inclusione competenze nel passaporto (default 60%)
+- **Tabella DB:** `local_garage_config` (configurazione per studente), `local_passport_comments` (commenti coach)
+- **Fix courseid=0:** `get_available_quizzes()` ora cerca in tutti i corsi quando courseid non specificato
 
 #### 2c. Coach Evaluation System (10/02/2026)
 - Valutazione Bloom (0-6), per Area (A-G), descrizioni competenze
@@ -74,7 +79,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Ordinamento studenti:** Dropdown sort (recenti/fine 6 sett./alfabetico) in filtri avanzati
 - Dettagli: `docs/DETAILS_COACH_DASHBOARD.md`
 
-#### 7. Sistema CPURC (local_ftm_cpurc) - 23/03/2026 (v1.4.1)
+#### 7. Sistema CPURC (local_ftm_cpurc) - 01/04/2026 (v1.6.0)
 - Import CSV, Dashboard Segreteria, Student Card (4 tab), Report Word
 - **Report Finale riscritto:** Allineato al documento ufficiale "Rapporto finale PML_V2026.docx"
   - Titolo: "Rapporto finale d'attivita'"
@@ -99,6 +104,10 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Settore GENERICO:** Aggiunto a student_card percorso (dropdown + CSS badge)
 - **Fix coach dropdown:** Deduplicazione per userid, siteadmin in manage_coaches
 - **Bottone Gestione Coach:** Link diretto a manage_coaches.php nella dashboard CPURC
+- **Annulla Iscrizione:** Bottone in student_card per annullare iscrizione (status=cancelled, unenrol, rimozione gruppo/coach/settori)
+- **Accedi come Studente:** Bottone login-as in dashboard CPURC, student card e coach dashboard V2
+- **Banner Ritorna:** Banner rosso fisso "Ritorna al tuo account" quando in modalita loginas (fix tema Adaptable)
+- **loginas_student.php:** Endpoint custom per login-as con session manager corretto
 - Dettagli: `docs/DETAILS_CPURC.md`
 
 ---
@@ -129,7 +138,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 
 ---
 
-#### 8. SIP - Sostegno Individuale Personalizzato (local_ftm_sip) - 23/03/2026 (v1.2.0) NUOVO
+#### 8. Coaching Individualizzato (local_ftm_sip) - 01/04/2026 (v1.3.0) - Rinominato da SIP
 - Percorso 10 settimane post-rilevamento per PCI con potenziale di collocamento
 - **Griglia Valutazione PCI:** 6 criteri numerici 1-5 (Motivazione, Chiarezza Obiettivo, Occupabilita, Autonomia, Bisogno Coaching, Comportamento)
 - **Piano d'Azione:** 7 aree attivazione (scala 0-6), baseline congelata, radar SVG overlay
@@ -143,7 +152,9 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Registro Aziende:** Condiviso, crescita organica, autocomplete
 - **Area Studente:** sip_my.php con inserimento KPI autonomo
 - **12 tabelle DB, 31 file, ~11.000 righe, 500+ stringhe EN/IT**
-- Integrato nella Coach Dashboard V2 (badge teal, filtri, modal attivazione)
+- Integrato nella Coach Dashboard V2 (badge teal "CI", filtri, modal attivazione)
+- **Rinominato:** SIP -> Coaching Individualizzato (CI) in tutta l'interfaccia
+- **Campo LADI:** Indennita giornaliere LADI obbligatorie per attivazione
 - Dettagli: `docs/MANUALE_SIP.md`, `docs/REPORT_ISTITUZIONALE_SIP.md`
 
 ---
@@ -152,12 +163,28 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Fix punti interrogativi:** Rimossi emoji Unicode (TCPDF non li supporta) tramite `pdf_strip_emoji()`
 - **Fix tabelle strette:** Width da px fissi a percentuali (dual legend, gap analysis, overlay)
 
+#### 10. Passaporto Tecnico + Garage FTM (local_competencymanager) - 01/04/2026
+- **Passaporto Tecnico** (`technical_passport.php`): Documento finale personalizzabile
+  - 12 sezioni configurabili (panoramica, radar, piano, dettagli, overlay, gap, spunti, coach eval, ecc.)
+  - Ordine sezioni configurabile dal Garage
+  - Formato: percentuali numeriche o scala qualitativa (Eccellente/Buono/Sufficiente)
+  - Radar SVG (stampabile), header FTM rosso con logo
+  - Commenti coach per area (salvati in `local_passport_comments`)
+- **Garage FTM** (`garage_ftm.php`): Area costruzione passaporto
+  - Selettore competenze con checkbox per area/competenza
+  - Toggle formato visualizzazione (% vs qualitativo)
+  - Toggle overlay 3 fonti, autovalutazione, coach eval
+  - Sezioni drag & drop per ordinamento stampa
+  - Soglia personalizzabile per studente (override globale)
+  - Configurazione salvata in `local_garage_config` per studente
+- **Soglia globale:** Amministrazione -> Plugin -> Competency Manager -> Soglia minima %
+
 ---
 
 ## Plugin (14 totali)
 
 ### Local (12)
-competencymanager, coachmanager, competencyreport, competencyxmlimport, ftm_ai (STANDBY), ftm_hub, ftm_scheduler, ftm_testsuite, ftm_cpurc, ftm_sip (NUOVO), labeval, selfassessment
+competencymanager, coachmanager, competencyreport, competencyxmlimport, ftm_ai (STANDBY), ftm_hub, ftm_scheduler, ftm_testsuite, ftm_cpurc, ftm_sip (Coaching Individualizzato), labeval, selfassessment
 
 ### Block (1): ftm_tools | Question Bank (1): competenciesbyquestion
 
@@ -337,14 +364,16 @@ ftm_hub (centrale)
 │   ├── competencyreport
 │   ├── competencyxmlimport (+ setup_universale)
 │   ├── selfassessment (+ observer settori + filtro primario)
-│   ├── coachmanager (+ dashboard V2 + badge SIP)
+│   ├── coachmanager (+ dashboard V2 + badge CI)
+│   ├── technical_passport.php (Passaporto Tecnico - 12 sezioni)
+│   ├── garage_ftm.php (Garage FTM - costruzione passaporto)
 │   └── ftm_ai [STANDBY]
 ├── labeval
 ├── ftm_scheduler (+ local_ftm_coaches)
 ├── ftm_testsuite
-├── ftm_cpurc (+ report finale ufficiale)
-└── ftm_sip (NUOVO - 12 tabelle, 31 file)
-    ├── Integrato in coachmanager (badge, filtri, modal)
+├── ftm_cpurc (+ report finale + annulla iscrizione + loginas)
+└── ftm_sip (Coaching Individualizzato - 12 tabelle, 31 file)
+    ├── Integrato in coachmanager (badge CI, filtri, modal + campo LADI)
     ├── Legge da: competencymanager, selfassessment, ftm_scheduler
     └── 7 tipi notifica + cron task
 
@@ -352,6 +381,8 @@ Tabelle Condivise:
 ├── local_student_coaching (coachmanager <-> ftm_cpurc <-> ftm_sip)
 ├── local_student_sectors (competencymanager <-> ftm_cpurc <-> selfassessment <-> ftm_sip)
 ├── local_ftm_coaches (ftm_scheduler -> tutti)
+├── local_garage_config (competencymanager - config passaporto per studente)
+├── local_passport_comments (competencymanager - commenti coach per area)
 └── local_ftm_ai_usage (ftm_ai)
 ```
 
@@ -368,10 +399,12 @@ Tabelle Condivise:
 - Scheduler: /local/ftm_scheduler/index.php
 - Sector Admin: /local/competencymanager/sector_admin.php
 - Test Suite: /local/ftm_testsuite/agent_tests.php
-- SIP Dashboard: /local/ftm_sip/sip_dashboard.php
-- SIP Studente: /local/ftm_sip/sip_student.php?userid=X
-- SIP Statistiche: /local/ftm_sip/sip_stats.php
-- SIP Area Studente: /local/ftm_sip/sip_my.php
+- Passaporto Tecnico: /local/competencymanager/technical_passport.php?userid=X&courseid=Y
+- Garage FTM: /local/competencymanager/garage_ftm.php?userid=X&courseid=Y
+- CI Dashboard: /local/ftm_sip/sip_dashboard.php
+- CI Studente: /local/ftm_sip/sip_student.php?userid=X
+- CI Statistiche: /local/ftm_sip/sip_stats.php
+- CI Area Studente: /local/ftm_sip/sip_my.php
 - Registro Aziende: /local/ftm_sip/companies.php
 
 ---
