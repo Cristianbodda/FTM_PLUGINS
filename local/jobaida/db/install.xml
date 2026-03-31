@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/jobaida/db" VERSION="20260401" COMMENT="Tables for JobAIDA letter generator">
+  <TABLES>
+    <TABLE NAME="local_jobaida_letters" COMMENT="Generated AIDA cover letters">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="User who generated the letter"/>
+        <FIELD NAME="job_ad" TYPE="text" NOTNULL="true" COMMENT="Job advertisement text input"/>
+        <FIELD NAME="cv_text" TYPE="text" NOTNULL="true" COMMENT="CV/resume text input"/>
+        <FIELD NAME="objectives" TYPE="text" NOTNULL="false" COMMENT="Personal objectives text input"/>
+        <FIELD NAME="attention" TYPE="text" NOTNULL="false" COMMENT="AIDA - Attention section"/>
+        <FIELD NAME="attention_rationale" TYPE="text" NOTNULL="false" COMMENT="Why this attention hook was chosen"/>
+        <FIELD NAME="interest" TYPE="text" NOTNULL="false" COMMENT="AIDA - Interest section"/>
+        <FIELD NAME="interest_rationale" TYPE="text" NOTNULL="false" COMMENT="Why these matches were highlighted"/>
+        <FIELD NAME="desire" TYPE="text" NOTNULL="false" COMMENT="AIDA - Desire section"/>
+        <FIELD NAME="desire_rationale" TYPE="text" NOTNULL="false" COMMENT="Why this connection was made"/>
+        <FIELD NAME="action" TYPE="text" NOTNULL="false" COMMENT="AIDA - Action section"/>
+        <FIELD NAME="action_rationale" TYPE="text" NOTNULL="false" COMMENT="Why this call to action"/>
+        <FIELD NAME="full_letter" TYPE="text" NOTNULL="false" COMMENT="Complete assembled letter"/>
+        <FIELD NAME="language" TYPE="char" LENGTH="5" NOTNULL="true" DEFAULT="it" COMMENT="Language code"/>
+        <FIELD NAME="model_used" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="AI model used"/>
+        <FIELD NAME="tokens_used" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Total tokens consumed"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_time_idx" UNIQUE="false" FIELDS="userid, timecreated"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_jobaida_auth" COMMENT="Student authorizations to use the generator">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Authorized student"/>
+        <FIELD NAME="authorizedby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Coach who authorized"/>
+        <FIELD NAME="active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" COMMENT="1=active, 0=revoked"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="authorizedby_fk" TYPE="foreign" FIELDS="authorizedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_uq" UNIQUE="true" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
