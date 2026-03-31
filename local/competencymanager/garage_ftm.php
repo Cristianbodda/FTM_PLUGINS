@@ -848,9 +848,12 @@ echo $OUTPUT->header();
                 Salva Configurazione
             </button>
             <?php endif; ?>
-            <button onclick="openStudentReportPreview(true)" class="garage-btn garage-btn-primary">
-                Stampa Passaporto &#8594;
-            </button>
+            <a href="<?php echo (new moodle_url('/local/competencymanager/technical_passport.php', [
+                'userid' => $userid,
+                'courseid' => $courseid,
+            ]))->out(false); ?>" class="garage-btn garage-btn-primary">
+                Anteprima Passaporto &#8594;
+            </a>
         </div>
     </div>
 
@@ -1121,17 +1124,11 @@ echo $OUTPUT->header();
     <!-- Preview buttons (bottom) -->
     <?php if (!empty($areasData)): ?>
     <div style="text-align: center; margin-bottom: 30px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
-        <button onclick="openStudentReportPreview(false)" class="garage-btn garage-btn-primary" style="font-size: 1rem; padding: 12px 30px;">
-            Anteprima Student Report &#8594;
-        </button>
-        <button onclick="openStudentReportPreview(true)" class="garage-btn garage-btn-success" style="font-size: 1rem; padding: 12px 30px;">
-            Stampa Passaporto &#8594;
-        </button>
         <a href="<?php echo (new moodle_url('/local/competencymanager/technical_passport.php', [
             'userid' => $userid,
             'courseid' => $courseid,
-        ]))->out(false); ?>" class="garage-btn garage-btn-secondary" style="font-size: 1rem; padding: 12px 30px;">
-            Passaporto Semplice &#8594;
+        ]))->out(false); ?>" class="garage-btn garage-btn-primary" style="font-size: 1rem; padding: 12px 30px;">
+            Anteprima Passaporto Tecnico &#8594;
         </a>
     </div>
     <?php endif; ?>
