@@ -5664,12 +5664,7 @@ if ($tab === 'overview') {
                         // Check evaluate in system context (capability is defined at CONTEXT_SYSTEM level).
                         $canEditComparative = has_capability('local/competencymanager:evaluate', context_system::instance());
 
-                        // DEBUG: show capability check result (remove after testing).
-                        echo '<!-- DEBUG_EDIT_CAP: canEditComparative=' . ($canEditComparative ? 'TRUE' : 'FALSE')
-                            . ' | userid=' . $USER->id
-                            . ' | username=' . $USER->username
-                            . ' | is_siteadmin=' . (is_siteadmin() ? 'YES' : 'NO')
-                            . ' -->';
+
 
                         foreach ($overlayAreas as $code => $data):
                             // Calcola Rilevamento = Quiz + Lab (usa Lab se disponibile, altrimenti Quiz)
@@ -5758,22 +5753,24 @@ if ($tab === 'overview') {
                             </td>
                             <!-- Coach -->
                             <td class="text-center">
-                                <?php if ($coachVal !== null): ?>
-                                    <?php if ($canEditComparative): ?>
+                                <?php if ($canEditComparative): ?>
                                     <span class="badge comparative-editable"
-                                          style="background: #dc3545; color: white; cursor: pointer;"
+                                          style="background: <?php echo $coachVal !== null ? '#dc3545' : '#e9ecef'; ?>; color: <?php echo $coachVal !== null ? 'white' : '#6c757d'; ?>; cursor: pointer;"
                                           data-area="<?php echo $code; ?>"
                                           data-method="coach_comp"
-                                          data-value="<?php echo $coachVal; ?>"
-                                          data-calculated="<?php echo $data['coach']; ?>"
+                                          data-value="<?php echo $coachVal ?? 0; ?>"
+                                          data-calculated="<?php echo $data['coach'] ?? 0; ?>"
                                           data-modified="<?php echo $coachModified ? '1' : '0'; ?>"
                                           onclick="event.stopPropagation(); showComparativeDropdown(this)"
-                                          title="Clicca per modificare">
-                                        <?php echo $coachVal; ?>%<?php if ($coachModified): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
+                                          title="<?php echo $coachVal !== null ? 'Clicca per modificare' : 'Clicca per inserire valutazione coach'; ?>">
+                                        <?php if ($coachVal !== null): ?>
+                                            <?php echo $coachVal; ?>%<?php if ($coachModified): ?><span style="font-size: 0.7em;">✏️</span><?php endif; ?>
+                                        <?php else: ?>
+                                            +
+                                        <?php endif; ?>
                                     </span>
-                                    <?php else: ?>
+                                <?php elseif ($coachVal !== null): ?>
                                     <span class="badge" style="background: #dc3545; color: white;"><?php echo $coachVal; ?>%</span>
-                                    <?php endif; ?>
                                 <?php else: ?>
                                     <span class="text-muted">-</span>
                                 <?php endif; ?>
