@@ -44,6 +44,7 @@ $capabilities = [
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes' => [
+            'teacher' => CAP_ALLOW,          // Docente non editor
             'editingteacher' => CAP_ALLOW,  // Coach/Docente
             'manager' => CAP_ALLOW,          // Segretaria/Admin
         ],
@@ -69,6 +70,7 @@ $capabilities = [
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [
+            'teacher' => CAP_ALLOW,          // Docente non editor
             'editingteacher' => CAP_ALLOW,  // Coach
             'manager' => CAP_ALLOW,          // Segreteria
         ],
@@ -82,6 +84,7 @@ $capabilities = [
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [
+            'teacher' => CAP_ALLOW,          // Docente non editor
             'editingteacher' => CAP_ALLOW,  // Coach
             'manager' => CAP_ALLOW,          // Segreteria
         ],
@@ -95,7 +98,8 @@ $capabilities = [
         'captype' => 'read',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [
-            'editingteacher' => CAP_ALLOW,  // Altri coach possono vedere
+            'teacher' => CAP_ALLOW,          // Docente non editor
+            'editingteacher' => CAP_ALLOW,  // Coach
             'manager' => CAP_ALLOW,          // Segreteria
         ],
     ],
@@ -119,6 +123,7 @@ $capabilities = [
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [
+            'teacher' => CAP_ALLOW,          // Docente non editor
             'editingteacher' => CAP_ALLOW,  // Coach
             'manager' => CAP_ALLOW,          // Segreteria
         ],
