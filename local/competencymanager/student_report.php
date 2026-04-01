@@ -4651,7 +4651,7 @@ if ($tab === 'overview') {
                 }
 
                 // Verifica se l'utente può modificare
-                $canEditFinalRatings = has_capability('local/competencymanager:evaluate', $context);
+                $canEditFinalRatings = has_capability('local/competencymanager:evaluate', context_system::instance());
                 ?>
 
                 <!-- Tabella Metodi di Valutazione -->
@@ -5661,7 +5661,8 @@ if ($tab === 'overview') {
                         }
 
                         // Verifica capability per editing
-                        $canEditComparative = has_capability('local/competencymanager:evaluate', $context);
+                        // Check evaluate in system context (capability is defined at CONTEXT_SYSTEM level).
+                        $canEditComparative = has_capability('local/competencymanager:evaluate', context_system::instance());
 
                         foreach ($overlayAreas as $code => $data):
                             // Calcola Rilevamento = Quiz + Lab (usa Lab se disponibile, altrimenti Quiz)
@@ -6438,7 +6439,7 @@ if ($tab === 'overview') {
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-center">
-                                            <?php if (has_capability('local/competencymanager:evaluate', $context)): ?>
+                                            <?php if (has_capability('local/competencymanager:evaluate', context_system::instance())): ?>
                                             <!-- Editable rating dropdown -->
                                             <div class="inline-rating-editor" style="position: relative; display: inline-block;">
                                                 <span class="badge badge-<?php echo $ratingClass; ?> rating-badge-clickable"
