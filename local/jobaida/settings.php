@@ -52,7 +52,7 @@ if ($hassiteconfig) {
         'local_jobaida/max_tokens',
         get_string('max_tokens', 'local_jobaida'),
         get_string('max_tokens_desc', 'local_jobaida'),
-        '2000',
+        '4000',
         PARAM_INT
     ));
 
