@@ -5664,6 +5664,13 @@ if ($tab === 'overview') {
                         // Check evaluate in system context (capability is defined at CONTEXT_SYSTEM level).
                         $canEditComparative = has_capability('local/competencymanager:evaluate', context_system::instance());
 
+                        // DEBUG: show capability check result (remove after testing).
+                        echo '<!-- DEBUG_EDIT_CAP: canEditComparative=' . ($canEditComparative ? 'TRUE' : 'FALSE')
+                            . ' | userid=' . $USER->id
+                            . ' | username=' . $USER->username
+                            . ' | is_siteadmin=' . (is_siteadmin() ? 'YES' : 'NO')
+                            . ' -->';
+
                         foreach ($overlayAreas as $code => $data):
                             // Calcola Rilevamento = Quiz + Lab (usa Lab se disponibile, altrimenti Quiz)
                             $rilevamentoCalc = null;
