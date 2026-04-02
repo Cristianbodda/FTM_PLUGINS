@@ -1195,8 +1195,6 @@ if (!$isauthorized) {
     function processDroppedFile(file, textareaId, dropzoneId) {
         var zone = document.getElementById(dropzoneId);
         var textarea = document.getElementById(textareaId);
-        var validTypes = ['text/plain', 'application/pdf', 'application/msword',
-                          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
         var validExts = ['.txt', '.pdf', '.doc', '.docx'];
         var ext = '.' + file.name.split('.').pop().toLowerCase();
 
@@ -1207,24 +1205,45 @@ if (!$isauthorized) {
             return;
         }
 
-        if (ext === '.txt') {
-            // Read text files directly.
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                textarea.value = e.target.result;
-                textarea.dispatchEvent(new Event('input'));
-                zone.innerHTML = '<span class="drop-icon" style="color:#28a745;">&#10004;</span>'
-                    + '<span class="drop-file-name">' + file.name + '</span> caricato!';
-            };
-            reader.readAsText(file);
-        } else {
-            // PDF/Word - show file name and instruction.
-            zone.innerHTML = '<span class="drop-icon" style="color:#f59e0b;">&#128196;</span>'
-                + '<span class="drop-file-name">' + file.name + '</span><br>'
-                + '<small style="color:#666;">Apri il file, seleziona tutto il testo (Ctrl+A), copialo (Ctrl+C) e incollalo nella textarea qui sotto (Ctrl+V).</small>';
-            textarea.focus();
-            textarea.placeholder = 'Incolla qui il contenuto di ' + file.name + ' (Ctrl+V)...';
-        }
+        // Show loading state.
+        zone.innerHTML = '<span class="drop-icon" style="color:#0066cc;">&#9203;</span>'
+            + '<span class="drop-file-name">' + file.name + '</span><br>'
+            + '<small style="color:#0066cc;">Estrazione testo in corso...</small>';
+
+        // Upload file to server for text extraction.
+        var formData = new FormData();
+        formData.append('file', file);
+        formData.append('sesskey', M.cfg.sesskey);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', M.cfg.wwwroot + '/local/jobaida/ajax_extract_text.php', true);
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                try {
+                    var resp = JSON.parse(xhr.responseText);
+                    if (resp.success && resp.text) {
+                        textarea.value = resp.text;
+                        textarea.dispatchEvent(new Event('input'));
+                        zone.innerHTML = '<span class="drop-icon" style="color:#28a745;">&#10004;</span>'
+                            + '<span class="drop-file-name">' + resp.filename + '</span> caricato!'
+                            + '<br><small style="color:#28a745;">' + resp.chars + ' caratteri estratti</small>';
+                    } else {
+                        zone.innerHTML = '<span class="drop-icon" style="color:#f59e0b;">&#9888;</span>'
+                            + '<span class="drop-file-name">' + file.name + '</span><br>'
+                            + '<small style="color:#dc3545;">' + (resp.message || 'Errore estrazione') + '</small><br>'
+                            + '<small style="color:#666;">Prova ad aprire il file e copiare il testo manualmente (Ctrl+A, Ctrl+C, Ctrl+V).</small>';
+                        textarea.focus();
+                    }
+                } catch (e) {
+                    zone.innerHTML = '<span class="drop-icon" style="color:#dc3545;">&#10060;</span>'
+                        + 'Errore di comunicazione. Copia il testo manualmente.';
+                    textarea.focus();
+                }
+            }
+        };
+
+        xhr.send(formData);
     }
 
     function resetDropzone(zone, dropzoneId) {
