@@ -461,6 +461,23 @@ if (!$isauthorized) {
         </div>
     </div>
 
+    <!-- Mode Tabs -->
+    <div class="jobaida-mode-tabs" style="display:flex; gap:0; margin-bottom:24px; border-radius:8px; overflow:hidden; border:2px solid #0066cc;">
+        <button onclick="switchMode('express')" id="tab-express" class="jobaida-mode-tab active"
+                style="flex:1; padding:14px 20px; border:none; font-size:1rem; font-weight:600; cursor:pointer; transition:all 0.2s;
+                       background:#0066cc; color:#fff;">
+            Express Writers
+        </button>
+        <button onclick="switchMode('coaching')" id="tab-coaching" class="jobaida-mode-tab"
+                style="flex:1; padding:14px 20px; border:none; font-size:1rem; font-weight:600; cursor:pointer; transition:all 0.2s;
+                       background:#fff; color:#0066cc;">
+            Coaching Writers
+        </button>
+    </div>
+
+    <!-- ========== EXPRESS MODE ========== -->
+    <div id="mode-express" class="jobaida-mode-content">
+
     <!-- AIDA Explanation (collapsible) -->
     <div class="jobaida-card jobaida-aida-info">
         <div class="jobaida-card-header" onclick="toggleAidaInfo()">
@@ -642,6 +659,99 @@ if (!$isauthorized) {
             </button>
         </div>
     </div>
+
+    </div><!-- /mode-express -->
+
+    <!-- ========== COACHING MODE ========== -->
+    <div id="mode-coaching" class="jobaida-mode-content" style="display:none;">
+        <!-- Step 1: Input -->
+        <div class="jobaida-card" id="coaching-step1">
+            <div class="jobaida-card-header" style="background:#f0fdf4; color:#065f46; cursor:default;">
+                Step 1 - Inserisci i Dati
+            </div>
+            <div class="jobaida-card-body">
+                <div style="margin-bottom:16px;">
+                    <label style="font-weight:600; display:block; margin-bottom:6px;">Annuncio di Lavoro *</label>
+                    <textarea id="coaching-jobad" rows="6" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:10px; font-size:0.9rem; resize:vertical; box-sizing:border-box;"
+                              placeholder="Incolla qui l'annuncio di lavoro..."></textarea>
+                    <small id="coaching-jobad-count" style="color:#999;">0 caratteri</small>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="font-weight:600; display:block; margin-bottom:6px;">Il tuo CV *</label>
+                    <textarea id="coaching-cv" rows="6" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:10px; font-size:0.9rem; resize:vertical; box-sizing:border-box;"
+                              placeholder="Incolla qui il tuo CV..."></textarea>
+                    <small id="coaching-cv-count" style="color:#999;">0 caratteri</small>
+                </div>
+                <button onclick="analyzeGaps()" id="btn-analyze" style="padding:12px 28px; background:#28a745; color:#fff; border:none; border-radius:6px; font-size:1rem; font-weight:600; cursor:pointer; width:100%;">
+                    Analizza Compatibilita
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Gap Analysis Results + Questions (hidden initially) -->
+        <div id="coaching-step2" style="display:none;">
+            <!-- Match overview -->
+            <div class="jobaida-card" style="border-left:4px solid #0066cc;">
+                <div class="jobaida-card-body">
+                    <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+                        <div style="text-align:center;">
+                            <div id="match-percentage" style="font-size:2.5rem; font-weight:700; color:#0066cc;">0%</div>
+                            <div style="font-size:0.85rem; color:#666;">Compatibilita</div>
+                        </div>
+                        <div style="flex:1;">
+                            <div id="match-role" style="font-size:1.1rem; font-weight:600; color:#333;"></div>
+                            <div id="match-company" style="font-size:0.9rem; color:#666;"></div>
+                            <div id="coaching-tip" style="margin-top:8px; padding:10px; background:#fff7ed; border-radius:6px; font-size:0.85rem; color:#92400e;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strengths -->
+            <div id="strengths-section" class="jobaida-card" style="border-left:4px solid #28a745;">
+                <div class="jobaida-card-header" style="background:#f0fdf4; color:#065f46; cursor:default;">
+                    Punti di Forza
+                </div>
+                <div class="jobaida-card-body" id="strengths-list"></div>
+            </div>
+
+            <!-- Questions for gaps -->
+            <div class="jobaida-card" style="border-left:4px solid #f59e0b;">
+                <div class="jobaida-card-header" style="background:#fffbeb; color:#92400e; cursor:default;">
+                    Rispondi alle Domande del Coach
+                </div>
+                <div class="jobaida-card-body">
+                    <p style="font-size:0.85rem; color:#666; margin-bottom:16px;">
+                        Per ogni requisito dell'annuncio, rispondi alle domande. Le tue risposte saranno usate per costruire una lettera personalizzata.
+                    </p>
+                    <div id="gap-questions-container"></div>
+                </div>
+            </div>
+
+            <!-- Objectives (optional) -->
+            <div class="jobaida-card">
+                <div class="jobaida-card-header" style="background:#f8f9fa; color:#495057; cursor:default;">
+                    I tuoi Obiettivi (opzionale)
+                </div>
+                <div class="jobaida-card-body">
+                    <textarea id="coaching-objectives" rows="3" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:10px; font-size:0.9rem; resize:vertical; box-sizing:border-box;"
+                              placeholder="Cosa ti motiva? Quali sono i tuoi obiettivi professionali?"></textarea>
+                </div>
+            </div>
+
+            <!-- Generate button -->
+            <div style="text-align:center; margin:20px 0;">
+                <button onclick="generateCoachingLetter()" id="btn-coaching-generate" style="padding:14px 40px; background:#0066cc; color:#fff; border:none; border-radius:6px; font-size:1.1rem; font-weight:600; cursor:pointer;">
+                    Genera Lettera con le tue Risposte
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 3: Results -->
+        <div id="coaching-step3" style="display:none;">
+            <div id="coaching-results"></div>
+        </div>
+    </div><!-- /mode-coaching -->
 
 </div>
 
@@ -979,6 +1089,284 @@ if (!$isauthorized) {
             saveBtn.textContent = 'Salva nello Storico';
             showToast('Errore di rete: ' + err.message, '#dc3545');
         });
+    };
+
+    // ========== MODE SWITCHING ==========
+
+    /**
+     * Switch between Express and Coaching modes.
+     * @param {string} mode - 'express' or 'coaching'
+     */
+    window.switchMode = function(mode) {
+        document.getElementById('mode-express').style.display = mode === 'express' ? 'block' : 'none';
+        document.getElementById('mode-coaching').style.display = mode === 'coaching' ? 'block' : 'none';
+
+        var tabExpress = document.getElementById('tab-express');
+        var tabCoaching = document.getElementById('tab-coaching');
+
+        if (mode === 'express') {
+            tabExpress.style.background = '#0066cc';
+            tabExpress.style.color = '#fff';
+            tabCoaching.style.background = '#fff';
+            tabCoaching.style.color = '#0066cc';
+        } else {
+            tabCoaching.style.background = '#0066cc';
+            tabCoaching.style.color = '#fff';
+            tabExpress.style.background = '#fff';
+            tabExpress.style.color = '#0066cc';
+        }
+    };
+
+    // Character counters for coaching mode.
+    document.getElementById('coaching-jobad').addEventListener('input', function() {
+        document.getElementById('coaching-jobad-count').textContent = this.value.length + ' caratteri';
+    });
+    document.getElementById('coaching-cv').addEventListener('input', function() {
+        document.getElementById('coaching-cv-count').textContent = this.value.length + ' caratteri';
+    });
+
+    // ========== GAP ANALYSIS ==========
+
+    /**
+     * Send job ad + CV for gap analysis.
+     */
+    window.analyzeGaps = function() {
+        var jobad = document.getElementById('coaching-jobad').value.trim();
+        var cv = document.getElementById('coaching-cv').value.trim();
+
+        if (jobad.length < 50 || cv.length < 50) {
+            alert('Inserisci almeno 50 caratteri per annuncio e CV.');
+            return;
+        }
+
+        var btn = document.getElementById('btn-analyze');
+        btn.disabled = true;
+        btn.textContent = 'Analisi in corso...';
+        btn.style.background = '#6c757d';
+
+        var formData = new FormData();
+        formData.append('sesskey', SESSKEY);
+        formData.append('action', 'analyze_gaps');
+        formData.append('job_ad', jobad);
+        formData.append('cv_text', cv);
+
+        fetch(M.cfg.wwwroot + '/local/jobaida/ajax_analyze_gaps.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(resp) {
+            btn.disabled = false;
+            btn.textContent = 'Analizza Compatibilita';
+            btn.style.background = '#28a745';
+
+            if (resp.success) {
+                displayGapAnalysis(resp.data);
+            } else {
+                alert('Errore: ' + (resp.message || 'Sconosciuto'));
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            btn.textContent = 'Analizza Compatibilita';
+            btn.style.background = '#28a745';
+            alert('Errore di comunicazione con il server.');
+        });
+    };
+
+    /**
+     * Display gap analysis results and build the questions UI.
+     * @param {object} data - Analysis response data.
+     */
+    function displayGapAnalysis(data) {
+        // Show step 2.
+        document.getElementById('coaching-step2').style.display = 'block';
+
+        // Match overview.
+        var pct = data.overall_match_percentage;
+        var pctColor = pct >= 70 ? '#28a745' : (pct >= 50 ? '#f59e0b' : '#dc3545');
+        document.getElementById('match-percentage').textContent = pct + '%';
+        document.getElementById('match-percentage').style.color = pctColor;
+        document.getElementById('match-role').textContent = data.role || 'Ruolo';
+        document.getElementById('match-company').textContent = data.company_name ? 'Azienda: ' + data.company_name : '';
+        document.getElementById('coaching-tip').textContent = data.coaching_tip || '';
+
+        // Strengths.
+        var strengthsHtml = '';
+        if (data.strengths && data.strengths.length > 0) {
+            data.strengths.forEach(function(s) {
+                strengthsHtml += '<div style="padding:6px 0; border-bottom:1px solid #eee; font-size:0.9rem;">&#10004; ' + escapeHtml(s) + '</div>';
+            });
+        }
+        document.getElementById('strengths-list').innerHTML = strengthsHtml;
+
+        // Questions.
+        var questionsHtml = '';
+        if (data.requirements && data.requirements.length > 0) {
+            data.requirements.forEach(function(req) {
+                var statusColor = req.match_status === 'full_match' ? '#28a745' : (req.match_status === 'partial_match' ? '#f59e0b' : '#dc3545');
+                var statusLabel = req.match_status === 'full_match' ? 'Corrispondenza' : (req.match_status === 'partial_match' ? 'Parziale' : 'Non trovato');
+                var statusIcon = req.match_status === 'full_match' ? '&#10004;' : (req.match_status === 'partial_match' ? '&#9888;' : '&#10060;');
+                var importanceLabel = req.importance === 'essential' ? 'Essenziale' : (req.importance === 'preferred' ? 'Preferito' : 'Opzionale');
+
+                questionsHtml += '<div style="margin-bottom:20px; padding:16px; background:#f8f9fa; border-radius:8px; border-left:4px solid ' + statusColor + ';">';
+                questionsHtml += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">';
+                questionsHtml += '<strong style="font-size:0.95rem;">' + escapeHtml(req.requirement) + '</strong>';
+                questionsHtml += '<div style="display:flex; gap:8px;">';
+                questionsHtml += '<span style="padding:2px 10px; border-radius:12px; font-size:0.75rem; font-weight:600; background:' + statusColor + '20; color:' + statusColor + ';">' + statusIcon + ' ' + statusLabel + '</span>';
+                questionsHtml += '<span style="padding:2px 10px; border-radius:12px; font-size:0.75rem; background:#e5e7eb; color:#374151;">' + importanceLabel + '</span>';
+                questionsHtml += '</div></div>';
+
+                if (req.cv_evidence) {
+                    questionsHtml += '<div style="font-size:0.85rem; color:#059669; margin-bottom:8px; padding:6px 10px; background:#ecfdf5; border-radius:4px;">Dal CV: ' + escapeHtml(req.cv_evidence) + '</div>';
+                }
+
+                if (req.question) {
+                    questionsHtml += '<div style="font-size:0.9rem; color:#1e40af; margin-bottom:6px; font-weight:500;">' + escapeHtml(req.question) + '</div>';
+                    if (req.question_hint) {
+                        questionsHtml += '<div style="font-size:0.8rem; color:#9ca3af; margin-bottom:8px; font-style:italic;">' + escapeHtml(req.question_hint) + '</div>';
+                    }
+                    questionsHtml += '<textarea class="coaching-answer" data-question="' + escapeHtml(req.question).replace(/"/g, '&quot;') + '" rows="2" '
+                        + 'style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:8px 10px; font-size:0.85rem; resize:vertical; box-sizing:border-box;" '
+                        + 'placeholder="La tua risposta..."></textarea>';
+                }
+
+                questionsHtml += '</div>';
+            });
+        }
+        document.getElementById('gap-questions-container').innerHTML = questionsHtml;
+
+        // Scroll to results.
+        document.getElementById('coaching-step2').scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+
+    // ========== GENERATE COACHING LETTER ==========
+
+    /**
+     * Collect answers and generate a coaching-enriched letter.
+     */
+    window.generateCoachingLetter = function() {
+        var jobad = document.getElementById('coaching-jobad').value.trim();
+        var cv = document.getElementById('coaching-cv').value.trim();
+        var objectives = document.getElementById('coaching-objectives').value.trim();
+
+        // Collect answers.
+        var answers = [];
+        var answerTextareas = document.querySelectorAll('.coaching-answer');
+        for (var i = 0; i < answerTextareas.length; i++) {
+            var ta = answerTextareas[i];
+            var answer = ta.value.trim();
+            if (answer) {
+                answers.push({
+                    question: ta.getAttribute('data-question'),
+                    answer: answer
+                });
+            }
+        }
+
+        var btn = document.getElementById('btn-coaching-generate');
+        btn.disabled = true;
+        btn.textContent = 'Generazione in corso...';
+        btn.style.background = '#6c757d';
+
+        // Build enriched objectives with answers.
+        var enrichedObjectives = objectives;
+        if (answers.length > 0) {
+            enrichedObjectives += '\n\n=== RISPOSTE DEL CANDIDATO ===\n';
+            answers.forEach(function(qa) {
+                enrichedObjectives += 'D: ' + qa.question + '\nR: ' + qa.answer + '\n\n';
+            });
+        }
+
+        var formData = new FormData();
+        formData.append('sesskey', SESSKEY);
+        formData.append('action', 'generate');
+        formData.append('job_ad', jobad);
+        formData.append('cv_text', cv);
+        formData.append('objectives', enrichedObjectives);
+
+        fetch(AJAX_URL, {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(resp) {
+            btn.disabled = false;
+            btn.textContent = 'Genera Lettera con le tue Risposte';
+            btn.style.background = '#0066cc';
+
+            if (resp.success) {
+                displayCoachingResults(resp.data);
+            } else {
+                alert('Errore: ' + (resp.message || 'Sconosciuto'));
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            btn.textContent = 'Genera Lettera con le tue Risposte';
+            btn.style.background = '#0066cc';
+            alert('Errore di comunicazione.');
+        });
+    };
+
+    /**
+     * Display the coaching-generated letter results.
+     * @param {object} data - Generation response data.
+     */
+    function displayCoachingResults(data) {
+        document.getElementById('coaching-step3').style.display = 'block';
+
+        var html = '';
+        var sections = [
+            {key: 'attention', label: 'ATTENTION', desc: "Cattura l'Attenzione", color: '#dc3545'},
+            {key: 'interest', label: 'INTEREST', desc: 'Suscita Interesse', color: '#0066cc'},
+            {key: 'desire', label: 'DESIRE', desc: 'Crea il Desiderio', color: '#28a745'},
+            {key: 'action', label: 'ACTION', desc: "Invito all'Azione", color: '#f59e0b'}
+        ];
+
+        sections.forEach(function(s) {
+            html += '<div class="jobaida-card" style="border-left:4px solid ' + s.color + '; margin-bottom:16px;">';
+            html += '<div class="jobaida-card-header" style="background:' + s.color + '10; color:' + s.color + '; cursor:default;">';
+            html += s.label + ' - ' + s.desc;
+            html += '</div>';
+            html += '<div class="jobaida-card-body">';
+            html += '<p style="font-size:0.95rem; line-height:1.7; white-space:pre-wrap;">' + escapeHtml(data[s.key]) + '</p>';
+            if (data[s.key + '_rationale']) {
+                html += '<details style="margin-top:12px; padding:10px; background:#f8f9fa; border-radius:6px;">';
+                html += '<summary style="cursor:pointer; font-weight:600; font-size:0.85rem; color:#6c757d;">Perche questa scelta</summary>';
+                html += '<p style="margin-top:8px; font-size:0.85rem; color:#495057; line-height:1.6;">' + escapeHtml(data[s.key + '_rationale']) + '</p>';
+                html += '</details>';
+            }
+            html += '</div></div>';
+        });
+
+        // Full letter.
+        html += '<div class="jobaida-card" style="border:2px solid #0066cc;">';
+        html += '<div class="jobaida-card-header" style="background:#0066cc; color:#fff; cursor:default;">Lettera Completa</div>';
+        html += '<div class="jobaida-card-body">';
+        html += '<pre style="white-space:pre-wrap; font-family:inherit; font-size:0.95rem; line-height:1.7; margin:0;" id="coaching-full-letter">' + escapeHtml(data.full_letter) + '</pre>';
+        html += '<div style="margin-top:16px; display:flex; gap:10px;">';
+        html += '<button onclick="copyCoachingLetter()" style="padding:8px 20px; background:#0066cc; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:500;">Copia Lettera</button>';
+        html += '</div></div></div>';
+
+        document.getElementById('coaching-results').innerHTML = html;
+        document.getElementById('coaching-step3').scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+
+    /**
+     * Copy the coaching letter to clipboard.
+     */
+    window.copyCoachingLetter = function() {
+        var text = document.getElementById('coaching-full-letter').textContent;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Lettera copiata!');
+            }).catch(function() {
+                showToast('Impossibile copiare', '#dc3545');
+            });
+        } else {
+            fallbackCopy(text);
+        }
     };
 
 })();

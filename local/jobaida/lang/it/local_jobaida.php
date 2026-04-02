@@ -105,3 +105,26 @@ $string['error_too_short'] = 'Il testo inserito e troppo breve. Inserisci almeno
 $string['letters_generated'] = 'Lettere generate';
 $string['tokens_consumed'] = 'Token consumati';
 $string['last_generated'] = 'Ultima generazione';
+
+// Mode tabs.
+$string['mode_express'] = 'Express Writers';
+$string['mode_coaching'] = 'Coaching Writers';
+$string['mode_express_desc'] = 'Genera subito la lettera incollando annuncio e CV.';
+$string['mode_coaching_desc'] = 'Analisi guidata: il sistema identifica i gap e ti guida con domande mirate.';
+
+// Coaching mode.
+$string['analyze_compatibility'] = 'Analizza Compatibilita';
+$string['analyzing'] = 'Analisi in corso...';
+$string['compatibility'] = 'Compatibilita';
+$string['strengths'] = 'Punti di Forza';
+$string['answer_questions'] = 'Rispondi alle Domande del Coach';
+$string['answer_questions_desc'] = 'Per ogni requisito dell\'annuncio, rispondi alle domande. Le tue risposte saranno usate per costruire una lettera personalizzata.';
+$string['generate_with_answers'] = 'Genera Lettera con le tue Risposte';
+$string['match_full'] = 'Corrispondenza';
+$string['match_partial'] = 'Parziale';
+$string['match_none'] = 'Non trovato';
+$string['importance_essential'] = 'Essenziale';
+$string['importance_preferred'] = 'Preferito';
+$string['importance_optional'] = 'Opzionale';
+$string['from_cv'] = 'Dal CV';
+$string['your_answer'] = 'La tua risposta...';
