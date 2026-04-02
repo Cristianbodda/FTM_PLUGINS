@@ -928,16 +928,11 @@ if (!$isauthorized) {
             return;
         }
 
-        // Validate minimum length.
-        if (jobAd.length < 50 || cvText.length < 50) {
-            showError(STRINGS.error_short);
-            // Highlight invalid fields.
-            if (jobAd.length < 50) {
-                document.getElementById('jobaida-jobad').classList.add('is-invalid');
-            }
-            if (cvText.length < 50) {
-                document.getElementById('jobaida-cv').classList.add('is-invalid');
-            }
+        // Validate minimum length (skip if empty, show warning only).
+        if (jobAd.length === 0 || cvText.length === 0) {
+            showError('Compila entrambi i campi Annuncio e CV.');
+            if (jobAd.length === 0) document.getElementById('jobaida-jobad').classList.add('is-invalid');
+            if (cvText.length === 0) document.getElementById('jobaida-cv').classList.add('is-invalid');
             return;
         }
 
@@ -1257,8 +1252,8 @@ if (!$isauthorized) {
         var jobad = document.getElementById('coaching-jobad').value.trim();
         var cv = document.getElementById('coaching-cv').value.trim();
 
-        if (jobad.length < 50 || cv.length < 50) {
-            alert('Inserisci almeno 50 caratteri per annuncio e CV.');
+        if (jobad.length === 0 || cv.length === 0) {
+            alert('Compila entrambi i campi Annuncio e CV.');
             return;
         }
 

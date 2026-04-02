@@ -32,8 +32,8 @@ try {
     $jobad = trim($jobad);
     $cv = trim($cv);
 
-    if (strlen($jobad) < 50 || strlen($cv) < 50) {
-        throw new Exception(get_string('error_too_short', 'local_jobaida'));
+    if (empty($jobad) || empty($cv)) {
+        throw new Exception(get_string('error_empty_fields', 'local_jobaida'));
     }
 
     $language = get_config('local_jobaida', 'letter_language') ?: 'it';
