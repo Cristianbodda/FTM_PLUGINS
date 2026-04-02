@@ -195,6 +195,32 @@ if (!$isauthorized) {
 .jobaida-form-group textarea.is-invalid {
     border-color: #dc3545;
 }
+/* Drag & Drop zone */
+.jobaida-dropzone {
+    border: 2px dashed #dee2e6;
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+    color: #999;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.jobaida-dropzone.dragover {
+    border-color: #0066cc;
+    background: #f0f7ff;
+    color: #0066cc;
+}
+.jobaida-dropzone .drop-icon {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 4px;
+}
+.jobaida-dropzone .drop-file-name {
+    font-weight: 600;
+    color: #28a745;
+}
 .jobaida-char-count {
     font-size: 0.75rem;
     color: #6c757d;
@@ -527,6 +553,11 @@ if (!$isauthorized) {
                     <?php echo get_string('job_ad', 'local_jobaida'); ?> <span style="color:#dc3545;">*</span>
                 </label>
                 <div class="help-text"><?php echo s(get_string('job_ad_help', 'local_jobaida')); ?></div>
+                <div class="jobaida-dropzone" id="dropzone-jobad" onclick="document.getElementById('file-jobad').click()">
+                    <span class="drop-icon">&#128195;</span>
+                    Trascina qui il file dell'annuncio (PDF/Word) oppure clicca per selezionarlo
+                    <input type="file" id="file-jobad" accept=".pdf,.doc,.docx,.txt" style="display:none;" onchange="handleFileSelect(this, 'jobaida-jobad', 'dropzone-jobad')">
+                </div>
                 <textarea id="jobaida-jobad" rows="6"
                           placeholder="<?php echo s(get_string('job_ad_placeholder', 'local_jobaida')); ?>"
                           oninput="updateCharCount('jobad')"><?php
@@ -540,6 +571,11 @@ if (!$isauthorized) {
                     <?php echo get_string('cv_text', 'local_jobaida'); ?> <span style="color:#dc3545;">*</span>
                 </label>
                 <div class="help-text"><?php echo s(get_string('cv_text_help', 'local_jobaida')); ?></div>
+                <div class="jobaida-dropzone" id="dropzone-cv" onclick="document.getElementById('file-cv').click()">
+                    <span class="drop-icon">&#128196;</span>
+                    Trascina qui il tuo CV (PDF/Word) oppure clicca per selezionarlo
+                    <input type="file" id="file-cv" accept=".pdf,.doc,.docx,.txt" style="display:none;" onchange="handleFileSelect(this, 'jobaida-cv', 'dropzone-cv')">
+                </div>
                 <textarea id="jobaida-cv" rows="6"
                           placeholder="<?php echo s(get_string('cv_text_placeholder', 'local_jobaida')); ?>"
                           oninput="updateCharCount('cv')"><?php
@@ -672,12 +708,22 @@ if (!$isauthorized) {
             <div class="jobaida-card-body">
                 <div style="margin-bottom:16px;">
                     <label style="font-weight:600; display:block; margin-bottom:6px;">Annuncio di Lavoro *</label>
+                    <div class="jobaida-dropzone" id="dropzone-coaching-jobad" onclick="document.getElementById('file-coaching-jobad').click()">
+                        <span class="drop-icon">&#128195;</span>
+                        Trascina qui il file dell'annuncio (PDF/Word) oppure clicca per selezionarlo
+                        <input type="file" id="file-coaching-jobad" accept=".pdf,.doc,.docx,.txt" style="display:none;" onchange="handleFileSelect(this, 'coaching-jobad', 'dropzone-coaching-jobad')">
+                    </div>
                     <textarea id="coaching-jobad" rows="6" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:10px; font-size:0.9rem; resize:vertical; box-sizing:border-box;"
                               placeholder="Incolla qui l'annuncio di lavoro..."></textarea>
                     <small id="coaching-jobad-count" style="color:#999;">0 caratteri</small>
                 </div>
                 <div style="margin-bottom:16px;">
                     <label style="font-weight:600; display:block; margin-bottom:6px;">Il tuo CV *</label>
+                    <div class="jobaida-dropzone" id="dropzone-coaching-cv" onclick="document.getElementById('file-coaching-cv').click()">
+                        <span class="drop-icon">&#128196;</span>
+                        Trascina qui il tuo CV (PDF/Word) oppure clicca per selezionarlo
+                        <input type="file" id="file-coaching-cv" accept=".pdf,.doc,.docx,.txt" style="display:none;" onchange="handleFileSelect(this, 'coaching-cv', 'dropzone-coaching-cv')">
+                    </div>
                     <textarea id="coaching-cv" rows="6" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:10px; font-size:0.9rem; resize:vertical; box-sizing:border-box;"
                               placeholder="Incolla qui il tuo CV..."></textarea>
                     <small id="coaching-cv-count" style="color:#999;">0 caratteri</small>
@@ -1116,6 +1162,83 @@ if (!$isauthorized) {
             tabExpress.style.color = '#0066cc';
         }
     };
+
+    // ========== DRAG & DROP FILE HANDLING ==========
+    // Setup drag & drop for all dropzones.
+    document.querySelectorAll('.jobaida-dropzone').forEach(function(zone) {
+        zone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.add('dragover');
+        });
+        zone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('dragover');
+        });
+        zone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('dragover');
+            var files = e.dataTransfer.files;
+            if (files.length > 0) {
+                var file = files[0];
+                var textareaId = this.id.replace('dropzone-', 'jobaida-');
+                if (this.id === 'dropzone-coaching-jobad') textareaId = 'coaching-jobad';
+                if (this.id === 'dropzone-coaching-cv') textareaId = 'coaching-cv';
+                processDroppedFile(file, textareaId, this.id);
+            }
+        });
+    });
+
+    window.handleFileSelect = function(input, textareaId, dropzoneId) {
+        if (input.files.length > 0) {
+            processDroppedFile(input.files[0], textareaId, dropzoneId);
+        }
+    };
+
+    function processDroppedFile(file, textareaId, dropzoneId) {
+        var zone = document.getElementById(dropzoneId);
+        var textarea = document.getElementById(textareaId);
+        var validTypes = ['text/plain', 'application/pdf', 'application/msword',
+                          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        var validExts = ['.txt', '.pdf', '.doc', '.docx'];
+        var ext = '.' + file.name.split('.').pop().toLowerCase();
+
+        if (validExts.indexOf(ext) === -1) {
+            zone.innerHTML = '<span class="drop-icon" style="color:#dc3545;">&#10060;</span>'
+                + 'Formato non supportato. Usa PDF, Word o TXT.';
+            setTimeout(function() { resetDropzone(zone, dropzoneId); }, 3000);
+            return;
+        }
+
+        if (ext === '.txt') {
+            // Read text files directly.
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                textarea.value = e.target.result;
+                textarea.dispatchEvent(new Event('input'));
+                zone.innerHTML = '<span class="drop-icon" style="color:#28a745;">&#10004;</span>'
+                    + '<span class="drop-file-name">' + file.name + '</span> caricato!';
+            };
+            reader.readAsText(file);
+        } else {
+            // PDF/Word - show file name and instruction.
+            zone.innerHTML = '<span class="drop-icon" style="color:#f59e0b;">&#128196;</span>'
+                + '<span class="drop-file-name">' + file.name + '</span><br>'
+                + '<small style="color:#666;">Apri il file, seleziona tutto il testo (Ctrl+A), copialo (Ctrl+C) e incollalo nella textarea qui sotto (Ctrl+V).</small>';
+            textarea.focus();
+            textarea.placeholder = 'Incolla qui il contenuto di ' + file.name + ' (Ctrl+V)...';
+        }
+    }
+
+    function resetDropzone(zone, dropzoneId) {
+        var icon = dropzoneId.indexOf('cv') !== -1 ? '&#128196;' : '&#128195;';
+        var label = dropzoneId.indexOf('cv') !== -1
+            ? 'Trascina qui il tuo CV (PDF/Word) oppure clicca per selezionarlo'
+            : 'Trascina qui il file dell\'annuncio (PDF/Word) oppure clicca per selezionarlo';
+        zone.innerHTML = '<span class="drop-icon">' + icon + '</span>' + label;
+    }
 
     // Character counters for coaching mode.
     document.getElementById('coaching-jobad').addEventListener('input', function() {
