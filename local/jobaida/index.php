@@ -693,6 +693,9 @@ if (!$isauthorized) {
             <button type="button" class="btn btn-save" id="btn-save" onclick="saveLetter()">
                 &#128190; Salva nello Storico
             </button>
+            <button type="button" class="btn" id="btn-export-word" onclick="exportWord()" style="background:#2ecc71; color:#fff; border:none; padding:8px 18px; border-radius:6px; cursor:pointer; font-weight:500;">
+                &#128196; Esporta Word
+            </button>
         </div>
     </div>
 
@@ -1451,6 +1454,7 @@ if (!$isauthorized) {
      * @param {object} data - Generation response data.
      */
     function displayCoachingResults(data) {
+        lastCoachingData = data;
         document.getElementById('coaching-step3').style.display = 'block';
 
         var html = '';
@@ -1484,6 +1488,7 @@ if (!$isauthorized) {
         html += '<pre style="white-space:pre-wrap; font-family:inherit; font-size:0.95rem; line-height:1.7; margin:0;" id="coaching-full-letter">' + escapeHtml(data.full_letter) + '</pre>';
         html += '<div style="margin-top:16px; display:flex; gap:10px;">';
         html += '<button onclick="copyCoachingLetter()" style="padding:8px 20px; background:#0066cc; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:500;">Copia Lettera</button>';
+        html += '<button onclick="exportCoachingWord()" style="padding:8px 20px; background:#2ecc71; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:500;">&#128196; Esporta Word</button>';
         html += '</div></div></div>';
 
         document.getElementById('coaching-results').innerHTML = html;
@@ -1505,6 +1510,102 @@ if (!$isauthorized) {
             fallbackCopy(text);
         }
     };
+
+    // ========== EXPORT WORD ==========
+    // Store last generated data for export.
+    var lastExpressData = null;
+    var lastCoachingData = null;
+
+    // Override result display to save data.
+    var origDisplayResults = window.displayResults;
+    if (typeof origDisplayResults === 'function') {
+        window.displayResults = function(data) {
+            lastExpressData = data;
+            origDisplayResults(data);
+        };
+    }
+
+    var origDisplayCoachingResults = window.displayCoachingResults;
+    if (typeof origDisplayCoachingResults === 'function') {
+        window.displayCoachingResults = function(data) {
+            lastCoachingData = data;
+            origDisplayCoachingResults(data);
+        };
+    }
+
+    // Also capture data from the AJAX responses directly.
+    var origOnSuccess = null;
+
+    window.exportWord = function() {
+        // Get data from lastGeneratedData (set by Express generation).
+        var data = lastGeneratedData || lastExpressData || getDataFromDOM('express');
+        if (!data || !data.full_letter) {
+            alert('Genera prima una lettera.');
+            return;
+        }
+        submitWordExport(data);
+    };
+
+    window.exportCoachingWord = function() {
+        var data = lastCoachingData || getDataFromDOM('coaching');
+        if (!data) {
+            alert('Genera prima una lettera.');
+            return;
+        }
+        submitWordExport(data);
+    };
+
+    function getDataFromDOM(mode) {
+        // Try to get data from visible result elements.
+        var prefix = mode === 'coaching' ? 'coaching-' : '';
+        var fullLetter = document.getElementById(prefix + 'full-letter');
+        if (!fullLetter) return null;
+
+        return {
+            attention: document.getElementById(prefix + 'result-attention')?.textContent || '',
+            attention_rationale: document.getElementById(prefix + 'result-attention-rationale')?.textContent || '',
+            interest: document.getElementById(prefix + 'result-interest')?.textContent || '',
+            interest_rationale: document.getElementById(prefix + 'result-interest-rationale')?.textContent || '',
+            desire: document.getElementById(prefix + 'result-desire')?.textContent || '',
+            desire_rationale: document.getElementById(prefix + 'result-desire-rationale')?.textContent || '',
+            action: document.getElementById(prefix + 'result-action')?.textContent || '',
+            action_rationale: document.getElementById(prefix + 'result-action-rationale')?.textContent || '',
+            full_letter: fullLetter.textContent || ''
+        };
+    }
+
+    function submitWordExport(data) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = M.cfg.wwwroot + '/local/jobaida/ajax_export_word.php';
+        form.target = '_blank';
+
+        var fields = {
+            sesskey: M.cfg.sesskey,
+            attention: data.attention || '',
+            attention_rationale: data.attention_rationale || '',
+            interest: data.interest || '',
+            interest_rationale: data.interest_rationale || '',
+            desire: data.desire || '',
+            desire_rationale: data.desire_rationale || '',
+            action: data.action || '',
+            action_rationale: data.action_rationale || '',
+            full_letter: data.full_letter || '',
+            student_name: '<?php echo s(fullname($USER)); ?>'
+        };
+
+        for (var key in fields) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = fields[key];
+            form.appendChild(input);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    }
 
 })();
 </script>
