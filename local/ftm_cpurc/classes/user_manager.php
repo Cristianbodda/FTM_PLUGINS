@@ -174,7 +174,10 @@ class user_manager {
         $parts = preg_split('/\s+/', $name);
         $name = $parts[0];
         $name = ucfirst(strtolower($name));
-        return '123' . $name . '*';
+        // Ensure password meets Moodle minimum length (8 chars).
+        // Short names (< 4 chars) get extra prefix digit: 1234 instead of 123.
+        $prefix = (strlen($name) < 4) ? '1234' : '123';
+        return $prefix . $name . '*';
     }
 
     /**

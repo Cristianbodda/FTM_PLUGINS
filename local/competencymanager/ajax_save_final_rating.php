@@ -19,6 +19,23 @@ require_capability('local/competencymanager:evaluate', $context);
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Strip accents from sector name (ELETTRICITÀ → ELETTRICITA).
+function normalize_sector_param($raw) {
+    $clean = strtr($raw, [
+        'À'=>'A','Á'=>'A','Â'=>'A','Ã'=>'A','Ä'=>'A','Å'=>'A',
+        'È'=>'E','É'=>'E','Ê'=>'E','Ë'=>'E',
+        'Ì'=>'I','Í'=>'I','Î'=>'I','Ï'=>'I',
+        'Ò'=>'O','Ó'=>'O','Ô'=>'O','Õ'=>'O','Ö'=>'O',
+        'Ù'=>'U','Ú'=>'U','Û'=>'U','Ü'=>'U',
+        'à'=>'a','á'=>'a','â'=>'a','ã'=>'a','ä'=>'a','å'=>'a',
+        'è'=>'e','é'=>'e','ê'=>'e','ë'=>'e',
+        'ì'=>'i','í'=>'i','î'=>'i','ï'=>'i',
+        'ò'=>'o','ó'=>'o','ô'=>'o','õ'=>'o','ö'=>'o',
+        'ù'=>'u','ú'=>'u','û'=>'u','ü'=>'u',
+    ]);
+    return strtoupper(preg_replace('/[^a-zA-Z0-9_]/', '', $clean));
+}
+
 try {
     $action = required_param('action', PARAM_ALPHANUMEXT);
 
@@ -26,11 +43,13 @@ try {
         case 'save_final_rating':
             $studentid = required_param('studentid', PARAM_INT);
             $courseid = optional_param('courseid', 0, PARAM_INT);
-            $sector = required_param('sector', PARAM_ALPHANUMEXT);
+            $sector = normalize_sector_param(required_param('sector', PARAM_RAW));
             $areacode = required_param('areacode', PARAM_ALPHANUMEXT);
             $method = required_param('method', PARAM_ALPHANUMEXT);
-            $manualvalue = required_param('manualvalue', PARAM_INT);
-            $calculatedvalue = optional_param('calculatedvalue', null, PARAM_INT);
+            $manualvalue_raw = required_param('manualvalue', PARAM_RAW);
+            $manualvalue = round((float)$manualvalue_raw, 1);
+            $calculatedvalue_raw = optional_param('calculatedvalue', null, PARAM_RAW);
+            $calculatedvalue = $calculatedvalue_raw !== null ? round((float)$calculatedvalue_raw, 1) : null;
 
             // Validazione valore (0-100 per percentuale)
             if ($manualvalue < 0 || $manualvalue > 100) {
@@ -110,7 +129,7 @@ try {
         case 'get_rating_history':
             $studentid = required_param('studentid', PARAM_INT);
             $courseid = optional_param('courseid', 0, PARAM_INT);
-            $sector = required_param('sector', PARAM_ALPHANUMEXT);
+            $sector = normalize_sector_param(required_param('sector', PARAM_RAW));
             $areacode = required_param('areacode', PARAM_ALPHANUMEXT);
             $method = required_param('method', PARAM_ALPHANUMEXT);
 

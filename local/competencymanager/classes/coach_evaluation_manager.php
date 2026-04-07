@@ -487,6 +487,11 @@ class coach_evaluation_manager {
             return false;
         }
 
+        // Site admins can always edit.
+        if (is_siteadmin($userid)) {
+            return true;
+        }
+
         // Owner can always edit draft/completed
         if ($evaluation->coachid == $userid) {
             return true;
@@ -495,6 +500,11 @@ class coach_evaluation_manager {
         // Users with editallevaluations capability can edit (with tracking)
         $context = \context_system::instance();
         if (has_capability('local/competencymanager:editallevaluations', $context, $userid)) {
+            return true;
+        }
+
+        // Users with evaluate capability can also edit (coach, segreteria)
+        if (has_capability('local/competencymanager:evaluate', $context, $userid)) {
             return true;
         }
 
@@ -516,6 +526,11 @@ class coach_evaluation_manager {
 
         if (!$evaluation) {
             return false;
+        }
+
+        // Site admins can always view.
+        if (is_siteadmin($userid)) {
+            return true;
         }
 
         // Owner can always view
@@ -750,8 +765,22 @@ class coach_evaluation_manager {
      */
     public static function get_or_create_evaluation(int $studentid, int $coachid, string $sector,
                                                      int $courseid = 0, bool $is_final_week = false): int {
-        $existing = self::get_active_evaluation($studentid, $sector);
+        global $DB;
 
+        // First: look for an existing draft by THIS coach.
+        $own = $DB->get_record_sql(
+            "SELECT * FROM {local_coach_evaluations}
+             WHERE studentid = :studentid AND sector = :sector AND coachid = :coachid AND status = :status
+             ORDER BY timecreated DESC LIMIT 1",
+            ['studentid' => $studentid, 'sector' => strtoupper($sector),
+             'coachid' => $coachid, 'status' => self::STATUS_DRAFT]
+        );
+        if ($own) {
+            return $own->id;
+        }
+
+        // Second: look for ANY coach's draft (admin/segreteria editing).
+        $existing = self::get_active_evaluation($studentid, $sector);
         if ($existing) {
             return $existing->id;
         }

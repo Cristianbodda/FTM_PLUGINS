@@ -1212,6 +1212,22 @@ $coachRadarData = [];
 // Usa effectiveSectorFilter che include auto-rilevamento dal quiz
 $currentSector = ($effectiveSectorFilter !== 'all') ? $effectiveSectorFilter : ($studentPrimarySector ?: $sector);
 
+// Normalizza settore: rimuovi accenti (ELETTRICITÀ → ELETTRICITA) per coerenza con DB.
+if (!empty($currentSector)) {
+    $currentSector = strtoupper(preg_replace('/[^a-zA-Z0-9_]/', '', strtr($currentSector, [
+        'À'=>'A','Á'=>'A','Â'=>'A','Ã'=>'A','Ä'=>'A','Å'=>'A',
+        'È'=>'E','É'=>'E','Ê'=>'E','Ë'=>'E',
+        'Ì'=>'I','Í'=>'I','Î'=>'I','Ï'=>'I',
+        'Ò'=>'O','Ó'=>'O','Ô'=>'O','Õ'=>'O','Ö'=>'O',
+        'Ù'=>'U','Ú'=>'U','Û'=>'U','Ü'=>'U',
+        'à'=>'a','á'=>'a','â'=>'a','ã'=>'a','ä'=>'a','å'=>'a',
+        'è'=>'e','é'=>'e','ê'=>'e','ë'=>'e',
+        'ì'=>'i','í'=>'i','î'=>'i','ï'=>'i',
+        'ò'=>'o','ó'=>'o','ô'=>'o','õ'=>'o','ö'=>'o',
+        'ù'=>'u','ú'=>'u','û'=>'u','ü'=>'u',
+    ])));
+}
+
 if (!empty($currentSector)) {
     $coachEvaluations = coach_evaluation_manager::get_student_evaluations($userid, $currentSector);
     $hasCoachEvaluation = !empty($coachEvaluations);
@@ -3198,6 +3214,68 @@ if (!empty($quizComparison)) {
             });
         }
     });
+
+    // ========== PERSISTENZA CONFIGURAZIONE QUIZ (localStorage) ==========
+    (function() {
+        var studentId = <?php echo json_encode($userid); ?>;
+        var storageKey = 'student_report_config_' + studentId;
+        var currentUrl = window.location.href;
+
+        // Se la pagina ha viz_configured=1, salva la configurazione corrente
+        if (currentUrl.indexOf('viz_configured=1') !== -1) {
+            var params = new URLSearchParams(window.location.search);
+            var config = {};
+            // Salva solo i parametri rilevanti
+            ['cm_sector', 'show_dual_radar', 'show_gap', 'show_spunti', 'show_coach_eval',
+             'show_overlay', 'soglia_allineamento', 'soglia_critico', 'attempt_filter'].forEach(function(key) {
+                var val = params.get(key);
+                if (val) config[key] = val;
+            });
+            // Salva quiz IDs
+            config.quizids = params.getAll('quizids[]');
+            config.timestamp = Date.now();
+
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(config));
+            } catch(e) {}
+        }
+
+        // Se la pagina NON ha viz_configured e NON ha quizids, prova a caricare da localStorage
+        if (currentUrl.indexOf('viz_configured') === -1 && currentUrl.indexOf('quizids') === -1) {
+            try {
+                var saved = localStorage.getItem(storageKey);
+                if (saved) {
+                    var config = JSON.parse(saved);
+                    // Verifica che non sia troppo vecchio (max 30 giorni)
+                    if (config.timestamp && (Date.now() - config.timestamp) < 30 * 24 * 3600 * 1000) {
+                        // Costruisci URL con la configurazione salvata
+                        var baseUrl = window.location.pathname;
+                        var newParams = new URLSearchParams();
+                        newParams.set('userid', studentId);
+                        newParams.set('courseid', params ? params.get('courseid') || '0' : '0');
+                        newParams.set('tab', 'overview');
+                        newParams.set('viz_configured', '1');
+
+                        ['cm_sector', 'show_dual_radar', 'show_gap', 'show_spunti', 'show_coach_eval',
+                         'show_overlay', 'soglia_allineamento', 'soglia_critico', 'attempt_filter'].forEach(function(key) {
+                            if (config[key]) newParams.set(key, config[key]);
+                        });
+
+                        if (config.quizids && config.quizids.length > 0) {
+                            config.quizids.forEach(function(qid) {
+                                newParams.append('quizids[]', qid);
+                            });
+                        }
+
+                        // Redirect solo se c'e' una vera configurazione salvata (almeno quiz)
+                        if (config.quizids && config.quizids.length > 0) {
+                            window.location.href = baseUrl + '?' + newParams.toString();
+                        }
+                    }
+                }
+            } catch(e) {}
+        }
+    })();
     </script>
     <?php
 }
@@ -6247,8 +6325,9 @@ if ($tab === 'overview') {
             }
         })
         .catch(error => {
-            console.error('Errore:', error);
-            alert('Errore di connessione');
+            console.error('Errore salvataggio comparativa:', error);
+            showToast('Errore di connessione. Verifica che il plugin sia aggiornato (/admin/index.php)', 'error');
+            alert('Errore di connessione al server.\n\nPossibile causa: le tabelle DB non esistono.\nVai su Amministrazione > Notifiche per applicare gli aggiornamenti del plugin.');
         });
     }
 

@@ -269,6 +269,10 @@ if (!$isauthorized) {
 @keyframes jobaida-spin {
     to { transform: rotate(360deg); }
 }
+@keyframes learnPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
 
 /* Error message */
 .jobaida-error {
@@ -488,21 +492,26 @@ if (!$isauthorized) {
     </div>
 
     <!-- Mode Tabs -->
-    <div class="jobaida-mode-tabs" style="display:flex; gap:0; margin-bottom:24px; border-radius:8px; overflow:hidden; border:2px solid #0066cc;">
-        <button onclick="switchMode('express')" id="tab-express" class="jobaida-mode-tab active"
-                style="flex:1; padding:14px 20px; border:none; font-size:1rem; font-weight:600; cursor:pointer; transition:all 0.2s;
-                       background:#0066cc; color:#fff;">
+    <div class="jobaida-mode-tabs" style="display:flex; gap:3px; margin-bottom:24px; border-radius:8px; overflow:hidden; background:#e5e7eb; padding:3px;">
+        <button onclick="switchMode('express')" id="tab-express" class="jobaida-mode-tab"
+                style="flex:1; padding:14px 20px; border:none; font-size:1rem; font-weight:600; cursor:pointer; transition:all 0.2s; border-radius:6px;
+                       background:#fff; color:#EAB308;">
             Express Writers
         </button>
         <button onclick="switchMode('coaching')" id="tab-coaching" class="jobaida-mode-tab"
-                style="flex:1; padding:14px 20px; border:none; font-size:1rem; font-weight:600; cursor:pointer; transition:all 0.2s;
-                       background:#fff; color:#0066cc;">
+                style="flex:1; padding:14px 20px; border:none; font-size:1rem; font-weight:600; cursor:pointer; transition:all 0.2s; border-radius:6px;
+                       background:#fff; color:#e97a0a;">
             Coaching Writers
+        </button>
+        <button onclick="switchMode('learn')" id="tab-learn" class="jobaida-mode-tab active"
+                style="flex:1; padding:14px 20px; border:none; font-size:1rem; font-weight:600; cursor:pointer; transition:all 0.2s; border-radius:6px;
+                       background:#dc3545; color:#fff;">
+            Learn &amp; Write
         </button>
     </div>
 
     <!-- ========== EXPRESS MODE ========== -->
-    <div id="mode-express" class="jobaida-mode-content">
+    <div id="mode-express" class="jobaida-mode-content" style="display:none;">
 
     <!-- AIDA Explanation (collapsible) -->
     <div class="jobaida-card jobaida-aida-info">
@@ -801,6 +810,80 @@ if (!$isauthorized) {
             <div id="coaching-results"></div>
         </div>
     </div><!-- /mode-coaching -->
+
+    <!-- ========== LEARN & WRITE MODE ========== -->
+    <div id="mode-learn" class="jobaida-mode-content">
+
+        <!-- Intro -->
+        <div class="jobaida-card" style="border-left:4px solid #8b5cf6; margin-bottom:20px;">
+            <div class="jobaida-card-body" style="background:#faf5ff;">
+                <h3 style="margin:0 0 8px; color:#7c3aed; font-size:1.1rem;">Come funziona Learn &amp; Write</h3>
+                <p style="font-size:0.9rem; color:#6b7280; margin:0;">
+                    Il sistema costruisce la lettera <strong>una sezione alla volta</strong>. Per ogni sezione AIDA:
+                    l'AI propone un testo e spiega perche ha fatto quelle scelte. Tu puoi <strong>confermare, modificare o chiedere una riscrittura</strong>.
+                    Solo dopo la tua conferma si passa alla sezione successiva.
+                </p>
+            </div>
+        </div>
+
+        <!-- Step 0: Input -->
+        <div class="jobaida-card" id="learn-step-input">
+            <div class="jobaida-card-header" style="background:#f0fdf4; color:#065f46; cursor:default;">
+                Inserisci i Dati
+            </div>
+            <div class="jobaida-card-body">
+                <div style="margin-bottom:16px;">
+                    <label style="font-weight:600; display:block; margin-bottom:6px;">Annuncio di Lavoro *</label>
+                    <div class="jobaida-dropzone" id="dropzone-learn-jobad" onclick="document.getElementById('file-learn-jobad').click()">
+                        <span class="drop-icon">&#128195;</span>
+                        Trascina qui il file dell'annuncio oppure clicca per selezionarlo
+                        <input type="file" id="file-learn-jobad" accept=".pdf,.doc,.docx,.txt" style="display:none;" onchange="handleFileSelect(this, 'learn-jobad', 'dropzone-learn-jobad')">
+                    </div>
+                    <textarea id="learn-jobad" rows="8" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:12px; font-size:0.95rem; resize:vertical; box-sizing:border-box;"
+                              placeholder="Incolla qui l'annuncio di lavoro..."></textarea>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="font-weight:600; display:block; margin-bottom:6px;">Il tuo CV *</label>
+                    <div class="jobaida-dropzone" id="dropzone-learn-cv" onclick="document.getElementById('file-learn-cv').click()">
+                        <span class="drop-icon">&#128196;</span>
+                        Trascina qui il tuo CV oppure clicca per selezionarlo
+                        <input type="file" id="file-learn-cv" accept=".pdf,.doc,.docx,.txt" style="display:none;" onchange="handleFileSelect(this, 'learn-cv', 'dropzone-learn-cv')">
+                    </div>
+                    <textarea id="learn-cv" rows="8" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:12px; font-size:0.95rem; resize:vertical; box-sizing:border-box;"
+                              placeholder="Incolla qui il tuo CV..."></textarea>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="font-weight:600; display:block; margin-bottom:6px;">I tuoi Obiettivi (opzionale)</label>
+                    <textarea id="learn-objectives" rows="4" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:12px; font-size:0.95rem; resize:vertical; box-sizing:border-box;"
+                              placeholder="Cosa ti motiva? Quali sono i tuoi obiettivi?"></textarea>
+                </div>
+                <button onclick="learnStartSection('attention')" id="btn-learn-start"
+                        style="padding:14px 28px; background:#7c3aed; color:#fff; border:none; border-radius:6px; font-size:1rem; font-weight:600; cursor:pointer; width:100%;">
+                    Inizia Step-by-Step
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div id="learn-progress" style="display:none; margin-bottom:20px;">
+            <div style="display:flex; gap:4px;">
+                <div id="learn-prog-attention" class="learn-prog-step" style="flex:1; height:6px; background:#dee2e6; border-radius:3px;"></div>
+                <div id="learn-prog-interest" class="learn-prog-step" style="flex:1; height:6px; background:#dee2e6; border-radius:3px;"></div>
+                <div id="learn-prog-desire" class="learn-prog-step" style="flex:1; height:6px; background:#dee2e6; border-radius:3px;"></div>
+                <div id="learn-prog-action" class="learn-prog-step" style="flex:1; height:6px; background:#dee2e6; border-radius:3px;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#999; margin-top:4px;">
+                <span>A - Attention</span><span>I - Interest</span><span>D - Desire</span><span>A - Action</span>
+            </div>
+        </div>
+
+        <!-- Section workspace (dynamic) -->
+        <div id="learn-workspace" style="display:none;"></div>
+
+        <!-- Final letter (after all 4 confirmed) -->
+        <div id="learn-final" style="display:none;"></div>
+
+    </div><!-- /mode-learn -->
 
 </div>
 
@@ -1141,24 +1224,27 @@ if (!$isauthorized) {
      * Switch between Express and Coaching modes.
      * @param {string} mode - 'express' or 'coaching'
      */
+    var TAB_COLORS = {
+        express:  '#EAB308',
+        coaching: '#e97a0a',
+        learn:    '#dc3545'
+    };
+
     window.switchMode = function(mode) {
         document.getElementById('mode-express').style.display = mode === 'express' ? 'block' : 'none';
         document.getElementById('mode-coaching').style.display = mode === 'coaching' ? 'block' : 'none';
+        document.getElementById('mode-learn').style.display = mode === 'learn' ? 'block' : 'none';
 
-        var tabExpress = document.getElementById('tab-express');
-        var tabCoaching = document.getElementById('tab-coaching');
-
-        if (mode === 'express') {
-            tabExpress.style.background = '#0066cc';
-            tabExpress.style.color = '#fff';
-            tabCoaching.style.background = '#fff';
-            tabCoaching.style.color = '#0066cc';
-        } else {
-            tabCoaching.style.background = '#0066cc';
-            tabCoaching.style.color = '#fff';
-            tabExpress.style.background = '#fff';
-            tabExpress.style.color = '#0066cc';
-        }
+        ['express', 'coaching', 'learn'].forEach(function(key) {
+            var tab = document.getElementById('tab-' + key);
+            if (key === mode) {
+                tab.style.background = TAB_COLORS[key];
+                tab.style.color = '#fff';
+            } else {
+                tab.style.background = '#fff';
+                tab.style.color = TAB_COLORS[key];
+            }
+        });
     };
 
     // ========== DRAG & DROP FILE HANDLING ==========
@@ -1184,6 +1270,8 @@ if (!$isauthorized) {
                 var textareaId = this.id.replace('dropzone-', 'jobaida-');
                 if (this.id === 'dropzone-coaching-jobad') textareaId = 'coaching-jobad';
                 if (this.id === 'dropzone-coaching-cv') textareaId = 'coaching-cv';
+                if (this.id === 'dropzone-learn-jobad') textareaId = 'learn-jobad';
+                if (this.id === 'dropzone-learn-cv') textareaId = 'learn-cv';
                 processDroppedFile(file, textareaId, this.id);
             }
         });
@@ -1606,6 +1694,518 @@ if (!$isauthorized) {
         form.submit();
         document.body.removeChild(form);
     }
+
+    // ========== LEARN & WRITE MODE ==========
+
+    var learnState = {
+        sections: ['attention', 'interest', 'desire', 'action'],
+        currentIndex: 0,
+        confirmed: {},
+        jobAd: '',
+        cvText: '',
+        objectives: '',
+        generating: false
+    };
+
+    var LEARN_AJAX_URL = M.cfg.wwwroot + '/local/jobaida/ajax_generate_section.php';
+
+    var SECTION_META = {
+        attention: {label: 'ATTENTION', desc: "Cattura l'Attenzione", color: '#dc3545', letter: 'A'},
+        interest:  {label: 'INTEREST', desc: 'Suscita Interesse', color: '#0066cc', letter: 'I'},
+        desire:    {label: 'DESIRE', desc: 'Crea il Desiderio', color: '#28a745', letter: 'D'},
+        action:    {label: 'ACTION', desc: "Invito all'Azione", color: '#f59e0b', letter: 'A'}
+    };
+
+    /**
+     * Update progress bar to reflect current state.
+     */
+    function learnUpdateProgress() {
+        for (var i = 0; i < learnState.sections.length; i++) {
+            var s = learnState.sections[i];
+            var bar = document.getElementById('learn-prog-' + s);
+            if (!bar) continue;
+            if (learnState.confirmed[s]) {
+                bar.style.background = SECTION_META[s].color;
+                bar.style.animation = '';
+            } else if (i === learnState.currentIndex) {
+                bar.style.background = SECTION_META[s].color + '80';
+                bar.style.animation = 'learnPulse 1.5s ease-in-out infinite';
+            } else {
+                bar.style.background = '#dee2e6';
+                bar.style.animation = '';
+            }
+        }
+    }
+
+    /**
+     * Build summary HTML for already-confirmed sections (shown above current).
+     */
+    function learnBuildConfirmedSummary() {
+        var html = '';
+        for (var i = 0; i < learnState.currentIndex; i++) {
+            var s = learnState.sections[i];
+            if (!learnState.confirmed[s]) continue;
+            var meta = SECTION_META[s];
+            var text = learnState.confirmed[s];
+            var preview = text.length > 150 ? text.substring(0, 150) + '...' : text;
+            html += '<div class="jobaida-card" style="border-left:4px solid ' + meta.color + '; opacity:0.85; margin-bottom:12px;">'
+                + '<div class="jobaida-card-header" style="background:' + meta.color + '10; color:' + meta.color + '; cursor:default; padding:10px 16px; font-size:0.85rem;">'
+                + '<span>&#10004; ' + meta.letter + ' - ' + meta.label + '</span>'
+                + '<span style="font-size:0.75rem; color:#999;">Confermata</span>'
+                + '</div>'
+                + '<div class="jobaida-card-body" style="padding:10px 16px; font-size:0.85rem; color:#666; white-space:pre-wrap;">'
+                + escapeHtml(preview)
+                + '</div></div>';
+        }
+        return html;
+    }
+
+    /**
+     * Generate the current section via AJAX.
+     * @param {string} [userFeedback] - Optional feedback for rewrite.
+     */
+    function learnGenerate(userFeedback) {
+        if (learnState.generating) return;
+        learnState.generating = true;
+
+        var section = learnState.sections[learnState.currentIndex];
+        var meta = SECTION_META[section];
+
+        learnUpdateProgress();
+
+        // Show loading in workspace.
+        var workspace = document.getElementById('learn-workspace');
+        var html = learnBuildConfirmedSummary();
+        html += '<div class="jobaida-card" style="border-left:4px solid ' + meta.color + ';">'
+            + '<div class="jobaida-card-header" style="background:' + meta.color + '15; color:' + meta.color + '; cursor:default;">'
+            + '<span style="font-weight:700; font-size:1.1rem; margin-right:8px;">' + meta.letter + '</span> '
+            + meta.label + ' - ' + meta.desc
+            + '</div>'
+            + '<div class="jobaida-card-body" style="text-align:center; padding:40px;">'
+            + '<div class="jobaida-spinner" style="border-color:' + meta.color + '30; border-top-color:' + meta.color + '; width:32px; height:32px; margin:0 auto 16px;"></div>'
+            + '<p style="color:#6c757d; font-size:0.9rem;">L\'AI sta elaborando la sezione <strong>' + meta.label + '</strong>...</p>'
+            + '<p style="color:#999; font-size:0.8rem;">Questo puo richiedere fino a 30 secondi</p>'
+            + '</div></div>';
+        workspace.innerHTML = html;
+
+        var formData = new FormData();
+        formData.append('sesskey', SESSKEY);
+        formData.append('job_ad', learnState.jobAd);
+        formData.append('cv_text', learnState.cvText);
+        formData.append('objectives', learnState.objectives);
+        formData.append('section', section);
+        formData.append('previous_sections', JSON.stringify(learnState.confirmed));
+        if (userFeedback) {
+            formData.append('user_feedback', userFeedback);
+        }
+
+        fetch(LEARN_AJAX_URL, {method: 'POST', body: formData})
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            learnState.generating = false;
+            if (resp.success) {
+                learnDisplaySection(resp.data);
+            } else {
+                learnShowError(resp.message || 'Errore sconosciuto');
+            }
+        })
+        .catch(function(err) {
+            learnState.generating = false;
+            learnShowError('Errore di rete: ' + err.message);
+        });
+    }
+
+    /**
+     * Show error in workspace with retry button.
+     */
+    function learnShowError(msg) {
+        var workspace = document.getElementById('learn-workspace');
+        var html = learnBuildConfirmedSummary();
+        html += '<div class="jobaida-card" style="border-left:4px solid #dc3545;">'
+            + '<div class="jobaida-card-body">'
+            + '<p style="color:#dc3545; font-weight:600; margin-bottom:12px;">' + escapeHtml(msg) + '</p>'
+            + '<button onclick="learnRetry()" style="padding:10px 24px; background:#0066cc; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:500;">Riprova</button>'
+            + '</div></div>';
+        workspace.innerHTML = html;
+    }
+
+    window.learnRetry = function() {
+        learnGenerate();
+    };
+
+    /**
+     * Display the AI-generated section with rationale, question, tips, and action buttons.
+     */
+    function learnDisplaySection(data) {
+        var section = data.section;
+        var meta = SECTION_META[section];
+        var workspace = document.getElementById('learn-workspace');
+
+        var html = learnBuildConfirmedSummary();
+
+        // Current section card.
+        html += '<div class="jobaida-card" style="border:2px solid ' + meta.color + '40;">';
+
+        // Header.
+        html += '<div style="background:' + meta.color + '; color:#fff; padding:14px 20px; font-weight:600; font-size:1rem;">'
+            + '<span style="font-weight:700; font-size:1.2rem; margin-right:8px;">' + meta.letter + '</span> '
+            + meta.label + ' - ' + meta.desc
+            + '</div>';
+
+        html += '<div class="jobaida-card-body">';
+
+        // Feedback rejection warning (red box).
+        if (data.feedback_applied === false && data.feedback_note) {
+            html += '<div style="background:#fde8e8; border:2px solid #dc3545; border-radius:8px; padding:16px; margin-bottom:16px;">'
+                + '<div style="font-size:0.8rem; color:#dc3545; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; font-weight:700;">Modifica non applicabile</div>'
+                + '<div style="font-size:0.95rem; color:#991b1b; font-weight:500;">' + escapeHtml(data.feedback_note) + '</div>'
+                + '</div>';
+        }
+
+        // Proposed text.
+        html += '<div style="background:#f8f9fa; border-radius:8px; padding:16px; margin-bottom:16px;">'
+            + '<div style="font-size:0.75rem; color:#999; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Testo proposto dall\'AI</div>'
+            + '<div id="learn-proposed-text" style="font-size:0.95rem; line-height:1.7; color:#333; white-space:pre-wrap;">' + escapeHtml(data.section_text) + '</div>'
+            + '</div>';
+
+        // Rationale (educational).
+        if (data.rationale) {
+            html += '<div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:16px; margin-bottom:16px;">'
+                + '<div style="font-size:0.75rem; color:#1e40af; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; font-weight:600;">Perche questa scelta</div>'
+                + '<div style="font-size:0.88rem; line-height:1.6; color:#1e3a5f;">' + escapeHtml(data.rationale) + '</div>'
+                + '</div>';
+        }
+
+        // Reflection question.
+        if (data.question) {
+            html += '<div style="background:#fef3c7; border:1px solid #fcd34d; border-radius:8px; padding:16px; margin-bottom:16px;">'
+                + '<div style="font-size:0.75rem; color:#92400e; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; font-weight:600;">Domanda di riflessione</div>'
+                + '<div style="font-size:0.95rem; color:#78350f; font-weight:500;">' + escapeHtml(data.question) + '</div>'
+                + '</div>';
+        }
+
+        // Tips.
+        if (data.tips && data.tips.length > 0) {
+            html += '<div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:16px; margin-bottom:16px;">'
+                + '<div style="font-size:0.75rem; color:#166534; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; font-weight:600;">Suggerimenti formativi</div>'
+                + '<ul style="margin:0; padding-left:20px;">';
+            for (var i = 0; i < data.tips.length; i++) {
+                html += '<li style="font-size:0.88rem; color:#166534; margin-bottom:4px;">' + escapeHtml(data.tips[i]) + '</li>';
+            }
+            html += '</ul></div>';
+        }
+
+        // Action buttons.
+        var isLast = (learnState.currentIndex === learnState.sections.length - 1);
+        var confirmLabel = isLast ? '&#10004; Conferma e Assembla Lettera' : '&#10004; Conferma e Prosegui';
+        html += '<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;">'
+            + '<button onclick="learnConfirmSection()" style="flex:1; min-width:200px; padding:14px 24px; background:' + meta.color + '; color:#fff; border:none; border-radius:8px; font-size:1rem; font-weight:600; cursor:pointer;">'
+            + confirmLabel + '</button>'
+            + '<button onclick="learnShowFeedback()" id="btn-learn-modify" style="flex:1; min-width:200px; padding:14px 24px; background:#fff; color:' + meta.color + '; border:2px solid ' + meta.color + '; border-radius:8px; font-size:1rem; font-weight:600; cursor:pointer;">'
+            + '&#9998; Chiedi Modifica</button>'
+            + '</div>';
+
+        // Feedback form (hidden initially).
+        html += '<div id="learn-feedback-form" style="display:none; margin-top:16px;">'
+            + '<label style="font-weight:600; display:block; margin-bottom:6px; font-size:0.9rem; color:#333;">Cosa vorresti cambiare?</label>'
+            + '<textarea id="learn-feedback-text" rows="5" style="width:100%; border:2px solid ' + meta.color + '60; border-radius:8px; padding:12px; font-size:0.95rem; resize:vertical; box-sizing:border-box;" '
+            + 'placeholder="Es: Vorrei un tono piu formale, aggiungi il mio stage presso X, cambia l\'apertura..."></textarea>'
+            + '<div style="display:flex; gap:10px; margin-top:10px;">'
+            + '<button onclick="learnRequestRewrite()" style="padding:10px 24px; background:' + meta.color + '; color:#fff; border:none; border-radius:6px; font-size:0.9rem; font-weight:600; cursor:pointer;">Riscrivi con le mie indicazioni</button>'
+            + '<button onclick="learnHideFeedback()" style="padding:10px 24px; background:#f3f4f6; color:#6b7280; border:none; border-radius:6px; font-size:0.9rem; cursor:pointer;">Annulla</button>'
+            + '</div></div>';
+
+        html += '</div></div>'; // close card-body and card
+
+        workspace.innerHTML = html;
+        workspace.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+
+    /**
+     * Show/hide the feedback textarea for requesting modifications.
+     */
+    window.learnShowFeedback = function() {
+        document.getElementById('learn-feedback-form').style.display = 'block';
+        document.getElementById('learn-feedback-text').focus();
+    };
+
+    window.learnHideFeedback = function() {
+        document.getElementById('learn-feedback-form').style.display = 'none';
+    };
+
+    /**
+     * Start the Learn & Write flow.
+     */
+    window.learnStartSection = function(section) {
+        var jobAd = document.getElementById('learn-jobad').value.trim();
+        var cvText = document.getElementById('learn-cv').value.trim();
+
+        if (!jobAd || !cvText) {
+            alert('Compila Annuncio di Lavoro e CV prima di iniziare.');
+            return;
+        }
+
+        // Store input data and reset state.
+        learnState.jobAd = jobAd;
+        learnState.cvText = cvText;
+        learnState.objectives = document.getElementById('learn-objectives').value.trim();
+        learnState.confirmed = {};
+        learnState.generating = false;
+
+        learnState.currentIndex = learnState.sections.indexOf(section);
+        if (learnState.currentIndex === -1) learnState.currentIndex = 0;
+
+        // Hide input form, show progress + workspace.
+        document.getElementById('learn-step-input').style.display = 'none';
+        document.getElementById('learn-progress').style.display = 'block';
+        document.getElementById('learn-workspace').style.display = 'block';
+        document.getElementById('learn-final').style.display = 'none';
+
+        learnGenerate();
+    };
+
+    /**
+     * Confirm the current section and move to next.
+     */
+    window.learnConfirmSection = function() {
+        var section = learnState.sections[learnState.currentIndex];
+        var proposedText = document.getElementById('learn-proposed-text');
+        if (!proposedText) return;
+
+        // Save confirmed text.
+        learnState.confirmed[section] = proposedText.textContent;
+
+        // Update progress bar to solid.
+        var bar = document.getElementById('learn-prog-' + section);
+        if (bar) {
+            bar.style.background = SECTION_META[section].color;
+            bar.style.animation = '';
+        }
+
+        showToast('Sezione ' + SECTION_META[section].label + ' confermata!');
+
+        // Move to next section or assemble final.
+        learnState.currentIndex++;
+        if (learnState.currentIndex >= learnState.sections.length) {
+            learnAssembleFinal();
+        } else {
+            learnGenerate();
+        }
+    };
+
+    /**
+     * Request a rewrite with user feedback.
+     */
+    window.learnRequestRewrite = function() {
+        var feedback = document.getElementById('learn-feedback-text').value.trim();
+        if (!feedback) {
+            alert('Scrivi cosa vorresti cambiare prima di richiedere la riscrittura.');
+            return;
+        }
+        learnState.pendingFeedback = feedback;
+        learnGenerate(feedback);
+    };
+
+    /**
+     * Assemble the final letter: call AI to wrap confirmed sections in proper Swiss format.
+     */
+    function learnAssembleFinal() {
+        learnUpdateProgress();
+
+        // Show loading in workspace while assembling.
+        var workspace = document.getElementById('learn-workspace');
+        workspace.innerHTML = '<div class="jobaida-card" style="border:2px solid #0066cc;">'
+            + '<div class="jobaida-card-header" style="background:#0066cc; color:#fff; cursor:default;">Assemblaggio Lettera Finale</div>'
+            + '<div class="jobaida-card-body" style="text-align:center; padding:40px;">'
+            + '<div class="jobaida-spinner" style="border-color:#0066cc30; border-top-color:#0066cc; width:32px; height:32px; margin:0 auto 16px;"></div>'
+            + '<p style="color:#6c757d; font-size:0.9rem;">Assemblaggio della lettera completa con intestazione svizzera...</p>'
+            + '</div></div>';
+
+        var formData = new FormData();
+        formData.append('sesskey', SESSKEY);
+        formData.append('job_ad', learnState.jobAd);
+        formData.append('cv_text', learnState.cvText);
+        formData.append('objectives', learnState.objectives);
+        formData.append('section', 'assemble');
+        formData.append('previous_sections', JSON.stringify(learnState.confirmed));
+
+        fetch(LEARN_AJAX_URL, {method: 'POST', body: formData})
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.success && resp.data.full_letter) {
+                learnShowFinalLetter(resp.data.full_letter);
+            } else {
+                // Fallback: simple concatenation if assembly fails.
+                var fallback = (learnState.confirmed.attention || '') + '\n\n'
+                    + (learnState.confirmed.interest || '') + '\n\n'
+                    + (learnState.confirmed.desire || '') + '\n\n'
+                    + (learnState.confirmed.action || '');
+                learnShowFinalLetter(fallback);
+                showToast('Assemblaggio automatico non riuscito, lettera senza intestazione', '#f59e0b');
+            }
+        })
+        .catch(function() {
+            var fallback = (learnState.confirmed.attention || '') + '\n\n'
+                + (learnState.confirmed.interest || '') + '\n\n'
+                + (learnState.confirmed.desire || '') + '\n\n'
+                + (learnState.confirmed.action || '');
+            learnShowFinalLetter(fallback);
+            showToast('Errore di rete, lettera senza intestazione', '#dc3545');
+        });
+    }
+
+    /**
+     * Display the final assembled letter with sections summary and action buttons.
+     */
+    function learnShowFinalLetter(fullLetter) {
+        document.getElementById('learn-workspace').style.display = 'none';
+        var finalDiv = document.getElementById('learn-final');
+        finalDiv.style.display = 'block';
+
+        var html = '';
+
+        // Success header.
+        html += '<div style="text-align:center; margin-bottom:24px;">'
+            + '<div style="font-size:2.5rem; margin-bottom:8px;">&#127881;</div>'
+            + '<h3 style="color:#059669; margin:0 0 8px;">Lettera Completata!</h3>'
+            + '<p style="color:#6b7280; font-size:0.9rem;">Hai costruito la tua lettera sezione per sezione. Ecco il risultato.</p>'
+            + '</div>';
+
+        // Show each confirmed section.
+        for (var i = 0; i < learnState.sections.length; i++) {
+            var s = learnState.sections[i];
+            var meta = SECTION_META[s];
+            html += '<div class="jobaida-card" style="border-left:4px solid ' + meta.color + '; margin-bottom:12px;">'
+                + '<div class="jobaida-card-header" style="background:' + meta.color + '10; color:' + meta.color + '; cursor:default; padding:10px 16px;">'
+                + '<span style="font-weight:700; margin-right:6px;">' + meta.letter + '</span> ' + meta.label + ' - ' + meta.desc
+                + '</div>'
+                + '<div class="jobaida-card-body" style="padding:12px 16px;">'
+                + '<div style="font-size:0.95rem; line-height:1.7; white-space:pre-wrap;">' + escapeHtml(learnState.confirmed[s] || '') + '</div>'
+                + '</div></div>';
+        }
+
+        // Full assembled letter with proper Swiss format.
+        html += '<div class="jobaida-card" style="border:2px solid #0066cc; margin-top:24px;">'
+            + '<div class="jobaida-card-header" style="background:#0066cc; color:#fff; cursor:default;">Lettera Completa - Pronta da Inviare</div>'
+            + '<div class="jobaida-card-body">'
+            + '<div id="learn-full-letter" style="font-size:0.95rem; line-height:1.8; white-space:pre-wrap; color:#333;">' + escapeHtml(fullLetter) + '</div>'
+            + '</div></div>';
+
+        // Action buttons.
+        html += '<div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; margin-bottom:24px;">'
+            + '<button onclick="learnCopyLetter()" style="padding:12px 24px; background:#0066cc; color:#fff; border:none; border-radius:6px; font-size:0.95rem; font-weight:600; cursor:pointer;">&#128203; Copia Lettera</button>'
+            + '<button onclick="learnExportWord()" style="padding:12px 24px; background:#2ecc71; color:#fff; border:none; border-radius:6px; font-size:0.95rem; font-weight:600; cursor:pointer;">&#128196; Esporta Word</button>'
+            + '<button onclick="learnSaveLetter()" id="btn-learn-save" style="padding:12px 24px; background:#28a745; color:#fff; border:none; border-radius:6px; font-size:0.95rem; font-weight:600; cursor:pointer;">&#128190; Salva nello Storico</button>'
+            + '<button onclick="learnStartOver()" style="padding:12px 24px; background:#f3f4f6; color:#6b7280; border:none; border-radius:6px; font-size:0.95rem; cursor:pointer;">&#8634; Ricomincia</button>'
+            + '</div>';
+
+        finalDiv.innerHTML = html;
+        finalDiv.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+
+    /**
+     * Copy Learn & Write final letter to clipboard.
+     */
+    window.learnCopyLetter = function() {
+        var text = document.getElementById('learn-full-letter').textContent;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Lettera copiata!');
+            }).catch(function() {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+    };
+
+    /**
+     * Export Learn & Write letter as Word document.
+     */
+    window.learnExportWord = function() {
+        submitWordExport({
+            attention: learnState.confirmed.attention || '',
+            attention_rationale: '',
+            interest: learnState.confirmed.interest || '',
+            interest_rationale: '',
+            desire: learnState.confirmed.desire || '',
+            desire_rationale: '',
+            action: learnState.confirmed.action || '',
+            action_rationale: '',
+            full_letter: document.getElementById('learn-full-letter').textContent || ''
+        });
+    };
+
+    /**
+     * Save Learn & Write letter to history.
+     */
+    window.learnSaveLetter = function() {
+        var btn = document.getElementById('btn-learn-save');
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.textContent = 'Salvataggio...';
+
+        var formData = new FormData();
+        formData.append('sesskey', SESSKEY);
+        formData.append('action', 'save');
+        formData.append('job_ad', learnState.jobAd);
+        formData.append('cv_text', learnState.cvText);
+        formData.append('objectives', learnState.objectives);
+        formData.append('attention', learnState.confirmed.attention || '');
+        formData.append('attention_rationale', '');
+        formData.append('interest', learnState.confirmed.interest || '');
+        formData.append('interest_rationale', '');
+        formData.append('desire', learnState.confirmed.desire || '');
+        formData.append('desire_rationale', '');
+        formData.append('action_text', learnState.confirmed.action || '');
+        formData.append('action_rationale', '');
+        formData.append('full_letter', document.getElementById('learn-full-letter').textContent || '');
+        formData.append('model_used', '');
+        formData.append('tokens_used', 0);
+
+        fetch(AJAX_URL, {method: 'POST', body: formData})
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                btn.textContent = 'Salvata!';
+                showToast('Lettera salvata nello storico');
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Salva nello Storico';
+                showToast(data.message || 'Errore nel salvataggio', '#dc3545');
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            btn.textContent = 'Salva nello Storico';
+            showToast('Errore di rete', '#dc3545');
+        });
+    };
+
+    /**
+     * Reset Learn & Write mode to start over.
+     */
+    window.learnStartOver = function() {
+        learnState.currentIndex = 0;
+        learnState.confirmed = {};
+        learnState.generating = false;
+
+        document.getElementById('learn-step-input').style.display = 'block';
+        document.getElementById('learn-progress').style.display = 'none';
+        document.getElementById('learn-workspace').style.display = 'none';
+        document.getElementById('learn-workspace').innerHTML = '';
+        document.getElementById('learn-final').style.display = 'none';
+        document.getElementById('learn-final').innerHTML = '';
+
+        // Reset progress bars.
+        for (var i = 0; i < learnState.sections.length; i++) {
+            var bar = document.getElementById('learn-prog-' + learnState.sections[i]);
+            if (bar) {
+                bar.style.background = '#dee2e6';
+                bar.style.animation = '';
+            }
+        }
+    };
 
 })();
 </script>

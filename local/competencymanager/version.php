@@ -8,10 +8,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_competencymanager';
-$plugin->version = 2026033102;  // Garage FTM section order + enabled sections
+$plugin->version = 2026040701;  // Fix final_ratings decimal + coach eval permissions
 $plugin->requires = 2024042200; // Moodle 4.4+
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v2.8.1';    // Garage FTM: section order, enabled sections, overlay 3 fonti
+$plugin->release = 'v2.9.0';    // Fix tabella comparativa salvataggio + coach eval can_edit
 $plugin->dependencies = [
     'qbank_competenciesbyquestion' => ANY_VERSION
 ];

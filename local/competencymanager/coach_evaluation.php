@@ -668,6 +668,9 @@ function saveGeneralNotes() {
 
 function saveAllRatings(callback) {
     if (Object.keys(pendingRatings).length === 0) {
+        // Nothing pending - also save general notes, then show confirmation.
+        saveGeneralNotes();
+        showSaveConfirm();
         if (callback) callback(true);
         return;
     }
@@ -690,6 +693,9 @@ function saveAllRatings(callback) {
         if (data.success) {
             pendingRatings = {};
             updateStats(data.stats);
+            // Also save general notes.
+            saveGeneralNotes();
+            showSaveConfirm();
             if (callback) callback(true);
         } else {
             alert(data.message || 'Error saving ratings');
@@ -698,8 +704,21 @@ function saveAllRatings(callback) {
     })
     .catch(err => {
         console.error('Save error:', err);
+        alert('Errore di rete durante il salvataggio.');
         if (callback) callback(false);
     });
+}
+
+function showSaveConfirm() {
+    const indicator = document.getElementById('saving-indicator');
+    indicator.textContent = 'Salvato!';
+    indicator.style.background = '#28a745';
+    indicator.classList.add('show');
+    setTimeout(() => {
+        indicator.classList.remove('show');
+        indicator.textContent = 'Salvando...';
+        indicator.style.background = '';
+    }, 2000);
 }
 
 // Salva e poi completa la valutazione

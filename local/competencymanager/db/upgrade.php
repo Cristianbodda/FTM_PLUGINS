@@ -347,5 +347,60 @@ function xmldb_local_competencymanager_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026033102, 'local', 'competencymanager');
     }
 
+    // Versione 2026040701: Fix campi final_ratings da INTEGER a NUMBER per supportare decimali
+    if ($oldversion < 2026040701) {
+
+        $table = new xmldb_table('local_compman_final_ratings');
+
+        // Crea la tabella se non esiste ancora (fix per server dove l'upgrade precedente non e' stato applicato).
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('studentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('sector', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('area_code', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('method', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('calculated_value', XMLDB_TYPE_NUMBER, '5', null, null, null, null, null, '1');
+            $table->add_field('manual_value', XMLDB_TYPE_NUMBER, '5', null, XMLDB_NOTNULL, null, null, null, '1');
+            $table->add_field('modifiedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('studentid_fk', XMLDB_KEY_FOREIGN, ['studentid'], 'user', ['id']);
+            $table->add_key('modifiedby_fk', XMLDB_KEY_FOREIGN, ['modifiedby'], 'user', ['id']);
+            $table->add_index('student_sector_area_method_idx', XMLDB_INDEX_UNIQUE, ['studentid', 'courseid', 'sector', 'area_code', 'method']);
+
+            $dbman->create_table($table);
+        } else {
+            // Tabella esiste: cambia i campi da INTEGER a NUMBER(5,1).
+            $field_calc = new xmldb_field('calculated_value', XMLDB_TYPE_NUMBER, '5, 1', null, null, null, null);
+            $dbman->change_field_type($table, $field_calc);
+
+            $field_man = new xmldb_field('manual_value', XMLDB_TYPE_NUMBER, '5, 1', null, XMLDB_NOTNULL, null, '0');
+            $dbman->change_field_type($table, $field_man);
+        }
+
+        // Crea tabella history se non esiste.
+        $table2 = new xmldb_table('local_compman_final_history');
+        if (!$dbman->table_exists($table2)) {
+            $table2->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table2->add_field('ratingid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table2->add_field('old_value', XMLDB_TYPE_NUMBER, '5', null, null, null, null, null, '1');
+            $table2->add_field('new_value', XMLDB_TYPE_NUMBER, '5', null, XMLDB_NOTNULL, null, null, null, '1');
+            $table2->add_field('modifiedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table2->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+            $table2->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table2->add_key('ratingid_fk', XMLDB_KEY_FOREIGN, ['ratingid'], 'local_compman_final_ratings', ['id']);
+            $table2->add_key('modifiedby_fk', XMLDB_KEY_FOREIGN, ['modifiedby'], 'user', ['id']);
+            $table2->add_index('ratingid_time_idx', XMLDB_INDEX_NOTUNIQUE, ['ratingid', 'timecreated']);
+
+            $dbman->create_table($table2);
+        }
+
+        upgrade_plugin_savepoint(true, 2026040701, 'local', 'competencymanager');
+    }
+
     return true;
 }
