@@ -536,6 +536,20 @@ document.addEventListener('DOMContentLoaded', function() {
         btnPreview.innerHTML = '👁 Anteprima';
     });
 
+    // Calculate group color from date_start (same logic as PHP add_to_color_group).
+    function calcGroupColor(dateStartTs) {
+        if (!dateStartTs) return {kw: 0, color: ''};
+        var d = new Date(dateStartTs * 1000);
+        // ISO week number.
+        var onejan = new Date(d.getFullYear(), 0, 1);
+        var kw = Math.ceil(((d - onejan) / 86400000 + onejan.getDay() + 1) / 7);
+        // 2-week cycle from KW03.
+        var periodindex = Math.floor((kw - 3) / 2);
+        var colors = ['giallo', 'grigio', 'rosso', 'marrone', 'viola'];
+        var colorindex = ((periodindex % 5) + 5) % 5;
+        return {kw: kw, color: colors[colorindex]};
+    }
+
     function showPreview(rows) {
         if (!rows || rows.length === 0) {
             previewContent.innerHTML = '<p>Nessuna riga trovata nel file.</p>';
@@ -544,23 +558,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         let html = '<table class="preview-table"><thead><tr>';
-        html += '<th>#</th><th>Nome</th><th>Cognome</th><th>Email</th><th>URC</th><th>Professione</th><th>Settore</th>';
+        html += '<th>#</th><th>Nome</th><th>Cognome</th><th>Email</th><th>Settore</th>';
+        html += '<th style="background:#17a2b8; color:#fff;">KW</th>';
+        html += '<th style="background:#17a2b8; color:#fff;">Gruppo Colore</th>';
         html += '</tr></thead><tbody>';
 
+        var colorOptions = ['giallo', 'grigio', 'rosso', 'marrone', 'viola'];
+        var colorHex = {giallo:'#FFFF00', grigio:'#808080', rosso:'#FF0000', marrone:'#996633', viola:'#7030A0'};
+
         rows.forEach((row, i) => {
+            var group = calcGroupColor(row.date_start);
+            var dateStr = row.date_start ? new Date(row.date_start * 1000).toLocaleDateString('it-CH') : '-';
+
             html += '<tr>';
             html += '<td>' + (i + 1) + '</td>';
             html += '<td>' + escapeHtml(row.firstname || '') + '</td>';
             html += '<td>' + escapeHtml(row.lastname || '') + '</td>';
             html += '<td>' + escapeHtml(row.email || '') + '</td>';
-            html += '<td>' + escapeHtml(row.urc_office || '') + '</td>';
-            html += '<td>' + escapeHtml(row.last_profession || '').substring(0, 50) + '</td>';
             html += '<td>' + escapeHtml(row.sector_detected || '-') + '</td>';
+
+            // KW editable.
+            html += '<td><input type="number" class="group-kw-input" data-index="' + i + '" value="' + group.kw + '" min="1" max="53" style="width:60px; padding:4px 6px; border:2px solid #17a2b8; border-radius:4px; font-size:14px; text-align:center; font-weight:600;" title="Inizio: ' + dateStr + '"></td>';
+
+            // Color editable dropdown.
+            html += '<td><select class="group-color-select" data-index="' + i + '" style="padding:4px 8px; border:2px solid #17a2b8; border-radius:4px; font-size:14px; font-weight:600;">';
+            colorOptions.forEach(c => {
+                var sel = (c === group.color) ? ' selected' : '';
+                html += '<option value="' + c + '"' + sel + '>' + c.charAt(0).toUpperCase() + c.slice(1) + '</option>';
+            });
+            html += '</select></td>';
+
             html += '</tr>';
         });
 
         html += '</tbody></table>';
-        html += '<p style="margin-top:10px;color:#666;">Trovate ' + rows.length + ' righe (anteprima prime 5)</p>';
+        html += '<p style="margin-top:10px;color:#666;">Trovati ' + rows.length + ' studenti (dopo deduplica per email). <strong>Verificare KW e Colore prima di importare.</strong></p>';
 
         previewContent.innerHTML = html;
         previewSection.classList.add('active');
@@ -595,6 +627,20 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('enrol_course', document.getElementById('enrol_course').checked ? '1' : '0');
         formData.append('assign_cohort', document.getElementById('assign_cohort').checked ? '1' : '0');
         formData.append('assign_group', document.getElementById('assign_group').checked ? '1' : '0');
+
+        // Collect operator's group overrides (KW + color per student).
+        var groupOverrides = {};
+        document.querySelectorAll('.group-kw-input').forEach(input => {
+            var idx = input.dataset.index;
+            if (!groupOverrides[idx]) groupOverrides[idx] = {};
+            groupOverrides[idx].kw = parseInt(input.value) || 0;
+        });
+        document.querySelectorAll('.group-color-select').forEach(select => {
+            var idx = select.dataset.index;
+            if (!groupOverrides[idx]) groupOverrides[idx] = {};
+            groupOverrides[idx].color = select.value;
+        });
+        formData.append('group_overrides', JSON.stringify(groupOverrides));
 
         try {
             const response = await fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_import.php', {

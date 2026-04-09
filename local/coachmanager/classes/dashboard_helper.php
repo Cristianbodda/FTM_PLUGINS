@@ -182,6 +182,7 @@ class dashboard_helper {
         // Get group color and week
         $group = $this->get_student_group($student->id);
         $student->group_color = $group['color'];
+        $student->date_start = $group['date_start'] ?? 0;
         $student->current_week = $group['week'];
         $student->groupid = $group['groupid'];
 
@@ -338,9 +339,11 @@ class dashboard_helper {
         }
 
         // Override week with CPURC date_start if available (editable by coach).
+        $date_start = 0;
         if ($this->db->get_manager()->table_exists('local_ftm_cpurc_students')) {
             $cpurc = $this->db->get_record('local_ftm_cpurc_students', ['userid' => $userid], 'date_start');
             if ($cpurc && !empty($cpurc->date_start)) {
+                $date_start = (int)$cpurc->date_start;
                 $days = floor((time() - $cpurc->date_start) / 86400);
                 $week = min(6, max(1, ceil(($days + 1) / 7)));
             }
@@ -367,7 +370,7 @@ class dashboard_helper {
             }
         }
 
-        return ['color' => $color, 'week' => $week, 'groupid' => $groupid];
+        return ['color' => $color, 'week' => $week, 'groupid' => $groupid, 'date_start' => $date_start];
     }
 
     /**

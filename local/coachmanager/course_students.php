@@ -114,6 +114,8 @@ $colorfilter = optional_param('color', '', PARAM_ALPHA);
 $weekfilter = optional_param('week', 0, PARAM_INT);
 $statusfilter = optional_param('status', '', PARAM_ALPHANUMEXT);
 $search = optional_param('search', '', PARAM_TEXT);
+$datefrom = optional_param('date_from', '', PARAM_TEXT);
+$dateto = optional_param('date_to', '', PARAM_TEXT);
 $view = optional_param('view', '', PARAM_ALPHA);
 $zoom = optional_param('zoom', 0, PARAM_INT);
 
@@ -221,6 +223,17 @@ $PAGE->set_pagelayout('report');
 // Load data
 $dashboard = new \local_coachmanager\dashboard_helper($USER->id);
 $students = $dashboard->get_course_students($courseid, $colorfilter, $weekfilter, $statusfilter, $search);
+
+// Apply date_start filter (post-load, data comes from CPURC).
+if (!empty($datefrom) || !empty($dateto)) {
+    $tsfrom = !empty($datefrom) ? strtotime($datefrom) : 0;
+    $tsto = !empty($dateto) ? strtotime($dateto . ' 23:59:59') : PHP_INT_MAX;
+    $students = array_filter($students, function($s) use ($tsfrom, $tsto) {
+        $ds = $s->date_start ?? 0;
+        if (empty($ds)) return false;
+        return $ds >= $tsfrom && $ds <= $tsto;
+    });
+}
 $stats = $dashboard->get_dashboard_stats($students);
 $end6weeks = $dashboard->get_students_end_6_weeks($students);
 
@@ -1025,6 +1038,8 @@ echo $OUTPUT->header();
                 if ($colorfilter) $active_filters++;
                 if ($weekfilter) $active_filters++;
                 if ($statusfilter) $active_filters++;
+                if ($datefrom) $active_filters++;
+                if ($dateto) $active_filters++;
                 if ($active_filters > 0): ?>
                 <span style="background: #0066cc; color: white; border-radius: 12px; padding: 2px 8px; font-size: 12px; font-weight: 600;"><?php echo $active_filters; ?> attivi</span>
                 <?php endif; ?>
@@ -1037,6 +1052,7 @@ echo $OUTPUT->header();
                 <input type="hidden" name="view" value="<?php echo s($view); ?>">
                 <input type="hidden" name="zoom" value="<?php echo $zoom; ?>">
                 <?php if (!empty($search)): ?><input type="hidden" name="search" value="<?php echo s($search); ?>"><?php endif; ?>
+                <?php /* date_from e date_to sono input diretti nel form, non hidden */ ?>
 
                 <table style="width: 100%; border: none; border-collapse: collapse;">
                 <tr>
@@ -1078,6 +1094,26 @@ echo $OUTPUT->header();
                             <option value="no_autoval" <?php echo $statusfilter == 'no_autoval' ? 'selected' : ''; ?>>Manca Autovalutazione</option>
                             <option value="no_lab" <?php echo $statusfilter == 'no_lab' ? 'selected' : ''; ?>>Manca Laboratorio</option>
                         </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding: 10px; vertical-align: top;">
+                        <label style="display: block; font-weight: 600; color: #555; margin-bottom: 8px;">Data Inizio (da - a)</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="date" name="date_from" value="<?php echo s($datefrom); ?>"
+                                   onchange="this.form.submit()"
+                                   style="padding: 12px; border: 2px solid #a0a8c0; border-radius: 8px; font-size: 15px; color: #333; flex: 1;">
+                            <span style="color: #999;">—</span>
+                            <input type="date" name="date_to" value="<?php echo s($dateto); ?>"
+                                   onchange="this.form.submit()"
+                                   style="padding: 12px; border: 2px solid #a0a8c0; border-radius: 8px; font-size: 15px; color: #333; flex: 1;">
+                        </div>
+                    </td>
+                    <td style="padding: 10px; vertical-align: bottom;">
+                        <a href="?courseid=<?php echo $courseid; ?>&view=<?php echo s($view); ?>&zoom=<?php echo $zoom; ?>"
+                           class="btn btn-outline-secondary" style="padding: 12px 20px; font-size: 15px; border-radius: 8px;">
+                            Reset Filtri
+                        </a>
                     </td>
                 </tr>
                 </table>

@@ -443,7 +443,9 @@ class csv_importer {
 
             // Add to color group if requested.
             if (!empty($options['assign_group']) && !empty($row['date_start'])) {
-                user_manager::add_to_color_group($userresult->userid, $row['date_start']);
+                $override_kw = $row['_group_override_kw'] ?? 0;
+                $override_color = $row['_group_override_color'] ?? '';
+                user_manager::add_to_color_group($userresult->userid, $row['date_start'], $override_kw, $override_color);
             }
 
             // Detect sector from profession.
@@ -671,8 +673,29 @@ class csv_importer {
      * @param string $originalname Original filename for format detection.
      * @return array Preview data.
      */
-    public function preview_file($filepath, $limit = 5, $originalname = '') {
+    public function preview_file($filepath, $limit = 0, $originalname = '') {
         $rows = $this->parse_file($filepath, $originalname);
-        return array_slice($rows, 0, $limit);
+
+        // Deduplicate by email (keep most recent date_start) - same logic as import.
+        $byemail = [];
+        foreach ($rows as $row) {
+            $email = strtolower(trim($row['email'] ?? ''));
+            if (empty($email)) continue;
+            if (!isset($byemail[$email])) {
+                $byemail[$email] = $row;
+            } else {
+                $existingdate = $byemail[$email]['date_start'] ?? 0;
+                $newdate = $row['date_start'] ?? 0;
+                if ($newdate > $existingdate) {
+                    $byemail[$email] = $row;
+                }
+            }
+        }
+        $rows = array_values($byemail);
+
+        if ($limit > 0) {
+            return array_slice($rows, 0, $limit);
+        }
+        return $rows;
     }
 }

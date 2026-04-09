@@ -1,7 +1,7 @@
 # Manuale Operativo FTM - Coach/Formatore
 
-**Versione:** 2.0 - Passo-Passo Dettagliato
-**Data:** Febbraio 2026
+**Versione:** 3.0 - Aggiornato con nuove funzioni Marzo-Aprile 2026
+**Data:** Aprile 2026
 **Sistema:** FTM Academy - Gestione Competenze Professionali
 
 ---
@@ -22,8 +22,15 @@
 12. [Note Coach](#12-note-coach)
 13. [Self-Assessment Dashboard](#13-self-assessment-dashboard)
 14. [FTM Scheduler](#14-ftm-scheduler)
-15. [Casi d'Uso Pratici](#15-casi-duso-pratici)
-16. [Risoluzione Problemi](#16-risoluzione-problemi)
+15. [Passaporto Tecnico e Garage FTM](#15-passaporto-tecnico-e-garage-ftm)
+16. [Documenti Studenti - Ricerca e Caricamento](#16-documenti-studenti---ricerca-e-caricamento)
+17. [Accedi come Studente](#17-accedi-come-studente)
+18. [Coaching Individualizzato (CI)](#18-coaching-individualizzato-ci)
+19. [JobAIDA - Generatore Lettere di Candidatura](#19-jobaida---generatore-lettere-di-candidatura)
+20. [Tabella Comparativa - Valori Editabili](#20-tabella-comparativa---valori-editabili)
+21. [Rapporto Finale CPURC - Autosave](#21-rapporto-finale-cpurc---autosave)
+22. [Casi d'Uso Pratici](#22-casi-duso-pratici)
+23. [Risoluzione Problemi](#23-risoluzione-problemi)
 
 **Appendici:**
 - [A. Glossario Completo](#appendice-a-glossario-completo)
@@ -3598,6 +3605,384 @@ Il sistema usa chiamate AJAX per operazioni di salvataggio senza ricaricamento d
 
 ---
 
+## 15. Passaporto Tecnico e Garage FTM
+
+### 15.1 Cos'e il Passaporto Tecnico
+
+Il Passaporto Tecnico e un documento stampabile che riassume le competenze dello studente in un formato professionale. Contiene fino a 12 sezioni configurabili: radar panoramico, tabella competenze, commenti del coach, overlay multi-fonte e altro.
+
+**Come accedere:** Dal Report Studente, clicca il bottone **"Passaporto Tecnico"** nella barra superiore.
+
+### 15.2 Cos'e il Garage FTM
+
+Il Garage e lo strumento dove costruisci il passaporto per ogni studente. Puoi:
+
+- **Selezionare le competenze** da includere (checkbox per area e singola competenza)
+- **Scegliere il formato** di visualizzazione: percentuali numeriche o scala qualitativa (Eccellente/Buono/Sufficiente)
+- **Ordinare le sezioni** con drag & drop per decidere l'ordine di stampa
+- **Impostare la soglia** personalizzata per lo studente (override della soglia globale)
+- **Attivare/disattivare** overlay 3 fonti, autovalutazione, valutazione coach
+
+**Come accedere:** Dal Report Studente, clicca il bottone **"Garage FTM"**.
+
+### 15.3 Commenti Coach per Area
+
+Nel Passaporto Tecnico puoi aggiungere un commento testuale per ogni area di competenza. I commenti vengono salvati automaticamente e stampati nel passaporto.
+
+---
+
+## 16. Documenti Studenti - Ricerca e Caricamento
+
+### 16.1 Panoramica
+
+La funzione **Documenti Studenti** permette di accedere ai file personali degli studenti direttamente dalla piattaforma, senza dover entrare nei loro account.
+
+**Come accedere:**
+- Dalla **Coach Dashboard**: bottone azzurro con icona cartella (&#128194;) su ogni card studente
+- Dalla **Dashboard CPURC**: bottone "Documenti Studenti" nella barra in alto, oppure icona cartella accanto al nome dello studente
+
+### 16.2 Ricerca e Download File
+
+1. Apri la pagina **Documenti Studenti**
+2. Usa i filtri:
+   - **Cerca studente**: per nome, cognome o email
+   - **Cerca file**: per nome file (es. "CVBD", "lettera", "CV")
+   - **Gruppo colore**: filtra per gruppo
+3. Clicca sul nome di uno studente per espandere e vedere i suoi file
+4. Per ogni file vedi: nome, cartella, dimensione, data di modifica
+5. Clicca la freccia per **scaricare** un singolo file
+
+### 16.3 Download ZIP (Scarica Multipli)
+
+1. Seleziona gli studenti con le **checkbox** a sinistra del nome
+2. Opzionalmente filtra per tipo file (es. "CVBD" nel campo ricerca)
+3. Clicca **"Scarica ZIP Selezionati"**
+4. Ricevi un archivio ZIP con i file organizzati per cartella studente (Cognome_Nome/)
+
+### 16.4 Caricamento File negli Studenti
+
+Puoi caricare documenti direttamente nei file privati degli studenti:
+
+1. Seleziona gli studenti destinatari con le checkbox
+2. Clicca **"Carica File negli Studenti"** (bottone azzurro in alto)
+3. Trascina il file nel riquadro oppure clicca per selezionarlo
+4. Scegli la **cartella di destinazione** dal menu a tendina (Documenti personali, Documenti di scambio, Documenti iniziali, oppure crea una nuova cartella)
+5. Clicca **"Carica nei Selezionati"**
+6. Il sistema conferma il caricamento per ogni studente
+
+Lo studente trovera il file nei propri **File Privati** alla prossima apertura della piattaforma.
+
+> **Esempio pratico:** Per raccogliere tutti i CVBD del gruppo grigio: filtra per gruppo grigio, scrivi "CVBD" nel campo ricerca file, seleziona tutti, clicca "Scarica ZIP". In pochi secondi hai tutti i CVBD in un unico archivio.
+
+---
+
+## 17. Accedi come Studente
+
+### 17.1 Cos'e
+
+La funzione "Accedi come Studente" permette di entrare nella piattaforma con l'identita dello studente, per vedere esattamente cosa vede lui: dashboard, file privati, corsi, quiz.
+
+### 17.2 Come usarla
+
+Il bottone si trova in tre posizioni:
+- **Coach Dashboard**: icona persona blu (&#128100;) nella card studente
+- **Dashboard CPURC**: icona persona blu accanto al nome
+- **Student Card CPURC**: bottone "Accedi come Studente"
+
+### 17.3 Come tornare al proprio account
+
+Dopo aver effettuato l'accesso come studente, appare un **banner rosso fisso** in cima alla pagina con il messaggio "Ritorna al tuo account". Cliccalo per tornare al tuo profilo originale.
+
+> **Attenzione:** Mentre sei loggato come studente, tutte le azioni che compi (modifiche file, invio quiz) vengono registrate come se fossero dello studente. Usalo solo per verifiche e configurazione.
+
+---
+
+## 18. Coaching Individualizzato (CI)
+
+### 18.1 Panoramica
+
+Il Coaching Individualizzato (precedentemente chiamato SIP) e un percorso di 10 settimane post-rilevamento per partecipanti con potenziale di collocamento.
+
+### 18.2 Attivazione
+
+1. Dalla **Coach Dashboard**, trova lo studente
+2. Clicca il bottone **"+ CI"** (colore teal)
+3. Compila la modale di attivazione:
+   - **Indennita giornaliere LADI** (campo obbligatorio)
+   - Settore
+   - Note iniziali
+4. Conferma l'attivazione
+
+### 18.3 Cosa include
+
+- **Griglia Valutazione PCI**: 6 criteri numerici 1-5
+- **Piano d'Azione**: 7 aree di attivazione con scala 0-6 e radar overlay
+- **Diario Coaching**: timeline incontri con azioni e scadenze
+- **Calendario Appuntamenti**: CRUD con notifiche automatiche
+- **KPI**: candidature inviate, contatti aziende, opportunita generate
+- **Report Word**: esportabile in 9 sezioni
+- **Area Studente**: lo studente puo inserire KPI autonomamente
+
+### 18.4 Badge nella Dashboard
+
+Gli studenti con CI attivo mostrano un **badge teal "CI"** nella card della Coach Dashboard. Puoi filtrare per vedere solo gli studenti con CI attivo.
+
+---
+
+## 19. JobAIDA - Generatore Lettere di Candidatura
+
+### 19.1 Panoramica
+
+JobAIDA e uno strumento basato su intelligenza artificiale che aiuta gli studenti a scrivere lettere di candidatura usando il modello AIDA (Attention, Interest, Desire, Action).
+
+**Come accedere:** Menu navigazione → JobAIDA, oppure `/local/jobaida/index.php`
+
+> **Nota:** Gli studenti devono essere autorizzati dal coach per utilizzare JobAIDA. L'autorizzazione si gestisce dalla pagina "Gestione Autorizzazioni" di JobAIDA.
+
+### 19.2 Tre Modalita
+
+| Modalita | Tab | Descrizione |
+|----------|-----|-------------|
+| **Express Writers** | Giallo | Genera l'intera lettera in un colpo solo |
+| **Coaching Writers** | Arancione | Analizza la compatibilita CV/annuncio, pone domande, poi genera |
+| **Learn & Write** | Rosso (default) | Step-by-step: una sezione alla volta con conferma dello studente |
+
+### 19.3 Learn & Write (Modalita Formativa)
+
+Questa e la modalita principale, pensata per formare lo studente:
+
+1. Lo studente inserisce **annuncio di lavoro** e **CV** (testo o upload PDF/Word)
+2. Clicca **"Inizia Step-by-Step"**
+3. Per ogni sezione AIDA il sistema:
+   - Propone un testo
+   - Spiega il **rationale** (perche ha fatto quelle scelte)
+   - Pone una **domanda di riflessione** allo studente
+   - Mostra **suggerimenti formativi**
+4. Lo studente puo:
+   - **Confermare** e passare alla sezione successiva
+   - **Chiedere una modifica** scrivendo cosa vuole cambiare
+5. Dopo tutte e 4 le sezioni, il sistema assembla la **lettera completa** con intestazione svizzera
+
+### 19.4 Formato Lettera Svizzera
+
+La lettera generata segue il formato ufficiale:
+```
+Nome Cognome
+Indirizzo, CAP Citta
+Telefono
+Email
+
+Citta, data
+
+Spettabile [Azienda],
+[corpo lettera AIDA]
+Cordiali saluti.
+```
+
+### 19.5 Esportazione
+
+Da tutte le modalita puoi:
+- **Copiare** la lettera negli appunti
+- **Esportare in Word** (.doc)
+- **Salvare nello storico** per consultarla in seguito
+
+---
+
+## 20. Tabella Comparativa - Valori Editabili
+
+### 20.1 Cos'e
+
+La Tabella Comparativa Dettagliata nel Report Studente mostra i valori di Rilevamento, Autovalutazione e Coach per ogni area. I valori sono **editabili**: puoi cliccare su qualsiasi cella per modificare il valore percentuale.
+
+### 20.2 Come modificare i valori
+
+1. Apri il **Report Studente** con i quiz selezionati
+2. Scorri fino alla sezione **"Tabella Comparativa Dettagliata"**
+3. Clicca su un **badge percentuale** (Rilevamento, Auto o Coach)
+4. Si apre un campo di input: inserisci il nuovo valore (0-100)
+5. Clicca **"Salva"** o premi Invio
+6. Il valore viene salvato e la media/gap si ricalcolano automaticamente
+
+I valori modificati mostrano un'icona matita per distinguerli dai valori calcolati.
+
+### 20.3 Persistenza
+
+- I valori modificati vengono salvati nel database e persistono tra le sessioni
+- La **configurazione quiz** (quali quiz sono selezionati, opzioni di visualizzazione) viene ricordata automaticamente: riaprendo la pagina dello stesso studente, i quiz selezionati vengono ricaricati senza doverli riselezionare
+
+---
+
+## 21. Rapporto Finale CPURC
+
+### 21.1 Accesso al Rapporto Finale
+
+Per redigere il Rapporto Finale bisogna accedere alla piattaforma FTM Academy.
+
+**Dalla Coach Dashboard V2:**
+1. Accedere alla piattaforma FTM Academy
+2. Dal menu principale, aprire la Coach Dashboard V2
+3. Individuare lo studente nella lista
+4. Nella visualizzazione compatta: cliccare sul bottone **"Rapporto"**
+5. Nella visualizzazione Standard: cliccare su **"Rapporto CPURC"**
+
+**Accesso diretto:** Se si conosce l'ID dello studente, accedere a: `/local/ftm_cpurc/report.php?userid=XX`
+
+### 21.2 La Barra degli Strumenti
+
+In alto nella pagina del rapporto si trova una barra scura con quattro bottoni:
+
+| Bottone | Funzione |
+|---------|----------|
+| **Stampa** (grigio) | Stampa la pagina dal browser |
+| **Salva** (blu) | Salva tutti i dati nel database |
+| **Esporta Word** (verde) | Genera e scarica il documento Word ufficiale |
+| **Carica dati Aladino** (arancione) | Importa dati da file Excel Aladino |
+
+### 21.3 Carica Dati Aladino
+
+Prima di compilare il rapporto, si consiglia di caricare i dati dal sistema Aladino. Questo aggiorna automaticamente assenze, date, colloqui e dati URC.
+
+**Come esportare il file da Aladino:**
+1. Accedere al sistema Aladino
+2. Cercare lo studente o il gruppo di studenti e selezionarlo
+3. Esportare i dati in formato Excel (.xlsx)
+4. Salvare il file sul proprio computer
+
+**Come caricare il file nella piattaforma FTM Academy:**
+1. Cliccare il bottone arancione **"Carica dati Aladino"**
+2. Si apre una finestra modale
+3. Trascinare il file Excel nell'area tratteggiata, oppure cliccare per selezionarlo
+4. Attendere il caricamento: il sistema cerca automaticamente lo studente nel file
+
+**Anteprima dei dati:** Dopo il caricamento, viene mostrata un'anteprima organizzata in sezioni:
+- **Assenze e presenze**: giorni X, giorni O, assenze A-I, totale, giorni partecipazione effettiva
+- **Percorso**: date inizio/fine, grado occupazione, stato, ultima professione
+- **Colloqui e stage**: numero colloqui, data e azienda del colloquio, stage svolti
+- **URC**: ufficio URC, consulente, numero personale
+
+> **Nota:** I giorni di partecipazione effettiva = X + O (incluse mezze giornate, es. 6.5 + 15.5 = 22).
+
+**Confermare l'importazione:**
+1. Verificare che i dati nell'anteprima siano corretti
+2. Cliccare il bottone arancione **"Importa dati"**
+3. Attendere il messaggio: "Importazione completata!"
+4. La pagina si ricarica con i dati aggiornati
+
+**Note importanti sull'import Aladino:**
+- **Record multipli**: il sistema seleziona il record Aperto, poi Chiuso, poi Interrotto
+- **Mezze giornate**: il sistema supporta valori decimali (es. 6.5 giorni)
+- **Data fine effettiva**: se non presente, viene usata la data di fine prevista
+- **Colloqui**: azienda e data vengono importati nella Sezione 5.1
+
+### 21.4 Compilare il Rapporto
+
+Il rapporto e diviso in sezioni che rispecchiano il documento ufficiale. Le sezioni grigie sono automatiche, quelle con campi bianchi vanno compilate manualmente.
+
+**Consenso CI (Coaching Individualizzato):**
+"La PCI ha svolto il sostegno al collocamento individuale personalizzato nel settore industriale"
+Selezionare Si o No. La selezione viene riportata nel Word.
+
+**Sezione 1 - Situazione iniziale:**
+- **Situazione iniziale**: sintesi situazione iniziale, obiettivi, carriera professionale e formativa
+- **Settori**: settore/i di riferimento (es. Meccanica, Automazione, Logistica)
+
+**Sezione 2 - Situazione al termine della misura:**
+- **Tabella reinserimento**: cliccare su una delle tre opzioni:
+  - Reinserimento a breve termine
+  - Reinserimento a medio termine
+  - Non fanno presupporre un reinserimento
+- Compilare: Valutazione competenze settore, Possibili settori, Sintesi conclusiva
+
+**Sezione 3 - Verifica delle competenze:**
+- **3.1 Personali** (5): Impegno, Iniziativa, Autonomia, Puntualita, Modo di presentarsi
+- **3.2 Sociali** (2): Comunicazione, Comprensione
+- **3.3 Metodologiche** (5): Ritmo lavoro, Apprendimento, Problemi, Organizzazione, Cura
+- **3.4 TIC** (1): Conoscenze PC e email
+
+**Scala**: Molto buone - Buone - Sufficienti - Insufficienti - N.V.
+
+Cliccare sulla cella per selezionare. Sotto ogni tabella si trova un campo **Osservazioni**.
+
+**Sezione 4 - Ricerca impiego:**
+- **4.1 Dossier completo**: Si/No
+- **Competenze ricerca**: 5 competenze, stessa scala della Sezione 3
+- **4.2 Canali**: checkbox multipli (10 canali disponibili)
+- **4.3 Valutazione complessiva**: valutazione globale + osservazioni
+
+**Sezione 5 - Riepilogo colloqui:**
+Precompilato da Aladino (numero colloqui, azienda, data). Aggiungere osservazioni.
+
+**Sezione 6 - Esito ricerca impiego:**
+Selezionare Si/No per l'assunzione. Se Si, compilare:
+- **Azienda**: nome dell'azienda
+- **Professione; a partire dal**: professione e data inizio
+- **Forma contrattuale**: tipo di contratto
+
+### 21.5 Salvataggio
+
+**Salvataggio manuale:** Cliccare il bottone blu **"Salva"**. Appare messaggio verde: "Report salvato con successo".
+
+**Salvataggio automatico (Autosave):** Il sistema salva automaticamente ogni volta che modifichi un campo, dopo 3 secondi di inattivita. Un indicatore accanto al bottone Salva mostra:
+- **"Salvato alle HH:MM"** (verde) - salvataggio completato
+- **"Salvataggio automatico..."** (arancione) - salvataggio in corso
+
+> **Importante:** Salvare PRIMA di esportare il Word.
+
+### 21.6 Esportare il Documento Word
+
+1. Assicurarsi di aver salvato (bottone blu o attendere l'autosave)
+2. Cliccare il bottone verde **"Esporta Word"**
+3. Il file si scarica: `Rapporto_finale_Cognome_Nome_Data.docx`
+
+Il documento contiene tutti i dati, le valutazioni con "X", i colloqui, le firme. Pronto per stampa e firma.
+
+### 21.7 Flusso di Lavoro Consigliato
+
+1. Aprire il rapporto dalla Coach Dashboard
+2. Caricare i dati Aladino (bottone arancione)
+3. Compilare Sezione 1 (situazione iniziale)
+4. Compilare Sezione 2 (reinserimento, competenze settore)
+5. Compilare Sezione 3 (griglie competenze + osservazioni)
+6. Compilare Sezione 4 (dossier, ricerca, canali)
+7. Verificare Sezione 5 (colloqui - da Aladino)
+8. Compilare Sezione 6 (esito assunzione)
+9. Selezionare consenso CI
+10. Aggiungere allegati
+11. Salvare (blu) o attendere autosave
+12. Esportare Word (verde)
+13. Stampare, firmare, inviare al consulente URC
+
+### 21.8 Domande Frequenti
+
+**D: Posso modificare un rapporto gia salvato?**
+R: Si. Riaprire, modificare e salvare nuovamente.
+
+**D: Posso esportare il Word piu volte?**
+R: Si. Ogni esportazione genera un nuovo documento aggiornato.
+
+**D: I dati Aladino sovrascrivono i miei testi?**
+R: No. Aladino aggiorna solo assenze, date e colloqui. I testi narrativi restano invariati.
+
+**D: Perche il coach mostrato non sono io?**
+R: Il rapporto mostra il coach assegnato allo studente. Per cambiarlo, modificare nella Student Card.
+
+**D: Le mezze giornate vengono gestite?**
+R: Si. Valori come 6.5 giorni sono supportati.
+
+**D: Come trova lo studente nel file Excel?**
+R: Cerca per email (priorita) o per nome e cognome.
+
+**D: Due righe per lo stesso studente?**
+R: Seleziona automaticamente: Aperto > Chiuso > Interrotto, poi la data piu recente.
+
+**D: Dove trovo il file Excel?**
+R: Si esporta dal sistema Aladino cercando lo studente.
+
+**D: I dati si salvano da soli?**
+R: Si, dal Aprile 2026 il sistema ha l'autosave. Dopo 3 secondi di inattivita i dati vengono salvati automaticamente.
+
+---
+
 **Fine del Manuale Coach/Formatore**
 
-*Documento generato per FTM Academy - Versione 2.0 Passo-Passo Dettagliato - Febbraio 2026*
+*Documento generato per FTM Academy - Versione 3.0 - Aprile 2026*

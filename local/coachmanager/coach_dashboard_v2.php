@@ -4475,6 +4475,12 @@ function render_view_compatta($students, $dashboard) {
                     </button>
                     <?php endif; ?>
                     <button class="btn btn-sm"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/student_files.php?search=<?php echo urlencode($student->lastname); ?>'"
+                            title="Documenti Studente"
+                            style="background: #17a2b8 !important; color: #fff !important; border-color: #138496 !important;">
+                        &#128194;
+                    </button>
+                    <button class="btn btn-sm"
                             onclick="event.stopPropagation(); openQuizUnlock(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>')"
                             title="Sblocca Quiz"
                             style="background: #7c3aed !important; color: #fff !important; border-color: #6d28d9 !important;">
@@ -4602,6 +4608,10 @@ function render_view_standard($students, $dashboard) {
                     <a href="#" onclick="event.stopPropagation(); openQuizUnlock(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>'); return false;"
                        class="quick-btn" title="Sblocca Quiz" style="background:#7c3aed;color:#fff;">
                         &#128275; Quiz
+                    </a>
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/student_files.php?search=<?php echo urlencode($student->lastname); ?>"
+                       class="quick-btn" title="Documenti Studente" style="background:#17a2b8;color:#fff;">
+                        &#128194; Documenti
                     </a>
                     <?php if (has_capability('moodle/user:loginas', context_system::instance())): ?>
                     <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/loginas_student.php?userid=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>"

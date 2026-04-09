@@ -1256,6 +1256,66 @@ setInterval(function() {
     }).catch(function() {});
 }, 300000);
 
+// ========== AUTOSAVE: salvataggio automatico ogni 3 secondi di inattivita' ==========
+var autosaveTimer = null;
+var autosaveEnabled = true;
+var lastSavedHash = '';
+
+function getFormHash() {
+    var form = document.getElementById('report-form');
+    var data = new FormData(form);
+    var parts = [];
+    data.forEach(function(value, key) {
+        if (key !== 'sesskey') parts.push(key + '=' + value);
+    });
+    return parts.join('&');
+}
+
+function triggerAutosave() {
+    if (!autosaveEnabled) return;
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(function() {
+        var currentHash = getFormHash();
+        if (currentHash === lastSavedHash) return; // Nessun cambiamento.
+
+        // Mostra indicatore discreto.
+        var indicator = document.getElementById('autosave-indicator');
+        if (indicator) {
+            indicator.textContent = 'Salvataggio automatico...';
+            indicator.style.color = '#f39c12';
+            indicator.style.display = 'inline';
+        }
+
+        // Simula click sul bottone Salva (riusa la stessa logica).
+        var btn = document.getElementById('btn-save');
+        if (btn && !btn.disabled) {
+            btn.click();
+            lastSavedHash = currentHash;
+        }
+    }, 3000);
+}
+
+// Inizializza hash corrente al caricamento.
+document.addEventListener('DOMContentLoaded', function() {
+    lastSavedHash = getFormHash();
+
+    // Ascolta cambiamenti su tutti i campi del form.
+    var form = document.getElementById('report-form');
+    if (form) {
+        form.addEventListener('input', triggerAutosave);
+        form.addEventListener('change', triggerAutosave);
+    }
+
+    // Aggiungi indicatore autosave vicino al bottone Salva.
+    var btnSave = document.getElementById('btn-save');
+    if (btnSave && !document.getElementById('autosave-indicator')) {
+        var indicator = document.createElement('span');
+        indicator.id = 'autosave-indicator';
+        indicator.style.cssText = 'margin-left:12px; font-size:0.85em; color:#27ae60; display:none;';
+        btnSave.parentNode.insertBefore(indicator, btnSave.nextSibling);
+    }
+});
+
 function selectReinsertion(value, cell) {
     // Deselect all reinsertion cells.
     document.querySelectorAll('.reinsertion-cell').forEach(function(c) {
@@ -1365,6 +1425,14 @@ document.getElementById('btn-save').addEventListener('click', async function() {
             alertEl.style.display = 'block';
             alertEl.className = 'doc-alert success';
             alertEl.innerHTML = '<strong>Salvataggio completato!</strong> Tutti i dati sono stati salvati correttamente. (' + new Date().toLocaleTimeString('it-CH') + ')';
+            // Aggiorna indicatore autosave.
+            var indicator = document.getElementById('autosave-indicator');
+            if (indicator) {
+                indicator.textContent = 'Salvato alle ' + new Date().toLocaleTimeString('it-CH');
+                indicator.style.color = '#27ae60';
+                indicator.style.display = 'inline';
+            }
+            lastSavedHash = getFormHash();
 
             // Change save button to green temporarily.
             btn.style.background = '#27ae60';

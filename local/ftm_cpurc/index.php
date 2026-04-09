@@ -540,6 +540,9 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
             <a href="<?php echo new moodle_url('/local/ftm_scheduler/manage_coaches.php'); ?>" class="cpurc-btn cpurc-btn-secondary">
                 👥 Gestione Coach
             </a>
+            <a href="<?php echo new moodle_url('/local/ftm_cpurc/student_files.php'); ?>" class="cpurc-btn cpurc-btn-secondary" style="background:#17a2b8; color:#fff;">
+                &#128194; Documenti Studenti
+            </a>
         </div>
     </div>
 
@@ -727,6 +730,9 @@ a.cpurc-btn, a.cpurc-btn:visited, a.cpurc-btn:hover, a.cpurc-btn:active, a.cpurc
                             <a href="<?php echo new moodle_url('/local/ftm_cpurc/loginas_student.php', ['userid' => $student->userid, 'sesskey' => sesskey()]); ?>"
                                title="Accedi come <?php echo s($student->firstname); ?>"
                                style="display:inline-block; margin-left:6px; padding:1px 7px; background:#3b82f6; color:#fff; border-radius:4px; font-size:11px; text-decoration:none; vertical-align:middle;">&#128100;</a>
+                            <a href="<?php echo new moodle_url('/local/ftm_cpurc/student_files.php', ['search' => $student->lastname]); ?>"
+                               title="Documenti di <?php echo s($student->firstname . ' ' . $student->lastname); ?>"
+                               style="display:inline-block; margin-left:4px; padding:1px 7px; background:#17a2b8; color:#fff; border-radius:4px; font-size:11px; text-decoration:none; vertical-align:middle;">&#128194;</a>
                             <?php endif; ?>
                             <br>
                             <small style="color: #666;"><?php echo s($student->email); ?></small>

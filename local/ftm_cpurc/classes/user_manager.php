@@ -373,20 +373,35 @@ class user_manager {
      * @param int $datestart Start date timestamp.
      * @return bool Success.
      */
-    public static function add_to_color_group($userid, $datestart) {
+    public static function add_to_color_group($userid, $datestart, $override_kw = 0, $override_color = '') {
         global $DB;
 
         if (empty($datestart)) {
             return false;
         }
 
-        // Calculate calendar week.
-        $calendarweek = (int)date('W', $datestart);
+        // Use operator override if provided, otherwise calculate.
+        $calendarweek = $override_kw > 0 ? $override_kw : (int)date('W', $datestart);
         $year = (int)date('Y', $datestart);
 
-        // Determine color (cycle every 5 weeks).
-        $colorindex = ($calendarweek - 1) % 5;
-        $color = self::COLOR_CYCLE[$colorindex];
+        if (!empty($override_color) && in_array($override_color, self::COLOR_CYCLE)) {
+            // Operator chose the color manually.
+            $color = $override_color;
+        } else {
+            // First: try to find an existing group for this calendar week.
+            $existinggroup = $DB->get_record('local_ftm_groups', [
+                'calendar_week' => $calendarweek,
+            ]);
+            if ($existinggroup) {
+                $color = $existinggroup->color;
+            } else {
+                // Calculate color based on 2-week cycle from first group of the year.
+                $firstgroupkw = 3; // KW03 = first group of 2026.
+                $periodindex = (int)floor(($calendarweek - $firstgroupkw) / 2);
+                $colorindex = (($periodindex % 5) + 5) % 5;
+                $color = self::COLOR_CYCLE[$colorindex];
+            }
+        }
 
         // Find or create group.
         $groupname = 'Gruppo ' . ucfirst($color) . ' - KW' . str_pad($calendarweek, 2, '0', STR_PAD_LEFT);

@@ -71,12 +71,16 @@ try {
         $assigncohort = optional_param('assign_cohort', 0, PARAM_INT);
         $assigngroup = optional_param('assign_group', 0, PARAM_INT);
 
+        $groupoverrides_raw = optional_param('group_overrides', '{}', PARAM_RAW);
+        $groupoverrides = json_decode($groupoverrides_raw, true) ?: [];
+
         $options = [
             'courseid' => $courseid,
             'update_existing' => (bool)$updateexisting,
             'enrol_course' => (bool)$enrolcourse,
             'assign_cohort' => (bool)$assigncohort,
             'assign_group' => (bool)$assigngroup,
+            'group_overrides' => $groupoverrides,
         ];
 
         // Parse file.
@@ -107,8 +111,16 @@ try {
 
         // Import each row.
         $credentials = [];
+        $rowindex = 0;
         foreach ($rows as $row) {
+            // Apply group override if operator changed KW/color for this row.
+            $idx = (string)$rowindex;
+            if (!empty($groupoverrides[$idx])) {
+                $row['_group_override_kw'] = (int)($groupoverrides[$idx]['kw'] ?? 0);
+                $row['_group_override_color'] = $groupoverrides[$idx]['color'] ?? '';
+            }
             $result = $importer->import_row($row, $options);
+            $rowindex++;
 
             // Collect credentials for all processed users (created or found).
             if ($result['success']) {
@@ -135,12 +147,22 @@ try {
                     $cred['password'] = $password_display;
                 }
 
-                // Get group info.
+                // Get group info (use operator override if available).
                 if (!empty($row['date_start'])) {
-                    $kw = (int)date('W', $row['date_start']);
-                    $colorindex = ($kw - 1) % 5;
-                    $colors = ['giallo', 'grigio', 'rosso', 'marrone', 'viola'];
-                    $color = $colors[$colorindex];
+                    $kw = !empty($row['_group_override_kw']) ? $row['_group_override_kw'] : (int)date('W', $row['date_start']);
+                    if (!empty($row['_group_override_color'])) {
+                        $color = $row['_group_override_color'];
+                    } else {
+                        $existgrp = $DB->get_record('local_ftm_groups', ['calendar_week' => $kw], 'color', IGNORE_MULTIPLE);
+                        if ($existgrp) {
+                            $color = $existgrp->color;
+                        } else {
+                            $firstgroupkw = 3;
+                            $periodindex = (int)floor(($kw - $firstgroupkw) / 2);
+                            $colors = ['giallo', 'grigio', 'rosso', 'marrone', 'viola'];
+                            $color = $colors[(($periodindex % 5) + 5) % 5];
+                        }
+                    }
                     $cred['group'] = 'KW ' . str_pad($kw, 2, '0', STR_PAD_LEFT) . ' gruppo ' . $color;
                 } else {
                     $cred['group'] = '';
