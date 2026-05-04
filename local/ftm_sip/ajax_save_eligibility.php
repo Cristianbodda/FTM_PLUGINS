@@ -58,16 +58,25 @@ try {
                 'comportamento' => $comportamento,
             ];
             foreach ($criteria as $name => $value) {
-                if ($value < 1 || $value > 5) {
-                    throw new invalid_parameter_exception("Invalid {$name} value: must be between 1 and 5");
+                if ($value < 1 || $value > 6) {
+                    throw new invalid_parameter_exception("Invalid {$name} value: must be between 1 and 6");
                 }
             }
 
-            // Calculate totale.
+            // Calculate totale (max 36).
             $totale = array_sum($criteria);
 
+            // Auto-determine decisione based on totale (semaphore system).
+            if ($totale >= 29) {
+                $decisione = 'idoneo_prioritario';
+            } else if ($totale >= 21) {
+                $decisione = 'idoneo';
+            } else {
+                $decisione = 'non_idoneo';
+            }
+
             // Validate decisione.
-            $valid_decisioni = ['idoneo', 'non_idoneo', 'pending'];
+            $valid_decisioni = ['idoneo', 'idoneo_prioritario', 'non_idoneo', 'pending'];
             if (!in_array($decisione, $valid_decisioni)) {
                 throw new invalid_parameter_exception('Invalid decisione value');
             }

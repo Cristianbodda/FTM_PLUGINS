@@ -347,7 +347,8 @@ class sip_manager {
     // =========================================================================
 
     /**
-     * Create default action plan with 7 areas.
+     * Create default action plan with 12 areas (CI v2).
+     * Includes week_start/week_end, area_type, target_global.
      *
      * @param int $enrollmentid
      */
@@ -356,12 +357,46 @@ class sip_manager {
         $now = time();
         $areas = \local_ftm_sip_get_activation_areas();
 
+        // Hardcoded IT strings to avoid [[missing_key]] if lang file is outdated on server.
+        $default_objectives = [
+            'target_companies'         => 'Creare e mantenere una lista esaustiva di aziende target',
+            'mandatory_searches'       => 'Aumentare il numero e la qualità delle ricerche di lavoro',
+            'search_channels'          => 'Aumentare i canali di ricerca utilizzati dalla PCI',
+            'social_network'           => 'Attivare e utilizzare LinkedIn, Facebook Lavoro, ecc.',
+            'personal_network'         => 'Attivare e monitorare la propria rete di contatti',
+            'targeted_applications'    => 'Aumentare il numero di candidature ad annunci mirati',
+            'unsolicited_applications' => 'Ampliare le opportunità tramite autocandidature',
+            'agencies_urc'             => 'Attivare nuove agenzie interinali e utilizzare Job-Room',
+            'interview_training'       => 'Prepararsi ai colloqui con simulazioni e feedback',
+            'stage_trials'             => 'Ottenere opportunità di stage o giorni di prova',
+            'strategy_improvement'     => "Migliorare progressivamente le strategie di ricerca d'impiego",
+            'growing_autonomy'         => 'Raggiungere piena autonomia nella gestione della ricerca di lavoro',
+        ];
+        $default_verifications = [
+            'target_companies'         => 'Numero aziende target identificate',
+            'mandatory_searches'       => 'Numero ricerche effettuate per settimana',
+            'search_channels'          => 'Numero canali attivati e utilizzati',
+            'social_network'           => 'Profili attivati e attività di ricerca sui social',
+            'personal_network'         => 'Numero contatti personali attivati',
+            'targeted_applications'    => 'Numero candidature inviate ad annunci mirati',
+            'unsolicited_applications' => 'Numero autocandidature inviate',
+            'agencies_urc'             => 'Numero agenzie contattate e iscrizioni attive',
+            'interview_training'       => 'Numero colloqui di prova effettuati',
+            'stage_trials'             => 'Numero stage/prove attivati',
+            'strategy_improvement'     => 'Valutazione coach settimanale (1-10)',
+            'growing_autonomy'         => 'Valutazione coach settimanale (1-10)',
+        ];
+
         foreach ($areas as $key => $area) {
             $record = new \stdClass();
             $record->enrollmentid = $enrollmentid;
             $record->area_key = $key;
-            $record->objective = get_string($area['objective'], 'local_ftm_sip');
-            $record->verification = get_string($area['verify'], 'local_ftm_sip');
+            $record->week_start = $area['week_start'] ?? 1;
+            $record->week_end = $area['week_end'] ?? 10;
+            $record->area_type = $area['type'] ?? 'quantitative';
+            $record->target_global = $area['default_target'] ?? 0;
+            $record->objective = $default_objectives[$key] ?? '';
+            $record->verification = $default_verifications[$key] ?? '';
             $record->timecreated = $now;
             $record->timemodified = $now;
             $DB->insert_record('local_ftm_sip_action_plan', $record);
@@ -898,5 +933,526 @@ class sip_manager {
         $data->kpi = self::get_kpi_summary($enrollment->id);
 
         return $data;
+    }
+
+    // =========================================================================
+    // CI v2.0 — ACCEPTANCE FORM OPERATIONS
+    // =========================================================================
+
+    /**
+     * Create default acceptance records for 12 areas.
+     *
+     * @param int $enrollmentid
+     */
+    public static function create_default_acceptance($enrollmentid) {
+        global $DB;
+        $now = time();
+        $areas = \local_ftm_sip_get_activation_areas();
+
+        foreach ($areas as $key => $area) {
+            if ($DB->record_exists('local_ftm_sip_acceptance', ['enrollmentid' => $enrollmentid, 'area_key' => $key])) {
+                continue;
+            }
+            $record = new \stdClass();
+            $record->enrollmentid = $enrollmentid;
+            $record->area_key = $key;
+            $record->accepted = 0;
+            $record->baseline_value = 0;
+            $record->target_value = $area['default_target'] ?? 0;
+            $record->actual_value = 0;
+            $record->timecreated = $now;
+            $record->timemodified = $now;
+            $DB->insert_record('local_ftm_sip_acceptance', $record);
+        }
+    }
+
+    /**
+     * Get acceptance form data for an enrollment.
+     *
+     * @param int $enrollmentid
+     * @return array area_key => record
+     */
+    public static function get_acceptance($enrollmentid) {
+        global $DB;
+        $records = $DB->get_records('local_ftm_sip_acceptance', ['enrollmentid' => $enrollmentid]);
+        $result = [];
+        foreach ($records as $r) {
+            $result[$r->area_key] = $r;
+        }
+        return $result;
+    }
+
+    /**
+     * Save a single acceptance item.
+     *
+     * @param int $acceptanceid Record ID
+     * @param int $accepted 0 or 1
+     * @param int $baseline Situazione partenza
+     * @param int $target Obiettivo 10 settimane
+     */
+    /**
+     * Salva un item acceptance.
+     * baseline_total / target_total = totale 10 settimane (es. 30 aziende, 12 lettere)
+     * baseline_week / target_week = valore per settimana (decisi separatamente, non calcolati)
+     *
+     * @param int $acceptanceid
+     * @param int $accepted 0/1
+     * @param float $baseline_total Sit. partenza (totale 10 sett.)
+     * @param float $target_total Obiettivo (totale 10 sett.)
+     * @param float $baseline_week Sit. partenza (per settimana)
+     * @param float $target_week Obiettivo (per settimana)
+     */
+    public static function save_acceptance_item($acceptanceid, $accepted, $baseline_total, $target_total,
+                                                 $baseline_week = 0, $target_week = 0) {
+        global $DB;
+        $record = new \stdClass();
+        $record->id = $acceptanceid;
+        $record->accepted = $accepted ? 1 : 0;
+        $record->baseline_value = max(0, (float)$baseline_total);
+        $record->target_value = max(0, (float)$target_total);
+        $record->baseline_per_week = max(0, (float)$baseline_week);
+        $record->target_per_week = max(0, (float)$target_week);
+        $record->timemodified = time();
+        $DB->update_record('local_ftm_sip_acceptance', $record);
+
+        // Propaga al Piano d'Azione: target_global = target totale (NO moltiplicazione).
+        $accrow = $DB->get_record('local_ftm_sip_acceptance', ['id' => $acceptanceid], 'enrollmentid, area_key');
+        if ($accrow) {
+            self::sync_acceptance_to_action_plan_area(
+                (int) $accrow->enrollmentid,
+                $accrow->area_key,
+                (float) $record->baseline_value,
+                (float) $record->target_value,
+                (float) $record->baseline_per_week,
+                (float) $record->target_per_week
+            );
+        }
+    }
+
+    /**
+     * Propaga i valori acceptance al action_plan corrispondente.
+     * target_global = target_total (deciso dal coach, NO calcoli).
+     *
+     * @param int $enrollmentid
+     * @param string $area_key
+     * @param float $baseline_total
+     * @param float $target_total
+     * @param float $baseline_week
+     * @param float $target_week
+     */
+    public static function sync_acceptance_to_action_plan_area($enrollmentid, $area_key,
+                                                                $baseline_total, $target_total,
+                                                                $baseline_week = 0, $target_week = 0) {
+        global $DB;
+
+        $now = time();
+        $target_global = (int) round($target_total);
+
+        $existing = $DB->get_record('local_ftm_sip_action_plan', [
+            'enrollmentid' => $enrollmentid,
+            'area_key' => $area_key,
+        ]);
+
+        // Componi testo obiettivo descrittivo.
+        $objparts = [];
+        if ($target_total > 0) {
+            $objparts[] = 'Obiettivo: ' . self::fmt_num($target_total) . ' in 10 settimane';
+        }
+        if ($target_week > 0) {
+            $objparts[] = '(' . self::fmt_num($target_week) . '/sett)';
+        }
+        if ($baseline_total > 0 || $baseline_week > 0) {
+            $bp = [];
+            if ($baseline_total > 0) {
+                $bp[] = self::fmt_num($baseline_total) . ' totali';
+            }
+            if ($baseline_week > 0) {
+                $bp[] = self::fmt_num($baseline_week) . '/sett';
+            }
+            $objparts[] = 'Partenza: ' . implode(', ', $bp);
+        }
+        $objtext = implode(' ', $objparts);
+
+        if ($existing) {
+            $update = new \stdClass();
+            $update->id = $existing->id;
+            $update->target_global = $target_global;
+            // Precompila objective solo se vuoto (per non sovrascrivere note coach).
+            if (empty(trim((string) ($existing->objective ?? '')))) {
+                $update->objective = $objtext;
+            }
+            $update->timemodified = $now;
+            $DB->update_record('local_ftm_sip_action_plan', $update);
+        } else {
+            $rec = new \stdClass();
+            $rec->enrollmentid = $enrollmentid;
+            $rec->area_key = $area_key;
+            $rec->level_initial = null;
+            $rec->level_current = null;
+            $rec->target_global = $target_global;
+            $rec->objective = $objtext;
+            $rec->actions_agreed = null;
+            $rec->verification = null;
+            $rec->notes = null;
+            $rec->week_start = 1;
+            $rec->week_end = LOCAL_FTM_SIP_TOTAL_WEEKS;
+            $rec->area_type = 'quantitative';
+            $rec->timecreated = $now;
+            $rec->timemodified = $now;
+            $DB->insert_record('local_ftm_sip_action_plan', $rec);
+        }
+    }
+
+    /**
+     * Format helper: rimuove decimali se sono zero (es. 5.00 → 5, 1.50 → 1.5).
+     */
+    private static function fmt_num($n) {
+        $n = (float) $n;
+        return ($n == (int) $n) ? (string)(int) $n : rtrim(rtrim(number_format($n, 2, '.', ''), '0'), '.');
+    }
+
+    /**
+     * Sync esplicito di tutti gli acceptance items di un enrollment al action_plan.
+     *
+     * @param int $enrollmentid
+     * @return int Numero righe sincronizzate
+     */
+    public static function sync_all_acceptance_to_action_plan($enrollmentid) {
+        global $DB;
+        $items = $DB->get_records('local_ftm_sip_acceptance', ['enrollmentid' => $enrollmentid]);
+        $count = 0;
+        foreach ($items as $item) {
+            self::sync_acceptance_to_action_plan_area(
+                $enrollmentid,
+                $item->area_key,
+                (float) ($item->baseline_value ?? 0),
+                (float) ($item->target_value ?? 0),
+                (float) ($item->baseline_per_week ?? 0),
+                (float) ($item->target_per_week ?? 0)
+            );
+            $count++;
+        }
+        return $count;
+    }
+
+    /**
+     * Update actual_value for an acceptance item (called when tracking entries change).
+     *
+     * @param int $enrollmentid
+     * @param string $area_key
+     */
+    public static function update_acceptance_actual($enrollmentid, $area_key) {
+        global $DB;
+        $count = $DB->count_records('local_ftm_sip_search_entries', [
+            'enrollmentid' => $enrollmentid,
+            'area_key' => $area_key,
+        ]);
+        $acceptance = $DB->get_record('local_ftm_sip_acceptance', [
+            'enrollmentid' => $enrollmentid,
+            'area_key' => $area_key,
+        ]);
+        if ($acceptance) {
+            $DB->set_field('local_ftm_sip_acceptance', 'actual_value', $count, ['id' => $acceptance->id]);
+        }
+    }
+
+    // =========================================================================
+    // CI v2.0 — SEARCH ENTRIES (WEEKLY TRACKING)
+    // =========================================================================
+
+    /**
+     * Create a search/contact entry for a specific area and week.
+     *
+     * @param int $enrollmentid
+     * @param string $area_key
+     * @param int $sip_week
+     * @param array $data Entry data fields
+     * @param int $addedby User ID
+     * @return int New record ID
+     */
+    public static function create_search_entry($enrollmentid, $area_key, $sip_week, array $data, $addedby) {
+        global $DB;
+        $now = time();
+
+        $record = new \stdClass();
+        $record->enrollmentid = $enrollmentid;
+        $record->area_key = $area_key;
+        $record->sip_week = max(1, min(10, (int)$sip_week));
+        $record->entry_date = !empty($data['entry_date']) ? (int)$data['entry_date'] : $now;
+        $record->company_name = $data['company_name'] ?? null;
+        $record->company_address = $data['company_address'] ?? null;
+        $record->company_email = $data['company_email'] ?? null;
+        $record->company_phone = $data['company_phone'] ?? null;
+        $record->contact_person = $data['contact_person'] ?? null;
+        $record->position = $data['position'] ?? null;
+        $record->urc_assigned = !empty($data['urc_assigned']) ? 1 : 0;
+        $record->occupation_fulltime = !empty($data['occupation_fulltime']) ? 1 : 0;
+        $record->occupation_parttime = !empty($data['occupation_parttime']) ? 1 : 0;
+        $record->method_letter = !empty($data['method_letter']) ? 1 : 0;
+        $record->method_person = !empty($data['method_person']) ? 1 : 0;
+        $record->method_phone = !empty($data['method_phone']) ? 1 : 0;
+        $record->result = $data['result'] ?? 'pending';
+        $record->result_reason = $data['result_reason'] ?? null;
+        $record->channel = $data['channel'] ?? null;
+        $record->notes = $data['notes'] ?? null;
+        $record->addedby = $addedby;
+        $record->timecreated = $now;
+        $record->timemodified = $now;
+
+        // Auto-add company to shared registry.
+        if (!empty($record->company_name)) {
+            $companyid = self::find_or_create_company(
+                $record->company_name,
+                $addedby,
+                null,
+                null
+            );
+            $record->companyid = $companyid;
+
+            // Update company details if provided.
+            if ($companyid && (!empty($record->company_email) || !empty($record->company_phone) || !empty($record->company_address))) {
+                $company = $DB->get_record('local_ftm_sip_companies', ['id' => $companyid]);
+                $updated = false;
+                if (empty($company->email) && !empty($record->company_email)) {
+                    $company->email = $record->company_email;
+                    $updated = true;
+                }
+                if (empty($company->phone) && !empty($record->company_phone)) {
+                    $company->phone = $record->company_phone;
+                    $updated = true;
+                }
+                if (empty($company->address) && !empty($record->company_address)) {
+                    $company->address = $record->company_address;
+                    $updated = true;
+                }
+                if (!empty($record->contact_person) && empty($company->contact_person)) {
+                    $company->contact_person = $record->contact_person;
+                    $updated = true;
+                }
+                if ($updated) {
+                    $company->timemodified = $now;
+                    $company->last_contact_date = $now;
+                    $DB->update_record('local_ftm_sip_companies', $company);
+                }
+            }
+        }
+
+        $id = $DB->insert_record('local_ftm_sip_search_entries', $record);
+
+        // Update acceptance actual count.
+        self::update_acceptance_actual($enrollmentid, $area_key);
+
+        return $id;
+    }
+
+    /**
+     * Get search entries for an enrollment, optionally filtered by area and week.
+     *
+     * @param int $enrollmentid
+     * @param string $area_key Optional
+     * @param int $sip_week Optional
+     * @return array
+     */
+    public static function get_search_entries($enrollmentid, $area_key = '', $sip_week = 0) {
+        global $DB;
+        $conditions = ['enrollmentid' => $enrollmentid];
+        if (!empty($area_key)) {
+            $conditions['area_key'] = $area_key;
+        }
+        if ($sip_week > 0) {
+            $conditions['sip_week'] = $sip_week;
+        }
+        return $DB->get_records('local_ftm_sip_search_entries', $conditions, 'sip_week ASC, entry_date ASC');
+    }
+
+    /**
+     * Get weekly summary counts for all areas.
+     *
+     * @param int $enrollmentid
+     * @return array area_key => [week1 => count, week2 => count, ...]
+     */
+    public static function get_weekly_summary($enrollmentid) {
+        global $DB;
+        $sql = "SELECT area_key, sip_week, COUNT(*) AS cnt
+                FROM {local_ftm_sip_search_entries}
+                WHERE enrollmentid = ?
+                GROUP BY area_key, sip_week
+                ORDER BY area_key, sip_week";
+        $rs = $DB->get_recordset_sql($sql, [$enrollmentid]);
+
+        $summary = [];
+        foreach ($rs as $r) {
+            $summary[$r->area_key][$r->sip_week] = (int)$r->cnt;
+        }
+        $rs->close();
+        return $summary;
+    }
+
+    /**
+     * Delete a search entry.
+     *
+     * @param int $entryid
+     * @param int $enrollmentid For security check
+     */
+    public static function delete_search_entry($entryid, $enrollmentid) {
+        global $DB;
+        $entry = $DB->get_record('local_ftm_sip_search_entries', ['id' => $entryid, 'enrollmentid' => $enrollmentid]);
+        if ($entry) {
+            $DB->delete_records('local_ftm_sip_search_entries', ['id' => $entryid]);
+            self::update_acceptance_actual($enrollmentid, $entry->area_key);
+        }
+    }
+
+    // =========================================================================
+    // CI v2.0 — COACH WEEKLY EVALUATIONS (STRATEGY + AUTONOMY)
+    // =========================================================================
+
+    /**
+     * Save or update a weekly coach evaluation (1-10).
+     *
+     * @param int $enrollmentid
+     * @param string $area_key 'strategy_improvement' or 'growing_autonomy'
+     * @param int $sip_week 1-10
+     * @param int $score 1-10
+     * @param int $coachid
+     * @param string $notes Optional
+     */
+    public static function save_coach_eval($enrollmentid, $area_key, $sip_week, $score, $coachid, $notes = '') {
+        global $DB;
+        $now = time();
+        $score = max(1, min(10, (int)$score));
+
+        $existing = $DB->get_record('local_ftm_sip_coach_evals', [
+            'enrollmentid' => $enrollmentid,
+            'area_key' => $area_key,
+            'sip_week' => $sip_week,
+        ]);
+
+        if ($existing) {
+            $existing->score = $score;
+            $existing->coachid = $coachid;
+            $existing->notes = $notes;
+            $existing->timemodified = $now;
+            $DB->update_record('local_ftm_sip_coach_evals', $existing);
+        } else {
+            $record = new \stdClass();
+            $record->enrollmentid = $enrollmentid;
+            $record->area_key = $area_key;
+            $record->sip_week = $sip_week;
+            $record->score = $score;
+            $record->coachid = $coachid;
+            $record->notes = $notes;
+            $record->timecreated = $now;
+            $record->timemodified = $now;
+            $DB->insert_record('local_ftm_sip_coach_evals', $record);
+        }
+    }
+
+    /**
+     * Get all coach evaluations for an enrollment.
+     *
+     * @param int $enrollmentid
+     * @return array area_key => [week => score]
+     */
+    public static function get_coach_evals($enrollmentid) {
+        global $DB;
+        $records = $DB->get_records('local_ftm_sip_coach_evals', ['enrollmentid' => $enrollmentid]);
+        $result = [];
+        foreach ($records as $r) {
+            $result[$r->area_key][$r->sip_week] = (object)[
+                'id' => $r->id,
+                'score' => (int)$r->score,
+                'notes' => $r->notes,
+                'coachid' => $r->coachid,
+            ];
+        }
+        return $result;
+    }
+
+    // =========================================================================
+    // CI v2.0 — SEARCH PROOFS (PDF UPLOAD)
+    // =========================================================================
+
+    /**
+     * Save a search proof (PDF Job-Room upload) reference.
+     *
+     * @param int $enrollmentid
+     * @param string $month_year Format: YYYY-MM
+     * @param string $filename
+     * @param string $contenthash Moodle file contenthash
+     * @param int $filesize
+     * @param int $uploadedby
+     * @return int
+     */
+    public static function save_search_proof($enrollmentid, $month_year, $filename, $contenthash, $filesize, $uploadedby) {
+        global $DB;
+        $record = new \stdClass();
+        $record->enrollmentid = $enrollmentid;
+        $record->month_year = $month_year;
+        $record->filename = $filename;
+        $record->contenthash = $contenthash;
+        $record->filesize = $filesize;
+        $record->uploadedby = $uploadedby;
+        $record->timecreated = time();
+        return $DB->insert_record('local_ftm_sip_search_proofs', $record);
+    }
+
+    /**
+     * Get search proofs for an enrollment.
+     *
+     * @param int $enrollmentid
+     * @return array
+     */
+    public static function get_search_proofs($enrollmentid) {
+        global $DB;
+        return $DB->get_records('local_ftm_sip_search_proofs', ['enrollmentid' => $enrollmentid], 'month_year DESC');
+    }
+
+    // =========================================================================
+    // CI v2.0 — ENHANCED KPI SUMMARY
+    // =========================================================================
+
+    /**
+     * Get enhanced KPI summary including v2 tracking data.
+     *
+     * @param int $enrollmentid
+     * @return object
+     */
+    public static function get_kpi_summary_v2($enrollmentid) {
+        global $DB;
+
+        // Base KPI (from original tables).
+        $kpi = self::get_kpi_summary($enrollmentid);
+
+        // v2 tracking counts per area.
+        $weekly = self::get_weekly_summary($enrollmentid);
+        $kpi->tracking_per_area = $weekly;
+
+        // Total entries across all areas.
+        $kpi->total_entries = $DB->count_records('local_ftm_sip_search_entries', ['enrollmentid' => $enrollmentid]);
+
+        // Acceptance data.
+        $acceptance = self::get_acceptance($enrollmentid);
+        $kpi->acceptance_accepted = 0;
+        $kpi->acceptance_total = count($acceptance);
+        $kpi->acceptance_progress = [];
+        foreach ($acceptance as $key => $a) {
+            if ($a->accepted) {
+                $kpi->acceptance_accepted++;
+            }
+            $kpi->acceptance_progress[$key] = (object)[
+                'target' => (int)$a->target_value,
+                'actual' => (int)$a->actual_value,
+                'pct' => $a->target_value > 0 ? min(100, round(($a->actual_value / $a->target_value) * 100)) : 0,
+            ];
+        }
+
+        // Coach evaluations.
+        $kpi->coach_evals = self::get_coach_evals($enrollmentid);
+
+        // Search proofs count.
+        $kpi->search_proofs = $DB->count_records('local_ftm_sip_search_proofs', ['enrollmentid' => $enrollmentid]);
+
+        return $kpi;
     }
 }

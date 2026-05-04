@@ -40,16 +40,21 @@ class dashboard_helper {
     public function get_my_students($courseid = 0, $colorfilter = '', $weekfilter = 0, $statusfilter = '', $search = '', $sort = 'recent') {
         global $CFG;
 
-        // Site admins see ALL students from all coaches
+        // Site admins AND managers (segreteria) see ALL students from all coaches.
         $is_admin = is_siteadmin($this->coachid);
+        $is_manager = has_capability('local/coachmanager:managejobs', \context_system::instance(), $this->coachid);
+        $see_all = $is_admin || $is_manager;
 
-        if ($is_admin) {
+        if ($see_all) {
+            // Admin/segreteria: show ALL students with coaching OR with CPURC record.
             $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, u.email,
                            u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename
                     FROM {user} u
-                    JOIN {local_student_coaching} sc ON sc.userid = u.id
-                    WHERE sc.status = 'active'
-                    AND u.deleted = 0";
+                    WHERE u.deleted = 0
+                    AND (
+                        EXISTS (SELECT 1 FROM {local_student_coaching} sc WHERE sc.userid = u.id AND sc.status = 'active')
+                        OR EXISTS (SELECT 1 FROM {local_ftm_cpurc_students} cs WHERE cs.userid = u.id AND (cs.status IS NULL OR cs.status != 'cancelled'))
+                    )";
             $params = [];
         } else {
             $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, u.email,
@@ -144,16 +149,45 @@ class dashboard_helper {
                     return strcasecmp($a->lastname . $a->firstname, $b->lastname . $b->firstname);
                 });
                 break;
-            default:
-                // Default: recent first.
-                usort($students_arr, function($a, $b) {
+            case 'group':
+                // Group by color/week: same group together, then alphabetical within group.
+                $color_order = ['giallo' => 1, 'grigio' => 2, 'rosso' => 3, 'marrone' => 4, 'viola' => 5,
+                                'blu' => 6, 'verde' => 7, 'arancione' => 8];
+                usort($students_arr, function($a, $b) use ($color_order) {
+                    $ca = $color_order[$a->group_color ?? ''] ?? 99;
+                    $cb = $color_order[$b->group_color ?? ''] ?? 99;
+                    if ($ca !== $cb) return $ca - $cb;
+                    // Same color: sort by week (most recent first).
                     $wa = $a->current_week ?? 99;
                     $wb = $b->current_week ?? 99;
-                    if ($wa === $wb) {
-                        return strcasecmp($a->lastname, $b->lastname);
-                    }
-                    return $wa - $wb;
+                    if ($wa !== $wb) return $wa - $wb;
+                    return strcasecmp($a->lastname, $b->lastname);
                 });
+                break;
+            default:
+                // Default: group by color for managers/admin, recent for coaches.
+                if ($see_all) {
+                    $color_order_def = ['giallo' => 1, 'grigio' => 2, 'rosso' => 3, 'marrone' => 4, 'viola' => 5,
+                                        'blu' => 6, 'verde' => 7, 'arancione' => 8];
+                    usort($students_arr, function($a, $b) use ($color_order_def) {
+                        $ca = $color_order_def[$a->group_color ?? ''] ?? 99;
+                        $cb = $color_order_def[$b->group_color ?? ''] ?? 99;
+                        if ($ca !== $cb) return $ca - $cb;
+                        $wa = $a->current_week ?? 99;
+                        $wb = $b->current_week ?? 99;
+                        if ($wa !== $wb) return $wa - $wb;
+                        return strcasecmp($a->lastname, $b->lastname);
+                    });
+                } else {
+                    usort($students_arr, function($a, $b) {
+                        $wa = $a->current_week ?? 99;
+                        $wb = $b->current_week ?? 99;
+                        if ($wa === $wb) {
+                            return strcasecmp($a->lastname, $b->lastname);
+                        }
+                        return $wa - $wb;
+                    });
+                }
                 break;
         }
 
@@ -206,6 +240,12 @@ class dashboard_helper {
         // SIP enrollment data.
         $student->sip_enrolled = $this->get_student_sip_enrolled($student->id);
         $student->sip_data = $this->get_student_sip_data($student->id);
+
+        // CI eligibility assessment exists (for button color).
+        $student->has_eligibility = false;
+        if ($this->db->get_manager()->table_exists('local_ftm_sip_eligibility')) {
+            $student->has_eligibility = $this->db->record_exists('local_ftm_sip_eligibility', ['userid' => $student->id]);
+        }
     }
 
     /**

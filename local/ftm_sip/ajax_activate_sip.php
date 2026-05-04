@@ -26,6 +26,19 @@ try {
     // Validate user exists.
     $user = $DB->get_record('user', ['id' => $userid, 'deleted' => 0], '*', MUST_EXIST);
 
+    // Draft fields (sempre salvati, anche senza attivazione).
+    // Permettono al coach di tornare e ritrovare quanto scritto.
+    $draft_motivation = trim(optional_param('motivation', '', PARAM_TEXT));
+    $draft_ladi_indemnity = optional_param('ladi_indemnity', 0, PARAM_INT);
+    $draft_date_start_str = optional_param('date_start', '', PARAM_TEXT);
+    $draft_date_start_ts = null;
+    if (!empty($draft_date_start_str)) {
+        $ts = strtotime($draft_date_start_str);
+        if ($ts !== false) {
+            $draft_date_start_ts = $ts;
+        }
+    }
+
     // -------------------------------------------------------
     // Save eligibility assessment - Griglia Valutazione PCI.
     // 6 numeric criteria (1-5) + totale + decisione + note.
@@ -44,7 +57,7 @@ try {
     $now = time();
     $eligibility_id = null;
 
-    // Only save if at least one criterion has been filled.
+    // Save if there's ANY data: criteria, draft fields, note, recommendation, referral.
     $criteria = [$motivazione, $chiarezza_obiettivo, $occupabilita, $autonomia, $bisogno_coaching, $comportamento];
     $has_criteria = false;
     foreach ($criteria as $c) {
@@ -53,20 +66,37 @@ try {
             break;
         }
     }
+    $has_any_data = $has_criteria
+        || $draft_motivation !== ''
+        || $draft_ladi_indemnity > 0
+        || $draft_date_start_ts !== null
+        || $note !== ''
+        || $referral_detail !== ''
+        || $coach_recommendation !== '';
 
-    if ($has_criteria) {
-        // Validate each criterion is between 1 and 5.
+    if ($has_any_data) {
+        // Validate each criterion is between 1 and 6.
         foreach ($criteria as $c) {
-            if ($c > 0 && ($c < 1 || $c > 5)) {
-                throw new invalid_parameter_exception('Each criterion must be between 1 and 5');
+            if ($c > 0 && ($c < 1 || $c > 6)) {
+                throw new invalid_parameter_exception('Each criterion must be between 1 and 6');
             }
         }
 
-        // Calculate totale (sum of all 6 criteria).
+        // Calculate totale (sum of all 6 criteria, max 36).
         $totale = array_sum($criteria);
 
+        // Auto-determine decisione based on totale (semaphore system).
+        // 0-20: non_idoneo (rosso), 21-28: idoneo (arancione), 29-36: idoneo_prioritario (verde).
+        if ($totale >= 29) {
+            $decisione = 'idoneo_prioritario';
+        } else if ($totale >= 21) {
+            $decisione = 'idoneo';
+        } else {
+            $decisione = 'non_idoneo';
+        }
+
         // Validate decisione.
-        $valid_decisioni = ['idoneo', 'non_idoneo', 'pending'];
+        $valid_decisioni = ['idoneo', 'idoneo_prioritario', 'non_idoneo', 'pending'];
         if (!in_array($decisione, $valid_decisioni)) {
             $decisione = 'pending';
         }
@@ -93,6 +123,9 @@ try {
             $existing_elig->coach_recommendation = $coach_recommendation ?: null;
             $existing_elig->referral_detail = $referral_detail ?: null;
             $existing_elig->note = $note ?: null;
+            $existing_elig->draft_motivation = $draft_motivation !== '' ? $draft_motivation : null;
+            $existing_elig->draft_ladi_indemnity = $draft_ladi_indemnity > 0 ? $draft_ladi_indemnity : null;
+            $existing_elig->draft_date_start = $draft_date_start_ts;
             $existing_elig->timemodified = $now;
 
             $DB->update_record('local_ftm_sip_eligibility', $existing_elig);
@@ -112,6 +145,9 @@ try {
             $elig_record->coach_recommendation = $coach_recommendation ?: null;
             $elig_record->referral_detail = $referral_detail ?: null;
             $elig_record->note = $note ?: null;
+            $elig_record->draft_motivation = $draft_motivation !== '' ? $draft_motivation : null;
+            $elig_record->draft_ladi_indemnity = $draft_ladi_indemnity > 0 ? $draft_ladi_indemnity : null;
+            $elig_record->draft_date_start = $draft_date_start_ts;
             $elig_record->approved = 0;
             $elig_record->timecreated = $now;
             $elig_record->timemodified = $now;

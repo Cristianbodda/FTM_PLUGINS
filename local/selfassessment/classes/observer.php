@@ -116,23 +116,34 @@ class observer {
         // Get student's primary sector (if set)
         $primarySector = self::get_student_primary_sector($userid);
 
+        // Filtro settore con fallback: se il settore primario scarta TUTTE le competenze
+        // del quiz (es. studente ELETTRICITA che fa quiz AUTOMAZIONE per riconversione),
+        // usa tutte le competenze trovate invece di lasciare lo studente a zero.
+        $genericSectors = ['GEN', 'GENERICO', 'GENERICHE', 'TRASVERSALI'];
+        $matched = [];
+        $unmatched = [];
+        foreach ($mappings as $mapping) {
+            if (empty($primarySector)) {
+                $matched[] = $mapping;
+                continue;
+            }
+            $competencySector = self::get_competency_sector($mapping->competencyid);
+            if (empty($competencySector)
+                || $competencySector === $primarySector
+                || in_array($competencySector, $genericSectors)) {
+                $matched[] = $mapping;
+            } else {
+                $unmatched[] = $mapping;
+            }
+        }
+        $effective_mappings = !empty($matched) ? $matched : $unmatched;
+
         // Assegna ogni competenza
         $now = time();
         $assigned = 0;
 
-        foreach ($mappings as $mapping) {
+        foreach ($effective_mappings as $mapping) {
             $competencyid = $mapping->competencyid;
-
-            // Filtro settore: solo competenze del settore primario + generiche
-            if (!empty($primarySector)) {
-                $competencySector = self::get_competency_sector($competencyid);
-                $genericSectors = ['GEN', 'GENERICO', 'GENERICHE', 'TRASVERSALI'];
-                if (!empty($competencySector)
-                    && $competencySector !== $primarySector
-                    && !in_array($competencySector, $genericSectors)) {
-                    continue;
-                }
-            }
 
             // Verifica se già assegnata
             $exists = $DB->record_exists('local_selfassessment_assign', [

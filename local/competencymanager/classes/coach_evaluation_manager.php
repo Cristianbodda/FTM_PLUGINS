@@ -475,37 +475,49 @@ class coach_evaluation_manager {
     public static function can_edit(int $evaluationid, ?int $userid = null): bool {
         global $USER;
 
-        $userid = $userid ?? $USER->id;
+        $isCurrentUser = ($userid === null || (int)$userid === (int)$USER->id);
+        $userid = (int)($userid ?? $USER->id);
         $evaluation = self::get_evaluation($evaluationid);
 
         if (!$evaluation) {
             return false;
         }
 
-        // Signed evaluations cannot be edited
+        // Siteadmin check (senza userid per usare la session cache Moodle)
+        if ($isCurrentUser && is_siteadmin()) {
+            return true;
+        }
+        if (!$isCurrentUser && is_siteadmin($userid)) {
+            return true;
+        }
+
+        // Signed evaluations cannot be edited (by non-admins)
         if ($evaluation->status === self::STATUS_SIGNED) {
             return false;
         }
 
-        // Site admins can always edit.
-        if (is_siteadmin($userid)) {
-            return true;
-        }
-
         // Owner can always edit draft/completed
-        if ($evaluation->coachid == $userid) {
+        if ((int)$evaluation->coachid === $userid) {
             return true;
         }
 
-        // Users with editallevaluations capability can edit (with tracking)
+        // Capability checks: per l'utente corrente non passare userid
+        // (evita bug Moodle con has_capability + userid esplicito vs session cache)
         $context = \context_system::instance();
-        if (has_capability('local/competencymanager:editallevaluations', $context, $userid)) {
-            return true;
-        }
-
-        // Users with evaluate capability can also edit (coach, segreteria)
-        if (has_capability('local/competencymanager:evaluate', $context, $userid)) {
-            return true;
+        if ($isCurrentUser) {
+            if (has_capability('local/competencymanager:editallevaluations', $context)) {
+                return true;
+            }
+            if (has_capability('local/competencymanager:evaluate', $context)) {
+                return true;
+            }
+        } else {
+            if (has_capability('local/competencymanager:editallevaluations', $context, $userid)) {
+                return true;
+            }
+            if (has_capability('local/competencymanager:evaluate', $context, $userid)) {
+                return true;
+            }
         }
 
         return false;
@@ -521,32 +533,49 @@ class coach_evaluation_manager {
     public static function can_view(int $evaluationid, ?int $userid = null): bool {
         global $USER;
 
-        $userid = $userid ?? $USER->id;
+        $isCurrentUser = ($userid === null || (int)$userid === (int)$USER->id);
+        $userid = (int)($userid ?? $USER->id);
         $evaluation = self::get_evaluation($evaluationid);
 
         if (!$evaluation) {
             return false;
         }
 
-        // Site admins can always view.
-        if (is_siteadmin($userid)) {
+        // Siteadmin check (senza userid per usare la session cache Moodle)
+        if ($isCurrentUser && is_siteadmin()) {
+            return true;
+        }
+        if (!$isCurrentUser && is_siteadmin($userid)) {
             return true;
         }
 
         // Owner can always view
-        if ($evaluation->coachid == $userid) {
+        if ((int)$evaluation->coachid === $userid) {
             return true;
         }
 
         // Student can view if authorized
-        if ($evaluation->studentid == $userid && $evaluation->student_can_view) {
+        if ((int)$evaluation->studentid === $userid && $evaluation->student_can_view) {
             return true;
         }
 
-        // Users with viewallevaluations capability can view
+        // Capability checks: per l'utente corrente non passare userid
         $context = \context_system::instance();
-        if (has_capability('local/competencymanager:viewallevaluations', $context, $userid)) {
-            return true;
+        if ($isCurrentUser) {
+            if (has_capability('local/competencymanager:viewallevaluations', $context)) {
+                return true;
+            }
+            // Chiunque abbia evaluate può vedere le valutazioni (coach, segreteria)
+            if (has_capability('local/competencymanager:evaluate', $context)) {
+                return true;
+            }
+        } else {
+            if (has_capability('local/competencymanager:viewallevaluations', $context, $userid)) {
+                return true;
+            }
+            if (has_capability('local/competencymanager:evaluate', $context, $userid)) {
+                return true;
+            }
         }
 
         return false;

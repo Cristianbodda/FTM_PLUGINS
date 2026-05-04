@@ -48,5 +48,28 @@
         <INDEX NAME="userid_uq" UNIQUE="true" FIELDS="userid"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="local_jobaida_interviews" COMMENT="Interview simulation sessions">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="User who did the simulation"/>
+        <FIELD NAME="job_ad" TYPE="text" NOTNULL="true" COMMENT="Job advertisement text"/>
+        <FIELD NAME="cv_text" TYPE="text" NOTNULL="true" COMMENT="CV text"/>
+        <FIELD NAME="language" TYPE="char" LENGTH="5" NOTNULL="true" DEFAULT="it"/>
+        <FIELD NAME="question_count" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" COMMENT="active, completed, evaluated"/>
+        <FIELD NAME="system_prompt" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="conversation" TYPE="text" NOTNULL="false" COMMENT="JSON array of messages"/>
+        <FIELD NAME="evaluation" TYPE="text" NOTNULL="false" COMMENT="JSON evaluation data"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_status_idx" UNIQUE="false" FIELDS="userid, status"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>

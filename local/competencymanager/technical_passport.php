@@ -702,25 +702,45 @@ if (!empty($needsAuto) || $showOverlay) {
 $coachEvalData = null;
 $coachRatingsAll = [];
 $coachEvalHeader = null;
-$needsCoach = array_intersect(['overlay_radar', 'coach_eval', 'dual_radar'], $enabledSections);
-if (!empty($needsCoach) || $showOverlay) {
+$needsCoach = array_intersect(['overlay_radar', 'coach_eval', 'dual_radar', 'dettagli'], $enabledSections);
+if (!empty($needsCoach) || $showOverlay || in_array('dettagli', $enabledSections)) {
     if ($dbman->table_exists('local_coach_evaluations')) {
+        // Include draft status — coaches edit inline without completing.
         $coachEvalHeader = $DB->get_record_sql(
             "SELECT e.id, e.coachid, e.status, e.evaluation_date, e.notes
                FROM {local_coach_evaluations} e
-              WHERE e.studentid = :sid AND e.status IN ('completed','signed')
+              WHERE e.studentid = :sid AND e.status IN ('completed','signed','draft')
               ORDER BY e.evaluation_date DESC
               LIMIT 1",
             ['sid' => $userid]
         );
         if ($coachEvalHeader && $dbman->table_exists('local_coach_eval_ratings')) {
-            $coachRatingsAll = $DB->get_records_sql(
+            // Base ratings (may be 0 if only edited via inline/history).
+            $baseRatings = $DB->get_records_sql(
                 "SELECT r.id, c.idnumber, r.competencyid, r.rating, r.notes
                    FROM {local_coach_eval_ratings} r
                    JOIN {competency} c ON c.id = r.competencyid
                   WHERE r.evaluationid = :eid",
                 ['eid' => $coachEvalHeader->id]
             );
+
+            // Override with actual values from history (inline edits save there).
+            if ($dbman->table_exists('local_coach_eval_history')) {
+                foreach ($baseRatings as &$br) {
+                    $lastHistory = $DB->get_record_sql(
+                        "SELECT new_value FROM {local_coach_eval_history}
+                          WHERE ratingid = :rid AND field_changed = 'rating'
+                          ORDER BY id DESC LIMIT 1",
+                        ['rid' => $br->id]
+                    );
+                    if ($lastHistory && $lastHistory->new_value !== null) {
+                        $br->rating = (int)$lastHistory->new_value;
+                    }
+                }
+                unset($br);
+            }
+
+            $coachRatingsAll = $baseRatings;
         }
     }
 }
@@ -781,7 +801,7 @@ if (($showOverlay || in_array('overlay_radar', $enabledSections) || in_array('du
             $areaCoachCount = 0;
             foreach ($area['competencies'] as $comp) {
                 $idnum = $comp['idnumber'] ?? '';
-                if (isset($coachRatingsKeyed[$idnum]) && $coachRatingsKeyed[$idnum]->rating > 0) {
+                if (isset($coachRatingsKeyed[$idnum])) {
                     $areaCoachSum += round(($coachRatingsKeyed[$idnum]->rating / 6) * 100, 1);
                     $areaCoachCount++;
                 }
@@ -793,6 +813,51 @@ if (($showOverlay || in_array('overlay_radar', $enabledSections) || in_array('du
             'label' => 'Valutazione Coach',
             'fill' => 'rgba(243,156,18,0.15)',
             'stroke' => '#f39c12',
+        ];
+    }
+}
+
+// --- Pre-build coach scores per area (for Dettaglio per Area section) ---
+// The REAL coach values are in local_compman_final_ratings (manual edits from
+// the student_report comparative table), NOT in local_coach_eval_ratings.
+// Filter by courseid to avoid bleeding records from other courses.
+$coachScorePerArea = [];
+if ($dbman->table_exists('local_compman_final_ratings') && !empty($areasData)) {
+    $finalRatings = $DB->get_records_sql(
+        "SELECT * FROM {local_compman_final_ratings}
+         WHERE studentid = :studentid AND courseid = :courseid AND method = :method",
+        ['studentid' => $userid, 'courseid' => $courseid, 'method' => 'coach_comp']
+    );
+
+    $finalByArea = [];
+    foreach ($finalRatings as $fr) {
+        // Use the sector stored in the record to reconstruct the same key format
+        // that passport_aggregate_by_area() uses (e.g. "AUTOMAZIONE_A").
+        $areaKey = strtoupper($fr->sector) . '_' . $fr->area_code;
+        $finalByArea[$areaKey] = (float)$fr->manual_value;
+    }
+
+    foreach ($areasData as $areaKey => $area) {
+        if (isset($finalByArea[$areaKey])) {
+            $pct = $finalByArea[$areaKey];
+            $coachScorePerArea[$areaKey] = [
+                'avg' => round(($pct / 100) * 6, 1),
+                'pct' => round($pct, 1),
+                'count' => 1,
+            ];
+        }
+    }
+}
+
+// --- Rebuild radar with coach scores from comparative table ---
+// If coach scores are available, use them for the radar instead of quiz scores.
+if (!empty($coachScorePerArea)) {
+    $radarItems = [];
+    foreach ($areasData as $areaKey => $area) {
+        $pct = isset($coachScorePerArea[$areaKey]) ? $coachScorePerArea[$areaKey]['pct'] : $area['percentage'];
+        $radarItems[] = [
+            'label' => $area['code'] . '. ' . $area['name'],
+            'value' => $pct,
         ];
     }
 }
@@ -809,9 +874,17 @@ foreach ($competencies as $comp) {
     if ($autoData && isset($autoData['data'][$idnum])) {
         $autoPct = $autoData['data'][$idnum]['percentage'];
     }
+    // Use description as name if shortname looks like an idnumber (e.g. AUTOMAZIONE_OA_H4).
+    $displayName = $comp['name'] ?? $idnum;
+    if (!empty($comp['description']) && (
+        $displayName === $idnum ||
+        preg_match('/^[A-Z]+_[A-Z]+_[A-Z0-9]+$/i', $displayName)
+    )) {
+        $displayName = mb_substr(strip_tags($comp['description']), 0, 100);
+    }
     $compDetails[] = [
         'idnumber' => $idnum,
-        'name' => $comp['name'] ?? $idnum,
+        'name' => $displayName,
         'shortname' => $comp['shortname'] ?? '',
         'area_code' => $areaInfo['code'],
         'area_name' => $areaInfo['name'],
@@ -1607,27 +1680,23 @@ echo $OUTPUT->header();
     <!-- Save feedback -->
     <div id="passport-save-feedback" class="passport-save-feedback no-print"></div>
 
-    <!-- Summary bar (always visible on screen) -->
-    <div class="passport-summary">
+    <!-- Summary bar — solo settore con selettore -->
+    <div class="passport-summary" style="justify-content:center;">
+        <?php if (!empty($sectorsFound) && count($sectorsFound) > 1): ?>
         <div class="passport-summary-item">
-            <div class="label">Aree</div>
-            <div class="value"><?php echo count($areasData); ?></div>
+            <div class="label">Settore</div>
+            <div class="value">
+                <select onchange="location.href='?userid=<?php echo $userid; ?>&courseid=<?php echo $courseid; ?>&cm_sector=' + this.value"
+                        style="font-size:1.1rem; font-weight:700; border:2px solid #c62828; border-radius:6px; padding:4px 10px; color:#c62828; background:#fff; cursor:pointer;">
+                    <?php foreach ($sectorsFound as $sf): ?>
+                    <option value="<?php echo s($sf); ?>" <?php echo (strcasecmp($effectiveSectorFilter, $sf) === 0 || $sectorDisplay === get_sector_display_name($sf)) ? 'selected' : ''; ?>>
+                        <?php echo s(get_sector_display_name($sf)); ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
         </div>
-        <div class="passport-summary-item">
-            <div class="label">Competenze</div>
-            <div class="value"><?php echo $summary['total_competencies']; ?></div>
-        </div>
-        <div class="passport-summary-item">
-            <div class="label">Risposte Corrette</div>
-            <div class="value"><?php echo $summary['correct_questions']; ?> / <?php echo $summary['total_questions']; ?></div>
-        </div>
-        <div class="passport-summary-item">
-            <div class="label">Punteggio Globale</div>
-            <div class="value" style="color: <?php
-                echo $overallPct >= 80 ? '#27ae60' : ($overallPct >= 60 ? '#3498db' : ($overallPct >= 40 ? '#f39c12' : '#c0392b'));
-            ?>;"><?php echo $overallPct; ?>%</div>
-        </div>
-        <?php if ($sectorDisplay): ?>
+        <?php elseif ($sectorDisplay): ?>
         <div class="passport-summary-item">
             <div class="label">Settore</div>
             <div class="value" style="font-size: 1.1rem;"><?php echo s($sectorDisplay); ?></div>
@@ -1644,89 +1713,16 @@ echo $OUTPUT->header();
         switch ($sectionKey):
 
         // ================================================================
-        // 1. VALUTAZIONE - Panoramica (summary stats)
+        // 1. VALUTAZIONE - NASCOSTA
         // ================================================================
-        case 'valutazione': ?>
-            <div class="passport-section" style="text-align:center;">
-                <h2>Panoramica Valutazione</h2>
-                <div style="display:flex; gap:30px; justify-content:center; flex-wrap:wrap; margin-bottom:15px;">
-                    <?php
-                    // Count areas by level.
-                    $levExcellent = $levGood = $levSuff = $levCrit = 0;
-                    foreach ($areasData as $a) {
-                        if ($a['percentage'] >= 80) $levExcellent++;
-                        else if ($a['percentage'] >= 60) $levGood++;
-                        else if ($a['percentage'] >= 40) $levSuff++;
-                        else $levCrit++;
-                    }
-                    ?>
-                    <div style="text-align:center;">
-                        <div style="font-size:2rem; font-weight:700; color:<?php echo $overallPct >= 80 ? '#27ae60' : ($overallPct >= 60 ? '#3498db' : ($overallPct >= 40 ? '#f39c12' : '#c0392b')); ?>;">
-                            <?php echo $overallPct; ?>%
-                        </div>
-                        <div style="font-size:0.8rem; color:#888; text-transform:uppercase;">Punteggio Globale</div>
-                    </div>
-                    <div style="text-align:center;">
-                        <div style="font-size:2rem; font-weight:700; color:#27ae60;"><?php echo $levExcellent; ?></div>
-                        <div style="font-size:0.8rem; color:#888; text-transform:uppercase;">Eccellenti (&ge;80%)</div>
-                    </div>
-                    <div style="text-align:center;">
-                        <div style="font-size:2rem; font-weight:700; color:#3498db;"><?php echo $levGood; ?></div>
-                        <div style="font-size:0.8rem; color:#888; text-transform:uppercase;">Buone (60-80%)</div>
-                    </div>
-                    <div style="text-align:center;">
-                        <div style="font-size:2rem; font-weight:700; color:#f39c12;"><?php echo $levSuff; ?></div>
-                        <div style="font-size:0.8rem; color:#888; text-transform:uppercase;">Sufficienti (40-60%)</div>
-                    </div>
-                    <div style="text-align:center;">
-                        <div style="font-size:2rem; font-weight:700; color:#c0392b;"><?php echo $levCrit; ?></div>
-                        <div style="font-size:0.8rem; color:#888; text-transform:uppercase;">Critiche (&lt;40%)</div>
-                    </div>
-                </div>
-                <?php if (!empty($radarItems)): ?>
-                    <?php echo passport_generate_svg_radar($radarItems, '', 400); ?>
-                <?php else: ?>
-                    <p style="color: #888;">Nessun dato quiz disponibile per questo studente.</p>
-                <?php endif; ?>
-            </div>
-        <?php break;
+        case 'valutazione':
+            break;
 
         // ================================================================
-        // 2. PROGRESSI - Certification progress bar
+        // 2. PROGRESSI - NASCOSTA
         // ================================================================
-        case 'progressi': ?>
-            <div class="passport-section">
-                <h2>Progressi Certificazione</h2>
-                <?php
-                $certCount = $inProgCount = $notStartCount = 0;
-                $totalComps = count($compDetails);
-                foreach ($compDetails as $cd) {
-                    if ($cd['quiz_pct'] >= 80) $certCount++;
-                    else if ($cd['quiz_pct'] > 0) $inProgCount++;
-                    else $notStartCount++;
-                }
-                $certPct = $totalComps > 0 ? round($certCount / $totalComps * 100, 1) : 0;
-                $inProgPct = $totalComps > 0 ? round($inProgCount / $totalComps * 100, 1) : 0;
-                $notStartPct = $totalComps > 0 ? round($notStartCount / $totalComps * 100, 1) : 0;
-                ?>
-                <div class="passport-progress-bar">
-                    <?php if ($certPct > 0): ?>
-                    <div class="progress-certified" style="width:<?php echo $certPct; ?>%;"><?php echo $certPct; ?>%</div>
-                    <?php endif; ?>
-                    <?php if ($inProgPct > 0): ?>
-                    <div class="progress-inprogress" style="width:<?php echo $inProgPct; ?>%;"><?php echo $inProgPct; ?>%</div>
-                    <?php endif; ?>
-                    <?php if ($notStartPct > 0): ?>
-                    <div class="progress-notstarted" style="width:<?php echo $notStartPct; ?>%;"><?php echo $notStartPct; ?>%</div>
-                    <?php endif; ?>
-                </div>
-                <div class="passport-progress-legend">
-                    <span><span class="dot" style="background:#27ae60;"></span> Certificato (&ge;80%): <?php echo $certCount; ?>/<?php echo $totalComps; ?></span>
-                    <span><span class="dot" style="background:#f39c12;"></span> In Corso (1-79%): <?php echo $inProgCount; ?>/<?php echo $totalComps; ?></span>
-                    <span><span class="dot" style="background:#c0392b;"></span> Non Iniziato (0%): <?php echo $notStartCount; ?>/<?php echo $totalComps; ?></span>
-                </div>
-            </div>
-        <?php break;
+        case 'progressi':
+            break;
 
         // ================================================================
         // 3. RADAR_AREE - Main radar chart (areas only)
@@ -1770,58 +1766,11 @@ echo $OUTPUT->header();
         <?php break;
 
         // ================================================================
-        // 5. PIANO - Action Plan grouped by level
+        // 5. PIANO - NASCOSTO (rimosso dalla visualizzazione e stampa)
         // ================================================================
-        case 'piano': ?>
-            <div class="passport-section">
-                <h2>Piano d'Azione</h2>
-                <?php
-                // Group competencies by level bands.
-                $planGroups = [
-                    'excellent' => ['label' => 'Eccellente (&ge;80%)', 'class' => 'level-excellent', 'items' => []],
-                    'good' => ['label' => 'Buono (60-80%)', 'class' => 'level-good', 'items' => []],
-                    'improve' => ['label' => 'Da Migliorare (30-60%)', 'class' => 'level-improve', 'items' => []],
-                    'critical' => ['label' => 'Critico (&lt;30%)', 'class' => 'level-critical', 'items' => []],
-                ];
-                foreach ($compDetails as $cd) {
-                    if ($cd['quiz_pct'] >= 80) $planGroups['excellent']['items'][] = $cd;
-                    else if ($cd['quiz_pct'] >= 60) $planGroups['good']['items'][] = $cd;
-                    else if ($cd['quiz_pct'] >= 30) $planGroups['improve']['items'][] = $cd;
-                    else $planGroups['critical']['items'][] = $cd;
-                }
-                foreach ($planGroups as $gKey => $group):
-                    if (empty($group['items'])) continue;
-                ?>
-                <div class="passport-plan-group">
-                    <h3 class="<?php echo $group['class']; ?>"><?php echo $group['label']; ?> (<?php echo count($group['items']); ?>)</h3>
-                    <table class="passport-table">
-                        <thead>
-                            <tr>
-                                <th>Area</th>
-                                <th>Competenza</th>
-                                <th style="text-align:center; width:80px;">Risposte</th>
-                                <th style="text-align:center; width:80px;">%</th>
-                                <th style="text-align:center; width:100px;">Livello</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($group['items'] as $item): ?>
-                            <tr>
-                                <td class="area-code"><?php echo s($item['area_code']); ?></td>
-                                <td><?php echo s($item['name']); ?></td>
-                                <td style="text-align:center;"><?php echo (int)$item['correct_questions']; ?>/<?php echo (int)$item['total_questions']; ?></td>
-                                <td style="text-align:center;">
-                                    <span class="pct-badge <?php echo passport_pct_class($item['quiz_pct']); ?>"><?php echo $item['quiz_pct']; ?>%</span>
-                                </td>
-                                <td style="text-align:center;"><?php echo passport_level_label($item['quiz_pct']); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        <?php break;
+        case 'piano':
+            // Sezione piano d'azione nascosta come richiesto.
+            break;
 
         // ================================================================
         // 6. DETTAGLI - Full competency table with comments
@@ -1834,30 +1783,32 @@ echo $OUTPUT->header();
                     <thead>
                         <tr>
                             <th>Area</th>
-                            <th style="width: 100px; text-align: center;">Competenze</th>
-                            <th style="width: 100px; text-align: center;">Risposte</th>
-                            <th style="width: 100px; text-align: center;">Punteggio</th>
-                            <th style="width: 35%;" class="col-comment">Commento Coach</th>
+                            <th style="width: 120px; text-align: center;">Punteggio Coach</th>
+                            <th style="width: 45%;" class="col-comment">Commento Coach</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($areasData as $areaKey => $area): ?>
                         <?php
-                            $pct = $area['percentage'];
+                            // Use pre-calculated coach scores (built before output).
+                            $cs = $coachScorePerArea[$areaKey] ?? ['avg' => 0, 'pct' => 0, 'count' => 0];
+                            $pct = $cs['pct'];
+                            $coachAvg = $cs['avg'];
+                            $coachCount = $cs['count'];
                             $pctClass = passport_pct_class($pct);
                             $existingComment = $existingComments[$areaKey] ?? '';
                         ?>
                         <tr>
-                            <td class="area-name"><?php echo s($area['code']); ?>. <?php echo s($area['name']); ?></td>
-                            <td style="text-align: center;"><?php echo (int)$area['count']; ?></td>
+                            <td class="area-name"><?php echo s($area['name']); ?></td>
                             <td style="text-align: center;">
-                                <?php echo (int)$area['correct_questions']; ?> / <?php echo (int)$area['total_questions']; ?>
-                            </td>
-                            <td style="text-align: center;">
-                                <?php if ($displayFormat === 'qualitative'): ?>
-                                <span class="pct-badge <?php echo $pctClass; ?>"><?php echo passport_level_label($pct); ?></span>
+                                <?php if ($coachCount > 0): ?>
+                                    <?php if ($displayFormat === 'qualitative'): ?>
+                                    <span class="pct-badge <?php echo $pctClass; ?>"><?php echo passport_level_label($pct); ?></span>
+                                    <?php else: ?>
+                                    <span class="pct-badge <?php echo $pctClass; ?>"><?php echo $pct; ?>%</span>
+                                    <?php endif; ?>
                                 <?php else: ?>
-                                <span class="pct-badge <?php echo $pctClass; ?>"><?php echo $pct; ?>%</span>
+                                    <span style="color:#9ca3af; font-size:0.82rem;">Non valutato</span>
                                 <?php endif; ?>
                             </td>
                             <td class="col-comment">
@@ -1879,6 +1830,7 @@ echo $OUTPUT->header();
                     Nessun dato quiz disponibile per questo studente e corso.
                 </p>
                 <?php endif; ?>
+
             </div>
         <?php break;
 

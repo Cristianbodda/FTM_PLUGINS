@@ -96,6 +96,13 @@ echo $OUTPUT->header();
 <div class="sip-dash-header">
     <h2><span style="color:#0891B2;">&#128221;</span> <?php echo get_string('dashboard_title', 'local_ftm_sip'); ?></h2>
     <div class="sip-dash-links">
+        <?php if (is_siteadmin()): ?>
+        <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/admin_reset_all.php" class="sip-dash-link"
+           style="background:#dc2626;color:white;font-weight:600;"
+           title="ADMIN: cancella tutti i dati CI per esercitazioni">
+            🗑 Reset CI (admin)
+        </a>
+        <?php endif; ?>
         <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_sip/companies.php" class="sip-dash-link" style="background:#F3F4F6;color:#374151;">
             <i class="fa fa-building"></i> <?php echo get_string('company_registry', 'local_ftm_sip'); ?>
         </a>

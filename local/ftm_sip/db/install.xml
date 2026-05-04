@@ -365,6 +365,9 @@
         <FIELD NAME="approved" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="Approved by secretary 0/1"/>
         <FIELD NAME="approvedby" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="FK user.id"/>
         <FIELD NAME="approved_date" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="draft_motivation" TYPE="text" NOTNULL="false" COMMENT="Bozza motivazione attivazione (salvata anche prima di attivare)"/>
+        <FIELD NAME="draft_ladi_indemnity" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Bozza giorni LADI rimanenti"/>
+        <FIELD NAME="draft_date_start" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Bozza timestamp data inizio CI"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
       </FIELDS>
@@ -375,6 +378,31 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="userid_uq" UNIQUE="true" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================== -->
+    <!-- CANALI DI RICERCA              -->
+    <!-- ============================== -->
+    <TABLE NAME="local_ftm_sip_channel_usage" COMMENT="Tracks which search channels have been activated per enrollment - one activation per channel">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="enrollmentid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK local_ftm_sip_enrollments.id"/>
+        <FIELD NAME="channel_key" TYPE="char" LENGTH="50" NOTNULL="true" COMMENT="Channel identifier (email, portali_lavoro, etc.)"/>
+        <FIELD NAME="sip_week" TYPE="int" LENGTH="2" NOTNULL="true" COMMENT="Week when channel was first activated (1-10)"/>
+        <FIELD NAME="activated_date" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Timestamp of activation"/>
+        <FIELD NAME="activatedby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK user.id - who activated the channel"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="enrollmentid_fk" TYPE="foreign" FIELDS="enrollmentid" REFTABLE="local_ftm_sip_enrollments" REFFIELDS="id"/>
+        <KEY NAME="activatedby_fk" TYPE="foreign" FIELDS="activatedby" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="enrollment_channel_uq" UNIQUE="true" FIELDS="enrollmentid, channel_key" COMMENT="One activation per channel per enrollment"/>
+        <INDEX NAME="enrollmentid_week_idx" UNIQUE="false" FIELDS="enrollmentid, sip_week"/>
       </INDEXES>
     </TABLE>
 

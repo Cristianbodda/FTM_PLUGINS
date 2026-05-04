@@ -156,45 +156,50 @@ function local_ftm_sip_get_phase($week) {
  */
 function local_ftm_sip_get_activation_areas() {
     return [
-        'professional_strategy' => [
-            'name' => 'area_professional_strategy',
-            'desc' => 'area_professional_strategy_desc',
-            'objective' => 'area_professional_strategy_obj',
-            'verify' => 'area_professional_strategy_verify',
-            'icon' => 'fa-bullseye',
+        // --- 10 aree quantitative (conteggio contatti/azioni per settimana) ---
+        'target_companies' => [
+            'name' => 'area_target_companies',
+            'desc' => 'area_target_companies_desc',
+            'objective' => 'area_target_companies_obj',
+            'verify' => 'area_target_companies_verify',
+            'icon' => 'fa-list-ol',
             'color' => '#2563EB',
+            'week_start' => 1, 'week_end' => 4,
+            'type' => 'quantitative',
+            'default_target' => 30,
         ],
-        'job_monitoring' => [
-            'name' => 'area_job_monitoring',
-            'desc' => 'area_job_monitoring_desc',
-            'objective' => 'area_job_monitoring_obj',
-            'verify' => 'area_job_monitoring_verify',
+        'mandatory_searches' => [
+            'name' => 'area_mandatory_searches',
+            'desc' => 'area_mandatory_searches_desc',
+            'objective' => 'area_mandatory_searches_obj',
+            'verify' => 'area_mandatory_searches_verify',
             'icon' => 'fa-search',
             'color' => '#7C3AED',
+            'week_start' => 1, 'week_end' => 10,
+            'type' => 'quantitative',
+            'default_target' => 40,
         ],
-        'targeted_applications' => [
-            'name' => 'area_targeted_applications',
-            'desc' => 'area_targeted_applications_desc',
-            'objective' => 'area_targeted_applications_obj',
-            'verify' => 'area_targeted_applications_verify',
-            'icon' => 'fa-paper-plane',
+        'search_channels' => [
+            'name' => 'area_search_channels',
+            'desc' => 'area_search_channels_desc',
+            'objective' => 'area_search_channels_obj',
+            'verify' => 'area_search_channels_verify',
+            'icon' => 'fa-sitemap',
             'color' => '#059669',
+            'week_start' => 2, 'week_end' => 10,
+            'type' => 'quantitative',
+            'default_target' => 15,
         ],
-        'unsolicited_applications' => [
-            'name' => 'area_unsolicited_applications',
-            'desc' => 'area_unsolicited_applications_desc',
-            'objective' => 'area_unsolicited_applications_obj',
-            'verify' => 'area_unsolicited_applications_verify',
-            'icon' => 'fa-envelope-open',
-            'color' => '#D97706',
-        ],
-        'direct_company_contact' => [
-            'name' => 'area_direct_company_contact',
-            'desc' => 'area_direct_company_contact_desc',
-            'objective' => 'area_direct_company_contact_obj',
-            'verify' => 'area_direct_company_contact_verify',
-            'icon' => 'fa-handshake-o',
-            'color' => '#DC2626',
+        'social_network' => [
+            'name' => 'area_social_network',
+            'desc' => 'area_social_network_desc',
+            'objective' => 'area_social_network_obj',
+            'verify' => 'area_social_network_verify',
+            'icon' => 'fa-share-alt',
+            'color' => '#0EA5E9',
+            'week_start' => 3, 'week_end' => 10,
+            'type' => 'quantitative',
+            'default_target' => 2,
         ],
         'personal_network' => [
             'name' => 'area_personal_network',
@@ -203,16 +208,98 @@ function local_ftm_sip_get_activation_areas() {
             'verify' => 'area_personal_network_verify',
             'icon' => 'fa-users',
             'color' => '#0891B2',
+            'week_start' => 3, 'week_end' => 10,
+            'type' => 'quantitative',
+            'default_target' => 10,
         ],
-        'intermediaries' => [
-            'name' => 'area_intermediaries',
-            'desc' => 'area_intermediaries_desc',
-            'objective' => 'area_intermediaries_obj',
-            'verify' => 'area_intermediaries_verify',
+        'targeted_applications' => [
+            'name' => 'area_targeted_applications',
+            'desc' => 'area_targeted_applications_desc',
+            'objective' => 'area_targeted_applications_obj',
+            'verify' => 'area_targeted_applications_verify',
+            'icon' => 'fa-paper-plane',
+            'color' => '#D97706',
+            'week_start' => 3, 'week_end' => 10,
+            'type' => 'quantitative',
+            'default_target' => 30,
+        ],
+        'unsolicited_applications' => [
+            'name' => 'area_unsolicited_applications',
+            'desc' => 'area_unsolicited_applications_desc',
+            'objective' => 'area_unsolicited_applications_obj',
+            'verify' => 'area_unsolicited_applications_verify',
+            'icon' => 'fa-envelope-open',
+            'color' => '#DC2626',
+            'week_start' => 3, 'week_end' => 10,
+            'type' => 'quantitative',
+            'default_target' => 10,
+        ],
+        'agencies_urc' => [
+            'name' => 'area_agencies_urc',
+            'desc' => 'area_agencies_urc_desc',
+            'objective' => 'area_agencies_urc_obj',
+            'verify' => 'area_agencies_urc_verify',
             'icon' => 'fa-building',
             'color' => '#64748B',
+            'week_start' => 5, 'week_end' => 10,
+            'type' => 'quantitative',
+            'default_target' => 5,
+        ],
+        'interview_training' => [
+            'name' => 'area_interview_training',
+            'desc' => 'area_interview_training_desc',
+            'objective' => 'area_interview_training_obj',
+            'verify' => 'area_interview_training_verify',
+            'icon' => 'fa-microphone',
+            'color' => '#E11D48',
+            'week_start' => 5, 'week_end' => 10,
+            'type' => 'quantitative',
+            'default_target' => 2,
+        ],
+        'stage_trials' => [
+            'name' => 'area_stage_trials',
+            'desc' => 'area_stage_trials_desc',
+            'objective' => 'area_stage_trials_obj',
+            'verify' => 'area_stage_trials_verify',
+            'icon' => 'fa-briefcase',
+            'color' => '#9333EA',
+            'week_start' => 7, 'week_end' => 10,
+            'type' => 'quantitative',
+            'default_target' => 2,
+        ],
+        // --- 2 aree qualitative (valutazione coach 1-10 per settimana) ---
+        'strategy_improvement' => [
+            'name' => 'area_strategy_improvement',
+            'desc' => 'area_strategy_improvement_desc',
+            'objective' => 'area_strategy_improvement_obj',
+            'verify' => 'area_strategy_improvement_verify',
+            'icon' => 'fa-line-chart',
+            'color' => '#F59E0B',
+            'week_start' => 7, 'week_end' => 10,
+            'type' => 'qualitative',
+            'default_target' => 5,
+        ],
+        'growing_autonomy' => [
+            'name' => 'area_growing_autonomy',
+            'desc' => 'area_growing_autonomy_desc',
+            'objective' => 'area_growing_autonomy_obj',
+            'verify' => 'area_growing_autonomy_verify',
+            'icon' => 'fa-graduation-cap',
+            'color' => '#10B981',
+            'week_start' => 7, 'week_end' => 10,
+            'type' => 'qualitative',
+            'default_target' => 5,
         ],
     ];
+}
+
+/**
+ * Get the old 7 activation areas (for backward compatibility with existing data).
+ * @return array
+ */
+function local_ftm_sip_get_legacy_areas() {
+    return ['professional_strategy', 'job_monitoring', 'targeted_applications',
+            'unsolicited_applications', 'direct_company_contact', 'personal_network', 'intermediaries'];
 }
 
 /**

@@ -508,6 +508,11 @@ if (!$isauthorized) {
                        background:#dc3545; color:#fff;">
             Learn &amp; Write
         </button>
+        <button onclick="switchMode('interview')" id="tab-interview" class="jobaida-mode-tab"
+                style="flex:1; padding:14px 20px; border:none; font-size:1rem; font-weight:600; cursor:pointer; transition:all 0.2s; border-radius:6px;
+                       background:#fff; color:#7c3aed;">
+            Colloquio
+        </button>
     </div>
 
     <!-- ========== EXPRESS MODE ========== -->
@@ -885,6 +890,143 @@ if (!$isauthorized) {
 
     </div><!-- /mode-learn -->
 
+    <!-- ========== INTERVIEW MODE ========== -->
+    <div id="mode-interview" class="jobaida-mode-content" style="display:none;">
+
+        <!-- Intro -->
+        <div class="jobaida-card" style="border-left:4px solid #7c3aed; margin-bottom:20px;">
+            <div class="jobaida-card-body" style="background:#faf5ff;">
+                <h3 style="margin:0 0 8px; color:#7c3aed; font-size:1.1rem;">Simulazione Colloquio di Lavoro</h3>
+                <p style="font-size:0.9rem; color:#6b7280; margin:0;">
+                    Un HR virtuale condurra un colloquio reale basato sull'annuncio a cui stai rispondendo.
+                    <strong>12 domande</strong> che coprono tutti gli aspetti di un vero colloquio.
+                    Alla fine riceverai una <strong>valutazione dettagliata</strong> con consigli per migliorare.
+                </p>
+            </div>
+        </div>
+
+        <!-- Step 0: Input -->
+        <div id="interview-setup">
+            <div class="jobaida-card">
+                <div class="jobaida-card-header" style="background:#faf5ff; color:#7c3aed; cursor:default;">
+                    Prepara il Colloquio
+                </div>
+                <div class="jobaida-card-body">
+                    <div style="margin-bottom:16px;">
+                        <label style="font-weight:600; display:block; margin-bottom:6px;">Annuncio di Lavoro *</label>
+                        <div class="jobaida-dropzone" id="dropzone-interview-jobad" onclick="document.getElementById('file-interview-jobad').click()">
+                            <span class="drop-icon">&#128195;</span>
+                            Trascina qui l'annuncio oppure clicca per selezionarlo
+                            <input type="file" id="file-interview-jobad" accept=".pdf,.doc,.docx,.txt" style="display:none;" onchange="handleFileSelect(this, 'interview-jobad', 'dropzone-interview-jobad')">
+                        </div>
+                        <textarea id="interview-jobad" rows="6" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:12px; font-size:0.95rem; resize:vertical; box-sizing:border-box;"
+                                  placeholder="Incolla qui l'annuncio di lavoro..."></textarea>
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label style="font-weight:600; display:block; margin-bottom:6px;">Il tuo CV *</label>
+                        <div class="jobaida-dropzone" id="dropzone-interview-cv" onclick="document.getElementById('file-interview-cv').click()">
+                            <span class="drop-icon">&#128196;</span>
+                            Trascina qui il tuo CV oppure clicca per selezionarlo
+                            <input type="file" id="file-interview-cv" accept=".pdf,.doc,.docx,.txt" style="display:none;" onchange="handleFileSelect(this, 'interview-cv', 'dropzone-interview-cv')">
+                        </div>
+                        <textarea id="interview-cv" rows="6" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:12px; font-size:0.95rem; resize:vertical; box-sizing:border-box;"
+                                  placeholder="Incolla qui il tuo CV..."></textarea>
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label style="font-weight:600; display:block; margin-bottom:6px;">Codice di accesso *</label>
+                        <input type="password" id="interview-code" style="width:200px; border:1px solid #dee2e6; border-radius:6px; padding:10px; font-size:1rem;"
+                               placeholder="Inserisci il codice">
+                    </div>
+                    <button onclick="interviewStart()" id="btn-interview-start"
+                            style="padding:14px 28px; background:#7c3aed; color:#fff; border:none; border-radius:6px; font-size:1rem; font-weight:600; cursor:pointer; width:100%;">
+                        Inizia Colloquio
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Interface (hidden until interview starts) -->
+        <div id="interview-chat" style="display:none;">
+            <!-- Progress + Voice toggle -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:10px 16px; background:#f8f9fa; border-radius:8px; flex-wrap:wrap; gap:8px;">
+                <span style="font-weight:600; color:#7c3aed;">Colloquio in corso</span>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.85rem; color:#374151;">
+                        <input type="checkbox" id="voice-mode-toggle" onchange="toggleVoiceMode(this.checked)" style="accent-color:#7c3aed;">
+                        <span>&#127908; Modalita Vocale</span>
+                    </label>
+                    <span id="interview-progress" style="font-size:0.9rem; color:#6b7280;">Domanda 1/12</span>
+                </div>
+            </div>
+
+            <!-- Messages container -->
+            <div id="interview-messages" style="background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; min-height:300px; max-height:500px; overflow-y:auto; margin-bottom:16px;">
+            </div>
+
+            <!-- STAR method reminder (visible during Q4-Q9: esperienza + soft skills) -->
+            <div id="star-reminder" style="display:none; margin-bottom:10px; padding:12px 16px; background:linear-gradient(135deg,#faf5ff,#f3e8ff); border:1px solid #d8b4fe; border-radius:8px; font-size:0.85rem; color:#581c87;">
+                <div style="font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:1.1em;">&#11088;</span> Usa il metodo STAR per strutturare la risposta
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
+                    <div style="background:#fff; border-radius:6px; padding:8px; text-align:center; border:1px solid #e9d5ff;">
+                        <div style="font-weight:800; color:#7c3aed; font-size:1.1em;">S</div>
+                        <div style="font-size:0.78em; color:#6b21a8;">Situazione<br><span style="color:#9ca3af;">Descrivi il contesto</span></div>
+                    </div>
+                    <div style="background:#fff; border-radius:6px; padding:8px; text-align:center; border:1px solid #e9d5ff;">
+                        <div style="font-weight:800; color:#7c3aed; font-size:1.1em;">T</div>
+                        <div style="font-size:0.78em; color:#6b21a8;">Task<br><span style="color:#9ca3af;">Qual era il compito</span></div>
+                    </div>
+                    <div style="background:#fff; border-radius:6px; padding:8px; text-align:center; border:1px solid #e9d5ff;">
+                        <div style="font-weight:800; color:#7c3aed; font-size:1.1em;">A</div>
+                        <div style="font-size:0.78em; color:#6b21a8;">Azione<br><span style="color:#9ca3af;">Cosa hai fatto</span></div>
+                    </div>
+                    <div style="background:#fff; border-radius:6px; padding:8px; text-align:center; border:1px solid #e9d5ff;">
+                        <div style="font-weight:800; color:#7c3aed; font-size:1.1em;">R</div>
+                        <div style="font-size:0.78em; color:#6b21a8;">Risultato<br><span style="color:#9ca3af;">Che esito hai ottenuto</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input area (text mode) -->
+            <div id="interview-input-area" style="display:flex; gap:10px;">
+                <textarea id="interview-answer" rows="3" style="flex:1; border:2px solid #7c3aed; border-radius:8px; padding:12px; font-size:0.95rem; resize:none; box-sizing:border-box;"
+                          placeholder="Scrivi la tua risposta..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();interviewReply();}"></textarea>
+                <button onclick="interviewReply()" id="btn-interview-send"
+                        style="padding:12px 24px; background:#7c3aed; color:#fff; border:none; border-radius:8px; font-size:0.95rem; font-weight:600; cursor:pointer; align-self:flex-end;">
+                    Invia
+                </button>
+            </div>
+
+            <!-- Input area (voice mode - hidden by default) -->
+            <div id="interview-voice-area" style="display:none; text-align:center; padding:16px;">
+                <div id="voice-status" style="font-size:0.9rem; color:#6b7280; margin-bottom:12px;">Clicca il microfono per rispondere</div>
+                <button onclick="voiceStartListening()" id="btn-voice-mic"
+                        style="width:72px; height:72px; border-radius:50%; border:3px solid #7c3aed; background:#fff; color:#7c3aed; font-size:2rem; cursor:pointer; transition:all 0.3s;">
+                    &#127908;
+                </button>
+                <textarea id="voice-transcript" rows="4" style="margin-top:12px; width:100%; padding:12px; background:#f3f0ff; border:2px solid #7c3aed40; border-radius:8px; font-size:0.93rem; color:#374151; text-align:left; display:none; resize:vertical; box-sizing:border-box;"
+                          placeholder="Il testo riconosciuto apparira qui. Puoi modificarlo prima di inviare."></textarea>
+                <div id="voice-actions" style="display:none; margin-top:10px; display:flex; gap:10px; justify-content:center;">
+                    <button onclick="voiceConfirmSend()" style="padding:10px 24px; background:#7c3aed; color:#fff; border:none; border-radius:6px; font-weight:600; cursor:pointer;">Invia risposta</button>
+                    <button onclick="voiceRetry()" style="padding:10px 24px; background:#e5e7eb; color:#374151; border:none; border-radius:6px; cursor:pointer;">Riprova</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evaluation (hidden until interview ends) -->
+        <div id="interview-evaluation" style="display:none;"></div>
+
+        <!-- History -->
+        <div style="margin-top:24px;">
+            <button onclick="interviewLoadHistory()" class="btn btn-outline-secondary btn-sm">
+                Storico colloqui precedenti
+            </button>
+            <div id="interview-history" style="margin-top:12px;"></div>
+        </div>
+
+    </div><!-- /mode-interview -->
+
 </div>
 
 <!-- Toast notification -->
@@ -1227,15 +1369,17 @@ if (!$isauthorized) {
     var TAB_COLORS = {
         express:  '#EAB308',
         coaching: '#e97a0a',
-        learn:    '#dc3545'
+        learn:    '#dc3545',
+        interview: '#7c3aed'
     };
 
     window.switchMode = function(mode) {
         document.getElementById('mode-express').style.display = mode === 'express' ? 'block' : 'none';
         document.getElementById('mode-coaching').style.display = mode === 'coaching' ? 'block' : 'none';
         document.getElementById('mode-learn').style.display = mode === 'learn' ? 'block' : 'none';
+        document.getElementById('mode-interview').style.display = mode === 'interview' ? 'block' : 'none';
 
-        ['express', 'coaching', 'learn'].forEach(function(key) {
+        ['express', 'coaching', 'learn', 'interview'].forEach(function(key) {
             var tab = document.getElementById('tab-' + key);
             if (key === mode) {
                 tab.style.background = TAB_COLORS[key];
@@ -1272,6 +1416,8 @@ if (!$isauthorized) {
                 if (this.id === 'dropzone-coaching-cv') textareaId = 'coaching-cv';
                 if (this.id === 'dropzone-learn-jobad') textareaId = 'learn-jobad';
                 if (this.id === 'dropzone-learn-cv') textareaId = 'learn-cv';
+                if (this.id === 'dropzone-interview-jobad') textareaId = 'interview-jobad';
+                if (this.id === 'dropzone-interview-cv') textareaId = 'interview-cv';
                 processDroppedFile(file, textareaId, this.id);
             }
         });
@@ -2182,6 +2328,784 @@ if (!$isauthorized) {
         });
     };
 
+    // ========== INTERVIEW SIMULATION ==========
+
+    var interviewSessionId = 0;
+    var pendingAudioBase64 = null;
+    var INTERVIEW_URL = M.cfg.wwwroot + '/local/jobaida/ajax_interview.php';
+
+    function addChatMessage(role, text) {
+        var container = document.getElementById('interview-messages');
+        var isHR = (role === 'assistant');
+        var div = document.createElement('div');
+        div.style.cssText = 'display:flex; gap:10px; margin-bottom:14px; ' + (isHR ? '' : 'flex-direction:row-reverse;');
+
+        var avatar = document.createElement('div');
+        avatar.style.cssText = 'width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; '
+            + (isHR ? 'background:#7c3aed; color:#fff;' : 'background:#e5e7eb; color:#374151;');
+        avatar.textContent = isHR ? 'HR' : 'Tu';
+
+        var bubble = document.createElement('div');
+        bubble.style.cssText = 'max-width:75%; padding:12px 16px; border-radius:12px; font-size:0.93rem; line-height:1.6; white-space:pre-wrap; '
+            + (isHR ? 'background:#f3f0ff; color:#1f2937; border-bottom-left-radius:4px;' : 'background:#dbeafe; color:#1f2937; border-bottom-right-radius:4px;');
+        bubble.textContent = text;
+
+        div.appendChild(avatar);
+        div.appendChild(bubble);
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function addChatLoading() {
+        var container = document.getElementById('interview-messages');
+        var div = document.createElement('div');
+        div.id = 'chat-loading';
+        div.style.cssText = 'display:flex; gap:10px; margin-bottom:14px;';
+        div.innerHTML = '<div style="width:36px;height:36px;border-radius:50%;background:#7c3aed;color:#fff;display:flex;align-items:center;justify-content:center;">HR</div>'
+            + '<div style="padding:12px 16px;background:#f3f0ff;border-radius:12px;color:#9ca3af;font-style:italic;">Sta scrivendo...</div>';
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function removeChatLoading() {
+        var el = document.getElementById('chat-loading');
+        if (el) el.remove();
+    }
+
+    window.interviewStart = function() {
+        var jobad = document.getElementById('interview-jobad').value.trim();
+        var cv = document.getElementById('interview-cv').value.trim();
+        var code = document.getElementById('interview-code').value.trim();
+
+        if (!jobad || !cv) { alert('Inserisci annuncio e CV.'); return; }
+        if (!code) { alert('Inserisci il codice di accesso.'); return; }
+
+        var btn = document.getElementById('btn-interview-start');
+        btn.disabled = true;
+        btn.textContent = 'Avvio colloquio...';
+
+        var formData = new FormData();
+        formData.append('sesskey', SESSKEY);
+        formData.append('action', 'start');
+        formData.append('job_ad', jobad);
+        formData.append('cv_text', cv);
+        formData.append('access_code', code);
+
+        fetch(INTERVIEW_URL, {method: 'POST', body: formData})
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            btn.disabled = false;
+            btn.textContent = 'Inizia Colloquio';
+            if (resp.success) {
+                interviewSessionId = resp.data.session_id;
+                document.getElementById('interview-setup').style.display = 'none';
+                document.getElementById('interview-chat').style.display = 'block';
+                document.getElementById('interview-messages').innerHTML = '';
+                pendingAudioBase64 = resp.data.audio || null;
+                addChatMessage('assistant', resp.data.message);
+                document.getElementById('interview-progress').textContent = 'Domanda ' + resp.data.question_number + '/12';
+                updateStarReminder(resp.data.question_number);
+                document.getElementById('interview-answer').focus();
+            } else {
+                alert('Errore: ' + resp.message);
+            }
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            btn.textContent = 'Inizia Colloquio';
+            alert('Errore: ' + err.message);
+        });
+    };
+
+    // Show STAR method reminder for experience + soft skills questions (Q4-Q9).
+    function updateStarReminder(questionNumber) {
+        var el = document.getElementById('star-reminder');
+        if (el) {
+            el.style.display = (questionNumber >= 4 && questionNumber <= 9) ? 'block' : 'none';
+        }
+    }
+
+    window.interviewReply = function() {
+        var answer = document.getElementById('interview-answer').value.trim();
+        if (!answer) return;
+        if (!interviewSessionId) { alert('Nessuna sessione attiva.'); return; }
+
+        var btn = document.getElementById('btn-interview-send');
+        btn.disabled = true;
+        document.getElementById('interview-answer').disabled = true;
+
+        addChatMessage('user', answer);
+        document.getElementById('interview-answer').value = '';
+        addChatLoading();
+
+        var formData = new FormData();
+        formData.append('sesskey', SESSKEY);
+        formData.append('action', 'reply');
+        formData.append('session_id', interviewSessionId);
+        formData.append('answer', answer);
+
+        fetch(INTERVIEW_URL, {method: 'POST', body: formData})
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            removeChatLoading();
+            btn.disabled = false;
+            document.getElementById('interview-answer').disabled = false;
+
+            if (resp.success) {
+                pendingAudioBase64 = resp.data.audio || null;
+                addChatMessage('assistant', resp.data.message);
+                document.getElementById('interview-progress').textContent = 'Domanda ' + resp.data.question_number + '/12';
+                updateStarReminder(resp.data.question_number);
+
+                if (resp.data.finished) {
+                    document.getElementById('interview-input-area').style.display = 'none';
+                    document.getElementById('star-reminder').style.display = 'none';
+                    document.getElementById('interview-progress').textContent = 'Colloquio terminato';
+                    interviewGetEvaluation();
+                } else {
+                    document.getElementById('interview-answer').focus();
+                }
+            } else {
+                alert('Errore: ' + resp.message);
+            }
+        })
+        .catch(function(err) {
+            removeChatLoading();
+            btn.disabled = false;
+            document.getElementById('interview-answer').disabled = false;
+            alert('Errore: ' + err.message);
+        });
+    };
+
+    function interviewGetEvaluation() {
+        var evalDiv = document.getElementById('interview-evaluation');
+        evalDiv.style.display = 'block';
+        evalDiv.innerHTML = '<div style="text-align:center; padding:30px; color:#7c3aed;"><div class="jobaida-spinner" style="border-color:#7c3aed30; border-top-color:#7c3aed; width:32px; height:32px; margin:0 auto 12px;"></div>Valutazione in corso...</div>';
+
+        var formData = new FormData();
+        formData.append('sesskey', SESSKEY);
+        formData.append('action', 'evaluate');
+        formData.append('session_id', interviewSessionId);
+
+        fetch(INTERVIEW_URL, {method: 'POST', body: formData})
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.success) {
+                interviewShowEvaluation(resp.data);
+            } else {
+                evalDiv.innerHTML = '<div style="color:#dc3545; padding:20px;">Errore valutazione: ' + resp.message + '</div>';
+            }
+        })
+        .catch(function(err) {
+            evalDiv.innerHTML = '<div style="color:#dc3545; padding:20px;">Errore: ' + err.message + '</div>';
+        });
+    }
+
+    function interviewShowEvaluation(data) {
+        var evalDiv = document.getElementById('interview-evaluation');
+        var scoreColor = data.punteggio_globale >= 7 ? '#28a745' : (data.punteggio_globale >= 5 ? '#f59e0b' : '#dc3545');
+        var probColor = data.probabilita_assunzione === 'alta' ? '#28a745' : (data.probabilita_assunzione === 'media' ? '#f59e0b' : '#dc3545');
+
+        var html = '<div class="jobaida-card" style="border:2px solid #7c3aed; margin-top:20px;">';
+        html += '<div class="jobaida-card-header" style="background:#7c3aed; color:#fff; cursor:default;">Valutazione del Colloquio</div>';
+        html += '<div class="jobaida-card-body">';
+
+        // Score header.
+        html += '<div style="display:flex; justify-content:space-around; margin-bottom:20px; text-align:center;">';
+        html += '<div><div style="font-size:2.5rem; font-weight:800; color:' + scoreColor + ';">' + data.punteggio_globale + '/10</div><div style="color:#6b7280;">Punteggio Globale</div></div>';
+        html += '<div><div style="font-size:1.5rem; font-weight:700; color:' + probColor + '; text-transform:uppercase;">' + (data.probabilita_assunzione || '-') + '</div><div style="color:#6b7280;">Probabilita Assunzione</div></div>';
+        html += '</div>';
+
+        // Area scores.
+        html += '<h5 style="margin:16px 0 8px; color:#374151;">Valutazione per Area</h5>';
+        var areas = data.valutazioni || {};
+        var areaLabels = {presentazione:'Presentazione', motivazione:'Motivazione', esperienza:'Esperienza', competenze_tecniche:'Competenze Tecniche', soft_skills:'Soft Skills', aspettative:'Aspettative'};
+        for (var key in areas) {
+            var a = areas[key];
+            var barColor = a.voto >= 7 ? '#28a745' : (a.voto >= 5 ? '#f59e0b' : '#dc3545');
+            html += '<div style="margin-bottom:10px;">';
+            html += '<div style="display:flex; justify-content:space-between; font-size:0.9rem; margin-bottom:3px;"><span style="font-weight:600;">' + (areaLabels[key] || key) + '</span><span style="font-weight:700; color:' + barColor + ';">' + a.voto + '/10</span></div>';
+            html += '<div style="background:#e5e7eb; height:6px; border-radius:3px;"><div style="background:' + barColor + '; height:6px; border-radius:3px; width:' + (a.voto * 10) + '%;"></div></div>';
+            html += '<div style="font-size:0.82rem; color:#6b7280; margin-top:2px;">' + escapeHtml(a.commento || '') + '</div>';
+            html += '</div>';
+        }
+
+        // Strengths.
+        if (data.punti_forza && data.punti_forza.length) {
+            html += '<h5 style="margin:16px 0 8px; color:#28a745;">Punti di Forza</h5><ul style="margin:0; padding-left:20px;">';
+            data.punti_forza.forEach(function(p) { html += '<li style="font-size:0.9rem; color:#374151;">' + escapeHtml(p) + '</li>'; });
+            html += '</ul>';
+        }
+
+        // Improvements.
+        if (data.aree_miglioramento && data.aree_miglioramento.length) {
+            html += '<h5 style="margin:16px 0 8px; color:#f59e0b;">Aree di Miglioramento</h5><ul style="margin:0; padding-left:20px;">';
+            data.aree_miglioramento.forEach(function(p) { html += '<li style="font-size:0.9rem; color:#374151;">' + escapeHtml(p) + '</li>'; });
+            html += '</ul>';
+        }
+
+        // Per-answer feedback (formative review).
+        if (data.feedback_per_domanda && data.feedback_per_domanda.length) {
+            html += '<h5 style="margin:20px 0 10px; color:#7c3aed;">Review per Risposta</h5>';
+            html += '<p style="font-size:0.82rem; color:#6b7280; margin:0 0 12px;">Clicca su ogni domanda per vedere il feedback dettagliato e la risposta ideale.</p>';
+            data.feedback_per_domanda.forEach(function(fb, idx) {
+                var fbColor = fb.voto >= 7 ? '#28a745' : (fb.voto >= 5 ? '#f59e0b' : '#dc3545');
+                var starBadge = '';
+                if (fb.star_usato === true) {
+                    starBadge = '<span style="background:#f3e8ff; color:#7c3aed; font-size:0.72rem; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:600;">STAR</span>';
+                } else if (fb.star_usato === false && idx >= 3 && idx <= 8) {
+                    starBadge = '<span style="background:#fef3c7; color:#92400e; font-size:0.72rem; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:600;">STAR mancante</span>';
+                }
+                html += '<div style="border:1px solid #e5e7eb; border-radius:8px; margin-bottom:8px; overflow:hidden;">';
+                // Header (clickable).
+                html += '<div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'; this.querySelector(\'.fb-arrow\').textContent=this.nextElementSibling.style.display===\'none\'?\'\\u25B6\':\'\\u25BC\';" '
+                    + 'style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; cursor:pointer; background:#fafafa; gap:8px;">';
+                html += '<div style="flex:1; display:flex; align-items:center; gap:6px; min-width:0;">';
+                html += '<span class="fb-arrow" style="color:#9ca3af; font-size:0.7em;">&#9654;</span>';
+                html += '<span style="font-size:0.88rem; color:#374151; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">'
+                    + 'D' + (idx+1) + '. ' + escapeHtml(fb.domanda || '') + '</span>';
+                html += '</div>';
+                html += '<div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">';
+                html += starBadge;
+                html += '<span style="font-weight:700; color:' + fbColor + '; font-size:0.9rem;">' + fb.voto + '/10</span>';
+                html += '</div>';
+                html += '</div>';
+                // Body (hidden by default).
+                html += '<div style="display:none; padding:12px 14px; border-top:1px solid #e5e7eb; font-size:0.85rem; line-height:1.5;">';
+                // Student answer summary.
+                if (fb.risposta) {
+                    html += '<div style="margin-bottom:10px; padding:8px 10px; background:#f0f9ff; border-radius:6px; border-left:3px solid #3b82f6;">';
+                    html += '<div style="font-size:0.75rem; color:#1d4ed8; font-weight:600; margin-bottom:2px;">La tua risposta (sintesi)</div>';
+                    html += '<div style="color:#374151;">' + escapeHtml(fb.risposta) + '</div>';
+                    html += '</div>';
+                }
+                // What worked.
+                if (fb.cosa_ha_funzionato) {
+                    html += '<div style="margin-bottom:8px; display:flex; gap:6px;">';
+                    html += '<span style="color:#28a745; flex-shrink:0;">&#10003;</span>';
+                    html += '<div><span style="font-weight:600; color:#28a745;">Cosa ha funzionato:</span> ' + escapeHtml(fb.cosa_ha_funzionato) + '</div>';
+                    html += '</div>';
+                }
+                // What was missing.
+                if (fb.cosa_mancava) {
+                    html += '<div style="margin-bottom:8px; display:flex; gap:6px;">';
+                    html += '<span style="color:#f59e0b; flex-shrink:0;">&#9888;</span>';
+                    html += '<div><span style="font-weight:600; color:#f59e0b;">Cosa mancava:</span> ' + escapeHtml(fb.cosa_mancava) + '</div>';
+                    html += '</div>';
+                }
+                // Ideal answer.
+                if (fb.risposta_ideale) {
+                    html += '<div style="padding:10px 12px; background:#f0fdf4; border-radius:6px; border-left:3px solid #28a745;">';
+                    html += '<div style="font-size:0.75rem; color:#166534; font-weight:600; margin-bottom:3px;">Risposta ideale</div>';
+                    html += '<div style="color:#374151; font-style:italic;">' + escapeHtml(fb.risposta_ideale) + '</div>';
+                    html += '</div>';
+                }
+                html += '</div>'; // /body
+                html += '</div>'; // /card
+            });
+        }
+
+        // Final advice.
+        if (data.consiglio_finale) {
+            html += '<div style="margin-top:16px; padding:14px; background:#eff6ff; border-radius:8px; border:1px solid #bfdbfe;">';
+            html += '<div style="font-size:0.8rem; color:#1e40af; font-weight:600; text-transform:uppercase; margin-bottom:4px;">Consiglio per il prossimo colloquio</div>';
+            html += '<div style="font-size:0.93rem; color:#1e3a5f;">' + escapeHtml(data.consiglio_finale) + '</div>';
+            html += '</div>';
+        }
+
+        // Retry button.
+        html += '<div style="text-align:center; margin-top:20px;">';
+        html += '<button onclick="interviewReset()" style="padding:12px 24px; background:#7c3aed; color:#fff; border:none; border-radius:6px; font-size:0.95rem; font-weight:600; cursor:pointer;">Ripeti Colloquio</button>';
+        html += '</div>';
+
+        html += '</div></div>';
+        evalDiv.innerHTML = html;
+        evalDiv.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+
+    window.interviewReset = function() {
+        interviewSessionId = 0;
+        document.getElementById('interview-setup').style.display = 'block';
+        document.getElementById('interview-chat').style.display = 'none';
+        document.getElementById('interview-evaluation').style.display = 'none';
+        document.getElementById('interview-evaluation').innerHTML = '';
+        document.getElementById('interview-messages').innerHTML = '';
+        document.getElementById('interview-input-area').style.display = 'flex';
+        document.getElementById('star-reminder').style.display = 'none';
+        document.getElementById('interview-code').value = '';
+    };
+
+    window.interviewLoadHistory = function() {
+        var container = document.getElementById('interview-history');
+        container.innerHTML = '<div style="color:#6b7280; padding:8px;">Caricamento...</div>';
+
+        fetch(INTERVIEW_URL + '?sesskey=' + SESSKEY + '&action=history')
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (!resp.success || !resp.data.length) {
+                container.innerHTML = '<div style="color:#6b7280; padding:8px; font-size:0.9rem;">Nessun colloquio precedente.</div>';
+                return;
+            }
+            var hasStudentCol = resp.canviewall && resp.data.length > 0 && resp.data[0].student;
+            var html = '<table style="width:100%; border-collapse:collapse; font-size:0.9rem;">';
+            html += '<tr style="background:#f3f0ff;">';
+            if (hasStudentCol) html += '<th style="padding:8px; text-align:left;">Studente</th>';
+            html += '<th style="padding:8px; text-align:left;">Data</th><th>Domande</th><th>Punteggio</th><th>Esito</th></tr>';
+            resp.data.forEach(function(iv) {
+                var scoreColor = iv.score >= 7 ? '#28a745' : (iv.score >= 5 ? '#f59e0b' : '#dc3545');
+                html += '<tr style="border-bottom:1px solid #e5e7eb; cursor:pointer;" onclick="interviewLoadPast(' + iv.id + ')" title="Clicca per rivedere il colloquio">';
+                if (hasStudentCol) html += '<td style="padding:6px 8px; font-weight:600;">' + escapeHtml(iv.student || '') + '</td>';
+                html += '<td style="padding:6px 8px;"><a href="#" onclick="event.preventDefault();" style="color:#7c3aed; text-decoration:underline; font-weight:500;">' + iv.date + '</a></td>';
+                html += '<td style="padding:6px 8px; text-align:center;">' + iv.questions + '/12</td>';
+                html += '<td style="padding:6px 8px; text-align:center; font-weight:700; color:' + scoreColor + ';">' + (iv.score || '-') + '/10</td>';
+                html += '<td style="padding:6px 8px; text-align:center;">' + (iv.probability || iv.status) + '</td>';
+                html += '</tr>';
+            });
+            html += '</table>';
+            container.innerHTML = html;
+        })
+        .catch(function() {
+            container.innerHTML = '<div style="color:#dc3545; padding:8px;">Errore caricamento storico.</div>';
+        });
+    };
+
+    window.interviewLoadPast = function(sessionId) {
+        var formData = new FormData();
+        formData.append('sesskey', SESSKEY);
+        formData.append('action', 'load');
+        formData.append('session_id', sessionId);
+
+        // Show loading.
+        document.getElementById('interview-setup').style.display = 'none';
+        document.getElementById('interview-chat').style.display = 'block';
+        document.getElementById('interview-input-area').style.display = 'none';
+        document.getElementById('interview-voice-area').style.display = 'none';
+        document.getElementById('interview-messages').innerHTML = '<div style="text-align:center; padding:20px; color:#7c3aed;">Caricamento colloquio...</div>';
+        document.getElementById('interview-progress').textContent = 'Revisione colloquio';
+
+        fetch(INTERVIEW_URL, {method: 'POST', body: formData})
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (!resp.success) {
+                alert('Errore: ' + resp.message);
+                interviewReset();
+                return;
+            }
+
+            var data = resp.data;
+            var msgContainer = document.getElementById('interview-messages');
+            msgContainer.innerHTML = '';
+
+            // Header.
+            var header = document.createElement('div');
+            header.style.cssText = 'text-align:center; padding:12px; margin-bottom:16px; background:#f3f0ff; border-radius:8px;';
+            header.innerHTML = '<div style="font-weight:600; color:#7c3aed;">Colloquio del ' + escapeHtml(data.date) + '</div>'
+                + '<div style="font-size:0.85rem; color:#6b7280;">Domande: ' + data.question_count + '/12 | Stato: ' + data.status + '</div>';
+            msgContainer.appendChild(header);
+
+            // Store conversation for playback.
+            window._reviewConversation = data.conversation;
+
+            // Replay all messages with play buttons.
+            data.conversation.forEach(function(msg, idx) {
+                var isHR = (msg.role === 'assistant');
+                var div = document.createElement('div');
+                div.style.cssText = 'display:flex; gap:10px; margin-bottom:14px; ' + (isHR ? '' : 'flex-direction:row-reverse;');
+
+                var avatar = document.createElement('div');
+                avatar.style.cssText = 'width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; '
+                    + (isHR ? 'background:#7c3aed; color:#fff;' : 'background:#e5e7eb; color:#374151;');
+                avatar.textContent = isHR ? 'HR' : 'Tu';
+
+                var contentWrap = document.createElement('div');
+                contentWrap.style.cssText = 'max-width:75%;';
+
+                var bubble = document.createElement('div');
+                bubble.style.cssText = 'padding:12px 16px; border-radius:12px; font-size:0.93rem; line-height:1.6; white-space:pre-wrap; '
+                    + (isHR ? 'background:#f3f0ff; color:#1f2937; border-bottom-left-radius:4px;' : 'background:#dbeafe; color:#1f2937; border-bottom-right-radius:4px;');
+                bubble.textContent = msg.content;
+
+                var playBtn = document.createElement('button');
+                playBtn.style.cssText = 'margin-top:4px; padding:3px 10px; border:1px solid ' + (isHR ? '#7c3aed' : '#3b82f6') + '; background:#fff; color:' + (isHR ? '#7c3aed' : '#3b82f6') + '; border-radius:4px; font-size:11px; cursor:pointer;';
+                playBtn.innerHTML = '&#9654; Ascolta';
+                playBtn.setAttribute('data-idx', idx);
+                playBtn.onclick = function() {
+                    var i = parseInt(this.getAttribute('data-idx'));
+                    var txt = window._reviewConversation[i].content;
+                    this.innerHTML = '&#9632; ...';
+                    this.disabled = true;
+                    var self = this;
+                    playAudio(txt, function() {
+                        self.innerHTML = '&#9654; Ascolta';
+                        self.disabled = false;
+                    });
+                };
+
+                contentWrap.appendChild(bubble);
+                contentWrap.appendChild(playBtn);
+                div.appendChild(avatar);
+                div.appendChild(contentWrap);
+                msgContainer.appendChild(div);
+            });
+
+            // Show evaluation if available.
+            document.getElementById('interview-progress').textContent = 'Colloquio del ' + data.date;
+
+            if (data.evaluation) {
+                var evalDiv = document.getElementById('interview-evaluation');
+                evalDiv.style.display = 'block';
+                interviewShowEvaluation(data.evaluation);
+            }
+
+            // Play All + Back buttons.
+            var actionsDiv = document.createElement('div');
+            actionsDiv.style.cssText = 'text-align:center; margin-top:16px; display:flex; gap:10px; justify-content:center;';
+            actionsDiv.innerHTML = '<button onclick="reviewPlayAll()" id="btn-review-playall" style="padding:10px 24px; background:#7c3aed; color:#fff; border:none; border-radius:6px; font-weight:600; cursor:pointer;">&#9654; Riproduci Tutto</button>'
+                + '<button onclick="reviewStopPlayback()" style="padding:10px 24px; background:#dc3545; color:#fff; border:none; border-radius:6px; cursor:pointer;">&#9632; Stop</button>'
+                + '<button onclick="interviewReset()" style="padding:10px 24px; background:#6b7280; color:#fff; border:none; border-radius:6px; font-weight:600; cursor:pointer;">Torna alla Simulazione</button>';
+            msgContainer.appendChild(actionsDiv);
+        })
+        .catch(function(err) {
+            alert('Errore: ' + err.message);
+            interviewReset();
+        });
+    };
+
+    // ========== REVIEW PLAYBACK ==========
+
+    var reviewPlaybackIndex = -1;
+    var reviewPlaybackActive = false;
+
+    window.reviewPlayAll = function() {
+        if (!window._reviewConversation || !window._reviewConversation.length) return;
+        reviewPlaybackActive = true;
+        reviewPlaybackIndex = 0;
+        var btn = document.getElementById('btn-review-playall');
+        if (btn) { btn.innerHTML = '&#9208; In riproduzione...'; btn.disabled = true; }
+        reviewPlayNext();
+    };
+
+    function reviewPlayNext() {
+        if (!reviewPlaybackActive || reviewPlaybackIndex >= window._reviewConversation.length) {
+            reviewPlaybackActive = false;
+            reviewPlaybackIndex = -1;
+            var btn = document.getElementById('btn-review-playall');
+            if (btn) { btn.innerHTML = '&#9654; Riproduci Tutto'; btn.disabled = false; }
+            return;
+        }
+
+        var msg = window._reviewConversation[reviewPlaybackIndex];
+
+        // Scroll to the current message.
+        var msgContainer = document.getElementById('interview-messages');
+        var allMsgs = msgContainer.querySelectorAll('[data-idx]');
+        // Highlight is tricky, skip for now.
+
+        playAudio(msg.content, function() {
+            reviewPlaybackIndex++;
+            // Small pause between messages.
+            if (reviewPlaybackActive) {
+                setTimeout(reviewPlayNext, 500);
+            }
+        });
+    }
+
+    window.reviewStopPlayback = function() {
+        reviewPlaybackActive = false;
+        reviewPlaybackIndex = -1;
+        // Stop current audio.
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+        }
+        if (speechSynthesis) speechSynthesis.cancel();
+        var btn = document.getElementById('btn-review-playall');
+        if (btn) { btn.innerHTML = '&#9654; Riproduci Tutto'; btn.disabled = false; }
+    };
+
+    // ========== VOICE MODE ==========
+
+    var voiceModeEnabled = false;
+    var speechRecognition = null;
+    var speechSynthesis = window.speechSynthesis;
+    var isListening = false;
+    var currentTranscript = '';
+
+    window.toggleVoiceMode = function(enabled) {
+        voiceModeEnabled = enabled;
+        document.getElementById('interview-input-area').style.display = enabled ? 'none' : 'flex';
+        document.getElementById('interview-voice-area').style.display = enabled ? 'block' : 'none';
+
+        if (enabled) {
+            // Check browser support.
+            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('Il tuo browser non supporta il riconoscimento vocale. Usa Chrome o Edge.');
+                document.getElementById('voice-mode-toggle').checked = false;
+                voiceModeEnabled = false;
+                document.getElementById('interview-input-area').style.display = 'flex';
+                document.getElementById('interview-voice-area').style.display = 'none';
+                return;
+            }
+        }
+    };
+
+    var TTS_URL = M.cfg.wwwroot + '/local/jobaida/ajax_tts.php';
+    var currentAudio = null;
+
+    /**
+     * Play audio for any text (always works, used by review + live).
+     */
+    function playAudio(text, callback) {
+
+        // Stop any current playback.
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+        }
+
+        // Call OpenAI TTS.
+        var formData = new FormData();
+        formData.append('sesskey', SESSKEY);
+        formData.append('text', text);
+        formData.append('voice', 'onyx'); // Professional male HR voice.
+
+        fetch(TTS_URL, {method: 'POST', body: formData})
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error('TTS failed');
+            }
+            return response.blob();
+        })
+        .then(function(blob) {
+            var audioUrl = URL.createObjectURL(blob);
+            currentAudio = new Audio(audioUrl);
+            currentAudio.onended = function() {
+                URL.revokeObjectURL(audioUrl);
+                currentAudio = null;
+                if (callback) callback();
+            };
+            currentAudio.onerror = function() {
+                URL.revokeObjectURL(audioUrl);
+                currentAudio = null;
+                // Fallback to browser TTS.
+                voiceSpeakBrowser(text, callback);
+            };
+            currentAudio.play();
+        })
+        .catch(function() {
+            // Fallback to browser TTS.
+            voiceSpeakBrowser(text, callback);
+        });
+    }
+
+    /**
+     * Speak text only if voice mode is enabled (for live interview).
+     */
+    function voiceSpeak(text, callback) {
+        if (!voiceModeEnabled) {
+            if (callback) callback();
+            return;
+        }
+        playAudio(text, callback);
+    }
+
+    /**
+     * Fallback: browser TTS (free, lower quality).
+     */
+    function voiceSpeakBrowser(text, callback) {
+        if (!speechSynthesis) {
+            if (callback) callback();
+            return;
+        }
+        speechSynthesis.cancel();
+        var utterance = new SpeechSynthesisUtterance(text);
+        var langMap = {it: 'it-IT', de: 'de-DE', fr: 'fr-FR', en: 'en-US'};
+        var lang = '<?php echo get_config('local_jobaida', 'letter_language') ?: 'it'; ?>';
+        utterance.lang = langMap[lang] || 'it-IT';
+        utterance.rate = 0.95;
+        utterance.onend = function() { if (callback) callback(); };
+        utterance.onerror = function() { if (callback) callback(); };
+        speechSynthesis.speak(utterance);
+    }
+
+    /**
+     * Start listening to the microphone.
+     */
+    /**
+     * Add basic punctuation to speech-to-text output.
+     */
+    function addPunctuation(text) {
+        if (!text) return text;
+        text = text.trim();
+        // Capitalize first letter.
+        text = text.charAt(0).toUpperCase() + text.slice(1);
+        // Capitalize after period/question/exclamation.
+        text = text.replace(/([.!?]\s+)([a-z])/g, function(m, p, c) { return p + c.toUpperCase(); });
+        // Add period at end if missing.
+        if (text.length > 0 && !/[.!?]$/.test(text)) {
+            text += '.';
+        }
+        return text;
+    }
+
+    window.voiceStartListening = function() {
+        var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+
+        // Stop any ongoing speech first.
+        if (speechSynthesis) speechSynthesis.cancel();
+
+        speechRecognition = new SpeechRecognition();
+        var langMap = {it: 'it-IT', de: 'de-DE', fr: 'fr-FR', en: 'en-US'};
+        var lang = '<?php echo get_config('local_jobaida', 'letter_language') ?: 'it'; ?>';
+        speechRecognition.lang = langMap[lang] || 'it-IT';
+        speechRecognition.continuous = true;
+        speechRecognition.interimResults = true;
+
+        var btn = document.getElementById('btn-voice-mic');
+        var status = document.getElementById('voice-status');
+        var transcriptDiv = document.getElementById('voice-transcript');
+        var actionsDiv = document.getElementById('voice-actions');
+        currentTranscript = '';
+
+        btn.style.background = '#dc3545';
+        btn.style.color = '#fff';
+        btn.style.borderColor = '#dc3545';
+        btn.textContent = '...';
+        btn.onclick = function() { voiceStopListening(); };
+        status.textContent = 'Sto ascoltando... Parla ora. Clicca per fermare.';
+        status.style.color = '#dc3545';
+        transcriptDiv.style.display = 'block';
+        transcriptDiv.textContent = '';
+        actionsDiv.style.display = 'none';
+
+        isListening = true;
+
+        speechRecognition.onresult = function(event) {
+            var finalText = '';
+            var interimText = '';
+            for (var i = 0; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    finalText += event.results[i][0].transcript;
+                } else {
+                    interimText += event.results[i][0].transcript;
+                }
+            }
+            // Add basic punctuation.
+            finalText = addPunctuation(finalText);
+            currentTranscript = finalText;
+            transcriptDiv.value = finalText + (interimText ? ' ' + interimText : '');
+        };
+
+        speechRecognition.onerror = function(event) {
+            if (event.error === 'no-speech') {
+                status.textContent = 'Nessun audio rilevato. Riprova.';
+            } else if (event.error === 'not-allowed') {
+                status.textContent = 'Microfono non autorizzato. Controlla i permessi del browser.';
+                alert('Per usare la modalita vocale, autorizza il microfono nelle impostazioni del browser.');
+            } else {
+                status.textContent = 'Errore: ' + event.error;
+            }
+            status.style.color = '#dc3545';
+            voiceResetMicButton();
+        };
+
+        speechRecognition.onend = function() {
+            if (isListening) {
+                // Show confirmation.
+                voiceResetMicButton();
+                if (currentTranscript.trim()) {
+                    status.textContent = 'Trascrizione completata. Verifica e invia.';
+                    status.style.color = '#28a745';
+                    actionsDiv.style.display = 'flex';
+                } else {
+                    status.textContent = 'Nessun testo riconosciuto. Riprova.';
+                    status.style.color = '#f59e0b';
+                }
+                isListening = false;
+            }
+        };
+
+        speechRecognition.start();
+    };
+
+    function voiceStopListening() {
+        if (speechRecognition) {
+            isListening = false;
+            speechRecognition.stop();
+        }
+    }
+
+    function voiceResetMicButton() {
+        var btn = document.getElementById('btn-voice-mic');
+        btn.style.background = '#fff';
+        btn.style.color = '#7c3aed';
+        btn.style.borderColor = '#7c3aed';
+        btn.innerHTML = '&#127908;';
+        btn.onclick = function() { voiceStartListening(); };
+    }
+
+    /**
+     * Send the voice transcript as the answer.
+     */
+    window.voiceConfirmSend = function() {
+        // Read from the editable textarea (user may have modified it).
+        var editedText = document.getElementById('voice-transcript').value.trim();
+        if (!editedText) return;
+
+        // Put edited text in the answer textarea and send.
+        document.getElementById('interview-answer').value = editedText;
+        interviewReply();
+
+        // Reset voice UI.
+        document.getElementById('voice-transcript').style.display = 'none';
+        document.getElementById('voice-actions').style.display = 'none';
+        document.getElementById('voice-status').textContent = 'Attendi la risposta dell\'HR...';
+        document.getElementById('voice-status').style.color = '#7c3aed';
+        currentTranscript = '';
+    };
+
+    window.voiceRetry = function() {
+        currentTranscript = '';
+        document.getElementById('voice-transcript').value = '';
+        document.getElementById('voice-actions').style.display = 'none';
+        voiceStartListening();
+    };
+
+    // Override addChatMessage to auto-play HR audio.
+    var _originalAddChatMessage = addChatMessage;
+    addChatMessage = function(role, text) {
+        _originalAddChatMessage(role, text);
+        if (role === 'assistant') {
+            var status = document.getElementById('voice-status');
+
+            // Play audio: use inline base64 from API if available, else TTS fallback.
+            if (pendingAudioBase64) {
+                if (status) { status.textContent = 'L\'HR sta parlando...'; status.style.color = '#7c3aed'; }
+                var audioData = pendingAudioBase64;
+                pendingAudioBase64 = null;
+                if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+                currentAudio = new Audio('data:audio/mp3;base64,' + audioData);
+                currentAudio.onended = function() {
+                    currentAudio = null;
+                    if (status) { status.textContent = 'Clicca il microfono per rispondere'; status.style.color = '#6b7280'; }
+                };
+                currentAudio.play();
+            } else if (voiceModeEnabled) {
+                if (status) { status.textContent = 'L\'HR sta parlando...'; status.style.color = '#7c3aed'; }
+                voiceSpeak(text, function() {
+                    if (status) { status.textContent = 'Clicca il microfono per rispondere'; status.style.color = '#6b7280'; }
+                });
+            }
+        }
+    };
+
+    // Load voices when available (needed for some browsers).
+    if (speechSynthesis) {
+        speechSynthesis.onvoiceschanged = function() { speechSynthesis.getVoices(); };
+    }
+
     /**
      * Reset Learn & Write mode to start over.
      */
@@ -2206,6 +3130,61 @@ if (!$isauthorized) {
             }
         }
     };
+
+    // ========== PRE-FILL FROM FTM JOB SEARCH ==========
+    // Check if FTM Job Search sent an offer via localStorage.
+    (function checkJobSearchPrefill() {
+        try {
+            var raw = localStorage.getItem('jobaida_prefill');
+            if (!raw) return;
+
+            var data = JSON.parse(raw);
+            // Only use if fresh (< 5 minutes old).
+            if (!data || !data.timestamp || (Date.now() - data.timestamp) > 300000) {
+                localStorage.removeItem('jobaida_prefill');
+                return;
+            }
+
+            // Consume it (one-time use).
+            localStorage.removeItem('jobaida_prefill');
+
+            // Pre-fill the Express mode job ad textarea.
+            if (data.jobad) {
+                var jobadField = document.getElementById('jobaida-jobad');
+                if (jobadField) {
+                    jobadField.value = data.jobad;
+                    if (typeof updateCharCount === 'function') updateCharCount('jobad');
+                }
+            }
+
+            // Pre-fill CV if provided.
+            if (data.cv) {
+                var cvField = document.getElementById('jobaida-cv');
+                if (cvField) {
+                    cvField.value = data.cv;
+                    if (typeof updateCharCount === 'function') updateCharCount('cv');
+                }
+            }
+
+            // Switch to Express mode.
+            if (typeof switchMode === 'function') {
+                switchMode('express');
+            }
+
+            // Show a notification.
+            var toast = document.getElementById('jobaida-toast');
+            if (toast) {
+                toast.textContent = 'Annuncio importato da FTM Job Search — compila il CV e genera la lettera!';
+                toast.style.background = '#7c3aed';
+                toast.style.color = '#fff';
+                toast.style.display = 'block';
+                setTimeout(function() { toast.style.display = 'none'; }, 5000);
+            }
+
+        } catch (e) {
+            // Silent fail.
+        }
+    })();
 
 })();
 </script>

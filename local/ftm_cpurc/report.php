@@ -319,6 +319,24 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
     background: #f8f9fa;
     border-color: #2c3e50;
 }
+/* AI Generate button */
+.ai-gen-btn {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 8px;
+    vertical-align: middle;
+    transition: background 0.2s;
+}
+.ai-gen-btn:hover { background: #2563eb; }
+.ai-gen-btn:disabled { background: #93c5fd; cursor: wait; }
+.ai-gen-btn.loading { background: #f59e0b; }
 
 /* Absence table */
 .doc-absence-table {
@@ -852,6 +870,47 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
             </div>
 
             <!-- 1. Situazione iniziale -->
+            <?php if (is_siteadmin()): ?>
+            <!-- AI Input Panel (visible only to admin) -->
+            <div class="doc-section" style="background:#eff6ff; border:2px solid #3b82f6;">
+                <h2 class="doc-section-title" style="color:#1e40af;">Assistente AI - Dati per Generazione</h2>
+                <div class="doc-section-content">
+                    <!-- CVBD -->
+                    <div style="margin-bottom:12px;">
+                        <label style="font-size:12px; font-weight:600; color:#1e40af; display:block; margin-bottom:4px;">CVBD dello Studente</label>
+                        <p style="font-size:11px; color:#4b5563; margin:0 0 6px;">
+                            Incolla il CVBD. L'AI usa questi dati per Situazione iniziale, Possibili settori e Sintesi.
+                        </p>
+                        <textarea id="ai-cvbd-input" rows="4" style="width:100%; border:1px solid #93c5fd; border-radius:6px; padding:10px; font-size:13px; resize:vertical;"
+                                  placeholder="Incolla qui il CVBD dello studente (copia da Word/PDF)..."></textarea>
+                    </div>
+
+                    <!-- Report Studente PDF -->
+                    <div style="margin-bottom:12px; padding:12px; background:#f0fdf4; border:1px solid #86efac; border-radius:6px;">
+                        <label style="font-size:12px; font-weight:600; color:#166534; display:block; margin-bottom:4px;">Report Studente (PDF/Word)</label>
+                        <p style="font-size:11px; color:#4b5563; margin:0 0 6px;">
+                            Carica il PDF del report studente (esportato dalla piattaforma produzione). L'AI usa questi dati per la Valutazione competenze settore.
+                        </p>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input type="file" id="ai-report-file" accept=".pdf,.doc,.docx,.txt"
+                                   style="border:1px solid #86efac; border-radius:6px; padding:6px; font-size:12px; flex:1;"
+                                   onchange="aiExtractReportFile(this)">
+                            <span id="ai-report-status" style="font-size:11px; color:#6b7280;"></span>
+                        </div>
+                        <textarea id="ai-report-input" rows="4" style="width:100%; border:1px solid #86efac; border-radius:6px; padding:10px; font-size:13px; resize:vertical; margin-top:6px; display:none;"
+                                  placeholder="Il contenuto del report apparira qui dopo il caricamento..."></textarea>
+                    </div>
+
+                    <!-- Note Coach -->
+                    <div>
+                        <label style="font-size:12px; font-weight:600; color:#4b5563;">Note aggiuntive per l'AI (opzionale):</label>
+                        <input type="text" id="ai-coach-notes" style="width:100%; border:1px solid #93c5fd; border-radius:6px; padding:8px; font-size:13px; margin-top:4px;"
+                               placeholder="Es: ha fatto stage presso Rezzonico SA, settore piscine...">
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <div class="doc-section">
                 <h2 class="doc-section-title">1. Situazione iniziale</h2>
                 <div class="doc-section-content">
@@ -860,6 +919,9 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                         <p class="doc-subsection-hint">
                             Sintesi situazione iniziale e obiettivi, inserire una storia della carriera professionale e formativa della PCI.
                         </p>
+                        <?php if (is_siteadmin()): ?>
+                        <button type="button" class="ai-gen-btn" onclick="aiGenerate('initial_situation')" title="Genera con AI dal CVBD">Genera AI</button>
+                        <?php endif; ?>
                         <textarea name="initial_situation" class="doc-field-textarea" rows="6"
                                   placeholder="Sintesi situazione iniziale e obiettivi, inserire una storia della carriera professionale e formativa della PCI."><?php echo s($report->initial_situation ?? ''); ?></textarea>
                     </div>
@@ -869,6 +931,9 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                         <p class="doc-subsection-hint">
                             Es.: Generico, meccanica, automazione, logistica, elettrico ecc...
                         </p>
+                        <?php if (is_siteadmin()): ?>
+                        <button type="button" class="ai-gen-btn" onclick="aiGenerate('initial_situation_sector')" title="Genera con AI">Genera AI</button>
+                        <?php endif; ?>
                         <textarea name="initial_situation_sector" class="doc-field-textarea" rows="3"
                                   placeholder="Es.: Generico, meccanica, automazione, logistica, elettrico ecc. Indicare eventuali settori in cui si svolge un rilevamento approfondito teorico o pratico."><?php echo s($report->initial_situation_sector ?? ''); ?></textarea>
                     </div>
@@ -917,18 +982,27 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                         <p class="doc-subsection-hint">
                             (sulla base dei documenti redatti durante il percorso indicare quali competenze tecniche sono state rilevate, inserire qui anche se sono stati fatti anche stage che hanno permesso di rilevare/confermare competenze pratiche)
                         </p>
+                        <?php if (is_siteadmin()): ?>
+                        <button type="button" class="ai-gen-btn" onclick="aiGenerate('sector_competency_text')" title="Genera con AI dalle competenze">Genera AI</button>
+                        <?php endif; ?>
                         <textarea name="sector_competency_text" class="doc-field-textarea" rows="5"
                                   placeholder="Sulla base dei documenti redatti durante il percorso indicare quali competenze tecniche sono state rilevate, inserire qui anche se sono stati fatti stage che hanno permesso di rilevare/confermare competenze pratiche."><?php echo s($report->sector_competency_text ?? ''); ?></textarea>
                     </div>
 
                     <div class="doc-subsection">
                         <div class="doc-subsection-title">Possibili settori e ambiti:</div>
+                        <?php if (is_siteadmin()): ?>
+                        <button type="button" class="ai-gen-btn" onclick="aiGenerate('possible_sectors')" title="Genera con AI">Genera AI</button>
+                        <?php endif; ?>
                         <textarea name="possible_sectors" class="doc-field-textarea" rows="3"
                                   placeholder="Indicare possibili settori e ambiti professionali..."><?php echo s($report->possible_sectors ?? ''); ?></textarea>
                     </div>
 
                     <div class="doc-subsection">
                         <div class="doc-subsection-title">Sintesi conclusiva:</div>
+                        <?php if (is_siteadmin()): ?>
+                        <button type="button" class="ai-gen-btn" onclick="aiGenerate('final_summary')" title="Genera sintesi con AI">Genera AI</button>
+                        <?php endif; ?>
                         <textarea name="final_summary" class="doc-field-textarea" rows="4"
                                   placeholder="Sintesi conclusiva della valutazione..."><?php echo s($report->final_summary ?? ''); ?></textarea>
                     </div>
@@ -998,7 +1072,11 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                             </tr>
                             <?php endforeach; ?>
                         </table>
-                        <p style="margin: 8px 0 4px 0; font-weight: 600;">Osservazioni:</p>
+                        <p style="margin: 8px 0 4px 0; font-weight: 600;">Osservazioni:
+                            <?php if (is_siteadmin()): ?>
+                            <button type="button" class="ai-gen-btn" onclick="aiGenerateObs('<?php echo $data['obs_field']; ?>', '<?php echo $type; ?>')" title="Genera osservazioni con AI dalle valutazioni">Genera AI</button>
+                            <?php endif; ?>
+                        </p>
                         <textarea name="<?php echo $data['obs_field']; ?>" class="doc-field-textarea" rows="2"
                                   placeholder="Osservazioni..."><?php echo s($report->{$data['obs_field']} ?? ''); ?></textarea>
                     </div>
@@ -1099,6 +1177,9 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                             <?php endforeach; ?>
                         </div>
                         <p style="margin: 8px 0 4px 0; font-weight: 600;">Osservazioni:</p>
+                        <?php if (is_siteadmin()): ?>
+                        <button type="button" class="ai-gen-btn" onclick="aiGenerate('obs_search_channels')" title="Genera con AI">Genera AI</button>
+                        <?php endif; ?>
                         <textarea name="obs_search_channels" class="doc-field-textarea" rows="2"
                                   placeholder="Osservazioni sui canali di ricerca..."><?php echo s($report->obs_search_channels ?? ''); ?></textarea>
                     </div>
@@ -1119,6 +1200,9 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                             <?php endforeach; ?>
                         </div>
                         <p style="margin: 8px 0 4px 0; font-weight: 600;">Osservazioni:</p>
+                        <?php if (is_siteadmin()): ?>
+                        <button type="button" class="ai-gen-btn" onclick="aiGenerate('obs_search_evaluation')" title="Genera con AI">Genera AI</button>
+                        <?php endif; ?>
                         <textarea name="obs_search_evaluation" class="doc-field-textarea" rows="3"
                                   placeholder="Osservazioni sulla valutazione complessiva..."><?php echo s($report->obs_search_evaluation ?? ''); ?></textarea>
                     </div>
@@ -1147,6 +1231,9 @@ a.doc-toolbar-btn, a.doc-toolbar-btn:visited, a.doc-toolbar-btn:hover { color: w
                                   placeholder="Indicare i datori di lavoro e le date dei colloqui..."><?php echo s($report->interviews_employers ?? ''); ?></textarea>
 
                         <p style="font-weight: 600; margin: 12px 0 8px 0;">Osservazioni:</p>
+                        <?php if (is_siteadmin()): ?>
+                        <button type="button" class="ai-gen-btn" onclick="aiGenerate('obs_interviews')" title="Genera con AI">Genera AI</button>
+                        <?php endif; ?>
                         <textarea name="obs_interviews" class="doc-field-textarea" rows="3"
                                   placeholder="Osservazioni sui colloqui..."><?php echo s($report->obs_interviews ?? ''); ?></textarea>
                     </div>
@@ -1315,6 +1402,185 @@ document.addEventListener('DOMContentLoaded', function() {
         btnSave.parentNode.insertBefore(indicator, btnSave.nextSibling);
     }
 });
+
+// ========== AI GENERATION FUNCTIONS ==========
+<?php if (is_siteadmin()): ?>
+
+function aiExtractReportFile(input) {
+    if (!input.files.length) return;
+    var file = input.files[0];
+    var statusEl = document.getElementById('ai-report-status');
+    var textareaEl = document.getElementById('ai-report-input');
+    statusEl.textContent = 'Estrazione testo...';
+    statusEl.style.color = '#f59e0b';
+
+    var formData = new FormData();
+    formData.append('file', file);
+    formData.append('sesskey', M.cfg.sesskey);
+
+    fetch('<?php echo $CFG->wwwroot; ?>/local/jobaida/ajax_extract_text.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(resp) {
+        if (resp.success && resp.text) {
+            textareaEl.value = resp.text;
+            textareaEl.style.display = 'block';
+            statusEl.textContent = resp.chars + ' caratteri estratti da ' + resp.filename;
+            statusEl.style.color = '#28a745';
+        } else {
+            statusEl.textContent = 'Errore: ' + (resp.message || 'Estrazione fallita');
+            statusEl.style.color = '#dc3545';
+            textareaEl.style.display = 'block';
+            textareaEl.placeholder = 'Estrazione automatica fallita. Incolla il testo manualmente qui...';
+        }
+    })
+    .catch(function(err) {
+        statusEl.textContent = 'Errore: ' + err.message;
+        statusEl.style.color = '#dc3545';
+    });
+}
+
+function aiGenerate(field) {
+    var cvbd = document.getElementById('ai-cvbd-input') ? document.getElementById('ai-cvbd-input').value.trim() : '';
+    var reportText = document.getElementById('ai-report-input') ? document.getElementById('ai-report-input').value.trim() : '';
+    var coachNotes = document.getElementById('ai-coach-notes') ? document.getElementById('ai-coach-notes').value.trim() : '';
+    var textarea = document.querySelector('textarea[name="' + field + '"]');
+    if (!textarea) { alert('Campo non trovato: ' + field); return; }
+
+    // Find the button that was clicked.
+    var btns = document.querySelectorAll('.ai-gen-btn');
+    var clickedBtn = null;
+    btns.forEach(function(b) {
+        if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf("'" + field + "'") !== -1) {
+            clickedBtn = b;
+        }
+    });
+
+    if (clickedBtn) {
+        clickedBtn.disabled = true;
+        clickedBtn.textContent = 'Generazione...';
+        clickedBtn.classList.add('loading');
+    }
+
+    var formData = new FormData();
+    formData.append('sesskey', '<?php echo sesskey(); ?>');
+    formData.append('field', field);
+    formData.append('studentid', '<?php echo $student->moodleuserid ?? $student->userid ?? $id; ?>');
+    formData.append('cvbd_text', cvbd);
+    formData.append('report_text', typeof reportText !== 'undefined' ? reportText : '');
+    formData.append('coach_notes', coachNotes);
+
+    fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_generate_ai.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (clickedBtn) {
+            clickedBtn.disabled = false;
+            clickedBtn.textContent = 'Genera AI';
+            clickedBtn.classList.remove('loading');
+        }
+        if (data.success) {
+            textarea.value = data.text;
+            textarea.style.background = '#e8f5e9';
+            setTimeout(function() { textarea.style.background = ''; }, 2000);
+            triggerAutosave();
+        } else {
+            alert('Errore AI: ' + data.message);
+        }
+    })
+    .catch(function(err) {
+        if (clickedBtn) {
+            clickedBtn.disabled = false;
+            clickedBtn.textContent = 'Genera AI';
+            clickedBtn.classList.remove('loading');
+        }
+        alert('Errore connessione: ' + err.message);
+    });
+}
+
+function aiGenerateObs(obsField, compType) {
+    // Collect ratings from the competency table for this type.
+    var ratings = {};
+    var idx = 0;
+    while (true) {
+        var radio = document.querySelector('input[name="' + compType + '_' + idx + '"]:checked');
+        if (!radio && idx > 0) break;
+        if (radio) {
+            var row = radio.closest('tr');
+            var compName = row ? row.querySelector('td').textContent.trim() : 'Competenza ' + idx;
+            ratings[compName] = radio.value;
+        }
+        idx++;
+        if (idx > 10) break;
+    }
+
+    var cvbd = document.getElementById('ai-cvbd-input') ? document.getElementById('ai-cvbd-input').value.trim() : '';
+    var coachNotes = document.getElementById('ai-coach-notes') ? document.getElementById('ai-coach-notes').value.trim() : '';
+    var textarea = document.querySelector('textarea[name="' + obsField + '"]');
+    if (!textarea) { alert('Campo non trovato: ' + obsField); return; }
+
+    // Find button.
+    var btn = textarea.previousElementSibling;
+    while (btn && !btn.classList.contains('ai-gen-btn')) { btn = btn.parentElement ? btn.parentElement.querySelector('.ai-gen-btn') : null; break; }
+    // Fallback: find by onclick.
+    if (!btn) {
+        document.querySelectorAll('.ai-gen-btn').forEach(function(b) {
+            if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf("'" + obsField + "'") !== -1) {
+                btn = b;
+            }
+        });
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Generazione...';
+        btn.classList.add('loading');
+    }
+
+    var formData = new FormData();
+    formData.append('sesskey', '<?php echo sesskey(); ?>');
+    formData.append('field', obsField);
+    formData.append('studentid', '<?php echo $student->moodleuserid ?? $student->userid ?? $id; ?>');
+    formData.append('cvbd_text', cvbd);
+    formData.append('report_text', typeof reportText !== 'undefined' ? reportText : '');
+    formData.append('coach_notes', coachNotes);
+    formData.append('ratings', JSON.stringify(ratings));
+
+    fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/ajax_generate_ai.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Genera AI';
+            btn.classList.remove('loading');
+        }
+        if (data.success) {
+            textarea.value = data.text;
+            textarea.style.background = '#e8f5e9';
+            setTimeout(function() { textarea.style.background = ''; }, 2000);
+            triggerAutosave();
+        } else {
+            alert('Errore AI: ' + data.message);
+        }
+    })
+    .catch(function(err) {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Genera AI';
+            btn.classList.remove('loading');
+        }
+        alert('Errore connessione: ' + err.message);
+    });
+}
+
+<?php endif; ?>
 
 function selectReinsertion(value, cell) {
     // Deselect all reinsertion cells.
@@ -1510,7 +1776,7 @@ function handleAladinoFile(file) {
     // Send preview request.
     var formData = new FormData();
     formData.append('sesskey', '<?php echo sesskey(); ?>');
-    formData.append('studentid', '<?php echo $id; ?>');
+    formData.append('studentid', '<?php echo $student->moodleuserid ?? $student->userid ?? $id; ?>');
     formData.append('action', 'preview');
     formData.append('excelfile', file);
 
@@ -1600,7 +1866,7 @@ function confirmAladinoImport() {
 
     var formData = new FormData();
     formData.append('sesskey', '<?php echo sesskey(); ?>');
-    formData.append('studentid', '<?php echo $id; ?>');
+    formData.append('studentid', '<?php echo $student->moodleuserid ?? $student->userid ?? $id; ?>');
     formData.append('action', 'import');
     formData.append('excelfile', aladinoFileData);
 

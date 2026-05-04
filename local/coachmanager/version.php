@@ -8,10 +8,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_coachmanager';
-$plugin->version = 2026022002;           // YYYYMMDDXX - Week Planner modal
+$plugin->version = 2026042800;           // YYYYMMDDXX - Dashboard v1 deprecata: redirect automatico a v2
 $plugin->requires = 2022041900;          // Moodle 4.0+
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = '2.4.0';              // Week Planner: pianificazione attivita settimanale per studenti
+$plugin->release = '2.5.5';              // Solo Dashboard V2 attiva
 
 // Dipendenze
 $plugin->dependencies = [

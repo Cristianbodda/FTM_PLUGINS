@@ -800,7 +800,7 @@ echo $OUTPUT->header();
             </div>
         </div>
         <div class="ftm-student-header-right">
-            <a href="<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_dashboard.php" class="ftm-header-btn">
+            <a href="<?php echo $CFG->wwwroot; ?>/local/coachmanager/coach_dashboard_v2.php" class="ftm-header-btn">
                 &#8592; Lista Studenti
             </a>
             <a href="<?php echo $CFG->wwwroot; ?>/local/coachmanager/reports_v2.php?studentid=<?php echo $studentid; ?>" class="ftm-header-btn primary">

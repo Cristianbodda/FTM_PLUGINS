@@ -1,18 +1,19 @@
 # FTM PLUGINS - Guida per Claude
 
-**Ultimo aggiornamento:** 23 Marzo 2026 (v2)
+**Ultimo aggiornamento:** 04 Maggio 2026 (v4)
 
 ## Panoramica Progetto
 
-Ecosistema di 13 plugin Moodle per gestione competenze professionali.
+Ecosistema di 14 plugin Moodle per gestione competenze professionali.
 
 Target: Moodle 4.5+ / 5.0 | Licenza: GPL-3.0
 
+Server Produzione: https://ftmacademy.hizuvala.myhostpoint.ch
 Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (23/03/2026)
+## STATO ATTUALE SVILUPPO (04/05/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -24,7 +25,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - Filtri Calendario (Gruppo/KW, Aula, Tipo, Reset)
 - Excel Calendar Import (3 aule, colori celle, coach-group inference) - Dettagli: `docs/DETAILS_SCHEDULER_IMPORT.md`
 
-#### 2. Sector Manager + Student Report (local_competencymanager) - 01/04/2026 (v2.8.1)
+#### 2. Sector Manager + Student Report (local_competencymanager) - 07/04/2026 (v2.9.0)
 - Multi-Settore, sector_admin.php, capability managesectors
 - Gap Comments System (79 aree, 2 toni) - Dettagli: `docs/DETAILS_GAP_COMMENTS.md`
 - Sistema Tab Orizzontale (6 tab, localStorage, auto-submit)
@@ -52,21 +53,24 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - Admin Quiz Tester (selezione studente/quiz/percentuale)
 - Fix quiz attempts: layout slot e multichoice shuffle
 
-#### 4. Self Assessment (local_selfassessment) - v1.3.1
+#### 4. Self Assessment (local_selfassessment) - 16/04/2026 (v1.6.3)
 - Popup bloccante, doppia password skip (6807/FTM)
 - Hook System Moodle 4.3+, Bloom Legend, Area Mapping completo
 - **Observer affidabile:** Versioning fallback Moodle 4.x, retroactive assignment safety net in compile.php
 - **Toggle admin:** settings.php con checkbox `popup_enabled` (default OFF per setup produzione)
 - **Fix notifiche email:** Coach riceve notifica quiz/autovalutazione SOLO per studenti assegnati (non piu tutti i coach)
+- **Fix filtro settore (14/04/2026):** Fallback nel filtro settore dell'observer — se il settore primario scarta TUTTE le competenze del quiz (es. studente ELETTRICITA che fa quiz AUTOMAZIONE), assegna comunque invece di lasciare 0
+- **Vecchio sistema deprecato:** `competencymanager/my_selfassessment.php` ora e' un redirect a `compile.php`. Unico sistema attivo: `selfassessment/compile.php`
+- **Backfill script:** `fix_missing_assignments.php` e `backfill_assign_from_saved.php` per migrare dati dal vecchio al nuovo sistema
 
-#### 5. Setup Universale Quiz (local_competencyxmlimport) - v1.5
+#### 5. Setup Universale Quiz (local_competencyxmlimport) - v1.4
 - Import XML/Word/Excel/CSV, assegnazione competenze, debug integrato
 - Quiz Export Tool (CSV/Excel), Excel/CSV Quiz Import (.xlsx/.xlsb/.csv)
 - CSV Import: supporta file esportati dal Quiz Export Tool (semicolon, UTF-8 BOM)
 - **Sostituisci domande:** Checkbox per cancellare quiz+domande vecchie e reimportare da Excel pulito
 - **Fix HTML quiz:** Rimosso wrapping `<p>` e `<br>` da import (tutte le path) + script fix DB esistenti
 
-#### 6. Coach Dashboard V2 (local_coachmanager) - 27/02/2026
+#### 6. Coach Dashboard V2 (local_coachmanager) - 27/02/2026 (v2.4.0)
 - 4 Viste, Zoom accessibilita, Filtri, Timeline, Note Coach, Export Word
 - Navigazione dentro corsi (sidebar link)
 - Reports V2: link diretto a Student Report con parametri preimpostati
@@ -138,10 +142,25 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 
 ---
 
-#### 8. Coaching Individualizzato (local_ftm_sip) - 01/04/2026 (v1.3.0) - Rinominato da SIP
+#### 8. Coaching Individualizzato (local_ftm_sip) - 04/05/2026 (v2.8.3) - CI v2.0
+
+**CI v2.0 — Ristrutturazione completa (04/05/2026):**
+- **12 aree attivazione** (da 7): target_companies, mandatory_searches, search_channels, social_network, personal_network, targeted_applications, unsolicited_applications, agencies_urc, interview_training, stage_trials, strategy_improvement, growing_autonomy
+- **Tracker settimanale inline:** Tabella per area/settimana con bottoni W1-W10+Totale, contatori dinamici
+- **Bug fix contatori:** `get_weekly_summary` ora usa `get_recordset_sql` (era `get_records_sql` che sovrascriveva le settimane precedenti per stessa area)
+- **Draft autosave:** Bozza eligibility salvata anche senza attivazione (motivation, LADI, date_start)
+- **Semaforo 3 livelli:** 0-20 non_idoneo, 21-28 idoneo, 29-36 idoneo_prioritario (auto-calcolato dal totale)
+- **Scala criteri 1-6** (era 1-5)
+- **Foglio URC digitale:** `mandatory_searches` — modulo ufficiale prova sforzi personali
+- **Form Accettazione:** 12 obiettivi con baseline/target/actual per area (`local_ftm_sip_acceptance`)
+- **Search entries:** registrazione dettagliata contatti/candidature (`local_ftm_sip_search_entries`)
+- **Channel tracking:** canali ricerca attivati per settimana (`local_ftm_sip_channel_usage`)
+- **Reset admin:** `admin_reset_all.php` per cancellare dati CI (solo siteadmin, per esercitazioni)
+- **Obiettivi hardcoded IT:** Evita `[[missing_key]]` se lang file vecchio sul server
+
+**Funzionalita base (da v1.2.0):**
 - Percorso 10 settimane post-rilevamento per PCI con potenziale di collocamento
-- **Griglia Valutazione PCI:** 6 criteri numerici 1-5 (Motivazione, Chiarezza Obiettivo, Occupabilita, Autonomia, Bisogno Coaching, Comportamento)
-- **Piano d'Azione:** 7 aree attivazione (scala 0-6), baseline congelata, radar SVG overlay
+- **Griglia Valutazione PCI:** 6 criteri numerici 1-6 (Motivazione, Chiarezza Obiettivo, Occupabilita, Autonomia, Bisogno Coaching, Comportamento)
 - **Diario Coaching:** Timeline incontri, azioni assegnate con scadenze e stati
 - **Calendario Appuntamenti:** CRUD con notifiche automatiche
 - **KPI:** Candidature inviate, contatti aziende, opportunita generate
@@ -151,11 +170,28 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Notifiche:** 7 tipi (appuntamenti, azioni, inattivita, frequenza incontri)
 - **Registro Aziende:** Condiviso, crescita organica, autocomplete
 - **Area Studente:** sip_my.php con inserimento KPI autonomo
-- **12 tabelle DB, 31 file, ~11.000 righe, 500+ stringhe EN/IT**
+- **15 tabelle DB, 40+ file**
 - Integrato nella Coach Dashboard V2 (badge teal "CI", filtri, modal attivazione)
 - **Rinominato:** SIP -> Coaching Individualizzato (CI) in tutta l'interfaccia
 - **Campo LADI:** Indennita giornaliere LADI obbligatorie per attivazione
 - Dettagli: `docs/MANUALE_SIP.md`, `docs/REPORT_ISTITUZIONALE_SIP.md`
+
+**Nuove tabelle DB (upgrade 2026042100):**
+- `local_ftm_sip_acceptance` — form accettazione 12 obiettivi (baseline/target/actual)
+- `local_ftm_sip_search_entries` — registrazione dettagliata contatti/candidature per area/settimana
+- `local_ftm_sip_coach_evals` — valutazioni coach settimanali (Strategia, Autonomia, 1-10)
+- `local_ftm_sip_channel_usage` — canali di ricerca attivati per enrollment
+
+**Nuovi file (v2.0):**
+- `ajax_save_tracking.php` — CRUD search_entries + coach_evals + proof upload
+- `ajax_save_acceptance.php` — salva form accettazione 12 aree
+- `ajax_save_channels.php` — gestisce attivazione canali ricerca
+- `ajax_get_eligibility.php` — recupera dati eligibility per modal
+- `ajax_inform_secretariat.php` — notifica segreteria attivazione CI
+- `ajax_request_activation.php` — richiesta attivazione da coach
+- `admin_reset_all.php` — reset dati CI (solo siteadmin)
+- `settings.php` — impostazioni plugin CI
+- `classes/report_pdf.php` — generazione report PDF
 
 ---
 
@@ -179,12 +215,21 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
   - Configurazione salvata in `local_garage_config` per studente
 - **Soglia globale:** Amministrazione -> Plugin -> Competency Manager -> Soglia minima %
 
+#### 11. JobAIDA (local_jobaida) - 10/04/2026 (v1.1.0 BETA)
+- Generatore lettere di presentazione AIDA con AI (Azure OpenAI)
+- **Dual mode:** Express Writers + Coaching Writers
+- **Interview simulation:** Simulazione colloqui con AI
+- **Estrazione testi:** Server-side da PDF/Word/TXT
+- **Export Word:** Lettera formattata con placeholders
+- **Drag & drop:** Zone upload file CV/annuncio
+- Richiede Moodle 4.4+
+
 ---
 
-## Plugin (14 totali)
+## Plugin (15 totali)
 
-### Local (12)
-competencymanager, coachmanager, competencyreport, competencyxmlimport, ftm_ai (STANDBY), ftm_hub, ftm_scheduler, ftm_testsuite, ftm_cpurc, ftm_sip (Coaching Individualizzato), labeval, selfassessment
+### Local (13)
+competencymanager, coachmanager, competencyreport, competencyxmlimport, ftm_ai (STANDBY), ftm_hub, ftm_scheduler, ftm_testsuite, ftm_cpurc, ftm_sip (Coaching Individualizzato), jobaida, labeval, selfassessment
 
 ### Block (1): ftm_tools | Question Bank (1): competenciesbyquestion
 
@@ -363,16 +408,17 @@ ftm_hub (centrale)
 ├── competencymanager (core + sector_manager + gap_comments)
 │   ├── competencyreport
 │   ├── competencyxmlimport (+ setup_universale)
-│   ├── selfassessment (+ observer settori + filtro primario)
+│   ├── selfassessment (+ observer settori + filtro settore con fallback)
 │   ├── coachmanager (+ dashboard V2 + badge CI)
 │   ├── technical_passport.php (Passaporto Tecnico - 12 sezioni)
 │   ├── garage_ftm.php (Garage FTM - costruzione passaporto)
 │   └── ftm_ai [STANDBY]
 ├── labeval
+├── jobaida (AI cover letters + interview simulation, Azure OpenAI)
 ├── ftm_scheduler (+ local_ftm_coaches)
 ├── ftm_testsuite
 ├── ftm_cpurc (+ report finale + annulla iscrizione + loginas)
-└── ftm_sip (Coaching Individualizzato - 12 tabelle, 31 file)
+└── ftm_sip (Coaching Individualizzato - 15 tabelle, 40+ file — CI v2.0)
     ├── Integrato in coachmanager (badge CI, filtri, modal + campo LADI)
     ├── Legge da: competencymanager, selfassessment, ftm_scheduler
     └── 7 tipi notifica + cron task
@@ -390,6 +436,7 @@ Tabelle Condivise:
 
 ## RISORSE
 
+- Server Produzione: https://ftmacademy.hizuvala.myhostpoint.ch
 - Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - Dashboard Segreteria: /local/ftm_scheduler/secretary_dashboard.php
 - CPURC Dashboard: /local/ftm_cpurc/index.php
@@ -406,6 +453,20 @@ Tabelle Condivise:
 - CI Statistiche: /local/ftm_sip/sip_stats.php
 - CI Area Studente: /local/ftm_sip/sip_my.php
 - Registro Aziende: /local/ftm_sip/companies.php
+- JobAIDA: /local/jobaida/index.php
+- Autovalutazione (UNICO): /local/selfassessment/compile.php
+- Autovalutazione (DEPRECATO, redirect): /local/competencymanager/my_selfassessment.php
+
+---
+
+## NOTE IMPORTANTI
+
+- **Framework ID PRODUZIONE:** Su ftmacademy il framework FTM-01 ha id=**14** (NON 9 come su test)
+- **Vecchio selfassessment:** `competencymanager/my_selfassessment.php` e' ora un redirect a `selfassessment/compile.php`. Non usare piu.
+- **Filtro settore selfassessment:** Se il settore primario scarta TUTTE le competenze di un quiz, il fallback le assegna comunque (fix 14/04/2026)
+- **PARAM_ALPHANUMEXT:** Tronca accenti (es. ELETTRICITA). Usare alias in area_mapping.php per gestire il problema.
+- **Tabelle gruppi:** Usare `local_ftm_groups` + `local_ftm_group_members` (NON scheduler_groups)
+- **Coach userid:** Record `local_ftm_coaches` possono avere userid=2 placeholder
 
 ---
 

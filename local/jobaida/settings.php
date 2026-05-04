@@ -56,5 +56,59 @@ if ($hassiteconfig) {
         PARAM_INT
     ));
 
+    // ========== TTS Settings (Text-to-Speech for Interview Simulation) ==========
+
+    $settings->add(new admin_setting_heading(
+        'local_jobaida/tts_heading',
+        'Text-to-Speech (Colloquio Simulato)',
+        'Configura il motore vocale per la simulazione colloquio.'
+    ));
+
+    // TTS Provider.
+    $settings->add(new admin_setting_configselect(
+        'local_jobaida/tts_provider',
+        'Motore TTS',
+        'Scegli il motore Text-to-Speech: OpenAI (buona qualita, usa stessa API key) o ElevenLabs (qualita premium, richiede API key separata).',
+        'openai',
+        [
+            'openai' => 'OpenAI TTS (~$0.06/colloquio)',
+            'elevenlabs' => 'ElevenLabs (qualita premium)',
+            'browser' => 'Browser (gratuito, qualita base)',
+        ]
+    ));
+
+    // OpenAI TTS Voice.
+    $settings->add(new admin_setting_configselect(
+        'local_jobaida/tts_openai_voice',
+        'Voce OpenAI',
+        'Voce per OpenAI TTS. Onyx = maschile professionale, Nova = femminile.',
+        'onyx',
+        [
+            'onyx' => 'Onyx (maschile, professionale)',
+            'nova' => 'Nova (femminile)',
+            'alloy' => 'Alloy (neutrale)',
+            'echo' => 'Echo (maschile)',
+            'fable' => 'Fable (narratore)',
+            'shimmer' => 'Shimmer (femminile morbida)',
+        ]
+    ));
+
+    // ElevenLabs API Key.
+    $settings->add(new admin_setting_configpasswordunmask(
+        'local_jobaida/elevenlabs_apikey',
+        'ElevenLabs API Key',
+        'API key da elevenlabs.io (Profile > API Keys). Necessaria solo se usi ElevenLabs come motore TTS.',
+        ''
+    ));
+
+    // ElevenLabs Voice ID.
+    $settings->add(new admin_setting_configtext(
+        'local_jobaida/elevenlabs_voice_id',
+        'ElevenLabs Voice ID',
+        'ID della voce ElevenLabs. Trova le voci disponibili su elevenlabs.io/voice-library. Esempio: pNInz6obpgDQGcFmaJgB (Adam).',
+        '',
+        PARAM_ALPHANUMEXT
+    ));
+
     $ADMIN->add('localplugins', $settings);
 }

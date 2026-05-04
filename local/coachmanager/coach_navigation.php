@@ -29,7 +29,7 @@ $nav_items = [
     'lista' => [
         'label' => 'Lista Studenti',
         'icon' => '&#128101;', // people icon
-        'url' => $CFG->wwwroot . '/local/coachmanager/coach_dashboard.php' . ($nav_courseid ? '?courseid=' . $nav_courseid : ''),
+        'url' => $CFG->wwwroot . '/local/coachmanager/coach_dashboard_v2.php' . ($nav_courseid ? '?courseid=' . $nav_courseid : ''),
     ],
     'quiz' => [
         'label' => 'Quiz',

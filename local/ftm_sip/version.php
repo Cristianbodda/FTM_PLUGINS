@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_ftm_sip';
-$plugin->version = 2026032601;  // Add ladi_indemnity field to enrollments.
+$plugin->version = 2026050404;  // Fix get_weekly_summary deduplication bug (get_recordset_sql).
 $plugin->requires = 2024042200; // Moodle 4.4+
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = 'v1.2.0';
+$plugin->release = 'v2.8.3 — Fix week button counts in tracker';
 $plugin->dependencies = [
     'local_competencymanager' => ANY_VERSION,
     'local_coachmanager' => ANY_VERSION,

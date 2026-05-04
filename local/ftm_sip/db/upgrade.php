@@ -243,5 +243,253 @@ function xmldb_local_ftm_sip_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026032601, 'local', 'ftm_sip');
     }
 
+    // ===========================================================
+    // CI v2.0 — Ristrutturazione 12 aree + accettazione + tracking settimanale
+    // ===========================================================
+    if ($oldversion < 2026042100) {
+
+        // -------------------------------------------------------
+        // 1. New table: local_ftm_sip_acceptance
+        // Form "Accettazione e partenza" — 12 obiettivi con accettazione, baseline, target.
+        // -------------------------------------------------------
+        $table = new xmldb_table('local_ftm_sip_acceptance');
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('enrollmentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('area_key', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('accepted', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('baseline_value', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('target_value', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('actual_value', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('enrollmentid_fk', XMLDB_KEY_FOREIGN, ['enrollmentid'], 'local_ftm_sip_enrollments', ['id']);
+        $table->add_index('enrollment_area_uq', XMLDB_INDEX_UNIQUE, ['enrollmentid', 'area_key']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // -------------------------------------------------------
+        // 2. New table: local_ftm_sip_search_entries
+        // Registrazione dettagliata per area/settimana (modulo URC digitale).
+        // Ogni riga = un contatto/candidatura/azione dello studente.
+        // -------------------------------------------------------
+        $table = new xmldb_table('local_ftm_sip_search_entries');
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('enrollmentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('area_key', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('sip_week', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '1');
+        $table->add_field('entry_date', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        // Azienda (testo + FK opzionale al registro condiviso).
+        $table->add_field('company_name', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('companyid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('company_address', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('company_email', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('company_phone', XMLDB_TYPE_CHAR, '50', null, null, null, null);
+        $table->add_field('contact_person', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        // Ruolo cercato.
+        $table->add_field('position', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        // Modulo URC: assegnato dall'URC, occupazione, metodo candidatura, risultato.
+        $table->add_field('urc_assigned', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('occupation_fulltime', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('occupation_parttime', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('method_letter', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('method_person', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('method_phone', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('result', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'pending');
+        $table->add_field('result_reason', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        // Canale usato (per aree come canali ricerca, social, rete personale).
+        $table->add_field('channel', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        // Note e metadata.
+        $table->add_field('notes', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('addedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('enrollmentid_fk', XMLDB_KEY_FOREIGN, ['enrollmentid'], 'local_ftm_sip_enrollments', ['id']);
+        $table->add_key('companyid_fk', XMLDB_KEY_FOREIGN, ['companyid'], 'local_ftm_sip_companies', ['id']);
+        $table->add_key('addedby_fk', XMLDB_KEY_FOREIGN, ['addedby'], 'user', ['id']);
+
+        $table->add_index('enrollment_area_week_idx', XMLDB_INDEX_NOTUNIQUE, ['enrollmentid', 'area_key', 'sip_week']);
+        $table->add_index('entry_date_idx', XMLDB_INDEX_NOTUNIQUE, ['entry_date']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // -------------------------------------------------------
+        // 3. New table: local_ftm_sip_coach_evals
+        // Valutazione coach settimanale (1-10) per Strategia e Autonomia.
+        // -------------------------------------------------------
+        $table = new xmldb_table('local_ftm_sip_coach_evals');
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('enrollmentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('area_key', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('sip_week', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('score', XMLDB_TYPE_INTEGER, '2', null, null, null, null);
+        $table->add_field('coachid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('notes', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('enrollmentid_fk', XMLDB_KEY_FOREIGN, ['enrollmentid'], 'local_ftm_sip_enrollments', ['id']);
+        $table->add_key('coachid_fk', XMLDB_KEY_FOREIGN, ['coachid'], 'user', ['id']);
+        $table->add_index('enrollment_area_week_uq', XMLDB_INDEX_UNIQUE, ['enrollmentid', 'area_key', 'sip_week']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // -------------------------------------------------------
+        // 4. New table: local_ftm_sip_search_proofs
+        // Upload PDF fogli ricerche Job-Room ufficiali.
+        // -------------------------------------------------------
+        $table = new xmldb_table('local_ftm_sip_search_proofs');
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('enrollmentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('month_year', XMLDB_TYPE_CHAR, '7', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('filename', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('contenthash', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('filesize', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('uploadedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('enrollmentid_fk', XMLDB_KEY_FOREIGN, ['enrollmentid'], 'local_ftm_sip_enrollments', ['id']);
+        $table->add_key('uploadedby_fk', XMLDB_KEY_FOREIGN, ['uploadedby'], 'user', ['id']);
+        $table->add_index('enrollment_month_idx', XMLDB_INDEX_NOTUNIQUE, ['enrollmentid', 'month_year']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // -------------------------------------------------------
+        // 5. Add new fields to local_ftm_sip_action_plan for 12-area system.
+        // -------------------------------------------------------
+        $table = new xmldb_table('local_ftm_sip_action_plan');
+
+        // week_start: settimana in cui l'area si attiva (1-10).
+        $field = new xmldb_field('week_start', XMLDB_TYPE_INTEGER, '2', null, null, null, '1', 'area_key');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // week_end: ultima settimana attiva (1-10).
+        $field = new xmldb_field('week_end', XMLDB_TYPE_INTEGER, '2', null, null, null, '10', 'week_start');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // area_type: quantitative (conteggio contatti) o qualitative (valutazione coach 1-10).
+        $field = new xmldb_field('area_type', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'quantitative', 'week_end');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // target_global: obiettivo numerico globale sulle 10 settimane.
+        $field = new xmldb_field('target_global', XMLDB_TYPE_INTEGER, '10', null, null, null, '0', 'area_type');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // -------------------------------------------------------
+        // 6. Enrich local_ftm_sip_companies with additional fields.
+        // -------------------------------------------------------
+        $table = new xmldb_table('local_ftm_sip_companies');
+
+        // canton — Cantone (TI, ZH, etc.).
+        $field = new xmldb_field('canton', XMLDB_TYPE_CHAR, '5', null, null, null, null, 'city');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // last_contact_date — Data ultimo contatto da qualsiasi studente.
+        $field = new xmldb_field('last_contact_date', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'interaction_count');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Savepoint reached.
+        upgrade_plugin_savepoint(true, 2026042100, 'local', 'ftm_sip');
+    }
+
+    if ($oldversion < 2026042403) {
+        // Aggiunge 3 campi draft a local_ftm_sip_eligibility per persistere
+        // anche i dati di attivazione (motivazione/LADI/data) prima dell'attivazione vera.
+        $table = new xmldb_table('local_ftm_sip_eligibility');
+
+        $field = new xmldb_field('draft_motivation', XMLDB_TYPE_TEXT, null, null, null, null, null, 'approved_date');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('draft_ladi_indemnity', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'draft_motivation');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('draft_date_start', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'draft_ladi_indemnity');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026042403, 'local', 'ftm_sip');
+    }
+
+    if ($oldversion < 2026042408) {
+        // Aggiunge 2 campi a local_ftm_sip_acceptance per separare valore per-settimana
+        // dal valore totale 10 settimane (decisi indipendentemente dal coach).
+        $table = new xmldb_table('local_ftm_sip_acceptance');
+
+        $field = new xmldb_field('baseline_per_week', XMLDB_TYPE_NUMBER, '8, 2', null, null, null, '0', 'baseline_value');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('target_per_week', XMLDB_TYPE_NUMBER, '8, 2', null, null, null, '0', 'target_value');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026042408, 'local', 'ftm_sip');
+    }
+
+    if ($oldversion < 2026050401) {
+        // New table: local_ftm_sip_channel_usage
+        // Tracks which search channels have been activated per enrollment.
+        // One activation per channel per enrollment (unique index on enrollmentid+channel_key).
+        $table = new xmldb_table('local_ftm_sip_channel_usage');
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('enrollmentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('channel_key', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('sip_week', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('activated_date', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('activatedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('enrollmentid_fk', XMLDB_KEY_FOREIGN, ['enrollmentid'], 'local_ftm_sip_enrollments', ['id']);
+        $table->add_key('activatedby_fk', XMLDB_KEY_FOREIGN, ['activatedby'], 'user', ['id']);
+
+        $table->add_index('enrollment_channel_uq', XMLDB_INDEX_UNIQUE, ['enrollmentid', 'channel_key']);
+        $table->add_index('enrollmentid_week_idx', XMLDB_INDEX_NOTUNIQUE, ['enrollmentid', 'sip_week']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026050401, 'local', 'ftm_sip');
+    }
+
     return true;
 }

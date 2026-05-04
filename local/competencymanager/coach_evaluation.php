@@ -48,21 +48,33 @@ if (!in_array($sector, $validSectors)) {
     throw new moodle_exception('invalid_sector', 'local_competencymanager');
 }
 
-// Determine medal for current sector
+// Normalizza alias: GENERICO → GEN (chiave canonica in sector_manager::SECTORS e prefisso idnumber GEN_)
+if ($sector === 'GENERICO') {
+    $sector = 'GEN';
+}
+
+// Migra valutazioni esistenti con sector='GENERICO' → 'GEN' per questo studente
+if ($sector === 'GEN') {
+    $DB->execute(
+        "UPDATE {local_coach_evaluations} SET sector = 'GEN', timemodified = :now WHERE studentid = :sid AND sector = 'GENERICO'",
+        ['now' => time(), 'sid' => $studentid]
+    );
+}
+
+// Determine medal for current sector (normalizza alias anche qui)
+$normalizeSectorAlias = function($s) {
+    $s = strtoupper(trim($s));
+    return ($s === 'GENERICO') ? 'GEN' : $s;
+};
 $sectorMedals = [
-    strtoupper($studentSectorsRanked['primary'] ?? '') => '🥇',
-    strtoupper($studentSectorsRanked['secondary'] ?? '') => '🥈',
-    strtoupper($studentSectorsRanked['tertiary'] ?? '') => '🥉'
+    $normalizeSectorAlias($studentSectorsRanked['primary'] ?? '') => '🥇',
+    $normalizeSectorAlias($studentSectorsRanked['secondary'] ?? '') => '🥈',
+    $normalizeSectorAlias($studentSectorsRanked['tertiary'] ?? '') => '🥉'
 ];
 $currentSectorMedal = $sectorMedals[$sector] ?? '';
 
-// Page setup
+// Page setup (context e layout prima, set_url DOPO get_or_create per avere evaluationid corretto)
 $PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/local/competencymanager/coach_evaluation.php', [
-    'studentid' => $studentid,
-    'sector' => $sector,
-    'evaluationid' => $evaluationid
-]));
 $PAGE->set_title(get_string('coach_evaluation_title', 'local_competencymanager'));
 $PAGE->set_heading(get_string('evaluation_for', 'local_competencymanager', fullname($student)));
 $PAGE->set_pagelayout('report');
@@ -73,7 +85,6 @@ if ($evaluationid) {
     if (!$evaluation) {
         throw new moodle_exception('invalid_evaluation', 'local_competencymanager');
     }
-    // Check view permission
     if (!coach_evaluation_manager::can_view($evaluationid)) {
         throw new moodle_exception('no_permission', 'local_competencymanager');
     }
@@ -87,6 +98,13 @@ if ($evaluationid) {
     );
     $evaluation = coach_evaluation_manager::get_evaluation($evaluationid);
 }
+
+// set_url con evaluationid reale (dopo get_or_create)
+$PAGE->set_url(new moodle_url('/local/competencymanager/coach_evaluation.php', [
+    'studentid' => $studentid,
+    'sector' => $sector,
+    'evaluationid' => $evaluationid
+]));
 
 $canEdit = coach_evaluation_manager::can_edit($evaluationid);
 
@@ -133,7 +151,9 @@ if ($action && confirm_sesskey() && ($canEdit || in_array($action, $allowedWitho
     }
 }
 
-// Get competencies for this sector
+// Get competencies for this sector ($sector è già normalizzato: GEN, MECCANICA, ecc.)
+$competencyPattern = $sector . '_%';
+
 $competencies = $DB->get_records_sql(
     "SELECT c.id, c.idnumber, c.shortname, c.description
      FROM {competency} c
@@ -141,7 +161,7 @@ $competencies = $DB->get_records_sql(
      WHERE c.idnumber LIKE :pattern
      AND cf.idnumber IN ('FTM-01', 'FTM_GEN')
      ORDER BY c.idnumber",
-    ['pattern' => $sector . '_%']
+    ['pattern' => $competencyPattern]
 );
 
 // If sector is ELETTRICITÀ, also try without accent
@@ -328,9 +348,8 @@ switch ($evaluation->status) {
 .bloom-desc { font-size: 1.1rem; color: #666; }
 .bloom-title { font-weight: 500; color: #333; font-size: 1.1rem; }
 
-.saving-indicator { position: fixed; bottom: 20px; right: 20px; background: #667eea; color: white; padding: 10px 20px; border-radius: 8px; display: none; z-index: 1000; }
-.saving-indicator.show { display: block; animation: fadeInOut 2s; }
-@keyframes fadeInOut { 0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+.saving-indicator { position: fixed; bottom: 24px; right: 24px; background: #667eea; color: white; padding: 12px 24px; border-radius: 10px; display: none; z-index: 9999; font-size: 15px; font-weight: 600; box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+.saving-indicator.show { display: block; }
 </style>
 
 <div class="eval-container">
@@ -347,41 +366,56 @@ switch ($evaluation->status) {
                 <select id="sector-select" class="form-control" style="background: rgba(255,255,255,0.95); color: #333; font-weight: 600; min-width: 220px; border-radius: 8px;"
                         onchange="changeSector(this.value)">
                     <?php
-                    // Build options from assigned sectors
+                    // Build options from assigned sectors — deduplicato, normalizzato uppercase, alias unificati.
                     $sectorNames = \local_competencymanager\sector_manager::SECTORS;
                     $assignedSectors = [];
 
-                    // Add sectors with medals
+                    // Helper: normalizza chiave settore verso la chiave usata in sector_manager::SECTORS.
+                    // 'GEN' è la chiave canonica per Generico (come da SECTORS), GENERICO è un alias.
+                    $normalizeSectorKey = function($s) {
+                        $s = strtoupper(trim($s));
+                        if ($s === 'GENERICO') return 'GEN'; // alias → chiave canonica
+                        if ($s === 'ELETTRICITÀ') return 'ELETTRICITA';
+                        return $s;
+                    };
+
+                    // Add sectors with medals (priorità).
                     if (!empty($studentSectorsRanked['primary'])) {
-                        $assignedSectors[$studentSectorsRanked['primary']] = '🥇';
+                        $k = $normalizeSectorKey($studentSectorsRanked['primary']);
+                        $assignedSectors[$k] = '🥇';
                     }
                     if (!empty($studentSectorsRanked['secondary'])) {
-                        $assignedSectors[$studentSectorsRanked['secondary']] = '🥈';
+                        $k = $normalizeSectorKey($studentSectorsRanked['secondary']);
+                        if (!isset($assignedSectors[$k])) $assignedSectors[$k] = '🥈';
                     }
                     if (!empty($studentSectorsRanked['tertiary'])) {
-                        $assignedSectors[$studentSectorsRanked['tertiary']] = '🥉';
+                        $k = $normalizeSectorKey($studentSectorsRanked['tertiary']);
+                        if (!isset($assignedSectors[$k])) $assignedSectors[$k] = '🥉';
                     }
 
-                    // Also add sectors from quiz data
+                    // Also add sectors from quiz data (con dedup case-insensitive + alias).
                     foreach ($studentSectorsList as $sec) {
-                        $secUpper = strtoupper($sec->sector);
-                        if (!isset($assignedSectors[$secUpper])) {
-                            $assignedSectors[$secUpper] = '📊'; // From quiz
+                        $k = $normalizeSectorKey($sec->sector);
+                        if (!isset($assignedSectors[$k])) {
+                            $assignedSectors[$k] = '📊'; // From quiz
                         }
                     }
 
                     if (empty($assignedSectors)) {
-                        // Fallback: show all valid sectors
+                        // Fallback: show all valid sectors (deduplicati).
+                        $seen = [];
                         foreach ($validSectors as $vs) {
-                            if ($vs !== 'ELETTRICITA') { // Skip duplicate
-                                $assignedSectors[$vs] = '';
+                            $k = $normalizeSectorKey($vs);
+                            if (!isset($seen[$k])) {
+                                $seen[$k] = true;
+                                $assignedSectors[$k] = '';
                             }
                         }
                     }
 
                     foreach ($assignedSectors as $secCode => $medal):
                         $secName = $sectorNames[$secCode] ?? ucfirst(strtolower($secCode));
-                        $isSelected = (strtoupper($sector) === strtoupper($secCode));
+                        $isSelected = ($normalizeSectorKey($sector) === $secCode);
                     ?>
                     <option value="<?php echo $secCode; ?>" <?php echo $isSelected ? 'selected' : ''; ?>>
                         <?php echo $medal; ?> <?php echo $secName; ?>
@@ -470,7 +504,7 @@ switch ($evaluation->status) {
             // Count rated in this area
             $areaRated = 0;
             foreach ($comps as $c) {
-                if (isset($existingRatings[$c->id]) && $existingRatings[$c->id]->rating >= 0) {
+                if (isset($existingRatings[$c->id]) && (int)$existingRatings[$c->id]->rating > 0) {
                     $areaRated++;
                 }
             }
@@ -488,7 +522,7 @@ switch ($evaluation->status) {
                 <div class="area-content expanded">
                     <?php foreach ($comps as $comp): ?>
                         <?php
-                        $currentRating = isset($existingRatings[$comp->id]) ? $existingRatings[$comp->id]->rating : -1;
+                        $currentRating = isset($existingRatings[$comp->id]) ? (int)$existingRatings[$comp->id]->rating : -1;
                         $currentNotes = isset($existingRatings[$comp->id]) ? $existingRatings[$comp->id]->notes : '';
                         ?>
                         <?php
@@ -548,7 +582,7 @@ switch ($evaluation->status) {
         <div class="action-bar">
             <div class="action-group">
                 <?php if ($canEdit && $evaluation->status === 'draft'): ?>
-                    <button type="button" class="btn-eval btn-save" onclick="saveAllRatings()">
+                    <button type="button" class="btn-eval btn-save" onclick="saveDraft()">
                         <?php echo get_string('save_draft', 'local_competencymanager'); ?>
                     </button>
                     <button type="button" class="btn-eval btn-complete"
@@ -621,18 +655,16 @@ function toggleArea(header) {
 }
 
 function selectRating(compId, rating, btn) {
-    // Update UI
     const row = btn.closest('.competency-row');
     row.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
 
-    // Queue for save
     const notes = row.querySelector('.notes-input').value;
     pendingRatings[compId] = { rating: rating, notes: notes };
 
-    // Debounced save
+    // Auto-save debounced
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveAllRatings, 500);
+    saveTimer = setTimeout(() => saveAllRatings(), 800);
 }
 
 function saveRating(compId) {
@@ -640,48 +672,53 @@ function saveRating(compId) {
     const selectedBtn = row.querySelector('.rating-btn.selected');
     const rating = selectedBtn ? parseInt(selectedBtn.dataset.rating) : -1;
     const notes = row.querySelector('.notes-input').value;
-
     if (rating >= 0) {
         pendingRatings[compId] = { rating: rating, notes: notes };
         clearTimeout(saveTimer);
-        saveTimer = setTimeout(saveAllRatings, 500);
+        saveTimer = setTimeout(() => saveAllRatings(), 800);
     }
+}
+
+// Raccoglie TUTTI i rating attualmente visibili nel DOM
+function collectAllRatingsFromDOM() {
+    const ratings = [];
+    document.querySelectorAll('.competency-row').forEach(row => {
+        const compId = parseInt(row.dataset.compid);
+        const selectedBtn = row.querySelector('.rating-btn.selected');
+        const notesInput = row.querySelector('input.notes-input');
+        if (compId && selectedBtn) {
+            ratings.push({
+                competencyid: compId,
+                rating: parseInt(selectedBtn.dataset.rating),
+                notes: notesInput ? notesInput.value : ''
+            });
+        }
+    });
+    return ratings;
 }
 
 function saveGeneralNotes() {
-    const notes = document.getElementById('general-notes').value;
-    showSaving();
-
+    const notesEl = document.getElementById('general-notes');
+    if (!notesEl) return;
     fetch(ajaxUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `action=save_notes&evaluationid=${evaluationId}&notes=${encodeURIComponent(notes)}&sesskey=${sesskey}`
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (!data.success) {
-            alert(data.message || 'Error saving notes');
-        }
-    })
-    .catch(err => console.error('Save error:', err));
+        body: `action=save_notes&evaluationid=${evaluationId}&notes=${encodeURIComponent(notesEl.value)}&sesskey=${sesskey}`
+    }).catch(err => console.error('Notes save error:', err));
 }
 
+// Salvataggio debounce (solo pending)
 function saveAllRatings(callback) {
     if (Object.keys(pendingRatings).length === 0) {
-        // Nothing pending - also save general notes, then show confirmation.
-        saveGeneralNotes();
-        showSaveConfirm();
         if (callback) callback(true);
         return;
     }
-
-    showSaving();
-
     const ratings = Object.entries(pendingRatings).map(([compId, data]) => ({
         competencyid: parseInt(compId),
         rating: data.rating,
         notes: data.notes
     }));
+    pendingRatings = {};
 
     fetch(ajaxUrl, {
         method: 'POST',
@@ -691,49 +728,64 @@ function saveAllRatings(callback) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            pendingRatings = {};
             updateStats(data.stats);
-            // Also save general notes.
-            saveGeneralNotes();
+            if (callback) callback(true);
+        } else {
+            console.error('Auto-save failed:', data.message);
+            if (callback) callback(false);
+        }
+    })
+    .catch(err => {
+        console.error('Auto-save error:', err);
+        if (callback) callback(false);
+    });
+}
+
+// Salvataggio esplicito: raccoglie TUTTI i rating dal DOM e salva
+function saveDraft(callback) {
+    clearTimeout(saveTimer);
+    pendingRatings = {};
+
+    const allRatings = collectAllRatingsFromDOM();
+
+    showSaving();
+    saveGeneralNotes();
+
+    if (allRatings.length === 0) {
+        showSaveConfirm();
+        if (callback) callback(true);
+        return;
+    }
+
+    fetch(ajaxUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `action=save_ratings&evaluationid=${evaluationId}&ratings=${encodeURIComponent(JSON.stringify(allRatings))}&sesskey=${sesskey}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            updateStats(data.stats);
             showSaveConfirm();
             if (callback) callback(true);
         } else {
-            alert(data.message || 'Error saving ratings');
+            showSaveError();
+            alert(data.message || 'Errore durante il salvataggio');
             if (callback) callback(false);
         }
     })
     .catch(err => {
         console.error('Save error:', err);
+        showSaveError();
         alert('Errore di rete durante il salvataggio.');
         if (callback) callback(false);
     });
 }
 
-function showSaveConfirm() {
-    const indicator = document.getElementById('saving-indicator');
-    indicator.textContent = 'Salvato!';
-    indicator.style.background = '#28a745';
-    indicator.classList.add('show');
-    setTimeout(() => {
-        indicator.classList.remove('show');
-        indicator.textContent = 'Salvando...';
-        indicator.style.background = '';
-    }, 2000);
-}
-
-// Salva e poi completa la valutazione
 function saveAndComplete() {
-    if (!confirm('<?php echo get_string('sign_confirm', 'local_competencymanager'); ?>')) {
-        return;
-    }
-
-    // Mostra messaggio di salvataggio
-    showSaving();
-
-    // Prima salva tutti i ratings pendenti
-    saveAllRatings(function(success) {
+    if (!confirm('<?php echo get_string('sign_confirm', 'local_competencymanager'); ?>')) return;
+    saveDraft(function(success) {
         if (success) {
-            // Poi naviga al complete
             window.location.href = '<?php echo $PAGE->url; ?>&action=complete&sesskey=<?php echo sesskey(); ?>';
         } else {
             alert('Errore durante il salvataggio. Riprova.');
@@ -741,15 +793,48 @@ function saveAndComplete() {
     });
 }
 
+let _saveIndicatorTimer = null;
+
 function showSaving() {
-    const indicator = document.getElementById('saving-indicator');
-    indicator.classList.add('show');
-    setTimeout(() => indicator.classList.remove('show'), 2000);
+    const ind = document.getElementById('saving-indicator');
+    clearTimeout(_saveIndicatorTimer);
+    ind.textContent = 'Salvando...';
+    ind.style.background = '#667eea';
+    ind.classList.add('show');
+}
+
+function showSaveConfirm() {
+    const ind = document.getElementById('saving-indicator');
+    clearTimeout(_saveIndicatorTimer);
+    ind.textContent = '✓ Salvato!';
+    ind.style.background = '#28a745';
+    ind.classList.remove('show');
+    // Force reflow so display:none flickers and .show re-shows fresh
+    void ind.offsetWidth;
+    ind.classList.add('show');
+    _saveIndicatorTimer = setTimeout(() => {
+        ind.classList.remove('show');
+    }, 2500);
+}
+
+function showSaveError() {
+    const ind = document.getElementById('saving-indicator');
+    clearTimeout(_saveIndicatorTimer);
+    ind.textContent = '✗ Errore salvataggio';
+    ind.style.background = '#dc3545';
+    ind.classList.remove('show');
+    void ind.offsetWidth;
+    ind.classList.add('show');
+    _saveIndicatorTimer = setTimeout(() => {
+        ind.classList.remove('show');
+    }, 3000);
 }
 
 function updateStats(stats) {
-    if (stats) {
-        // Update statistics display if needed
+    if (!stats) return;
+    const statEl = document.querySelector('.stat-value');
+    if (statEl) {
+        statEl.textContent = stats.rated + '/' + stats.total;
     }
 }
 </script>

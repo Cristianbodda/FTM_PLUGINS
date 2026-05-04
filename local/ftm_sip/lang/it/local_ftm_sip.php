@@ -89,40 +89,97 @@ $string['area_deadline'] = 'Scadenza';
 $string['action_plan_saved'] = 'Piano d\'azione salvato con successo';
 $string['action_plan_not_found'] = 'Piano d\'azione non trovato';
 
-// 7 Aree di attivazione (da documento Coaching Individualizzato).
+// Legacy 7 aree (mantenute per compatibilita).
 $string['area_professional_strategy'] = 'Strategia Professionale';
 $string['area_job_monitoring'] = 'Monitoraggio Annunci';
-$string['area_targeted_applications'] = 'Candidature Mirate';
-$string['area_unsolicited_applications'] = 'Autocandidature';
 $string['area_direct_company_contact'] = 'Contatto Diretto Aziende';
-$string['area_personal_network'] = 'Rete Personale e Professionale';
-$string['area_intermediaries'] = 'Intermediari del Mercato del Lavoro';
-
-// Descrizioni aree di attivazione.
 $string['area_professional_strategy_desc'] = 'Chiarezza della PCI su ruolo, settore e aziende target';
-$string['area_job_monitoring_desc'] = 'Capacita di individuare annunci pertinenti (portali, social media, stampa)';
-$string['area_targeted_applications_desc'] = 'Risposta a posizioni aperte';
-$string['area_unsolicited_applications_desc'] = 'Iniziativa verso aziende senza annunci pubblici';
+$string['area_job_monitoring_desc'] = 'Capacita di individuare annunci pertinenti';
 $string['area_direct_company_contact_desc'] = 'Capacita di attivare contatti diretti';
-$string['area_personal_network_desc'] = 'Utilizzo della propria rete di conoscenze';
-$string['area_intermediaries_desc'] = 'Utilizzo di URC e agenzie di collocamento';
-
-// Obiettivi default per area.
 $string['area_professional_strategy_obj'] = 'Definire un profilo professionale realistico e aziende target';
 $string['area_job_monitoring_obj'] = 'Migliorare la capacita di individuare opportunita';
-$string['area_targeted_applications_obj'] = 'Aumentare numero e qualita candidature';
-$string['area_unsolicited_applications_obj'] = 'Ampliare le opportunita tramite contatto diretto';
 $string['area_direct_company_contact_obj'] = 'Favorire il contatto diretto con il mercato del lavoro';
-$string['area_personal_network_obj'] = 'Attivare opportunita attraverso contatti';
-$string['area_intermediaries_obj'] = 'Migliorare l\'uso degli intermediari';
-
-// Indicatori di verifica per area.
 $string['area_professional_strategy_verify'] = 'Elenco aziende target definito';
 $string['area_job_monitoring_verify'] = 'Numero annunci analizzati';
-$string['area_targeted_applications_verify'] = 'Numero candidature inviate';
-$string['area_unsolicited_applications_verify'] = 'Numero aziende contattate';
 $string['area_direct_company_contact_verify'] = 'Numero contatti diretti';
-$string['area_personal_network_verify'] = 'Opportunita generate';
+
+// CI v2 — 12 aree di attivazione (da tabelle di valutazione Lucio).
+// 1. Lista aziende target.
+$string['area_target_companies'] = 'Lista Aziende Target';
+$string['area_target_companies_desc'] = 'Redigere una lista di 30-50 aziende in linea con il proprio profilo';
+$string['area_target_companies_obj'] = 'Creare e mantenere una lista esaustiva di aziende target';
+$string['area_target_companies_verify'] = 'Numero aziende target identificate';
+
+// 2. Ricerche obbligatorie.
+$string['area_mandatory_searches'] = 'Ricerche Obbligatorie';
+$string['area_mandatory_searches_desc'] = 'Mantenere e aumentare il numero di ricerche obbligatorie settimanali';
+$string['area_mandatory_searches_obj'] = 'Aumentare il numero e la qualita delle ricerche di lavoro';
+$string['area_mandatory_searches_verify'] = 'Numero ricerche effettuate per settimana';
+
+// 3. Canali di ricerca.
+$string['area_search_channels'] = 'Canali di Ricerca';
+$string['area_search_channels_desc'] = 'Attivare nuovi canali: portali, siti aziendali, foglio ufficiale, registro commercio, ecc.';
+$string['area_search_channels_obj'] = 'Aumentare i canali di ricerca utilizzati dalla PCI';
+$string['area_search_channels_verify'] = 'Numero canali attivati e utilizzati';
+
+// 4. Social network.
+$string['area_social_network'] = 'Social Network';
+$string['area_social_network_desc'] = 'Utilizzare i social network in maniera appropriata per la ricerca di lavoro';
+$string['area_social_network_obj'] = 'Attivare e utilizzare LinkedIn, Facebook Lavoro, ecc.';
+$string['area_social_network_verify'] = 'Profili attivati e attivita di ricerca sui social';
+
+// 5. Rete personale.
+$string['area_personal_network'] = 'Rete Personale';
+$string['area_personal_network_desc'] = 'Utilizzo della propria rete personale per la ricerca d\'impiego';
+$string['area_personal_network_obj'] = 'Attivare e monitorare la propria rete di contatti';
+$string['area_personal_network_verify'] = 'Numero contatti personali attivati';
+
+// 6. Annunci di lavoro mirati.
+$string['area_targeted_applications'] = 'Annunci di Lavoro Mirati';
+$string['area_targeted_applications_desc'] = 'Candidarsi ad annunci di lavoro pertinenti al proprio profilo';
+$string['area_targeted_applications_obj'] = 'Aumentare il numero di candidature ad annunci mirati';
+$string['area_targeted_applications_verify'] = 'Numero candidature inviate ad annunci mirati';
+
+// 7. Autocandidature.
+$string['area_unsolicited_applications'] = 'Autocandidature';
+$string['area_unsolicited_applications_desc'] = 'Inviare candidature ad aziende senza annunci pubblici';
+$string['area_unsolicited_applications_obj'] = 'Ampliare le opportunita tramite autocandidature';
+$string['area_unsolicited_applications_verify'] = 'Numero autocandidature inviate';
+
+// 8. Agenzie e URC.
+$string['area_agencies_urc'] = 'Agenzie e URC';
+$string['area_agencies_urc_desc'] = 'Aumentare il numero di agenzie utilizzate e l\'utilizzo dell\'URC';
+$string['area_agencies_urc_obj'] = 'Attivare nuove agenzie interinali e utilizzare Job-Room';
+$string['area_agencies_urc_verify'] = 'Numero agenzie contattate e iscrizioni attive';
+
+// 9. Training colloqui.
+$string['area_interview_training'] = 'Training Colloqui';
+$string['area_interview_training_desc'] = 'Effettuare colloqui di prova/formazione mirati su possibili opportunita';
+$string['area_interview_training_obj'] = 'Prepararsi ai colloqui con simulazioni e feedback';
+$string['area_interview_training_verify'] = 'Numero colloqui di prova effettuati';
+
+// 10. Stage / giorni di prova.
+$string['area_stage_trials'] = 'Stage e Giorni di Prova';
+$string['area_stage_trials_desc'] = 'Attivare stage o prove in possibili aziende interessate al profilo della PCI';
+$string['area_stage_trials_obj'] = 'Ottenere opportunita di stage o giorni di prova';
+$string['area_stage_trials_verify'] = 'Numero stage/prove attivati';
+
+// 11. Miglioramento strategia (valutazione coach 1-10).
+$string['area_strategy_improvement'] = 'Miglioramento Strategia di Ricerca';
+$string['area_strategy_improvement_desc'] = 'Il coach valuta l\'evoluzione della PCI nel miglioramento della propria strategia di ricerca';
+$string['area_strategy_improvement_obj'] = 'Migliorare progressivamente le strategie di ricerca d\'impiego';
+$string['area_strategy_improvement_verify'] = 'Valutazione coach settimanale (1-10)';
+
+// 12. Autonomia crescente (valutazione coach 1-10).
+$string['area_growing_autonomy'] = 'Autonomia Crescente';
+$string['area_growing_autonomy_desc'] = 'Il coach valuta l\'evoluzione della PCI nella gestione autonoma della ricerca di lavoro';
+$string['area_growing_autonomy_obj'] = 'Raggiungere piena autonomia nella gestione della ricerca di lavoro';
+$string['area_growing_autonomy_verify'] = 'Valutazione coach settimanale (1-10)';
+
+// Legacy verify strings (kept for backward compatibility).
+$string['area_intermediaries'] = 'Intermediari del Mercato del Lavoro';
+$string['area_intermediaries_desc'] = 'Utilizzo di URC e agenzie di collocamento';
+$string['area_intermediaries_obj'] = 'Migliorare l\'uso degli intermediari';
 $string['area_intermediaries_verify'] = 'Numero contatti attivati';
 
 // Scala di attivazione (0-6) - NON Bloom, misura livello attivazione.
