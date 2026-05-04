@@ -2218,10 +2218,238 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                                             <i class="fa fa-upload"></i> Carica
                                         </button>
                                     </div>
+                                    <?php if (!empty($urc_proofs)): ?>
+                                    <div style="margin-top:10px;">
+                                        <button onclick="SipProofParser.open(<?php echo (int)$enrollment->id; ?>)"
+                                                style="background:#7c3aed; color:white; border:none; padding:8px 18px; border-radius:6px; font-size:0.85rem; font-weight:600; cursor:pointer;">
+                                            <i class="fa fa-magic"></i> Analizza documenti con AI (<?php echo count($urc_proofs); ?> file)
+                                        </button>
+                                        <span style="font-size:0.75rem; color:#6b7280; margin-left:8px;">Legge i PDF/JPG e importa le ricerche nella tabella URC</span>
+                                    </div>
+                                    <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </div>
                         </details>
+
+                        <!-- ===== MODAL: AI Proof Parser ===== -->
+                        <div id="sipProofParserModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center;">
+                            <div style="background:#fff; border-radius:12px; max-width:900px; width:95%; max-height:90vh; overflow-y:auto; padding:24px; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                    <h3 style="margin:0; color:#7c3aed; font-size:1.1rem;"><i class="fa fa-magic"></i> Analisi AI — Foglio Ricerche URC</h3>
+                                    <button onclick="SipProofParser.close()" style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:#6b7280;">&times;</button>
+                                </div>
+
+                                <!-- Step 1: loading -->
+                                <div id="spp-loading" style="display:none; text-align:center; padding:30px 0;">
+                                    <div style="font-size:2rem; margin-bottom:12px;">🤖</div>
+                                    <div style="font-size:1rem; font-weight:600; color:#7c3aed;">Analisi in corso…</div>
+                                    <div style="font-size:0.85rem; color:#6b7280; margin-top:6px;">GPT-4o sta leggendo i tuoi documenti. Può richiedere 15-30 secondi.</div>
+                                    <div style="margin-top:16px; width:60%; margin-left:auto; margin-right:auto; height:6px; background:#e5e7eb; border-radius:3px; overflow:hidden;">
+                                        <div id="spp-progress-bar" style="height:100%; background:#7c3aed; border-radius:3px; animation:sppSlide 2s ease-in-out infinite;"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 2: preview results -->
+                                <div id="spp-results" style="display:none;">
+                                    <div id="spp-summary" style="background:#f3e8ff; border-radius:6px; padding:10px 14px; margin-bottom:14px; font-size:0.88rem; color:#5b21b6;"></div>
+                                    <div id="spp-errors" style="display:none; background:#FEF2F2; border:1px solid #FECACA; border-radius:6px; padding:10px 14px; margin-bottom:14px; font-size:0.82rem; color:#DC2626;"></div>
+                                    <div style="overflow-x:auto;">
+                                        <table style="width:100%; border-collapse:collapse; font-size:0.78rem;" id="spp-preview-table">
+                                            <thead>
+                                                <tr style="background:#f3e8ff;">
+                                                    <th style="padding:6px; border:1px solid #e5e7eb;">✓</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb;">Sett.</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb;">Data</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb; min-width:140px;">Ditta</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb;">Indirizzo</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb;">Email</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb;">Impiego</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb; text-align:center;">URC</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb; text-align:center;">TP</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb; text-align:center;">Parz</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb; text-align:center;">Let</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb; text-align:center;">Pers</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb; text-align:center;">Tel</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb;">Risultato</th>
+                                                    <th style="padding:6px; border:1px solid #e5e7eb; color:#6b7280;">File</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="spp-tbody"></tbody>
+                                        </table>
+                                    </div>
+                                    <div style="margin-top:16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                                        <button onclick="SipProofParser.confirmImport()" id="spp-import-btn"
+                                                style="background:#7c3aed; color:white; border:none; padding:10px 24px; border-radius:6px; font-weight:700; cursor:pointer; font-size:0.95rem;">
+                                            <i class="fa fa-check"></i> <span id="spp-import-label">Importa tutte</span>
+                                        </button>
+                                        <button onclick="SipProofParser.close()"
+                                                style="background:#f3f4f6; color:#374151; border:1px solid #d1d5db; padding:10px 18px; border-radius:6px; cursor:pointer;">
+                                            Annulla
+                                        </button>
+                                        <span id="spp-import-feedback" style="font-size:0.85rem;"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Step 3: done -->
+                                <div id="spp-done" style="display:none; text-align:center; padding:24px 0;">
+                                    <div style="font-size:2.5rem; margin-bottom:10px;">✅</div>
+                                    <div id="spp-done-msg" style="font-size:1rem; font-weight:600; color:#059669;"></div>
+                                    <button onclick="location.reload()" style="margin-top:14px; background:#059669; color:white; border:none; padding:10px 24px; border-radius:6px; cursor:pointer; font-weight:600;">
+                                        <i class="fa fa-refresh"></i> Ricarica pagina
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <style>
+                        @keyframes sppSlide {
+                            0%   { width:10%; margin-left:0; }
+                            50%  { width:60%; margin-left:20%; }
+                            100% { width:10%; margin-left:90%; }
+                        }
+                        </style>
+                        <script>
+                        var SipProofParser = {
+                            enrollmentid: 0,
+                            entries: [],
+
+                            open: function(enrollmentid) {
+                                this.enrollmentid = enrollmentid;
+                                this.entries = [];
+                                document.getElementById('sipProofParserModal').style.display = 'flex';
+                                document.getElementById('spp-loading').style.display = 'block';
+                                document.getElementById('spp-results').style.display = 'none';
+                                document.getElementById('spp-done').style.display = 'none';
+                                this.parse();
+                            },
+
+                            close: function() {
+                                document.getElementById('sipProofParserModal').style.display = 'none';
+                            },
+
+                            parse: function() {
+                                var self = this;
+                                var fd = new FormData();
+                                fd.append('sesskey', M.cfg.sesskey);
+                                fd.append('action', 'parse');
+                                fd.append('enrollmentid', this.enrollmentid);
+
+                                fetch(M.cfg.wwwroot + '/local/ftm_sip/ajax_parse_proofs.php', {method:'POST', body:fd})
+                                .then(function(r){ return r.json(); })
+                                .then(function(resp) {
+                                    document.getElementById('spp-loading').style.display = 'none';
+                                    if (!resp.success) {
+                                        alert('Errore: ' + resp.message);
+                                        self.close();
+                                        return;
+                                    }
+                                    self.entries = resp.data.entries || [];
+                                    self.renderPreview(resp.data);
+                                    document.getElementById('spp-results').style.display = 'block';
+                                })
+                                .catch(function(err) {
+                                    document.getElementById('spp-loading').style.display = 'none';
+                                    alert('Errore di rete: ' + err.message);
+                                    self.close();
+                                });
+                            },
+
+                            renderPreview: function(data) {
+                                var entries = data.entries || [];
+                                var errors  = data.errors  || [];
+
+                                document.getElementById('spp-summary').innerHTML =
+                                    '<strong>' + entries.length + ' ricerche trovate</strong> in ' + data.file_count + ' documenti. '
+                                    + 'Verifica e deseleziona le righe da non importare, poi clicca "Importa".';
+
+                                if (errors.length > 0) {
+                                    var errDiv = document.getElementById('spp-errors');
+                                    errDiv.style.display = 'block';
+                                    errDiv.innerHTML = '<strong>Avvisi:</strong><ul style="margin:4px 0 0 16px;">'
+                                        + errors.map(function(e){ return '<li>' + e + '</li>'; }).join('') + '</ul>';
+                                }
+
+                                var tbody = document.getElementById('spp-tbody');
+                                tbody.innerHTML = '';
+
+                                var resultLabels = {positive:'✅ Positivo', negative:'❌ Rifiuto', pending:'⏳ In attesa'};
+                                var resultColors = {positive:'#d1fae5', negative:'#fee2e2', pending:'#fefce8'};
+
+                                entries.forEach(function(e, idx) {
+                                    var tr = document.createElement('tr');
+                                    tr.style.borderBottom = '1px solid #f3f4f6';
+                                    var resBg = resultColors[e.result] || '#fff';
+                                    tr.innerHTML =
+                                        '<td style="padding:4px 6px; border:1px solid #e5e7eb; text-align:center;">'
+                                            + '<input type="checkbox" class="spp-row-check" data-idx="'+idx+'" checked></td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; text-align:center; font-weight:600;">' + (e.sip_week||1) + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; white-space:nowrap;">' + (e.entry_date||'-') + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; font-weight:500;">' + self.esc(e.company_name) + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; font-size:0.73rem;">' + self.esc(e.company_address||'') + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; font-size:0.73rem;">' + self.esc(e.company_email||'') + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb;">' + self.esc(e.position||'') + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; text-align:center;">' + (e.urc_assigned ? '×' : '') + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; text-align:center;">' + (e.occupation_fulltime ? '×' : '') + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; text-align:center;">' + (e.occupation_parttime ? '×' : '') + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; text-align:center;">' + (e.method_letter ? '×' : '') + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; text-align:center;">' + (e.method_person ? '×' : '') + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; text-align:center;">' + (e.method_phone ? '×' : '') + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; background:'+resBg+'; font-size:0.73rem;">' + (resultLabels[e.result]||e.result) + '</td>'
+                                        + '<td style="padding:4px 6px; border:1px solid #e5e7eb; font-size:0.7rem; color:#9ca3af;">' + self.esc(e.source_file||'') + '</td>';
+                                    tbody.appendChild(tr);
+                                });
+
+                                document.getElementById('spp-import-label').textContent =
+                                    'Importa ' + entries.length + ' ricerche';
+                            },
+
+                            confirmImport: function() {
+                                // Collect only checked rows.
+                                var checked = document.querySelectorAll('.spp-row-check:checked');
+                                var toImport = [];
+                                checked.forEach(function(cb) {
+                                    var idx = parseInt(cb.dataset.idx);
+                                    if (!isNaN(idx) && SipProofParser.entries[idx]) {
+                                        toImport.push(SipProofParser.entries[idx]);
+                                    }
+                                });
+                                if (toImport.length === 0) {
+                                    alert('Nessuna riga selezionata.');
+                                    return;
+                                }
+                                var btn = document.getElementById('spp-import-btn');
+                                btn.disabled = true;
+                                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Importazione…';
+
+                                var fd = new FormData();
+                                fd.append('sesskey', M.cfg.sesskey);
+                                fd.append('action', 'import');
+                                fd.append('enrollmentid', SipProofParser.enrollmentid);
+                                fd.append('entries', JSON.stringify(toImport));
+
+                                fetch(M.cfg.wwwroot + '/local/ftm_sip/ajax_parse_proofs.php', {method:'POST', body:fd})
+                                .then(function(r){ return r.json(); })
+                                .then(function(resp) {
+                                    document.getElementById('spp-results').style.display = 'none';
+                                    document.getElementById('spp-done').style.display = 'block';
+                                    document.getElementById('spp-done-msg').textContent =
+                                        resp.success
+                                            ? (resp.data.imported + ' ricerche importate nel Foglio URC!')
+                                            : ('Errore: ' + resp.message);
+                                })
+                                .catch(function(err) {
+                                    btn.disabled = false;
+                                    btn.innerHTML = '<i class="fa fa-check"></i> Importa';
+                                    alert('Errore di rete: ' + err.message);
+                                });
+                            },
+
+                            esc: function(s) {
+                                if (!s) return '';
+                                return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                            }
+                        };
+                        </script>
                         <?php endif; ?>
                     </div>
                 <?php else: // area qualitative ?>
