@@ -790,13 +790,13 @@ echo $OUTPUT->header();
 }
 
 /* Row color indicators */
-.view-compatta .student-row.color-giallo { border-left: 12px solid #a08210; }
-.view-compatta .student-row.color-blu { border-left: 12px solid #2e5a96; }
-.view-compatta .student-row.color-verde { border-left: 12px solid #1f6a4c; }
-.view-compatta .student-row.color-arancione { border-left: 12px solid #9a5c14; }
-.view-compatta .student-row.color-rosso { border-left: 12px solid #9a3030; }
-.view-compatta .student-row.color-viola { border-left: 12px solid #5c3a80; }
-.view-compatta .student-row.color-grigio { border-left: 12px solid #4e5565; }
+.view-compatta .student-row.color-giallo { border-left: 4px solid #a08210; }
+.view-compatta .student-row.color-blu { border-left: 4px solid #2e5a96; }
+.view-compatta .student-row.color-verde { border-left: 4px solid #1f6a4c; }
+.view-compatta .student-row.color-arancione { border-left: 4px solid #9a5c14; }
+.view-compatta .student-row.color-rosso { border-left: 4px solid #9a3030; }
+.view-compatta .student-row.color-viola { border-left: 4px solid #5c3a80; }
+.view-compatta .student-row.color-grigio { border-left: 4px solid #4e5565; }
 
 /* Alert rows */
 .view-compatta .student-row.alert-end6 {
@@ -857,37 +857,37 @@ echo $OUTPUT->header();
 
 .view-standard .student-card-header.giallo {
     background: #f7f2dc;
-    border-left: 15px solid #a08210;
+    border-left: 5px solid #a08210;
 }
 
 .view-standard .student-card-header.blu {
     background: #e8eff8;
-    border-left: 15px solid #2e5a96;
+    border-left: 5px solid #2e5a96;
 }
 
 .view-standard .student-card-header.verde {
     background: #e8f3ec;
-    border-left: 15px solid #1f6a4c;
+    border-left: 5px solid #1f6a4c;
 }
 
 .view-standard .student-card-header.arancione {
     background: #f5eddf;
-    border-left: 15px solid #9a5c14;
+    border-left: 5px solid #9a5c14;
 }
 
 .view-standard .student-card-header.rosso {
     background: #f5eaea;
-    border-left: 15px solid #9a3030;
+    border-left: 5px solid #9a3030;
 }
 
 .view-standard .student-card-header.viola {
     background: #f0ebf6;
-    border-left: 15px solid #5c3a80;
+    border-left: 5px solid #5c3a80;
 }
 
 .view-standard .student-card-header.grigio {
     background: #eeeff1;
-    border-left: 15px solid #4e5565;
+    border-left: 5px solid #4e5565;
 }
 
 .view-standard .student-info-left {
@@ -1515,13 +1515,13 @@ echo $OUTPUT->header();
     opacity: 0;
 }
 
-.view-dettagliata .panel-header.giallo { background: #f7f2dc; border-left: 15px solid #a08210; }
-.view-dettagliata .panel-header.blu { background: #e8eff8; border-left: 15px solid #2e5a96; }
-.view-dettagliata .panel-header.verde { background: #e8f3ec; border-left: 15px solid #1f6a4c; }
-.view-dettagliata .panel-header.arancione { background: #f5eddf; border-left: 15px solid #9a5c14; }
-.view-dettagliata .panel-header.rosso { background: #f5eaea; border-left: 15px solid #9a3030; }
-.view-dettagliata .panel-header.viola { background: #f0ebf6; border-left: 15px solid #5c3a80; }
-.view-dettagliata .panel-header.grigio { background: #eeeff1; border-left: 15px solid #4e5565; }
+.view-dettagliata .panel-header.giallo { background: #f7f2dc; border-left: 5px solid #a08210; }
+.view-dettagliata .panel-header.blu { background: #e8eff8; border-left: 5px solid #2e5a96; }
+.view-dettagliata .panel-header.verde { background: #e8f3ec; border-left: 5px solid #1f6a4c; }
+.view-dettagliata .panel-header.arancione { background: #f5eddf; border-left: 5px solid #9a5c14; }
+.view-dettagliata .panel-header.rosso { background: #f5eaea; border-left: 5px solid #9a3030; }
+.view-dettagliata .panel-header.viola { background: #f0ebf6; border-left: 5px solid #5c3a80; }
+.view-dettagliata .panel-header.grigio { background: #eeeff1; border-left: 5px solid #4e5565; }
 
 .view-dettagliata .student-main-info {
     display: flex;
@@ -3987,9 +3987,9 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// SIP Eligibility + Activation Modal - Griglia Valutazione PCI (6 criteri 1-5)
+// SIP Eligibility + Activation Modal - Griglia Valutazione PCI (3 criteri 1-6)
 var sipCurrentUserId = 0;
-var sipRatings = {motivazione: 0, chiarezza_obiettivo: 0, occupabilita: 0, autonomia: 0, bisogno_coaching: 0, comportamento: 0};
+var sipRatings = {autonomia: 0, occupabilita: 0, motivazione: 0};
 
 function showSipModal(userId, studentName, sector) {
     sipCurrentUserId = userId;
@@ -4001,7 +4001,7 @@ function showSipModal(userId, studentName, sector) {
     d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7 || 7));
     document.getElementById('sipStartDate').value = d.toISOString().split('T')[0];
     // Reset all ratings.
-    sipRatings = {motivazione: 0, chiarezza_obiettivo: 0, occupabilita: 0, autonomia: 0, bisogno_coaching: 0, comportamento: 0};
+    sipRatings = {autonomia: 0, occupabilita: 0, motivazione: 0};
     document.querySelectorAll('.elig-rating-btn').forEach(function(b) { b.classList.remove('selected'); });
     document.getElementById('sipEligTotal').textContent = '0';
     // Reset semaphore, classe, decisione.
@@ -4046,7 +4046,7 @@ function showSipModal(userId, studentName, sector) {
         // Pre-fill eligibility data if exists.
         if (resp.data.has_eligibility && resp.data.eligibility) {
             var elig = resp.data.eligibility;
-            var criteria = ['motivazione', 'chiarezza_obiettivo', 'occupabilita', 'autonomia', 'bisogno_coaching', 'comportamento'];
+            var criteria = ['autonomia', 'occupabilita', 'motivazione'];
             criteria.forEach(function(key) {
                 var val = elig[key] || 0;
                 if (val > 0) {
@@ -4065,17 +4065,6 @@ function showSipModal(userId, studentName, sector) {
             }
             if (elig.note) {
                 document.getElementById('sipNote').value = elig.note;
-            }
-            // Pre-fill draft fields (motivazione attivazione, LADI, data inizio).
-            // Vengono salvati e ripristinati anche se il CI non e ancora stato attivato.
-            if (elig.draft_motivation) {
-                document.getElementById('sipMotivation').value = elig.draft_motivation;
-            }
-            if (elig.draft_ladi_indemnity && elig.draft_ladi_indemnity > 0) {
-                document.getElementById('sipLadiIndemnity').value = elig.draft_ladi_indemnity;
-            }
-            if (elig.draft_date_start) {
-                document.getElementById('sipStartDate').value = elig.draft_date_start;
             }
         } else {
             // No data yet - show "compilare la griglia".
@@ -4125,14 +4114,14 @@ function setEligRating(criterion, value) {
     var activationSection = document.getElementById('sipActivationSection');
     var btnActivate = document.getElementById('sipBtnActivate');
 
-    if (total >= 29) {
+    if (total >= 15) {
         // Verde: idoneo prioritario.
         semaphore.style.background = '#28a745'; semaphore.style.borderColor = '#218838';
         classeEl.textContent = 'Alto'; classeEl.style.background = '#d4edda'; classeEl.style.color = '#155724';
         decisioneEl.textContent = 'Idoneo Prioritario'; decisioneEl.style.background = '#d4edda'; decisioneEl.style.color = '#155724';
         if (activationSection) activationSection.style.display = 'block';
         if (btnActivate) btnActivate.style.display = 'inline-flex';
-    } else if (total >= 21) {
+    } else if (total >= 11) {
         // Arancione: idoneo.
         semaphore.style.background = '#f59e0b'; semaphore.style.borderColor = '#d97706';
         classeEl.textContent = 'Medio'; classeEl.style.background = '#fff3cd'; classeEl.style.color = '#856404';
@@ -4166,48 +4155,21 @@ function sipToggleRecommendation() {
     if (referralRow) referralRow.style.display = (val === 'refer_other') ? 'block' : 'none';
 }
 
-// Helper: re-sincronizza sipRatings leggendo i bottoni .elig-rating-btn.selected dal DOM.
-// Necessario per evitare desync quando i dati vengono caricati dal server (race condition).
-function sipSyncRatingsFromDom() {
-    var criteria = ['motivazione', 'chiarezza_obiettivo', 'occupabilita', 'autonomia', 'bisogno_coaching', 'comportamento'];
-    criteria.forEach(function(key) {
-        var row = document.getElementById('eligRow_' + key);
-        if (!row) { return; }
-        var selected = row.querySelector('.elig-rating-btn.selected');
-        if (selected) {
-            var v = parseInt(selected.getAttribute('data-value'));
-            if (v >= 1 && v <= 6) {
-                sipRatings[key] = v;
-            }
-        }
-    });
-}
-
 function sipSaveAssessment(andActivate) {
-    // Sync da DOM PRIMA della validazione (robustness vs race conditions).
-    sipSyncRatingsFromDom();
-
     console.log('sipSaveAssessment called, activate=' + andActivate, 'ratings=', JSON.stringify(sipRatings));
     // Validate all 6 criteria are rated.
     var allRated = true;
-    var missingCriteria = [];
     for (var k in sipRatings) {
-        if (sipRatings[k] < 1) {
-            allRated = false;
-            missingCriteria.push(k);
-        }
+        if (sipRatings[k] < 1) { allRated = false; break; }
     }
-    if (!allRated) {
-        alert('Valutare tutti i 6 criteri (1-6).\nMancanti: ' + missingCriteria.join(', '));
-        return;
-    }
+    if (!allRated) { alert('Valutare tutti i 3 criteri (1-6)'); return; }
 
     // Decisione auto-calcolata dal semaforo.
     var total = 0;
     for (var k in sipRatings) { total += sipRatings[k]; }
     var decisioneVal = 'non_idoneo';
-    if (total >= 29) decisioneVal = 'idoneo_prioritario';
-    else if (total >= 21) decisioneVal = 'idoneo';
+    if (total >= 15) decisioneVal = 'idoneo_prioritario';
+    else if (total >= 11) decisioneVal = 'idoneo';
 
     // Validate recommendation.
     var recommendation = document.querySelector('input[name="sipRecommendation"]:checked');
@@ -4219,10 +4181,6 @@ function sipSaveAssessment(andActivate) {
     }
 
     if (andActivate) {
-        var ladiVal = parseInt(document.getElementById('sipLadiIndemnity').value) || 0;
-        if (ladiVal <= 0) { alert('Inserire le indennita LADI rimanenti (obbligatorio)'); return; }
-        var motivation = document.getElementById('sipMotivation').value.trim();
-        if (!motivation) { alert('Inserisci una motivazione dettagliata'); return; }
         var startDate = document.getElementById('sipStartDate').value;
         if (!startDate) { alert('Seleziona una data di inizio'); return; }
     }
@@ -4230,24 +4188,24 @@ function sipSaveAssessment(andActivate) {
     var formData = new FormData();
     formData.append('userid', sipCurrentUserId);
     formData.append('sesskey', M.cfg.sesskey);
-    // 6 criteria.
-    formData.append('motivazione', sipRatings.motivazione);
-    formData.append('chiarezza_obiettivo', sipRatings.chiarezza_obiettivo);
-    formData.append('occupabilita', sipRatings.occupabilita);
+    // 3 criteri attivi + 3 a 0 per compatibilità DB.
     formData.append('autonomia', sipRatings.autonomia);
-    formData.append('bisogno_coaching', sipRatings.bisogno_coaching);
-    formData.append('comportamento', sipRatings.comportamento);
+    formData.append('occupabilita', sipRatings.occupabilita);
+    formData.append('motivazione', sipRatings.motivazione);
+    formData.append('chiarezza_obiettivo', 0);
+    formData.append('bisogno_coaching', 0);
+    formData.append('comportamento', 0);
     formData.append('decisione', decisioneVal);
     formData.append('coach_recommendation', recVal);
     formData.append('referral_detail', document.getElementById('sipReferralDetail').value.trim());
     formData.append('note', document.getElementById('sipNote').value.trim());
-    // Draft fields: invia SEMPRE motivation/ladi/date_start (anche senza attivazione),
-    // cosi vengono salvati come bozza e riapparsi al riapertura modale.
-    formData.append('motivation', document.getElementById('sipMotivation').value.trim());
-    formData.append('date_start', document.getElementById('sipStartDate').value);
-    formData.append('ladi_indemnity', document.getElementById('sipLadiIndemnity').value);
-    // Activation flag (i campi sono gia stati inviati sopra come bozza).
+    // Activation fields.
     formData.append('activate', andActivate ? '1' : '0');
+    if (andActivate) {
+        formData.append('motivation', document.getElementById('sipMotivation').value.trim());
+        formData.append('date_start', document.getElementById('sipStartDate').value);
+        formData.append('ladi_indemnity', document.getElementById('sipLadiIndemnity').value);
+    }
 
     // Disable buttons during request.
     var btns = document.querySelectorAll('#sipModal button');
@@ -4268,25 +4226,15 @@ function sipSaveAssessment(andActivate) {
     .then(function(data) {
         btns.forEach(function(b) { b.disabled = false; });
         if (data.success) {
-            // Se c'e un callback onSuccess (es. dal flusso "Salva e informa segreteria"),
-            // chiamalo invece di reload/alert.
-            if (typeof window._sipSaveOnSuccess === 'function') {
-                var cb = window._sipSaveOnSuccess;
-                window._sipSaveOnSuccess = null;
-                cb(data);
-            } else {
-                alert('Valutazione salvata con successo!');
-                closeSipModal();
-                location.reload();
-            }
+            alert('Valutazione salvata con successo!');
+            closeSipModal();
+            location.reload();
         } else {
-            window._sipSaveOnSuccess = null;
             alert('Errore dal server: ' + (data.message || 'Errore sconosciuto'));
         }
     })
     .catch(function(err) {
         btns.forEach(function(b) { b.disabled = false; });
-        window._sipSaveOnSuccess = null;
         alert('Errore di connessione: ' + err.message);
         console.error('SIP Save Error:', err);
     });
@@ -4338,41 +4286,23 @@ document.getElementById('sipModal')?.addEventListener('click', function(e) {
         <?php
         // Criteria with descriptions matching the official CPI paper form.
         $elig_criteria_v2 = [
+            'autonomia' => [
+                'label' => 'Autonomia',
+                'question' => 'Quanto e autonoma la PCI nella ricerca d\'impiego?',
+                'low' => 'Molto autonoma',
+                'high' => 'Totalmente dipendente',
+            ],
+            'occupabilita' => [
+                'label' => 'Collocabilita',
+                'question' => 'Qual e la probabilita di trovare impiego della PCI?',
+                'low' => 'Alta collocabilita',
+                'high' => 'Molto bassa',
+            ],
             'motivazione' => [
                 'label' => 'Motivazione',
                 'question' => 'La PCI e motivata a frequentare un percorso di coaching di 10 settimane?',
-                'low' => 'Passivo, poco coinvolto',
+                'low' => 'Passivo / poco coinvolto',
                 'high' => 'Proattivo, coinvolto, orientato al risultato',
-            ],
-            'chiarezza_obiettivo' => [
-                'label' => 'Chiarezza Obbiettivi',
-                'question' => 'Alla PCI sono chiari gli obbiettivi del percorso e accetta i punti di valutazione?',
-                'low' => 'Nessun obiettivo',
-                'high' => 'Obiettivo chiaro e realistico',
-            ],
-            'occupabilita' => [
-                'label' => 'Occupabilita',
-                'question' => 'La PCI ha un\'alta probabilita di trovare impiego?',
-                'low' => 'Profilo spendibile rapidamente',
-                'high' => 'Molto bassa',
-            ],
-            'autonomia' => [
-                'label' => 'Autonomia',
-                'question' => 'La PCI e fortemente autonoma nella ricerca d\'impiego? Utilizza tutti i canali corretti per la sua professione?',
-                'low' => 'Autonoma e organizzata',
-                'high' => 'Totalmente dipendente',
-            ],
-            'bisogno_coaching' => [
-                'label' => 'Bisogno Coaching',
-                'question' => 'La PCI necessita di aiuto per attivarsi nella ricerca d\'impiego? Sa come organizzarsi per la ricerca di lavoro?',
-                'low' => 'Non necessario',
-                'high' => 'Altamente necessario per sblocco',
-            ],
-            'comportamento' => [
-                'label' => 'Comportamento',
-                'question' => 'La PCI e una persona educata, collaborativa e impegnata?',
-                'low' => 'Assenze / scarso impegno',
-                'high' => 'Eccellente (puntuale, attiva, collaborativa)',
             ],
         ];
         foreach ($elig_criteria_v2 as $ckey => $cdata):
@@ -4401,7 +4331,7 @@ document.getElementById('sipModal')?.addEventListener('click', function(e) {
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span style="font-size:14px; font-weight:700; color:#374151;">Totale</span>
                     <span id="sipEligTotal" style="font-size:24px; font-weight:800; color:#0891B2;">0</span>
-                    <span style="font-size:14px; color:#9ca3af;">/ 36</span>
+                    <span style="font-size:14px; color:#9ca3af;">/ 18</span>
                 </div>
                 <!-- Classe -->
                 <div style="display:flex; align-items:center; gap:8px;">
@@ -4420,9 +4350,9 @@ document.getElementById('sipModal')?.addEventListener('click', function(e) {
 
             <!-- Legenda -->
             <div style="margin-top:10px; display:flex; gap:16px; font-size:11px; color:#6b7280; justify-content:center;">
-                <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#dc3545; margin-right:3px;"></span> 0-20 Non idoneo</span>
-                <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f59e0b; margin-right:3px;"></span> 21-28 Idoneo</span>
-                <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#28a745; margin-right:3px;"></span> 29-36 Prioritario</span>
+                <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#dc3545; margin-right:3px;"></span> 3-10 Non idoneo</span>
+                <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f59e0b; margin-right:3px;"></span> 11-14 Idoneo</span>
+                <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#28a745; margin-right:3px;"></span> 15-18 Prioritario</span>
             </div>
 
         </div>
@@ -4466,7 +4396,7 @@ document.getElementById('sipModal')?.addEventListener('click', function(e) {
         <h4 style="margin:0 0 14px; font-size:14px; font-weight:700; color:#0e7490; text-transform:uppercase; letter-spacing:0.5px;"><?php echo get_string('eligibility_activation_title', 'local_ftm_sip'); ?></h4>
 
         <div style="margin-bottom:12px;">
-            <label style="font-size:12px; font-weight:600; color:#6b7280; display:block; margin-bottom:4px;"><?php echo get_string('eligibility_motivation_detail', 'local_ftm_sip'); ?> *</label>
+            <label style="font-size:12px; font-weight:600; color:#6b7280; display:block; margin-bottom:4px;"><?php echo get_string('eligibility_motivation_detail', 'local_ftm_sip'); ?></label>
             <textarea id="sipMotivation" rows="3" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:8px; font-size:13px; resize:vertical;"
                       placeholder="<?php echo get_string('eligibility_motivation_placeholder', 'local_ftm_sip'); ?>"></textarea>
         </div>
@@ -4477,7 +4407,7 @@ document.getElementById('sipModal')?.addEventListener('click', function(e) {
         </div>
 
         <div>
-            <label style="font-size:12px; font-weight:600; color:#6b7280; display:block; margin-bottom:4px;"><?php echo get_string('ladi_indemnity', 'local_ftm_sip'); ?> *</label>
+            <label style="font-size:12px; font-weight:600; color:#6b7280; display:block; margin-bottom:4px;"><?php echo get_string('ladi_indemnity', 'local_ftm_sip'); ?></label>
             <input type="number" id="sipLadiIndemnity" min="1" style="width:100%; border:1px solid #dee2e6; border-radius:6px; padding:7px 10px; font-size:13px;" placeholder="Es. 120">
             <small style="color:#9ca3af; font-size:11px;"><?php echo get_string('ladi_indemnity_help', 'local_ftm_sip'); ?></small>
         </div>
@@ -4487,134 +4417,10 @@ document.getElementById('sipModal')?.addEventListener('click', function(e) {
     <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
         <button onclick="closeSipModal()" style="padding:8px 18px; border:1px solid #dee2e6; background:#f8f9fa; border-radius:6px; cursor:pointer; font-size:13px; color:#374151;"><?php echo get_string('cancel', 'local_ftm_sip'); ?></button>
         <button onclick="sipSaveAssessment(false)" style="padding:8px 18px; background:#6b7280; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500;"><?php echo get_string('eligibility_save_assessment', 'local_ftm_sip'); ?></button>
-        <button onclick="sipInformSecretariat()" style="padding:8px 18px; background:#0e7490; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600;" title="Salva la valutazione (e attiva CI se i campi attivazione sono compilati), poi invia email PDF a lucio.pagani@f3m.ch">
-            <i class="fa fa-save"></i> Salva, attiva e informa segreteria
-        </button>
-        <!-- Hidden helper button (used internally by activation logic — JS may reference id) -->
-        <button id="sipBtnActivate" onclick="sipSaveAssessment(true)" style="display:none;" aria-hidden="true"></button>
+        <button id="sipBtnActivate" onclick="sipSaveAssessment(true)" style="display:none; padding:8px 18px; background:#0891B2; color:white; border:none; border-radius:6px; cursor:pointer; font-size:13px; font-weight:600;"><?php echo get_string('eligibility_save_and_activate', 'local_ftm_sip'); ?></button>
     </div>
 </div>
 </div>
-
-<!-- Modale "Informa segreteria" (annidata, si apre sopra a quella eligibility) -->
-<div id="sipInformModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10005; justify-content:center; align-items:center;">
-    <div style="background:white; border-radius:12px; padding:25px; max-width:550px; width:92%; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
-        <h3 style="margin:0 0 12px; color:#0e7490;"><i class="fa fa-envelope"></i> Informa segreteria</h3>
-        <p style="font-size:14px; color:#374151;">Sara inviata una email a <b>lucio.pagani@f3m.ch</b> con il report PDF della griglia di valutazione di <b id="sipInformStudentName">questo studente</b>.</p>
-        <label style="font-weight:600; display:block; margin-top:12px; font-size:13px;">Note aggiuntive (opzionale):</label>
-        <textarea id="sipInformMessage" rows="4" style="width:100%; border:1px solid #ccc; border-radius:6px; padding:8px; font-family:inherit; font-size:13px; box-sizing:border-box;" placeholder="Es: Studente da valutare, segnalo per attivazione CI..."></textarea>
-        <div id="sipInformFeedback" style="margin-top:10px; font-size:13px; min-height:20px;"></div>
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
-            <button id="sipInformCancel" onclick="document.getElementById('sipInformModal').style.display='none';" style="padding:8px 16px; background:#f3f4f6; color:#374151; border:1px solid #dee2e6; border-radius:6px; cursor:pointer;">Annulla</button>
-            <button id="sipInformSendBtn" onclick="sipInformSecretariatSend()" style="padding:8px 20px; background:#0e7490; color:white; border:none; border-radius:6px; font-weight:600; cursor:pointer;"><i class="fa fa-paper-plane"></i> Invia email</button>
-        </div>
-    </div>
-</div>
-
-<script>
-// "Salva, attiva e informa segreteria" — flusso combinato:
-// 1) Salva la griglia PCI (e attiva CI se i campi attivazione sono compilati)
-// 2) Apre modale per nota email
-// 3) Invio email a lucio.pagani@f3m.ch con PDF allegato
-function sipInformSecretariat() {
-    if (!sipCurrentUserId) {
-        alert('Errore: nessuno studente selezionato.');
-        return;
-    }
-
-    // Sync da DOM (in caso di race condition con caricamento dati).
-    sipSyncRatingsFromDom();
-
-    // Validazione minima: tutti i 6 criteri devono essere valutati.
-    var allRated = true;
-    var missingCriteria = [];
-    for (var k in sipRatings) {
-        if (sipRatings[k] < 1) {
-            allRated = false;
-            missingCriteria.push(k);
-        }
-    }
-    if (!allRated) {
-        alert('Prima di informare la segreteria devi valutare tutti i 6 criteri (1-6).\nMancanti: ' + missingCriteria.join(', '));
-        return;
-    }
-
-    // Determina se possiamo anche attivare CI (richiede 3 campi extra).
-    var canActivate = false;
-    var ladiVal = parseInt(document.getElementById('sipLadiIndemnity').value) || 0;
-    var motivation = document.getElementById('sipMotivation').value.trim();
-    var startDate = document.getElementById('sipStartDate').value;
-    if (ladiVal > 0 && motivation && startDate) {
-        canActivate = true;
-    }
-
-    // Imposta il callback che si esegue dopo il salvataggio riuscito.
-    window._sipSaveOnSuccess = function(data) {
-        // Apri modale email senza ricaricare la pagina (cosi mantiene contesto).
-        var studentName = document.getElementById('sipModalStudent').textContent || 'studente';
-        document.getElementById('sipInformStudentName').textContent = studentName;
-        document.getElementById('sipInformMessage').value = '';
-        var savedMsg = canActivate
-            ? '<span style="color:#059669;"><i class="fa fa-check-circle"></i> Valutazione salvata e CI attivato. Ora invia l\'email alla segreteria.</span>'
-            : '<span style="color:#0891B2;"><i class="fa fa-info-circle"></i> Valutazione salvata (CI non ancora attivo: compila motivazione/LADI/data per attivare). Ora invia l\'email alla segreteria.</span>';
-        document.getElementById('sipInformFeedback').innerHTML = savedMsg;
-        var btn = document.getElementById('sipInformSendBtn');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa fa-paper-plane"></i> Invia email';
-        btn.style.background = '#0e7490';
-        document.getElementById('sipInformModal').style.display = 'flex';
-    };
-
-    // Lancia il salvataggio. sipSaveAssessment richiamera _sipSaveOnSuccess se va bene.
-    sipSaveAssessment(canActivate);
-}
-
-function sipInformSecretariatSend() {
-    var btn = document.getElementById('sipInformSendBtn');
-    var fb = document.getElementById('sipInformFeedback');
-    var msg = document.getElementById('sipInformMessage').value;
-
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Invio in corso...';
-    fb.innerHTML = '<span style="color:#6b7280;">Generazione PDF e invio email (5-30 sec)...</span>';
-
-    var fd = new FormData();
-    fd.append('sesskey', M.cfg.sesskey);
-    fd.append('userid', sipCurrentUserId);
-    fd.append('message', msg);
-
-    fetch(M.cfg.wwwroot + '/local/ftm_sip/ajax_inform_secretariat.php', {
-        method: 'POST',
-        body: fd,
-        credentials: 'same-origin'
-    })
-    .then(function(r) {
-        return r.text().then(function(txt) {
-            try { return JSON.parse(txt); }
-            catch (e) { return { success: false, message: 'Risposta non valida dal server (HTTP ' + r.status + '): ' + txt.substring(0, 300) }; }
-        });
-    })
-    .then(function(data) {
-        if (data.success) {
-            fb.innerHTML = '<span style="color:#059669;"><i class="fa fa-check-circle"></i> ' + data.message + '</span>';
-            btn.innerHTML = '<i class="fa fa-check"></i> Inviato!';
-            btn.style.background = '#059669';
-            setTimeout(function() { document.getElementById('sipInformModal').style.display='none'; }, 3000);
-        } else {
-            fb.innerHTML = '<span style="color:#dc2626;"><i class="fa fa-exclamation-triangle"></i> Errore: ' + (data.message || 'sconosciuto') + '</span>';
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa fa-paper-plane"></i> Riprova';
-            btn.style.background = '#0e7490';
-        }
-    })
-    .catch(function(err) {
-        fb.innerHTML = '<span style="color:#dc2626;"><i class="fa fa-exclamation-triangle"></i> Errore rete: ' + err.message + '</span>';
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa fa-paper-plane"></i> Riprova';
-        btn.style.background = '#0e7490';
-    });
-}
-</script>
 
 <?php
 echo $OUTPUT->footer();

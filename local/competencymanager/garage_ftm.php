@@ -334,6 +334,14 @@ if ($garageConfig) {
     $savedSectionOrder = json_decode($garageConfig->section_order ?? '[]', true) ?: [];
 }
 
+// AI profile fields from garage config.
+$savedAiSettoreTarget  = $garageConfig->ai_settore_target ?? '';
+$savedAiDisponibilita  = $garageConfig->ai_disponibilita ?? '';
+$savedAiMobilita       = $garageConfig->ai_mobilita ?? '';
+$savedAiPuntiForza     = $garageConfig->ai_punti_forza ?? '';
+$savedAiNote           = $garageConfig->ai_note ?? '';
+$savedAiPctCercaLavoro = isset($garageConfig->ai_pct_cerca_lavoro) ? (int)$garageConfig->ai_pct_cerca_lavoro : 50;
+
 // All available sections with default order.
 $allSections = [
     'valutazione'    => ['label' => 'Panoramica Valutazione', 'icon' => '&#128202;', 'default' => true],
@@ -1096,6 +1104,81 @@ echo $OUTPUT->header();
         <?php endif; ?>
     </div>
 
+    <!-- Profilo AI -->
+    <div class="garage-card">
+        <h2>Profilo AI &mdash; Dati per la Generazione</h2>
+        <p style="font-size:0.85rem;color:#888;margin-bottom:20px;">
+            Questi dati guidano l'AI nella generazione dei commenti per area e della nota finale del passaporto.
+            Vengono salvati insieme alla configurazione del garage.
+        </p>
+        <div class="garage-config-grid">
+            <div class="garage-config-left">
+
+                <div class="garage-field">
+                    <label>Settore / Mansione target</label>
+                    <input type="text" id="garage-ai-settore-target" class="form-control"
+                           value="<?php echo s($savedAiSettoreTarget); ?>"
+                           placeholder="es. Operatore CNC, Elettricista industriale..."
+                           style="max-width:400px;padding:6px 10px;border:1px solid #dee2e6;border-radius:6px;font-size:0.9rem;font-family:inherit;">
+                </div>
+
+                <div class="garage-field">
+                    <label>Disponibilita oraria</label>
+                    <div class="garage-radio-group" style="flex-direction:row;gap:20px;">
+                        <?php foreach (['fulltime' => 'Fulltime', 'parttime' => 'Part-time', 'entrambi' => 'Entrambi'] as $val => $lbl): ?>
+                        <label class="garage-radio-option">
+                            <input type="radio" name="ai_disponibilita" value="<?php echo $val; ?>"
+                                   <?php if ($savedAiDisponibilita === $val) echo 'checked'; ?>>
+                            <?php echo $lbl; ?>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <div class="garage-field">
+                    <label>Mobilita geografica</label>
+                    <div class="garage-radio-group" style="flex-direction:row;gap:20px;">
+                        <?php foreach (['solo_ticino' => 'Solo Ticino', 'svizzera' => 'Svizzera', 'frontalieri' => 'Area frontaliera'] as $val => $lbl): ?>
+                        <label class="garage-radio-option">
+                            <input type="radio" name="ai_mobilita" value="<?php echo $val; ?>"
+                                   <?php if ($savedAiMobilita === $val) echo 'checked'; ?>>
+                            <?php echo $lbl; ?>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <div class="garage-field">
+                    <label>% motivazione alla ricerca del lavoro
+                        <span style="color:#888;font-weight:400;">(giudizio del coach)</span>
+                    </label>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <input type="range" id="garage-ai-pct" min="0" max="100" step="5"
+                               value="<?php echo $savedAiPctCercaLavoro; ?>"
+                               oninput="document.getElementById('ai-pct-val').textContent=this.value+'%'"
+                               style="width:200px;accent-color:#0066cc;">
+                        <span id="ai-pct-val" style="font-weight:700;color:#0066cc;min-width:40px;"><?php echo $savedAiPctCercaLavoro; ?>%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="garage-config-right">
+                <div class="garage-field">
+                    <label>Punti di forza da valorizzare</label>
+                    <textarea id="garage-ai-punti-forza" rows="3"
+                              style="width:100%;border:1px solid #dee2e6;border-radius:6px;padding:8px 10px;font-size:0.88rem;font-family:inherit;resize:vertical;"
+                              placeholder="es. ottima manualita, esperienza su tornio CNC, affidabile..."><?php echo s($savedAiPuntiForza); ?></textarea>
+                </div>
+                <div class="garage-field" style="margin-top:12px;">
+                    <label>Note aggiuntive per l'AI</label>
+                    <textarea id="garage-ai-note" rows="3"
+                              style="width:100%;border:1px solid #dee2e6;border-radius:6px;padding:8px 10px;font-size:0.88rem;font-family:inherit;resize:vertical;"
+                              placeholder="Qualsiasi indicazione utile per contestualizzare il profilo..."><?php echo s($savedAiNote); ?></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Sections & Order -->
     <div class="garage-card" style="margin-bottom: 24px;">
         <h2 style="font-size: 1.2rem; color: #333; margin: 0 0 8px 0;">Sezioni e Ordine Stampa</h2>
@@ -1442,6 +1525,21 @@ function saveGarageConfig() {
         + '&custom_threshold=' + encodeURIComponent(customThreshold)
         + '&enabled_sections=' + encodeURIComponent(JSON.stringify(getEnabledSections()))
         + '&section_order=' + encodeURIComponent(JSON.stringify(getSectionOrder()));
+
+    var aiSettoreTarget  = document.getElementById('garage-ai-settore-target') ? document.getElementById('garage-ai-settore-target').value : '';
+    var aiDisponibilitaEl = document.querySelector('input[name="ai_disponibilita"]:checked');
+    var aiDisponibilita  = aiDisponibilitaEl ? aiDisponibilitaEl.value : '';
+    var aiMobilitaEl     = document.querySelector('input[name="ai_mobilita"]:checked');
+    var aiMobilita       = aiMobilitaEl ? aiMobilitaEl.value : '';
+    var aiPuntiForza     = document.getElementById('garage-ai-punti-forza') ? document.getElementById('garage-ai-punti-forza').value : '';
+    var aiNote           = document.getElementById('garage-ai-note') ? document.getElementById('garage-ai-note').value : '';
+    var aiPctCercaLavoro = document.getElementById('garage-ai-pct') ? document.getElementById('garage-ai-pct').value : '50';
+    params += '&ai_settore_target=' + encodeURIComponent(aiSettoreTarget)
+        + '&ai_disponibilita=' + encodeURIComponent(aiDisponibilita)
+        + '&ai_mobilita=' + encodeURIComponent(aiMobilita)
+        + '&ai_punti_forza=' + encodeURIComponent(aiPuntiForza)
+        + '&ai_note=' + encodeURIComponent(aiNote)
+        + '&ai_pct_cerca_lavoro=' + encodeURIComponent(aiPctCercaLavoro);
 
     xhr.open('POST', url, true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');

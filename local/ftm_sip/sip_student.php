@@ -19,10 +19,9 @@ $context = context_system::instance();
 require_capability('local/ftm_sip:view', $context);
 
 $userid = required_param('userid', PARAM_INT);
-$tab = optional_param('tab', 'accettazione', PARAM_ALPHANUMEXT);
-// Il tab "Foglio Ricerche URC" e stato spostato dentro l'area "mandatory_searches"
-// del Piano d'Azione. Se qualcuno arriva con il vecchio URL, redirigi.
-if ($tab === 'ricerche') {
+$tab = optional_param('tab', 'piano', PARAM_ALPHANUMEXT);
+// Redirect tab nascosti o deprecati → piano.
+if (in_array($tab, ['ricerche', 'accettazione', 'kpi', 'tracking', 'roadmap'])) {
     $tab = 'piano';
 }
 
@@ -297,94 +296,165 @@ $radar_svg = '';
 $area_keys_ordered = array_keys($areas_def);
 $n_areas = count($area_keys_ordered);
 
+// Hardcoded IT labels — avoids [[missing_string]] when lang file on server is outdated.
+$radar_it_labels = [
+    'target_companies'         => 'Lista Aziende Target',
+    'mandatory_searches'       => 'Ricerche Obbligatorie',
+    'search_channels'          => 'Canali di Ricerca',
+    'social_network'           => 'Social Network',
+    'personal_network'         => 'Rete Personale',
+    'targeted_applications'    => 'Annunci Mirati',
+    'unsolicited_applications' => 'Autocandidature',
+    'agencies_urc'             => 'Agenzie e URC',
+    'interview_training'       => 'Training Colloqui',
+    'stage_trials'             => 'Stage / Prova',
+    'strategy_improvement'     => 'Miglioramento Strategia',
+    'growing_autonomy'         => 'Autonomia Crescente',
+];
+
 if ($n_areas >= 3) {
-    $svg_size = 400;
-    $padding_h = 120;
-    $svg_w = $svg_size + 2 * $padding_h;
-    $svg_h = $svg_size + 60;
-    $cx = $padding_h + ($svg_size / 2);
-    $cy = $svg_size / 2 + 10;
-    $margin = 60;
-    $radius = ($svg_size / 2) - $margin;
+    $svg_w = 840;
+    $svg_h = 580;
+    $cx    = $svg_w / 2;           // 420
+    $cy    = ($svg_h - 60) / 2 + 20; // 290 — slightly above centre for legend room
+    $radius = 188;
+    $label_dist = $radius + 34;   // distance from centre to label anchor point
     $angle_step = (2 * M_PI) / $n_areas;
-    $max_level = 6;
+    $max_level  = 6;
+    $font_size  = 12;
 
-    $radar_svg = '<svg width="' . $svg_w . '" height="' . $svg_h . '" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', sans-serif;">';
+    $radar_svg = '<svg viewBox="0 0 ' . $svg_w . ' ' . $svg_h . '" width="100%"'
+        . ' style="max-width:' . $svg_w . 'px; display:block; margin:0 auto;'
+        . ' font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;">';
 
-    // Grid rings at levels 1-6.
+    // Grid rings 1-6.
     for ($lv = 1; $lv <= $max_level; $lv++) {
         $r = $radius * ($lv / $max_level);
         $stroke_color = ($lv % 2 === 0) ? '#d1d5db' : '#e5e7eb';
-        $radar_svg .= '<circle cx="' . $cx . '" cy="' . $cy . '" r="' . round($r, 1) . '" fill="none" stroke="' . $stroke_color . '" stroke-width="1"/>';
-        // Level label on the right.
-        $radar_svg .= '<text x="' . round($cx + $r + 4, 1) . '" y="' . round($cy + 3, 1) . '" font-size="8" fill="#9ca3af">' . $lv . '</text>';
+        $radar_svg .= '<circle cx="' . $cx . '" cy="' . $cy . '" r="' . round($r, 1) . '"'
+            . ' fill="none" stroke="' . $stroke_color . '" stroke-width="1"/>';
+        $radar_svg .= '<text x="' . round($cx + $r + 4, 1) . '" y="' . round($cy + 4, 1) . '"'
+            . ' font-size="9" fill="#9ca3af">' . $lv . '</text>';
     }
 
     // Axes and labels.
-    $label_coords = [];
     for ($i = 0; $i < $n_areas; $i++) {
         $angle = ($i * $angle_step) - (M_PI / 2);
         $ax = $cx + $radius * cos($angle);
         $ay = $cy + $radius * sin($angle);
-        $radar_svg .= '<line x1="' . $cx . '" y1="' . $cy . '" x2="' . round($ax, 1) . '" y2="' . round($ay, 1) . '" stroke="#e5e7eb" stroke-width="1"/>';
+        $radar_svg .= '<line x1="' . $cx . '" y1="' . $cy . '" x2="' . round($ax, 1) . '" y2="' . round($ay, 1) . '"'
+            . ' stroke="#e5e7eb" stroke-width="1"/>';
 
-        $area_key = $area_keys_ordered[$i];
-        $area_label = get_string($areas_def[$area_key]['name'], 'local_ftm_sip');
-        $label_r = $radius + 18;
-        $lx = $cx + $label_r * cos($angle);
-        $ly = $cy + $label_r * sin($angle);
+        $area_key   = $area_keys_ordered[$i];
+        $area_label = $radar_it_labels[$area_key] ?? str_replace('_', ' ', $area_key);
+
+        $lx = $cx + $label_dist * cos($angle);
+        $ly = $cy + $label_dist * sin($angle);
+
         $anchor = 'middle';
-        if ($lx < $cx - 15) {
-            $anchor = 'end';
-        } else if ($lx > $cx + 15) {
-            $anchor = 'start';
+        if ($lx < $cx - 20)      $anchor = 'end';
+        elseif ($lx > $cx + 20)  $anchor = 'start';
+
+        // Split label into two lines at word boundary (~14 chars per line).
+        $words = explode(' ', $area_label);
+        $line1 = '';
+        $line2 = '';
+        foreach ($words as $word) {
+            if (mb_strlen($line1) === 0) {
+                $line1 = $word;
+            } elseif (mb_strlen($line1 . ' ' . $word) <= 14) {
+                $line1 .= ' ' . $word;
+            } else {
+                $line2 .= ($line2 ? ' ' : '') . $word;
+            }
         }
 
-        // Truncate label if too long.
-        $short_label = mb_strlen($area_label) > 20 ? mb_substr($area_label, 0, 18) . '...' : $area_label;
-        $radar_svg .= '<text x="' . round($lx, 1) . '" y="' . round($ly + 3, 1) . '" text-anchor="' . $anchor . '" font-size="10" fill="#374151">' . htmlspecialchars($short_label) . '</text>';
-
-        $label_coords[] = ['x' => $lx, 'y' => $ly];
+        $lx_r = round($lx, 1);
+        if ($line2) {
+            $y1 = round($ly - 6, 1);
+            $y2 = round($ly + $font_size + 2, 1);
+            $radar_svg .= '<text text-anchor="' . $anchor . '" font-size="' . $font_size . '"'
+                . ' fill="#374151" font-weight="500">'
+                . '<tspan x="' . $lx_r . '" y="' . $y1 . '">' . htmlspecialchars($line1) . '</tspan>'
+                . '<tspan x="' . $lx_r . '" y="' . $y2 . '">' . htmlspecialchars($line2) . '</tspan>'
+                . '</text>';
+        } else {
+            $radar_svg .= '<text x="' . $lx_r . '" y="' . round($ly + 4, 1) . '"'
+                . ' text-anchor="' . $anchor . '" font-size="' . $font_size . '"'
+                . ' fill="#374151" font-weight="500">' . htmlspecialchars($area_label) . '</text>';
+        }
     }
 
     // Build data arrays.
+    // initial: coach's level_initial (manual).
+    // current: auto-calculated from actual tracking counts, normalised to 0-6.
     $initial_data = [];
     $current_data = [];
+
+    // Load coach evals for qualitative areas.
+    $radar_coach_evals = method_exists('\local_ftm_sip\sip_manager', 'get_coach_evals')
+        ? \local_ftm_sip\sip_manager::get_coach_evals($enrollment->id)
+        : [];
+
     foreach ($area_keys_ordered as $akey) {
-        $plan_item = isset($action_plan[$akey]) ? $action_plan[$akey] : null;
+        $ainfo       = $areas_def[$akey];
+        $is_qual     = ($ainfo['type'] ?? 'quantitative') === 'qualitative';
+        $plan_item   = $action_plan[$akey] ?? null;
+        $def_target  = max(1, (int)($ainfo['default_target'] ?? 1));
+
         $initial_data[] = $plan_item ? (int)($plan_item->level_initial ?? 0) : 0;
-        $current_data[] = $plan_item ? (int)($plan_item->level_current ?? 0) : 0;
+
+        if ($is_qual) {
+            // Qualitative: average coach score (1-10) → 0-6.
+            $evals = $radar_coach_evals[$akey] ?? [];
+            if (!empty($evals)) {
+                $scores = array_map(function($e) { return (int)$e->score; }, $evals);
+                $avg = array_sum($scores) / count($scores);
+                $current_data[] = max(0, min(6, (int)round($avg * 6 / 10)));
+            } else {
+                $current_data[] = $plan_item ? (int)($plan_item->level_current ?? 0) : 0;
+            }
+        } elseif ($akey === 'search_channels') {
+            // Channels: count activated channels / 18 total × 6.
+            $ch_total = array_sum($channel_weekly_counts);
+            $current_data[] = max(0, min(6, (int)round($ch_total / 18 * 6)));
+        } else {
+            // Quantitative: total tracking entries / default_target × 6.
+            $total_count = array_sum($weekly_summary_global[$akey] ?? []);
+            $current_data[] = max(0, min(6, (int)round($total_count / $def_target * 6)));
+        }
     }
 
     // Polygon helper.
     $make_polygon = function($data, $fill, $stroke, $dash = '') use ($cx, $cy, $radius, $angle_step, $max_level, $n_areas) {
         $points = [];
-        $dots = '';
+        $dots   = '';
         for ($i = 0; $i < $n_areas; $i++) {
             $angle = ($i * $angle_step) - (M_PI / 2);
             $val = min($max_level, max(0, $data[$i]));
-            $pr = $radius * ($val / $max_level);
-            $px = $cx + $pr * cos($angle);
-            $py = $cy + $pr * sin($angle);
+            $pr  = $val > 0 ? $radius * ($val / $max_level) : 0;
+            $px  = $cx + $pr * cos($angle);
+            $py  = $cy + $pr * sin($angle);
             $points[] = round($px, 1) . ',' . round($py, 1);
-            $dots .= '<circle cx="' . round($px, 1) . '" cy="' . round($py, 1) . '" r="3.5" fill="' . $stroke . '" stroke="white" stroke-width="1.5"/>';
+            if ($val > 0) {
+                $dots .= '<circle cx="' . round($px, 1) . '" cy="' . round($py, 1) . '"'
+                    . ' r="4" fill="' . $stroke . '" stroke="white" stroke-width="1.5"/>';
+            }
         }
         $dashattr = $dash ? ' stroke-dasharray="' . $dash . '"' : '';
-        return '<polygon points="' . implode(' ', $points) . '" fill="' . $fill . '" stroke="' . $stroke . '" stroke-width="2"' . $dashattr . '/>' . $dots;
+        return '<polygon points="' . implode(' ', $points) . '" fill="' . $fill . '"'
+            . ' stroke="' . $stroke . '" stroke-width="2"' . $dashattr . '/>' . $dots;
     };
 
-    // Initial polygon (gray dashed).
     $radar_svg .= $make_polygon($initial_data, 'rgba(156,163,175,0.15)', '#9ca3af', '6,3');
-
-    // Current polygon (teal solid).
     $radar_svg .= $make_polygon($current_data, 'rgba(8,145,178,0.2)', '#0891B2');
 
     // Legend.
-    $leg_y = $svg_h - 15;
-    $radar_svg .= '<rect x="' . ($cx - 120) . '" y="' . ($leg_y - 5) . '" width="12" height="12" fill="#9ca3af" rx="2"/>';
-    $radar_svg .= '<text x="' . ($cx - 104) . '" y="' . ($leg_y + 5) . '" font-size="10" fill="#374151">' . htmlspecialchars(get_string('sip_student_initial_level', 'local_ftm_sip')) . '</text>';
-    $radar_svg .= '<rect x="' . ($cx + 20) . '" y="' . ($leg_y - 5) . '" width="12" height="12" fill="#0891B2" rx="2"/>';
-    $radar_svg .= '<text x="' . ($cx + 36) . '" y="' . ($leg_y + 5) . '" font-size="10" fill="#374151">' . htmlspecialchars(get_string('sip_student_current_level', 'local_ftm_sip')) . '</text>';
+    $leg_y = $svg_h - 16;
+    $radar_svg .= '<rect x="' . ($cx - 140) . '" y="' . ($leg_y - 7) . '" width="14" height="14" fill="#9ca3af" rx="2"/>';
+    $radar_svg .= '<text x="' . ($cx - 122) . '" y="' . ($leg_y + 4) . '" font-size="12" fill="#374151">Livello Iniziale</text>';
+    $radar_svg .= '<rect x="' . ($cx + 20) . '" y="' . ($leg_y - 7) . '" width="14" height="14" fill="#0891B2" rx="2"/>';
+    $radar_svg .= '<text x="' . ($cx + 38) . '" y="' . ($leg_y + 4) . '" font-size="12" fill="#374151">Livello Attuale (da tracking)</text>';
 
     $radar_svg .= '</svg>';
 }
@@ -396,8 +466,8 @@ if ($n_areas >= 3) {
    SIP Student Page Styles
    ========================================== */
 .sip-student-page {
-    max-width: 1200px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -585,21 +655,24 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
 /* --- Tab Navigation --- */
 .sip-tabs {
     display: flex;
+    flex-wrap: wrap;
     background: white;
     border: 1px solid #dee2e6;
     border-radius: 8px 8px 0 0;
-    overflow-x: auto;
 }
 
 .sip-tab {
-    padding: 14px 22px;
+    flex: 1;
+    min-width: 70px;
+    padding: 8px 10px;
     cursor: pointer;
     border-bottom: 3px solid transparent;
     font-weight: 500;
-    font-size: 14px;
+    font-size: 12.5px;
     color: #6b7280;
     text-decoration: none;
-    white-space: nowrap;
+    text-align: center;
+    line-height: 1.3;
     transition: color 0.2s, border-color 0.2s;
 }
 
@@ -1479,8 +1552,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
     .sip-header-top { flex-direction: column; }
     .sip-header-stats { flex-direction: column; }
     .sip-level-columns { grid-template-columns: 1fr; }
-    .sip-tabs { overflow-x: auto; }
-    .sip-tab { padding: 12px 16px; font-size: 13px; }
+    .sip-tab { padding: 8px 12px; font-size: 12px; }
     .sip-phase-fields { grid-template-columns: 1fr; }
     .sip-roadmap { padding-left: 30px; }
     .sip-roadmap::before { left: 14px; }
@@ -1612,14 +1684,11 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
             ];
             $elig_totale = (int)($eligibility->totale ?? 0);
             $elig_decisione = $eligibility->decisione ?? 'pending';
-            // 6 criteria for display.
+            // 3 criteri attivi per display.
             $elig_criteria_display = [
-                'motivazione' => ['label' => get_string('eligibility_criterion_motivazione', 'local_ftm_sip'), 'value' => (int)($eligibility->motivazione ?? 0)],
-                'chiarezza' => ['label' => get_string('eligibility_criterion_chiarezza', 'local_ftm_sip'), 'value' => (int)($eligibility->chiarezza_obiettivo ?? 0)],
-                'occupabilita' => ['label' => get_string('eligibility_criterion_occupabilita', 'local_ftm_sip'), 'value' => (int)($eligibility->occupabilita ?? 0)],
-                'autonomia' => ['label' => get_string('eligibility_criterion_autonomia', 'local_ftm_sip'), 'value' => (int)($eligibility->autonomia ?? 0)],
-                'bisogno_coaching' => ['label' => get_string('eligibility_criterion_bisogno_coaching', 'local_ftm_sip'), 'value' => (int)($eligibility->bisogno_coaching ?? 0)],
-                'comportamento' => ['label' => get_string('eligibility_criterion_comportamento', 'local_ftm_sip'), 'value' => (int)($eligibility->comportamento ?? 0)],
+                'autonomia'   => ['label' => 'Autonomia',     'value' => (int)($eligibility->autonomia    ?? 0)],
+                'occupabilita'=> ['label' => 'Collocabilità', 'value' => (int)($eligibility->occupabilita ?? 0)],
+                'motivazione' => ['label' => 'Motivazione',   'value' => (int)($eligibility->motivazione  ?? 0)],
             ];
         ?>
         <div class="sip-eligibility-summary" id="sip-eligibility-summary">
@@ -1628,7 +1697,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                 <span style="font-weight:600;"><?php echo get_string('eligibility_summary', 'local_ftm_sip'); ?></span>
                 <div class="sip-eligibility-badges">
                     <span class="sip-elig-badge sip-elig-badge-teal">
-                        <?php echo get_string('eligibility_total', 'local_ftm_sip'); ?>: <?php echo $elig_totale; ?>/36
+                        <?php echo get_string('eligibility_total', 'local_ftm_sip'); ?>: <?php echo $elig_totale; ?>/18
                     </span>
                     <span class="sip-elig-badge sip-elig-badge-<?php echo $decisione_colors[$elig_decisione] ?? 'gray'; ?>">
                         <?php echo $decisione_labels[$elig_decisione] ?? s($elig_decisione); ?>
@@ -1823,26 +1892,18 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
 
     <!-- ======== TABS ======== -->
     <div class="sip-tabs" id="sip-tabs">
-        <a href="?userid=<?php echo $userid; ?>&tab=accettazione" class="sip-tab <?php echo $tab === 'accettazione' ? 'active' : ''; ?>" data-tab="accettazione">
-            <i class="fa fa-check-square-o"></i> Accettazione
+        <?php /* Tab Accettazione nascosta - in sviluppo */ ?>
+        <a href="?userid=<?php echo $userid; ?>&tab=canali" class="sip-tab <?php echo $tab === 'canali' ? 'active' : ''; ?>" data-tab="canali">
+            <i class="fa fa-sliders"></i> Valutazione Canali
         </a>
         <a href="?userid=<?php echo $userid; ?>&tab=piano" class="sip-tab <?php echo $tab === 'piano' ? 'active' : ''; ?>" data-tab="piano">
             <i class="fa fa-list-alt"></i> <?php echo get_string('action_plan', 'local_ftm_sip'); ?>
         </a>
         <a href="?userid=<?php echo $userid; ?>&tab=diario" class="sip-tab <?php echo $tab === 'diario' ? 'active' : ''; ?>" data-tab="diario">
-            <i class="fa fa-book"></i> <?php echo get_string('coaching_diary', 'local_ftm_sip'); ?>
+            <i class="fa fa-book"></i> Verbalizzazioni Incontri
         </a>
         <a href="?userid=<?php echo $userid; ?>&tab=calendario" class="sip-tab <?php echo $tab === 'calendario' ? 'active' : ''; ?>" data-tab="calendario">
             <i class="fa fa-calendar"></i> <?php echo get_string('appointments', 'local_ftm_sip'); ?>
-        </a>
-        <a href="?userid=<?php echo $userid; ?>&tab=kpi" class="sip-tab <?php echo $tab === 'kpi' ? 'active' : ''; ?>" data-tab="kpi">
-            <i class="fa fa-line-chart"></i> <?php echo get_string('kpi_overview', 'local_ftm_sip'); ?>
-        </a>
-        <a href="?userid=<?php echo $userid; ?>&tab=tracking" class="sip-tab <?php echo $tab === 'tracking' ? 'active' : ''; ?>" data-tab="tracking">
-            <i class="fa fa-table"></i> Tracking Settimanale
-        </a>
-        <a href="?userid=<?php echo $userid; ?>&tab=roadmap" class="sip-tab <?php echo $tab === 'roadmap' ? 'active' : ''; ?>" data-tab="roadmap">
-            <i class="fa fa-road"></i> Roadmap
         </a>
     </div>
 
@@ -2040,12 +2101,13 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
 
         // Pre-calcola dati pillole.
         $area_keys_list = array_keys($areas_def);
-        $first_area_key = $area_keys_list[0] ?? '';
+        $first_area_key = 'mandatory_searches'; // Solo questa area visibile nel Piano d'Azione
         ?>
 
         <!-- ================== PILLOLE ORIZZONTALI 12 AREE ================== -->
         <div class="sip-area-pills">
             <?php $pn = 0; foreach ($areas_def as $area_key => $area_info):
+                if ($area_key !== 'mandatory_searches') continue;
                 $pn++;
                 $plan_item_p = isset($action_plan[$area_key]) ? $action_plan[$area_key] : null;
                 $level_p = $plan_item_p ? (int)($plan_item_p->level_current ?? 0) : 0;
@@ -2069,6 +2131,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
         <!-- ================== TRACKER BAR PER AREA SELEZIONATA ================== -->
         <div class="sip-tracker-bars-container">
             <?php foreach ($areas_def as $area_key => $area_info):
+                if ($area_key !== 'mandatory_searches') continue;
                 $area_type_check = $area_info['type'] ?? 'quantitative';
                 $name_t = isset($piano_labels[$area_key]) ? $piano_labels[$area_key]['name']
                     : get_string($area_info['name'], 'local_ftm_sip');
@@ -2355,6 +2418,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                             },
 
                             renderPreview: function(data) {
+                                var self    = this;
                                 var entries = data.entries || [];
                                 var errors  = data.errors  || [];
 
@@ -2465,6 +2529,7 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
         <?php
         $area_index = 0;
         foreach ($areas_def as $area_key => $area_info):
+            if ($area_key !== 'mandatory_searches') continue;
             $plan_item = isset($action_plan[$area_key]) ? $action_plan[$area_key] : null;
             $level_initial = $plan_item ? (int)($plan_item->level_initial ?? 0) : 0;
             $level_current = $plan_item ? (int)($plan_item->level_current ?? 0) : 0;
@@ -2934,15 +2999,8 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                     btn.innerHTML = '<i class="fa fa-plus"></i> Aggiungi';
                     if (resp.success) {
                         document.getElementById('wt-feedback').innerHTML = '<span style="color:#059669;">✅ Aggiunta!</span>';
-                        // Aggiorna conteggio sul bottone settimana corrispondente.
-                        var btnSel = document.querySelector('.sip-week-btn[data-week="'+self.currentWeek+'"][data-area="'+self.currentArea+'"]');
-                        if (btnSel) {
-                            var cntDiv = btnSel.querySelector('div:last-child');
-                            var newCnt = (parseInt(cntDiv.textContent)||0) + 1;
-                            cntDiv.textContent = newCnt;
-                            btnSel.style.borderColor = '<?php echo LOCAL_FTM_SIP_COLOR; ?>';
-                            cntDiv.style.color = '<?php echo LOCAL_FTM_SIP_COLOR; ?>';
-                        }
+                        SipInlineTracker.updateWeekBtnCount(self.currentArea, self.currentWeek, +1);
+                        SipInlineTracker.updateTotalBtn(self.currentArea, +1);
                         // Pulisci form e ricarica lista.
                         ['wt-company-name','wt-contact-person','wt-company-email','wt-company-phone',
                          'wt-company-address','wt-position','wt-entry-date','wt-notes'].forEach(function(id) {
@@ -2973,17 +3031,8 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                 .then(function(r){ return r.json(); })
                 .then(function(resp){
                     if (resp.success) {
-                        // Decrementa contatore sul bottone settimana.
-                        var btnSel = document.querySelector('.sip-week-btn[data-week="'+self.currentWeek+'"][data-area="'+self.currentArea+'"]');
-                        if (btnSel) {
-                            var cntDiv = btnSel.querySelector('div:last-child');
-                            var newCnt = Math.max(0, (parseInt(cntDiv.textContent)||0) - 1);
-                            cntDiv.textContent = newCnt;
-                            if (newCnt === 0) {
-                                btnSel.style.borderColor = '#cbd5e1';
-                                cntDiv.style.color = '#9ca3af';
-                            }
-                        }
+                        SipInlineTracker.updateWeekBtnCount(self.currentArea, self.currentWeek, -1);
+                        SipInlineTracker.updateTotalBtn(self.currentArea, -1);
                         self.loadEntries();
                     } else {
                         alert('Errore: '+resp.message);
@@ -3290,9 +3339,11 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                 if (n < 0) n = 0;
                 cntDiv.textContent = n;
                 var sipColor = '<?php echo LOCAL_FTM_SIP_COLOR; ?>';
+                var bgColor = n > 0 ? '<?php echo LOCAL_FTM_SIP_COLOR_BG; ?>' : '#f9fafb';
                 cntDiv.style.color = n > 0 ? sipColor : '#9ca3af';
                 btn.style.borderColor = n > 0 ? sipColor : '#cbd5e1';
-                btn.style.background  = n > 0 ? '<?php echo LOCAL_FTM_SIP_COLOR_BG; ?>' : '#f9fafb';
+                btn.style.background  = bgColor;
+                btn.onmouseout = function() { this.style.background = bgColor; this.style.color = '#222'; };
             },
 
             updateTotalBtn: function(area, delta) {
@@ -3304,9 +3355,11 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                 if (n < 0) n = 0;
                 cntDiv.textContent = n;
                 var sipColor = '<?php echo LOCAL_FTM_SIP_COLOR; ?>';
+                var bgColor = n > 0 ? '<?php echo LOCAL_FTM_SIP_COLOR_BG; ?>' : '#f9fafb';
                 cntDiv.style.color = n > 0 ? sipColor : '#9ca3af';
                 btn.style.borderColor = n > 0 ? sipColor : '#cbd5e1';
-                btn.style.background  = n > 0 ? '<?php echo LOCAL_FTM_SIP_COLOR_BG; ?>' : '#f9fafb';
+                btn.style.background  = bgColor;
+                btn.onmouseout = function() { this.style.background = bgColor; this.style.color = '#222'; };
             }
         };
 
@@ -3423,11 +3476,11 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                 .then(function(r) { return r.json(); })
                 .then(function(resp) {
                     if (resp.success) {
-                        if (action === 'activate') {
+                        if (action === 'activate' && resp.message !== 'already_activated') {
                             SIP_CHANNEL_USAGE[channelKey] = week;
                             self.updateWeekBtnCount('search_channels', week, +1);
                             self.updateTotalBtn('search_channels', +1);
-                        } else {
+                        } else if (action === 'deactivate') {
                             delete SIP_CHANNEL_USAGE[channelKey];
                             self.updateWeekBtnCount('search_channels', week, -1);
                             self.updateTotalBtn('search_channels', -1);
@@ -3459,9 +3512,11 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                 if (n < 0) n = 0;
                 cntDiv.textContent = n;
                 var sipColor = '<?php echo LOCAL_FTM_SIP_COLOR; ?>';
+                var bgColor = n > 0 ? '<?php echo LOCAL_FTM_SIP_COLOR_BG; ?>' : '#f9fafb';
                 cntDiv.style.color = n > 0 ? sipColor : '#9ca3af';
                 btn.style.borderColor = n > 0 ? sipColor : '#cbd5e1';
-                btn.style.background  = n > 0 ? '<?php echo LOCAL_FTM_SIP_COLOR_BG; ?>' : '#f9fafb';
+                btn.style.background  = bgColor;
+                btn.onmouseout = function() { this.style.background = bgColor; this.style.color = '#222'; };
             },
 
             updateTotalBtn: function(area, delta) {
@@ -3473,9 +3528,11 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                 if (n < 0) n = 0;
                 cntDiv.textContent = n;
                 var sipColor = '<?php echo LOCAL_FTM_SIP_COLOR; ?>';
+                var bgColor = n > 0 ? '<?php echo LOCAL_FTM_SIP_COLOR_BG; ?>' : '#f9fafb';
                 cntDiv.style.color = n > 0 ? sipColor : '#9ca3af';
                 btn.style.borderColor = n > 0 ? sipColor : '#cbd5e1';
-                btn.style.background  = n > 0 ? '<?php echo LOCAL_FTM_SIP_COLOR_BG; ?>' : '#f9fafb';
+                btn.style.background  = bgColor;
+                btn.onmouseout = function() { this.style.background = bgColor; this.style.color = '#222'; };
             }
         };
 
@@ -3536,7 +3593,51 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
         <?php endif; ?>
 
         <?php elseif ($tab === 'diario'): ?>
-        <!-- ==================== TAB 2: DIARIO COACHING ==================== -->
+        <!-- ==================== TAB 2: VERBALIZZAZIONI INCONTRI ==================== -->
+        <?php
+        // Raggruppa incontri per settimana CI.
+        $meetings_by_week = [];
+        foreach ($meetings as $m) {
+            $wk = (int)($m->sip_week ?? 0);
+            $meetings_by_week[$wk][] = $m;
+        }
+        ?>
+
+        <!-- Riquadri S1-S10 -->
+        <div style="margin-bottom:20px;">
+            <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:10px;">
+                <i class="fa fa-calendar" style="color:#0891B2;"></i> Settimane CI — clicca per filtrare gli incontri
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:stretch;">
+                <?php for ($w = 1; $w <= 10; $w++):
+                    $wm = $meetings_by_week[$w] ?? [];
+                    $has = !empty($wm);
+                    $cnt = count($wm);
+                    $first_date = $has ? userdate($wm[0]->meeting_date, '%d/%m') : '';
+                ?>
+                <div onclick="verbaFilter(<?php echo $w; ?>)" id="vbox-<?php echo $w; ?>"
+                     style="border:2px solid <?php echo $has ? '#0891B2' : '#dee2e6'; ?>;
+                            background:<?php echo $has ? '#ecfeff' : '#f9fafb'; ?>;
+                            border-radius:8px; padding:10px 12px; text-align:center; cursor:pointer;
+                            min-width:64px; transition:all .15s; <?php echo $has ? '' : 'opacity:0.55;'; ?>">
+                    <div style="font-weight:700; font-size:14px; color:<?php echo $has ? '#0891B2' : '#9ca3af'; ?>;">S<?php echo $w; ?></div>
+                    <?php if ($has): ?>
+                    <div style="font-size:10px; color:#374151; margin-top:3px; white-space:nowrap;"><?php echo $first_date; ?></div>
+                    <div style="font-size:10px; color:#059669; font-weight:700; margin-top:1px;"><?php echo $cnt; ?> inc<?php echo $cnt > 1 ? '.' : '.'; ?></div>
+                    <?php else: ?>
+                    <div style="font-size:11px; color:#cbd5e1; margin-top:4px;">—</div>
+                    <?php endif; ?>
+                </div>
+                <?php endfor; ?>
+                <!-- Pulsante "Tutte" -->
+                <div onclick="verbaFilter(0)" id="vbox-0"
+                     style="border:2px solid #0891B2; background:#0891B2; border-radius:8px; padding:10px 14px;
+                            text-align:center; cursor:pointer; min-width:64px; transition:all .15s;">
+                    <div style="font-weight:700; font-size:13px; color:#fff;">Tutte</div>
+                    <div style="font-size:10px; color:#cffafe; margin-top:3px;"><?php echo count($meetings); ?> tot.</div>
+                </div>
+            </div>
+        </div>
 
         <!-- Pending actions from previous meetings -->
         <?php if (!empty($pending_actions)): ?>
@@ -3620,7 +3721,8 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
             $modality_icons = ['presence' => '&#128100;', 'remote' => '&#128187;', 'phone' => '&#128222;', 'email' => '&#9993;'];
             $mod_icon = $modality_icons[$meeting->modality] ?? '&#128100;';
         ?>
-        <div style="background:white;border-radius:8px;padding:18px;margin-bottom:12px;border:1px solid #DEE2E6;border-left:4px solid #0891B2;">
+        <div class="meeting-card" data-week="<?php echo (int)($meeting->sip_week ?? 0); ?>"
+             style="background:white;border-radius:8px;padding:18px;margin-bottom:12px;border:1px solid #DEE2E6;border-left:4px solid #0891B2;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                 <div>
                     <span style="font-weight:700;font-size:15px;color:#1A1A2E;"><?php echo $mod_icon; ?> <?php echo userdate($meeting->meeting_date, '%d/%m/%Y'); ?></span>
@@ -3673,8 +3775,91 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
         <?php endforeach; ?>
         <?php endif; ?>
 
+        <script>
+        (function() {
+            var VERBA_ACTIVE = 0;
+            window.verbaFilter = function(w) {
+                VERBA_ACTIVE = w;
+                // Stile pulsanti settimana.
+                for (var i = 0; i <= 10; i++) {
+                    var box = document.getElementById('vbox-' + i);
+                    if (!box) continue;
+                    if (i === w) {
+                        box.style.outline = '3px solid #F59E0B';
+                        box.style.outlineOffset = '2px';
+                    } else {
+                        box.style.outline = '';
+                        box.style.outlineOffset = '';
+                    }
+                }
+                // Mostra/nascondi meeting card.
+                document.querySelectorAll('.meeting-card').forEach(function(card) {
+                    var wk = parseInt(card.getAttribute('data-week') || 0);
+                    card.style.display = (w === 0 || wk === w) ? '' : 'none';
+                });
+                // Mostra conteggio visibile.
+                var visible = document.querySelectorAll('.meeting-card:not([style*="display: none"])').length;
+                var lbl = document.getElementById('verba-visible-count');
+                if (lbl) lbl.textContent = w === 0 ? '' : (visible + ' incontro/i nella settimana S' + w);
+            };
+        })();
+        </script>
+
         <?php elseif ($tab === 'calendario'): ?>
         <!-- ==================== TAB 3: CALENDARIO APPUNTAMENTI ==================== -->
+        <?php
+        // Calcola settimana CI per ogni appuntamento (da date_start enrollment).
+        $enroll_start = (int)($enrollment->date_start ?? 0);
+        if (!$enroll_start) { $enroll_start = (int)($enrollment->timecreated ?? 0); }
+        function appt_sip_week($appt_date, $enroll_start) {
+            $ts = is_numeric($appt_date) ? (int)$appt_date : strtotime($appt_date);
+            if (!$enroll_start || !$ts) return 0;
+            $days = ($ts - $enroll_start) / 86400;
+            return max(1, min(10, (int)ceil($days / 7)));
+        }
+        $appts_by_week = [];
+        $all_appts_combined = array_merge($upcoming_appts ?? [], $past_appts ?? []);
+        foreach ($all_appts_combined as $appt) {
+            $wk = appt_sip_week($appt->appointment_date, $enroll_start);
+            $appts_by_week[$wk][] = $appt;
+        }
+        $total_appts = count($all_appts_combined);
+        ?>
+
+        <!-- Riquadri S1-S10 appuntamenti -->
+        <div style="margin-bottom:20px;">
+            <div style="font-size:13px; font-weight:600; color:#374151; margin-bottom:10px;">
+                <i class="fa fa-calendar" style="color:#0891B2;"></i> Settimane CI — clicca per filtrare gli appuntamenti
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:stretch;">
+                <?php for ($w = 1; $w <= 10; $w++):
+                    $wap = $appts_by_week[$w] ?? [];
+                    $has = !empty($wap);
+                    $cnt = count($wap);
+                    $first_date = $has ? userdate((int)$wap[0]->appointment_date, '%d/%m') : '';
+                ?>
+                <div onclick="apptFilter(<?php echo $w; ?>)" id="abox-<?php echo $w; ?>"
+                     style="border:2px solid <?php echo $has ? '#0891B2' : '#dee2e6'; ?>;
+                            background:<?php echo $has ? '#ecfeff' : '#f9fafb'; ?>;
+                            border-radius:8px; padding:10px 12px; text-align:center; cursor:pointer;
+                            min-width:64px; transition:all .15s; <?php echo $has ? '' : 'opacity:0.55;'; ?>">
+                    <div style="font-weight:700; font-size:14px; color:<?php echo $has ? '#0891B2' : '#9ca3af'; ?>;">S<?php echo $w; ?></div>
+                    <?php if ($has): ?>
+                    <div style="font-size:10px; color:#374151; margin-top:3px; white-space:nowrap;"><?php echo $first_date; ?></div>
+                    <div style="font-size:10px; color:#059669; font-weight:700; margin-top:1px;"><?php echo $cnt; ?> appt.</div>
+                    <?php else: ?>
+                    <div style="font-size:11px; color:#cbd5e1; margin-top:4px;">—</div>
+                    <?php endif; ?>
+                </div>
+                <?php endfor; ?>
+                <div onclick="apptFilter(0)" id="abox-0"
+                     style="border:2px solid #0891B2; background:#0891B2; border-radius:8px; padding:10px 14px;
+                            text-align:center; cursor:pointer; min-width:64px; transition:all .15s;">
+                    <div style="font-weight:700; font-size:13px; color:#fff;">Tutte</div>
+                    <div style="font-size:10px; color:#cffafe; margin-top:3px;"><?php echo $total_appts; ?> tot.</div>
+                </div>
+            </div>
+        </div>
 
         <!-- New appointment button -->
         <?php if ($canedit): ?>
@@ -3744,7 +3929,8 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
             $sb = $appt_status_bg[$appt->status] ?? '#F3F4F6';
             $mod_icons = ['presence' => '&#128100;', 'remote' => '&#128187;', 'phone' => '&#128222;'];
         ?>
-        <div style="background:white;border-radius:8px;padding:16px;margin-bottom:10px;border:1px solid #DEE2E6;display:flex;align-items:center;gap:16px;" id="appt-<?php echo $appt->id; ?>">
+        <div class="appt-card" data-week="<?php echo appt_sip_week($appt->appointment_date, $enroll_start); ?>"
+             style="background:white;border-radius:8px;padding:16px;margin-bottom:10px;border:1px solid #DEE2E6;display:flex;align-items:center;gap:16px;" id="appt-<?php echo $appt->id; ?>">
             <div style="text-align:center;min-width:60px;">
                 <div style="font-size:24px;font-weight:700;color:#0891B2;"><?php echo userdate($appt->appointment_date, '%d'); ?></div>
                 <div style="font-size:12px;color:#6B7280;"><?php echo userdate($appt->appointment_date, '%b'); ?></div>
@@ -3790,7 +3976,8 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
             <?php foreach ($past_appts as $appt):
                 $sc = $appt_status_colors[$appt->status] ?? '#6B7280';
             ?>
-            <div style="background:#F9FAFB;border-radius:6px;padding:10px 14px;margin-bottom:6px;border:1px solid #E5E7EB;display:flex;align-items:center;gap:12px;opacity:0.8;">
+            <div class="appt-card" data-week="<?php echo appt_sip_week($appt->appointment_date, $enroll_start); ?>"
+                 style="background:#F9FAFB;border-radius:6px;padding:10px 14px;margin-bottom:6px;border:1px solid #E5E7EB;display:flex;align-items:center;gap:12px;opacity:0.8;">
                 <span style="font-size:13px;color:#6B7280;"><?php echo userdate($appt->appointment_date, '%d/%m/%Y'); ?></span>
                 <span style="font-size:13px;"><?php echo s($appt->time_start); ?></span>
                 <?php if ($appt->topic): ?>
@@ -3801,6 +3988,33 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
             <?php endforeach; ?>
         </div>
         <?php endif; ?>
+
+        <script>
+        (function() {
+            window.apptFilter = function(w) {
+                // Stile pulsanti.
+                for (var i = 0; i <= 10; i++) {
+                    var box = document.getElementById('abox-' + i);
+                    if (!box) continue;
+                    box.style.outline     = (i === w) ? '3px solid #F59E0B' : '';
+                    box.style.outlineOffset = (i === w) ? '2px' : '';
+                }
+                // Mostra/nascondi appt-card.
+                var hasPast = false;
+                document.querySelectorAll('.appt-card').forEach(function(card) {
+                    var wk = parseInt(card.getAttribute('data-week') || 0);
+                    var show = (w === 0 || wk === w);
+                    card.style.display = show ? '' : 'none';
+                    // Se è nella sezione passati e deve essere visibile, segna.
+                    if (show && card.closest('#pastAppts')) hasPast = true;
+                });
+                // Se il filtro mostra appuntamenti passati, apri la sezione.
+                var pastDiv = document.getElementById('pastAppts');
+                if (pastDiv && w !== 0 && hasPast) pastDiv.style.display = 'block';
+                if (pastDiv && w === 0) pastDiv.style.display = 'none';
+            };
+        })();
+        </script>
 
         <?php elseif ($tab === 'kpi'): ?>
         <!-- ==================== TAB 4: KPI & RICERCHE ==================== -->
@@ -4396,6 +4610,542 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
         }
         </script>
 
+        <?php elseif ($tab === 'canali'): ?>
+        <!-- ==================== TAB: VALUTAZIONE CANALI ==================== -->
+        <?php
+        $ca_channels_def = local_ftm_sip_get_channel_assessment_data();
+        $ca_saved = \local_ftm_sip\sip_manager::get_channel_assessment($enrollment->id);
+        $ca_ajax_url = $CFG->wwwroot . '/local/ftm_sip/ajax_save_channel_assessment.php';
+        ?>
+        <style>
+        .ca-page { max-width:100%; margin:0; }
+        .ca-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+        .ca-header h3 { margin:0; font-size:18px; font-weight:700; color:#1A1A2E; }
+        .ca-summary-bar { display:flex; gap:16px; flex-wrap:wrap; }
+        .ca-summary-stat { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:10px 18px; text-align:center; }
+        .ca-summary-stat .val { font-size:22px; font-weight:700; color:#0891B2; }
+        .ca-summary-stat .lbl { font-size:11px; color:#6b7280; text-transform:uppercase; }
+        /* Grid 3 colonne */
+        .ca-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+        .ca-thumb { display:flex; align-items:center; gap:10px; background:#fff; border:1.5px solid #dee2e6; border-radius:8px; padding:10px 14px; cursor:pointer; transition:all .15s; }
+        .ca-thumb:hover { border-color:#0891B2; background:#f0f9ff; }
+        .ca-thumb.active { border-color:#0891B2; border-width:2px; background:#ecfeff; }
+        .ca-thumb-num { font-size:12px; font-weight:700; color:#6b7280; width:18px; flex-shrink:0; text-align:right; }
+        .ca-thumb-name { flex:1; font-size:13px; font-weight:600; color:#1A1A2E; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .ca-thumb .ca-gap-badge { flex-shrink:0; font-size:11px; padding:2px 8px; }
+        /* Detail panel condiviso */
+        .ca-detail-panel { background:#fff; border:2px solid #0891B2; border-radius:10px; padding:20px; margin-bottom:16px; }
+        .ca-detail-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #e5e7eb; }
+        .ca-dp-title { font-size:16px; font-weight:700; color:#1A1A2E; flex:1; }
+        .ca-dp-close { background:none; border:none; font-size:22px; color:#6b7280; cursor:pointer; line-height:1; padding:2px 8px; border-radius:4px; }
+        .ca-dp-close:hover { color:#dc2626; background:#fee2e2; }
+        .ca-channel-icon { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; flex-shrink:0; }
+        .ca-gap-badge { padding:3px 10px; border-radius:10px; font-size:12px; font-weight:700; white-space:nowrap; }
+        .ca-gap-pos { background:#d1fae5; color:#065f46; }
+        .ca-gap-zero { background:#f3f4f6; color:#6b7280; }
+        .ca-gap-neg  { background:#fee2e2; color:#991b1b; }
+        .ca-save-btn { padding:5px 14px; background:#0891B2; color:#fff; border:none; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; }
+        .ca-save-btn:hover { background:#0e7490; }
+        .ca-save-btn:disabled { background:#94a3b8; cursor:not-allowed; }
+        @media (max-width:768px) { .ca-grid { grid-template-columns:repeat(2,1fr); } }
+        @media (max-width:480px) { .ca-grid { grid-template-columns:1fr; } }
+        .ca-levels-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+        .ca-levels-label { font-size:12px; font-weight:600; color:#374151; width:120px; flex-shrink:0; }
+        .ca-level-btns { display:flex; gap:4px; }
+        .ca-lvl-btn { width:34px; height:34px; border-radius:6px; border:2px solid #cbd5e1; background:#f9fafb; font-size:13px; font-weight:700; cursor:pointer; color:#374151; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+        .ca-lvl-btn:hover { border-color:#0891B2; background:#ecfeff; }
+        .ca-lvl-btn.active-initial { background:#1D4ED8; border-color:#1D4ED8; color:#fff; }
+        .ca-lvl-btn.active-target  { background:#059669; border-color:#059669; color:#fff; }
+        .ca-lvl-btn.active-final   { background:#9333EA; border-color:#9333EA; color:#fff; }
+        .ca-desc-box { background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:10px 14px; font-size:13px; color:#1e40af; margin-bottom:10px; min-height:40px; }
+        .ca-desc-box.target { background:#f0fdf4; border-color:#bbf7d0; color:#166534; }
+        .ca-desc-label { font-size:11px; font-weight:700; text-transform:uppercase; color:#6b7280; margin-bottom:4px; }
+        .ca-actions-area { margin-top:10px; }
+        .ca-actions-area label { font-size:12px; font-weight:600; color:#374151; display:block; margin-bottom:4px; }
+        .ca-actions-textarea { width:100%; min-height:80px; border:1px solid #d1d5db; border-radius:6px; padding:8px 10px; font-size:13px; resize:vertical; font-family:inherit; }
+        .ca-feedback { font-size:12px; font-weight:600; margin-left:8px; }
+        .ca-feedback.ok { color:#059669; }
+        .ca-feedback.err { color:#dc2626; }
+        .ca-radar-wrap { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:20px; margin-top:20px; }
+        .ca-radar-wrap h4 { margin:0 0 14px; font-size:15px; font-weight:700; color:#1A1A2E; }
+        .ca-table-summary { width:100%; border-collapse:collapse; font-size:13px; margin-top:20px; }
+        .ca-table-summary th { background:#0891B2; color:#fff; padding:8px 12px; text-align:left; }
+        .ca-table-summary td { padding:8px 12px; border-bottom:1px solid #f3f4f6; }
+        .ca-table-summary tr:nth-child(even) td { background:#f8fafc; }
+        .ca-table-summary tr.ca-total td { font-weight:700; background:#ecfeff; border-top:2px solid #0891B2; }
+        .ca-legend { display:flex; gap:16px; justify-content:center; margin-top:10px; font-size:12px; flex-wrap:wrap; }
+        .ca-legend-item { display:flex; align-items:center; gap:5px; }
+        .ca-legend-dot { width:14px; height:14px; border-radius:3px; }
+        </style>
+
+        <div class="ca-page">
+            <div class="ca-header">
+                <h3><i class="fa fa-sliders" style="color:#0891B2; margin-right:8px;"></i>Valutazione Canali di Ricerca</h3>
+                <div class="ca-summary-bar">
+                    <div class="ca-summary-stat">
+                        <div class="val" id="ca-total-initial">0</div>
+                        <div class="lbl">Totale Iniziale</div>
+                    </div>
+                    <div class="ca-summary-stat" style="border-top:3px solid #059669;">
+                        <div class="val" id="ca-total-target" style="color:#059669;">0</div>
+                        <div class="lbl">Totale Target</div>
+                    </div>
+                    <div class="ca-summary-stat" style="border-top:3px solid #9333EA;">
+                        <div class="val" id="ca-total-final" style="color:#9333EA;">0</div>
+                        <div class="lbl">Totale Finale</div>
+                    </div>
+                    <div class="ca-summary-stat" style="border-top:3px solid #F59E0B;">
+                        <div class="val" id="ca-total-gap" style="color:#F59E0B;">0</div>
+                        <div class="lbl">GAP totale</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Griglia compatta 3 colonne -->
+            <div class="ca-grid">
+            <?php $ca_idx = 0; foreach ($ca_channels_def as $ckey => $cdef):
+                $ca_idx++;
+                $saved = $ca_saved[$ckey] ?? null;
+                $lv_i = $saved ? (int)$saved->level_initial : 0;
+                $lv_t = $saved ? (int)$saved->level_target  : 0;
+                $lv_f = $saved ? ($saved->level_final !== null ? (int)$saved->level_final : '') : '';
+                $gap   = $lv_t - $lv_i;
+                $gap_class = $gap > 0 ? 'ca-gap-pos' : ($gap < 0 ? 'ca-gap-neg' : 'ca-gap-zero');
+                $gap_label = $gap > 0 ? '+' . $gap : (string)$gap;
+            ?>
+            <div class="ca-thumb" id="ca-thumb-<?php echo $ckey; ?>" onclick="caOpen('<?php echo $ckey; ?>')">
+                <div class="ca-thumb-num"><?php echo $ca_idx; ?></div>
+                <div class="ca-channel-icon" style="background:<?php echo $cdef['color']; ?>;"><i class="fa <?php echo $cdef['icon']; ?>"></i></div>
+                <div class="ca-thumb-name"><?php echo htmlspecialchars($cdef['label']); ?></div>
+                <span class="ca-gap-badge <?php echo $gap_class; ?>" id="ca-thumb-gap-<?php echo $ckey; ?>"><?php echo $gap_label; ?></span>
+            </div>
+            <?php endforeach; ?>
+            </div><!-- .ca-grid -->
+
+            <!-- Pannello dettaglio condiviso (appare sotto la griglia al click) -->
+            <div id="ca-detail-panel" class="ca-detail-panel" style="display:none;">
+                <div class="ca-detail-header">
+                    <div class="ca-channel-icon" id="ca-dp-icon" style="background:#0891B2;"><i class="fa fa-sliders"></i></div>
+                    <div class="ca-dp-title" id="ca-dp-title">Seleziona un canale</div>
+                    <button class="ca-dp-close" onclick="caCloseDetail()" title="Chiudi">&#x2715;</button>
+                </div>
+                <!-- Livello Iniziale -->
+                <div class="ca-levels-row">
+                    <div class="ca-levels-label" style="color:#1D4ED8;">Livello Iniziale</div>
+                    <div class="ca-level-btns" id="ca-dp-btns-initial"></div>
+                    <div class="ca-desc-box" style="flex:1; min-width:200px;">
+                        <div class="ca-desc-label">Descrizione livello attuale</div>
+                        <div id="ca-dp-desc-initial-text"></div>
+                    </div>
+                </div>
+                <!-- Livello Target -->
+                <div class="ca-levels-row">
+                    <div class="ca-levels-label" style="color:#059669;">Livello Target</div>
+                    <div class="ca-level-btns" id="ca-dp-btns-target"></div>
+                    <div class="ca-desc-box target" style="flex:1; min-width:200px;">
+                        <div class="ca-desc-label">Descrizione livello target</div>
+                        <div id="ca-dp-desc-target-text"></div>
+                    </div>
+                </div>
+                <!-- Livello Finale -->
+                <div class="ca-levels-row">
+                    <div class="ca-levels-label" style="color:#9333EA;">Livello Finale</div>
+                    <div class="ca-level-btns" id="ca-dp-btns-final"></div>
+                    <span style="font-size:12px; color:#9ca3af; font-style:italic; margin-left:8px;">Compilare a fine percorso</span>
+                </div>
+                <!-- Azioni -->
+                <div class="ca-actions-area">
+                    <label>Azioni da intraprendere <span style="font-weight:400; color:#6b7280;">(auto-selezionate dal livello target, editabili)</span></label>
+                    <textarea class="ca-actions-textarea" id="ca-dp-actions"></textarea>
+                </div>
+                <!-- Salva -->
+                <div style="margin-top:12px; display:flex; align-items:center; gap:8px;">
+                    <button class="ca-save-btn" id="ca-dp-save" onclick="caSave()"><i class="fa fa-save"></i> Salva</button>
+                    <span class="ca-feedback" id="ca-dp-feedback"></span>
+                </div>
+            </div>
+
+            <!-- RADAR SVG (JS-rendered) -->
+            <div class="ca-radar-wrap">
+                <h4><i class="fa fa-line-chart" style="color:#0891B2; margin-right:6px;"></i>Radar Canali &mdash; Evoluzione</h4>
+                <svg id="ca-radar-svg" viewBox="0 0 700 580" width="100%" style="max-width:700px; display:block; margin:0 auto;"></svg>
+                <div class="ca-legend">
+                    <div class="ca-legend-item"><div class="ca-legend-dot" style="background:#1D4ED8; opacity:.4;"></div> Livello Iniziale</div>
+                    <div class="ca-legend-item"><div class="ca-legend-dot" style="background:#059669; opacity:.5;"></div> Livello Target</div>
+                    <div class="ca-legend-item"><div class="ca-legend-dot" style="background:#9333EA; opacity:.6;"></div> Livello Finale</div>
+                </div>
+            </div>
+
+            <!-- TABELLA RIASSUNTIVA -->
+            <table class="ca-table-summary" style="margin-top:20px;">
+                <thead>
+                    <tr>
+                        <th>Canale</th>
+                        <th style="text-align:center; width:80px;">Iniziale</th>
+                        <th style="text-align:center; width:80px;">Target</th>
+                        <th style="text-align:center; width:70px;">GAP</th>
+                        <th style="text-align:center; width:80px;">Finale</th>
+                    </tr>
+                </thead>
+                <tbody id="ca-table-body">
+                    <?php foreach ($ca_channels_def as $ckey => $cdef):
+                        $saved = $ca_saved[$ckey] ?? null;
+                        $lv_i = $saved ? (int)$saved->level_initial : 0;
+                        $lv_t = $saved ? (int)$saved->level_target  : 0;
+                        $lv_f_v = $saved && $saved->level_final !== null ? (int)$saved->level_final : null;
+                        $gap_v = $lv_t - $lv_i;
+                        $gap_col = $gap_v > 0 ? '#059669' : ($gap_v < 0 ? '#dc2626' : '#6b7280');
+                    ?>
+                    <tr id="ca-tr-<?php echo $ckey; ?>">
+                        <td><span style="display:inline-block; width:10px; height:10px; border-radius:2px; background:<?php echo $cdef['color']; ?>; margin-right:6px;"></span><?php echo htmlspecialchars($cdef['label']); ?></td>
+                        <td style="text-align:center; font-weight:700; color:#1D4ED8;" id="ca-tr-i-<?php echo $ckey; ?>"><?php echo $lv_i; ?></td>
+                        <td style="text-align:center; font-weight:700; color:#059669;" id="ca-tr-t-<?php echo $ckey; ?>"><?php echo $lv_t; ?></td>
+                        <td style="text-align:center; font-weight:700; color:<?php echo $gap_col; ?>;" id="ca-tr-g-<?php echo $ckey; ?>"><?php echo $gap_v > 0 ? '+' . $gap_v : $gap_v; ?></td>
+                        <td style="text-align:center; font-weight:700; color:#9333EA;" id="ca-tr-f-<?php echo $ckey; ?>"><?php echo $lv_f_v !== null ? $lv_f_v : '&mdash;'; ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot>
+                    <tr class="ca-total">
+                        <td><strong>Totale capacità ricerca impiego</strong></td>
+                        <td style="text-align:center; color:#1D4ED8;" id="ca-foot-i">0</td>
+                        <td style="text-align:center; color:#059669;" id="ca-foot-t">0</td>
+                        <td style="text-align:center; color:#F59E0B;" id="ca-foot-g">0</td>
+                        <td style="text-align:center; color:#9333EA;" id="ca-foot-f">&mdash;</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div><!-- .ca-page -->
+
+        <script>
+        (function() {
+            // Data.
+            var CA_CHANNELS = <?php
+                $js_channels = [];
+                foreach ($ca_channels_def as $ckey => $cdef) {
+                    $saved = $ca_saved[$ckey] ?? null;
+                    $lv_i  = $saved ? (int)$saved->level_initial : 0;
+                    $lv_t  = $saved ? (int)$saved->level_target  : 0;
+                    $lv_f  = $saved && $saved->level_final !== null ? (int)$saved->level_final : null;
+                    $saved_js = $ca_saved[$ckey] ?? null;
+                    $at = $saved_js ? ($saved_js->actions_text ?? '') : '';
+                    $js_channels[$ckey] = [
+                        'label'        => $cdef['label'],
+                        'color'        => $cdef['color'],
+                        'icon'         => $cdef['icon'],
+                        'levels'       => $cdef['levels'],
+                        'actions'      => $cdef['actions'],
+                        'actions_text' => $at,
+                        'i' => $lv_i, 't' => $lv_t, 'f' => $lv_f,
+                    ];
+                }
+                echo json_encode($js_channels, JSON_UNESCAPED_UNICODE);
+            ?>;
+
+            var CA_KEYS    = Object.keys(CA_CHANNELS);
+            var CA_SESSKEY = '<?php echo sesskey(); ?>';
+            var CA_URL     = '<?php echo $ca_ajax_url; ?>';
+            var CA_EID     = <?php echo (int)$enrollment->id; ?>;
+
+            // Active channel.
+            var CA_ACTIVE = null;
+
+            // Open detail panel for a channel.
+            window.caOpen = function(ckey) {
+                if (CA_ACTIVE === ckey) { caCloseDetail(); return; }
+                CA_ACTIVE = ckey;
+
+                // Mark active thumb.
+                document.querySelectorAll('.ca-thumb').forEach(function(el) { el.classList.remove('active'); });
+                var thumb = document.getElementById('ca-thumb-' + ckey);
+                if (thumb) thumb.classList.add('active');
+
+                var ch = CA_CHANNELS[ckey];
+
+                // Fill icon + title.
+                var dpIcon = document.getElementById('ca-dp-icon');
+                dpIcon.style.background = ch.color;
+                dpIcon.innerHTML = '<i class="fa ' + ch.icon + '"></i>';
+                document.getElementById('ca-dp-title').textContent = ch.label;
+
+                // Render buttons.
+                caRenderBtns('initial', ch.i);
+                caRenderBtns('target',  ch.t);
+                caRenderBtns('final',   ch.f);
+
+                // Descriptions.
+                document.getElementById('ca-dp-desc-initial-text').textContent = ch.levels[ch.i] || '';
+                document.getElementById('ca-dp-desc-target-text').textContent  = ch.levels[ch.t] || '';
+
+                // Actions textarea.
+                var ta = document.getElementById('ca-dp-actions');
+                var savedAt = ch.actions_text || '';
+                if (!savedAt && ch.t > 0) { savedAt = ch.actions[ch.t] || ''; }
+                ta.value = savedAt;
+
+                // Clear feedback.
+                document.getElementById('ca-dp-feedback').textContent = '';
+
+                // Show panel.
+                var panel = document.getElementById('ca-detail-panel');
+                panel.style.display = 'block';
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            };
+
+            // Close detail panel.
+            window.caCloseDetail = function() {
+                CA_ACTIVE = null;
+                document.getElementById('ca-detail-panel').style.display = 'none';
+                document.querySelectorAll('.ca-thumb').forEach(function(el) { el.classList.remove('active'); });
+            };
+
+            // Render level buttons inside the shared detail panel.
+            function caRenderBtns(type, current) {
+                var container = document.getElementById('ca-dp-btns-' + type);
+                if (!container) return;
+                var activeClass = 'active-' + type;
+                var html = '';
+                if (type === 'final') {
+                    var isNull = (current === null || current === undefined || current === '');
+                    html += '<button class="ca-lvl-btn' + (isNull ? ' ' + activeClass : '') + '" onclick="caSetLevel(\'final\',\'\')" title="Non ancora valutato">&mdash;</button>';
+                }
+                for (var l = 0; l <= 6; l++) {
+                    var isActive = (type === 'final')
+                        ? (current !== null && current !== undefined && current !== '' && parseInt(current) === l)
+                        : (parseInt(current) === l);
+                    html += '<button class="ca-lvl-btn' + (isActive ? ' ' + activeClass : '') + '" onclick="caSetLevel(\'' + type + '\',' + l + ')">' + l + '</button>';
+                }
+                container.innerHTML = html;
+            }
+
+            // Set level on active channel.
+            window.caSetLevel = function(type, level) {
+                if (!CA_ACTIVE) return;
+                var ckey = CA_ACTIVE;
+                var ch   = CA_CHANNELS[ckey];
+                var key  = type === 'initial' ? 'i' : (type === 'target' ? 't' : 'f');
+                var prev = ch[key];
+                ch[key]  = (level === '' || level === null) ? null : parseInt(level);
+
+                // Re-render buttons for this type.
+                caRenderBtns(type, ch[key]);
+
+                // Update descriptions.
+                if (type === 'initial' && ch[key] !== null) {
+                    document.getElementById('ca-dp-desc-initial-text').textContent = ch.levels[ch[key]] || '';
+                }
+                if (type === 'target' && ch[key] !== null) {
+                    document.getElementById('ca-dp-desc-target-text').textContent = ch.levels[ch[key]] || '';
+                    // Auto-fill actions.
+                    var ta = document.getElementById('ca-dp-actions');
+                    var oldAuto = (prev !== null && prev !== undefined) ? (ch.actions[prev] || '') : '';
+                    if (!ta.value.trim() || ta.value.trim() === oldAuto.trim()) {
+                        ta.value = ch.actions[ch[key]] || '';
+                    }
+                }
+
+                // Update thumb card.
+                updateThumb(ckey);
+                updateTotals();
+                renderRadar();
+            };
+
+            // Update compact thumb card display (gap badge only).
+            function updateThumb(ckey) {
+                var ch  = CA_CHANNELS[ckey];
+                var gap = (ch.t || 0) - (ch.i || 0);
+                var badge = document.getElementById('ca-thumb-gap-' + ckey);
+                if (badge) {
+                    badge.textContent = gap > 0 ? '+' + gap : String(gap);
+                    badge.className   = 'ca-gap-badge ' + (gap > 0 ? 'ca-gap-pos' : (gap < 0 ? 'ca-gap-neg' : 'ca-gap-zero'));
+                }
+            }
+
+            function updateTotals() {
+                var totI = 0, totT = 0, totF = 0, hasFinal = false;
+                CA_KEYS.forEach(function(k) {
+                    var ch = CA_CHANNELS[k];
+                    totI += ch.i || 0;
+                    totT += ch.t || 0;
+                    if (ch.f !== null) { totF += ch.f; hasFinal = true; }
+
+                    // Update table row.
+                    var tdI = document.getElementById('ca-tr-i-' + k);
+                    var tdT = document.getElementById('ca-tr-t-' + k);
+                    var tdG = document.getElementById('ca-tr-g-' + k);
+                    var tdF = document.getElementById('ca-tr-f-' + k);
+                    if (tdI) tdI.textContent = ch.i;
+                    if (tdT) tdT.textContent = ch.t;
+                    if (tdG) {
+                        var g = (ch.t || 0) - (ch.i || 0);
+                        tdG.textContent = g > 0 ? '+' + g : g;
+                        tdG.style.color = g > 0 ? '#059669' : (g < 0 ? '#dc2626' : '#6b7280');
+                    }
+                    if (tdF) tdF.textContent = ch.f !== null ? ch.f : '—';
+                });
+                var gap = totT - totI;
+                document.getElementById('ca-total-initial').textContent = totI;
+                document.getElementById('ca-total-target').textContent  = totT;
+                document.getElementById('ca-total-final').textContent   = hasFinal ? totF : '—';
+                document.getElementById('ca-total-gap').textContent     = gap > 0 ? '+' + gap : gap;
+                document.getElementById('ca-foot-i').textContent = totI;
+                document.getElementById('ca-foot-t').textContent = totT;
+                document.getElementById('ca-foot-g').textContent = gap > 0 ? '+' + gap : gap;
+                document.getElementById('ca-foot-f').textContent = hasFinal ? totF : '—';
+            }
+
+            // Save active channel.
+            window.caSave = function() {
+                if (!CA_ACTIVE) return;
+                var ckey = CA_ACTIVE;
+                var ch   = CA_CHANNELS[ckey];
+                var ta   = document.getElementById('ca-dp-actions');
+                var fb   = document.getElementById('ca-dp-feedback');
+                var btn  = document.getElementById('ca-dp-save');
+                ch.actions_text = ta.value;
+                btn.disabled = true;
+                fb.textContent = 'Salvataggio...';
+                fb.className = 'ca-feedback';
+
+                var params = new URLSearchParams({
+                    action:        'save',
+                    enrollmentid:  CA_EID,
+                    sesskey:       CA_SESSKEY,
+                    channel_key:   ckey,
+                    level_initial: ch.i !== null ? ch.i : 0,
+                    level_target:  ch.t !== null ? ch.t : 0,
+                    level_final:   ch.f !== null ? ch.f : '',
+                    actions_text:  ta.value,
+                });
+
+                fetch(CA_URL, { method: 'POST', body: params, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
+                    .then(function(r) { return r.json(); })
+                    .then(function(resp) {
+                        btn.disabled = false;
+                        if (resp.success) {
+                            fb.textContent = '✓ Salvato';
+                            fb.className = 'ca-feedback ok';
+                            setTimeout(function() { fb.textContent = ''; }, 2500);
+                        } else {
+                            fb.textContent = '✗ ' + resp.message;
+                            fb.className = 'ca-feedback err';
+                        }
+                    })
+                    .catch(function() {
+                        btn.disabled = false;
+                        fb.textContent = '✗ Errore di rete';
+                        fb.className = 'ca-feedback err';
+                    });
+            };
+
+            // Radar SVG (JS).
+            function renderRadar() {
+                var svg = document.getElementById('ca-radar-svg');
+                if (!svg) return;
+                var W = 700, H = 580;
+                var cx = W / 2, cy = (H - 60) / 2 + 10;
+                var radius = 210;
+                var n = CA_KEYS.length;
+                var maxVal = 6;
+                var step = (2 * Math.PI) / n;
+
+                var html = '';
+
+                // Grid rings.
+                for (var lv = 1; lv <= maxVal; lv++) {
+                    var r = radius * (lv / maxVal);
+                    var sc = lv % 2 === 0 ? '#d1d5db' : '#e5e7eb';
+                    html += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r.toFixed(1) + '" fill="none" stroke="' + sc + '" stroke-width="1"/>';
+                    html += '<text x="' + (cx + r + 4).toFixed(1) + '" y="' + (cy + 4).toFixed(1) + '" font-size="9" fill="#9ca3af">' + lv + '</text>';
+                }
+
+                // Axes and labels.
+                var labelDist = radius + 36;
+                for (var i = 0; i < n; i++) {
+                    var angle = i * step - Math.PI / 2;
+                    var ax = cx + radius * Math.cos(angle);
+                    var ay = cy + radius * Math.sin(angle);
+                    html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + ax.toFixed(1) + '" y2="' + ay.toFixed(1) + '" stroke="#e5e7eb" stroke-width="1"/>';
+
+                    var lx = cx + labelDist * Math.cos(angle);
+                    var ly = cy + labelDist * Math.sin(angle);
+                    var anchor = Math.abs(lx - cx) < 20 ? 'middle' : (lx < cx ? 'end' : 'start');
+                    var label  = CA_CHANNELS[CA_KEYS[i]].label;
+
+                    // Word wrap.
+                    var words = label.split(' ');
+                    var line1 = '', line2 = '';
+                    words.forEach(function(w) {
+                        if (!line1) { line1 = w; }
+                        else if ((line1 + ' ' + w).length <= 16) { line1 += ' ' + w; }
+                        else { line2 += (line2 ? ' ' : '') + w; }
+                    });
+
+                    if (line2) {
+                        var y1 = (ly - 6).toFixed(1), y2 = (ly + 14).toFixed(1);
+                        html += '<text text-anchor="' + anchor + '" font-size="11" fill="#374151" font-weight="500">'
+                            + '<tspan x="' + lx.toFixed(1) + '" y="' + y1 + '">' + escSvg(line1) + '</tspan>'
+                            + '<tspan x="' + lx.toFixed(1) + '" y="' + y2 + '">' + escSvg(line2) + '</tspan>'
+                            + '</text>';
+                    } else {
+                        html += '<text x="' + lx.toFixed(1) + '" y="' + (ly + 4).toFixed(1) + '" text-anchor="' + anchor + '" font-size="11" fill="#374151" font-weight="500">' + escSvg(label) + '</text>';
+                    }
+                }
+
+                // Polygon builder.
+                function makePolygon(dataArr, fill, stroke, dash, opacity) {
+                    var pts = [], dots = '';
+                    for (var j = 0; j < n; j++) {
+                        var ang = j * step - Math.PI / 2;
+                        var val = Math.min(maxVal, Math.max(0, dataArr[j] || 0));
+                        var pr  = val > 0 ? radius * (val / maxVal) : 0;
+                        var px  = cx + pr * Math.cos(ang);
+                        var py  = cy + pr * Math.sin(ang);
+                        pts.push(px.toFixed(1) + ',' + py.toFixed(1));
+                        if (val > 0) {
+                            dots += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="4" fill="' + stroke + '" stroke="white" stroke-width="1.5" opacity="' + opacity + '"/>';
+                        }
+                    }
+                    var dashAttr = dash ? ' stroke-dasharray="' + dash + '"' : '';
+                    return '<polygon points="' + pts.join(' ') + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2" opacity="' + opacity + '"' + dashAttr + '/>' + dots;
+                }
+
+                var dataI = CA_KEYS.map(function(k) { return CA_CHANNELS[k].i || 0; });
+                var dataT = CA_KEYS.map(function(k) { return CA_CHANNELS[k].t || 0; });
+                var dataF = CA_KEYS.map(function(k) { return CA_CHANNELS[k].f !== null ? CA_CHANNELS[k].f : 0; });
+                var hasFinal = CA_KEYS.some(function(k) { return CA_CHANNELS[k].f !== null; });
+
+                html += makePolygon(dataI, 'rgba(29,78,216,0.12)', '#1D4ED8', '6,3', '0.9');
+                html += makePolygon(dataT, 'rgba(5,150,105,0.15)', '#059669', '',    '0.9');
+                if (hasFinal) {
+                    html += makePolygon(dataF, 'rgba(147,51,234,0.18)', '#9333EA', '', '0.85');
+                }
+
+                // Legend.
+                var legY = H - 20;
+                html += '<rect x="' + (cx - 170) + '" y="' + (legY - 8) + '" width="14" height="14" fill="#1D4ED8" rx="2" opacity=".7"/>';
+                html += '<text x="' + (cx - 152) + '" y="' + (legY + 4) + '" font-size="11" fill="#374151">Iniziale</text>';
+                html += '<rect x="' + (cx - 80) + '" y="' + (legY - 8) + '" width="14" height="14" fill="#059669" rx="2" opacity=".8"/>';
+                html += '<text x="' + (cx - 62) + '" y="' + (legY + 4) + '" font-size="11" fill="#374151">Target</text>';
+                if (hasFinal) {
+                    html += '<rect x="' + (cx + 10) + '" y="' + (legY - 8) + '" width="14" height="14" fill="#9333EA" rx="2" opacity=".8"/>';
+                    html += '<text x="' + (cx + 28) + '" y="' + (legY + 4) + '" font-size="11" fill="#374151">Finale</text>';
+                }
+
+                svg.innerHTML = html;
+            }
+
+            function escSvg(s) {
+                return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            }
+
+            // Init.
+            updateTotals();
+            renderRadar();
+
+        })();
+        </script>
+
         <?php elseif ($tab === 'tracking'): ?>
         <!-- ==================== TAB 7: TRACKING SETTIMANALE ==================== -->
         <?php
@@ -4405,6 +5155,15 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
         $coach_evals = \local_ftm_sip\sip_manager::get_coach_evals($enrollment->id);
         $selected_area = optional_param('area', '', PARAM_ALPHANUMEXT);
         $selected_week = optional_param('week', 0, PARAM_INT);
+
+        // search_channels uses channel_usage table, not search_entries.
+        $ch_weekly_counts = [];
+        if ($DB->get_manager()->table_exists('local_ftm_sip_channel_usage')) {
+            $cu_rows = $DB->get_records('local_ftm_sip_channel_usage', ['enrollmentid' => $enrollment->id]);
+            foreach ($cu_rows as $cu) {
+                $ch_weekly_counts[(int)$cu->sip_week] = ($ch_weekly_counts[(int)$cu->sip_week] ?? 0) + 1;
+            }
+        }
         // Fallback hardcoded (se il lang file sul server è vecchio).
         $tracking_labels = [
             'target_companies'        => 'Lista aziende Target',
@@ -4464,6 +5223,11 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                             $cell = $eval !== null ? $eval : '';
                             $total += ($eval ?? 0);
                             $bg = !$active ? '#f3f4f6' : ($eval ? '#ECFEFF' : '#fff');
+                        } elseif ($key === 'search_channels') {
+                            $count = $ch_weekly_counts[$w] ?? 0;
+                            $cell = $count > 0 ? $count : ($active ? '' : '');
+                            $total += $count;
+                            $bg = !$active ? '#f3f4f6' : ($count > 0 ? '#ECFEFF' : '#fff');
                         } else {
                             $count = isset($weekly_summary[$key][$w]) ? $weekly_summary[$key][$w] : 0;
                             $cell = $count > 0 ? $count : ($active ? '' : '');
@@ -4491,7 +5255,18 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
         $sel_area_def = $areas_def[$selected_area];
         $sel_area_name = isset($tracking_labels[$selected_area]) ? $tracking_labels[$selected_area] : get_string($sel_area_def['name'], 'local_ftm_sip');
         $is_qual = ($sel_area_def['type'] ?? 'quantitative') === 'qualitative';
-        $entries = \local_ftm_sip\sip_manager::get_search_entries($enrollment->id, $selected_area, $selected_week > 0 ? $selected_week : 0);
+        $is_channels = ($selected_area === 'search_channels');
+        $entries = $is_channels ? [] : \local_ftm_sip\sip_manager::get_search_entries($enrollment->id, $selected_area, $selected_week > 0 ? $selected_week : 0);
+        // For search_channels: load channel activations filtered by selected week (if any).
+        $channel_detail = [];
+        if ($is_channels && $DB->get_manager()->table_exists('local_ftm_sip_channel_usage')) {
+            $cu_all = $DB->get_records('local_ftm_sip_channel_usage', ['enrollmentid' => $enrollment->id]);
+            foreach ($cu_all as $cu) {
+                if ($selected_week === 0 || (int)$cu->sip_week === $selected_week) {
+                    $channel_detail[$cu->channel_key] = (int)$cu->sip_week;
+                }
+            }
+        }
         ?>
 
         <div style="background:#fff; border:2px solid <?php echo $sel_area_def['color']; ?>; border-radius:8px; padding:16px;">
@@ -4562,6 +5337,42 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                 fetch('<?php echo (new moodle_url('/local/ftm_sip/ajax_save_tracking.php'))->out(false); ?>', { method: 'POST', body: fd });
             }
             </script>
+
+            <?php elseif ($is_channels): ?>
+            <!-- search_channels: channel activation grid -->
+            <?php
+            $channels_def_labels = [
+                'email' => 'Email', 'portali_lavoro' => 'Portali del lavoro',
+                'siti_aziendali' => 'Siti aziendali', 'foglio_ufficiale' => 'Foglio ufficiale',
+                'sito_confederazione' => 'Sito confederazione', 'linkedin' => 'LinkedIn',
+                'facebook' => 'Facebook ecc.', 'giornali' => 'Giornali / quotidiani / riviste',
+                'job_room' => 'Job-Room', 'registro_commercio' => 'Registro di commercio',
+                'elenco_telefonico' => 'Elenco telefonico', 'contatti_personali' => 'Contatti personali',
+                'agenzie' => 'Agenzie per il lavoro', 'bacheche_negozi' => 'Bacheche negozi',
+                'mailing_list' => 'Mailing-list', 'porta_a_porta' => 'Porta a porta',
+                'telefonate' => 'Telefonate', 'sindacati' => 'Sindacati',
+            ];
+            ?>
+            <?php if (!empty($channel_detail)): ?>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:8px;">
+            <?php foreach ($channels_def_labels as $ckey => $clabel):
+                if (!isset($channel_detail[$ckey])) continue;
+                $cweek = $channel_detail[$ckey];
+            ?>
+                <div style="background:#d1fae5; border:2px solid #10b981; border-radius:8px; padding:10px 12px; display:flex; align-items:flex-start; gap:8px;">
+                    <span style="font-size:1rem; flex-shrink:0;">✓</span>
+                    <div>
+                        <div style="font-size:0.82rem; font-weight:600; color:#065f46;"><?php echo s($clabel); ?></div>
+                        <div style="font-size:0.72rem; color:#059669;">Attivato sett. <?php echo $cweek; ?></div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <p style="color:#9ca3af; font-size:0.85rem; text-align:center; padding:20px;">
+                Nessun canale attivato<?php echo $selected_week > 0 ? ' nella settimana ' . $selected_week : ''; ?>.
+            </p>
+            <?php endif; ?>
 
             <?php else: ?>
             <!-- Quantitative: entry table -->

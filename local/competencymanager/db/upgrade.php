@@ -402,5 +402,27 @@ function xmldb_local_competencymanager_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026040701, 'local', 'competencymanager');
     }
 
+    // Versione 2026051201: Profilo AI per Passaporto Tecnico
+    if ($oldversion < 2026051201) {
+        $table = new xmldb_table('local_garage_config');
+
+        $fields = [
+            new xmldb_field('ai_settore_target', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'section_order'),
+            new xmldb_field('ai_disponibilita', XMLDB_TYPE_CHAR, '50', null, null, null, null, 'ai_settore_target'),
+            new xmldb_field('ai_mobilita', XMLDB_TYPE_CHAR, '50', null, null, null, null, 'ai_disponibilita'),
+            new xmldb_field('ai_punti_forza', XMLDB_TYPE_TEXT, null, null, null, null, null, 'ai_mobilita'),
+            new xmldb_field('ai_note', XMLDB_TYPE_TEXT, null, null, null, null, null, 'ai_punti_forza'),
+            new xmldb_field('ai_pct_cerca_lavoro', XMLDB_TYPE_INTEGER, '3', null, null, null, null, 'ai_note'),
+        ];
+
+        foreach ($fields as $field) {
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        upgrade_plugin_savepoint(true, 2026051201, 'local', 'competencymanager');
+    }
+
     return true;
 }

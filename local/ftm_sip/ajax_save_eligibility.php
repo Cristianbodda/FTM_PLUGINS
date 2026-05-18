@@ -29,13 +29,13 @@ try {
             // Required fields.
             $userid = required_param('userid', PARAM_INT);
 
-            // 6 numeric criteria (1-5).
-            $motivazione = required_param('motivazione', PARAM_INT);
-            $chiarezza_obiettivo = required_param('chiarezza_obiettivo', PARAM_INT);
-            $occupabilita = required_param('occupabilita', PARAM_INT);
+            // 3 criteri attivi (1-6). Gli altri vengono passati come 0 per compatibilità DB.
             $autonomia = required_param('autonomia', PARAM_INT);
-            $bisogno_coaching = required_param('bisogno_coaching', PARAM_INT);
-            $comportamento = required_param('comportamento', PARAM_INT);
+            $occupabilita = required_param('occupabilita', PARAM_INT);
+            $motivazione = required_param('motivazione', PARAM_INT);
+            $chiarezza_obiettivo = optional_param('chiarezza_obiettivo', 0, PARAM_INT);
+            $bisogno_coaching = optional_param('bisogno_coaching', 0, PARAM_INT);
+            $comportamento = optional_param('comportamento', 0, PARAM_INT);
 
             // Decision field.
             $decisione = required_param('decisione', PARAM_ALPHANUMEXT);
@@ -48,28 +48,30 @@ try {
             // Validate user exists.
             $DB->get_record('user', ['id' => $userid, 'deleted' => 0], 'id', MUST_EXIST);
 
-            // Validate each criterion is between 1 and 5.
-            $criteria = [
-                'motivazione' => $motivazione,
-                'chiarezza_obiettivo' => $chiarezza_obiettivo,
+            // Validate i 3 criteri attivi (1-6).
+            $criteria_active = [
+                'autonomia'   => $autonomia,
                 'occupabilita' => $occupabilita,
-                'autonomia' => $autonomia,
-                'bisogno_coaching' => $bisogno_coaching,
-                'comportamento' => $comportamento,
+                'motivazione' => $motivazione,
             ];
-            foreach ($criteria as $name => $value) {
+            foreach ($criteria_active as $name => $value) {
                 if ($value < 1 || $value > 6) {
                     throw new invalid_parameter_exception("Invalid {$name} value: must be between 1 and 6");
                 }
             }
+            $criteria = array_merge($criteria_active, [
+                'chiarezza_obiettivo' => $chiarezza_obiettivo,
+                'bisogno_coaching'    => $bisogno_coaching,
+                'comportamento'       => $comportamento,
+            ]);
 
-            // Calculate totale (max 36).
-            $totale = array_sum($criteria);
+            // Calcola totale solo sui 3 criteri attivi (max 18).
+            $totale = array_sum($criteria_active);
 
-            // Auto-determine decisione based on totale (semaphore system).
-            if ($totale >= 29) {
+            // Auto-determine decisione based on totale (semaphore 3-18).
+            if ($totale >= 15) {
                 $decisione = 'idoneo_prioritario';
-            } else if ($totale >= 21) {
+            } else if ($totale >= 11) {
                 $decisione = 'idoneo';
             } else {
                 $decisione = 'non_idoneo';

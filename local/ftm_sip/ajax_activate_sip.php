@@ -175,14 +175,9 @@ try {
     // -------------------------------------------------------
     // Activation flow.
     // -------------------------------------------------------
-    $motivation = required_param('motivation', PARAM_TEXT);
+    $motivation = optional_param('motivation', '', PARAM_TEXT);
     $date_start_str = required_param('date_start', PARAM_TEXT);
     $ladi_indemnity = optional_param('ladi_indemnity', 0, PARAM_INT);
-
-    // LADI indemnity is mandatory for activation (must be > 0).
-    if ($ladi_indemnity <= 0) {
-        throw new \moodle_exception('ladi_indemnity_required', 'local_ftm_sip');
-    }
 
     // Parse date (YYYY-MM-DD from HTML date input).
     $date_start = strtotime($date_start_str);

@@ -615,6 +615,17 @@ if ($dbman->table_exists('local_passport_comments')) {
     }
 }
 
+// AI profile fields from garage config.
+$aiSettoreTarget  = $garageConfig->ai_settore_target ?? '';
+$aiDisponibilita  = $garageConfig->ai_disponibilita ?? '';
+$aiMobilita       = $garageConfig->ai_mobilita ?? '';
+$aiPuntiForza     = $garageConfig->ai_punti_forza ?? '';
+$aiNote           = $garageConfig->ai_note ?? '';
+$aiPctCercaLavoro = isset($garageConfig->ai_pct_cerca_lavoro) ? (int)$garageConfig->ai_pct_cerca_lavoro : 50;
+
+// Load final note from local_passport_comments with area_code = 'FINAL_NOTE'.
+$finalNote = $existingComments['FINAL_NOTE'] ?? '';
+
 // Prepare radar chart data.
 $radarItems = [];
 foreach ($areasData as $areaKey => $area) {
@@ -847,6 +858,13 @@ if ($dbman->table_exists('local_compman_final_ratings') && !empty($areasData)) {
             ];
         }
     }
+}
+
+// --- Overall coach percentage for print header ---
+if (!empty($coachScorePerArea)) {
+    $coachOverallPct = round(array_sum(array_column($coachScorePerArea, 'pct')) / count($coachScorePerArea), 1);
+} else {
+    $coachOverallPct = null;
 }
 
 // --- Rebuild radar with coach scores from comparative table ---
@@ -1122,6 +1140,9 @@ echo $OUTPUT->header();
     resize: vertical;
     transition: border-color 0.2s;
 }
+.comment-print-text {
+    display: none;
+}
 .passport-table textarea:focus {
     border-color: #0066cc;
     outline: none;
@@ -1322,8 +1343,8 @@ echo $OUTPUT->header();
    PRINT STYLES
    ======================================== */
 @media print {
-    @page { size: portrait; margin: 10mm; }
-    body { background: #fff !important; margin: 0; padding: 0; font-size: 10pt; }
+    @page { size: portrait; margin: 0; }
+    body { background: #fff !important; margin: 0; padding: 12mm; font-size: 10pt; }
 
     /* Hide Moodle UI + screen-only elements */
     .no-print,
@@ -1526,21 +1547,21 @@ echo $OUTPUT->header();
         font-size: 11pt;
     }
 
-    /* Show comments in print as plain text */
+    /* Show comments in print as plain text div (not textarea) */
     .passport-table textarea {
-        border: none !important;
-        background: transparent !important;
-        box-shadow: none !important;
-        padding: 0;
-        margin: 0;
+        display: none !important;
+    }
+    .comment-print-text {
+        display: block !important;
         font-size: 10pt;
         font-family: inherit;
-        resize: none;
-        overflow: visible;
-        height: auto !important;
-        min-height: 16px;
-        width: 100%;
         color: #333;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+        min-height: 14px;
     }
 
     /* Badge colors */
@@ -1608,9 +1629,139 @@ echo $OUTPUT->header();
 .passport-print-header {
     display: none;
 }
+
+/* AI Modal */
+.ai-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+.ai-modal-overlay.open {
+    display: flex;
+}
+.ai-modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    max-width: 640px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.ai-modal h3 {
+    margin: 0 0 6px 0;
+    font-size: 1.2rem;
+    color: #1a1a2e;
+}
+.ai-modal p {
+    color: #666;
+    font-size: 0.88rem;
+    margin-bottom: 16px;
+}
+.ai-modal textarea {
+    width: 100%;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    resize: vertical;
+    box-sizing: border-box;
+}
+.ai-modal textarea:focus {
+    border-color: #7c3aed;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+}
+.ai-modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+.ai-spinner {
+    display: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ai-progress-bar {
+    display: none;
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    margin-top: 12px;
+    overflow: hidden;
+}
+.ai-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7c3aed, #a855f7);
+    border-radius: 2px;
+    transition: width 0.4s;
+}
+@media print {
+    .ai-modal-overlay,
+    .ai-area-btn { display: none !important; }
+    #passport-final-note-section .passport-btn { display: none !important; }
+}
 </style>
 
 <div class="passport-container">
+
+    <!-- AI Generation Modal -->
+    <?php if ($canEvaluate): ?>
+    <div class="ai-modal-overlay" id="ai-modal-overlay" onclick="closeAiModalOnOverlay(event)">
+        <div class="ai-modal">
+            <h3>&#129302; Genera con AI</h3>
+            <p style="margin-bottom:10px;">I dati del profilo sono caricati dal Garage FTM. Il CV viene anonimizzato prima dell'invio.</p>
+            <div style="background:#fff8e1;border-left:3px solid #f59e0b;padding:8px 12px;border-radius:4px;font-size:0.82rem;color:#555;margin-bottom:12px;">
+                <strong>Consiglio:</strong> Incolla il CV del candidato — pi&ugrave; contesto fornisci (formazione, esperienze, motivazioni), pi&ugrave; precisi e contestualizzati saranno i commenti generati.
+            </div>
+
+            <label style="font-weight:600;font-size:0.88rem;color:#333;display:block;margin-bottom:6px;">
+                CV del candidato (incolla testo)
+            </label>
+            <textarea id="ai-cv-text" rows="8" placeholder="Incolla qui il CV del candidato (testo libero, Word, PDF copiato...).&#10;&#10;Pi&ugrave; informazioni fornisci sulla storia professionale, pi&ugrave; il commento sara' pertinente alla persona."></textarea>
+
+            <!-- Profilo precompilato (sola lettura nel modal, modificabile nel Garage) -->
+            <div style="margin-top:14px;background:#f8f9fa;border-radius:6px;padding:14px;font-size:0.82rem;color:#555;line-height:1.8;">
+                <strong style="color:#333;">Profilo guidato (dal Garage FTM):</strong><br>
+                Settore target: <strong><?php echo s($aiSettoreTarget ?: '&mdash;'); ?></strong> &nbsp;|&nbsp;
+                Disponibilita: <strong><?php echo s($aiDisponibilita ?: '&mdash;'); ?></strong> &nbsp;|&nbsp;
+                Mobilita: <strong><?php echo s(str_replace('_', ' ', $aiMobilita) ?: '&mdash;'); ?></strong><br>
+                Motivazione ricerca lavoro: <strong><?php echo $aiPctCercaLavoro; ?>%</strong><br>
+                <?php if ($aiPuntiForza): ?>Punti di forza: <em><?php echo s($aiPuntiForza); ?></em><br><?php endif; ?>
+                <?php if ($aiNote): ?>Note: <em><?php echo s($aiNote); ?></em><?php endif; ?>
+            </div>
+
+            <div id="ai-progress-bar" class="ai-progress-bar">
+                <div class="ai-progress-fill" id="ai-progress-fill" style="width:0%"></div>
+            </div>
+            <div id="ai-modal-status" style="display:none;margin-top:10px;font-size:0.82rem;color:#7c3aed;font-weight:600;"></div>
+
+            <div class="ai-modal-footer">
+                <button type="button" class="passport-btn passport-btn-secondary" onclick="closeAiModal()">Annulla</button>
+                <button type="button" class="passport-btn" id="ai-generate-btn"
+                        style="background:#7c3aed;color:#fff;"
+                        onclick="generateAll()">
+                    <span class="ai-spinner" id="ai-spinner"></span>
+                    &#129302; Genera Tutto
+                </button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- Print-only header (FTM red block) -->
     <div class="passport-print-header">
@@ -1637,8 +1788,8 @@ echo $OUTPUT->header();
             <strong>Data stampa:</strong> <?php echo date('d/m/Y H:i'); ?>
         </div>
         <div class="print-score-block">
-            <div class="score-pct"><?php echo $overallPct; ?>%</div>
-            <div class="score-label">Punteggio Globale</div>
+            <div class="score-pct"><?php echo $coachOverallPct !== null ? $coachOverallPct : $overallPct; ?>%</div>
+            <div class="score-label"><?php echo $coachOverallPct !== null ? 'Valutazione Docente' : 'Punteggio Quiz'; ?></div>
         </div>
     </div>
 
@@ -1669,6 +1820,11 @@ echo $OUTPUT->header();
             </a>
             <button type="button" class="passport-btn passport-btn-success" onclick="savePassportComments()">
                 Salva Commenti
+            </button>
+            <?php endif; ?>
+            <?php if ($canEvaluate): ?>
+            <button type="button" class="passport-btn" style="background:#7c3aed;color:#fff;" onclick="openAiModal()">
+                &#129302; Genera con AI
             </button>
             <?php endif; ?>
             <button type="button" class="passport-btn passport-btn-primary" onclick="window.print()">
@@ -1812,14 +1968,29 @@ echo $OUTPUT->header();
                                 <?php endif; ?>
                             </td>
                             <td class="col-comment">
-                                <textarea
-                                    name="comment_<?php echo s($areaKey); ?>"
-                                    data-area="<?php echo s($areaKey); ?>"
-                                    rows="3"
-                                    placeholder="Inserire commento..."
-                                    class="passport-comment"
-                                    <?php if (!$canEvaluate): ?>readonly<?php endif; ?>
-                                ><?php echo s($existingComment); ?></textarea>
+                                <div style="display:flex;gap:8px;align-items:flex-start;">
+                                    <textarea
+                                        name="comment_<?php echo s($areaKey); ?>"
+                                        data-area="<?php echo s($areaKey); ?>"
+                                        rows="3"
+                                        placeholder="Inserire commento..."
+                                        class="passport-comment"
+                                        <?php if (!$canEvaluate): ?>readonly<?php endif; ?>
+                                        style="flex:1;"
+                                    ><?php echo s($existingComment); ?></textarea>
+                                    <?php if ($canEvaluate): ?>
+                                    <button type="button"
+                                            class="passport-btn ai-area-btn"
+                                            data-area="<?php echo s($areaKey); ?>"
+                                            data-area-name="<?php echo s($area['name']); ?>"
+                                            data-pct="<?php echo $cs['pct']; ?>"
+                                            title="Genera commento con AI"
+                                            style="background:#7c3aed;color:#fff;padding:6px 10px;font-size:0.78rem;white-space:nowrap;flex-shrink:0;">
+                                        &#129302;
+                                    </button>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="comment-print-text"><?php echo nl2br(s($existingComment)); ?></div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -2203,62 +2374,272 @@ echo $OUTPUT->header();
         endswitch;
     endforeach; ?>
 
+    <?php if ($canEvaluate || !empty($finalNote)): ?>
+    <div class="passport-table-section" id="passport-final-note-section">
+        <h2>Nota Finale per il Datore di Lavoro</h2>
+        <p style="font-size:0.85rem;color:#888;margin-bottom:12px;">
+            Testo di presentazione sintetico, pensato per essere letto da un potenziale datore di lavoro.
+        </p>
+        <?php if ($canEvaluate): ?>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+            <textarea id="passport-final-note"
+                      data-area="FINAL_NOTE"
+                      rows="6"
+                      placeholder="Inserire nota finale..."
+                      class="passport-comment"
+                      style="flex:1;font-size:0.92rem;"><?php echo s($finalNote); ?></textarea>
+            <button type="button"
+                    onclick="generateAiSingle('FINAL_NOTE', '', 0, this)"
+                    class="passport-btn"
+                    style="background:#7c3aed;color:#fff;padding:8px 14px;white-space:nowrap;flex-shrink:0;">
+                &#129302; Genera Nota
+            </button>
+        </div>
+        <div style="margin-top:10px;">
+            <button type="button" class="passport-btn passport-btn-success" onclick="saveFinalNote()">
+                Salva Nota Finale
+            </button>
+        </div>
+        <?php else: ?>
+        <?php if (!empty($finalNote)): ?>
+        <div style="font-size:0.92rem;color:#333;line-height:1.7;white-space:pre-wrap;"><?php echo s($finalNote); ?></div>
+        <?php else: ?>
+        <p style="color:#888;">Nessuna nota finale disponibile.</p>
+        <?php endif; ?>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
 </div>
 
 <?php if ($canEvaluate && !empty($areasData)): ?>
 <script>
-/**
- * Save all passport comments via AJAX.
- */
-function savePassportComments() {
-    var textareas = document.querySelectorAll('.passport-comment');
-    var comments = [];
-    textareas.forEach(function(ta) {
-        comments.push({
-            area_code: ta.getAttribute('data-area'),
-            comment: ta.value.trim()
-        });
-    });
+// ============================================================
+// AI PASSPORT GENERATION
+// ============================================================
+var AI_ENDPOINT = '<?php echo (new moodle_url('/local/competencymanager/ajax_generate_ai_passport.php'))->out(false); ?>';
+var AI_SESSKEY  = '<?php echo sesskey(); ?>';
+var AI_USERID   = <?php echo $userid; ?>;
+var AI_COURSEID = <?php echo $courseid; ?>;
 
-    var feedback = document.getElementById('passport-save-feedback');
-    feedback.className = 'passport-save-feedback no-print';
-    feedback.style.display = 'none';
-    feedback.textContent = '';
+function openAiModal() {
+    document.getElementById('ai-modal-overlay').classList.add('open');
+}
+function closeAiModal() {
+    document.getElementById('ai-modal-overlay').classList.remove('open');
+    setAiStatus('');
+    document.getElementById('ai-progress-bar').style.display = 'none';
+    document.getElementById('ai-progress-fill').style.width = '0%';
+}
+function closeAiModalOnOverlay(e) {
+    if (e.target === document.getElementById('ai-modal-overlay')) closeAiModal();
+}
+function setAiStatus(msg) {
+    var el = document.getElementById('ai-modal-status');
+    if (msg) { el.style.display = 'block'; el.textContent = msg; }
+    else { el.style.display = 'none'; el.textContent = ''; }
+}
+function setAiProgress(pct) {
+    var bar = document.getElementById('ai-progress-bar');
+    bar.style.display = 'block';
+    document.getElementById('ai-progress-fill').style.width = pct + '%';
+}
+
+/**
+ * Generate comment for a single area (called from robot buttons in rows).
+ */
+function generateAiSingle(areaKey, areaName, areaPct, btnEl) {
+    var cvText = '';
+    var cvEl = document.getElementById('ai-cv-text');
+    if (cvEl) cvText = cvEl.value;
+
+    var ta = areaKey === 'FINAL_NOTE'
+        ? document.getElementById('passport-final-note')
+        : document.querySelector('textarea[data-area="' + areaKey + '"]');
+
+    if (!ta) return;
+
+    var origText = btnEl ? btnEl.innerHTML : '';
+    if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;"></span>'; }
+
+    var params = 'sesskey=' + encodeURIComponent(AI_SESSKEY)
+        + '&userid=' + AI_USERID
+        + '&courseid=' + AI_COURSEID
+        + '&action=' + (areaKey === 'FINAL_NOTE' ? 'final_note' : 'area')
+        + '&area_key=' + encodeURIComponent(areaKey)
+        + '&cv_text=' + encodeURIComponent(cvText);
 
     var xhr = new XMLHttpRequest();
-    var url = '<?php echo (new moodle_url('/local/competencymanager/ajax_save_passport_comments.php'))->out(false); ?>';
-    var params = 'sesskey=<?php echo sesskey(); ?>'
-        + '&userid=<?php echo $userid; ?>'
-        + '&courseid=<?php echo $courseid; ?>'
-        + '&comments=' + encodeURIComponent(JSON.stringify(comments));
-
-    xhr.open('POST', url, true);
+    xhr.open('POST', AI_ENDPOINT, true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-
     xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            try {
-                var resp = JSON.parse(xhr.responseText);
-                if (resp.success) {
-                    feedback.className = 'passport-save-feedback success no-print';
-                    feedback.textContent = resp.message || 'Commenti salvati con successo.';
-                } else {
-                    feedback.className = 'passport-save-feedback error no-print';
-                    feedback.textContent = resp.message || 'Errore nel salvataggio.';
+        if (xhr.readyState !== 4) return;
+        if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = origText; }
+        try {
+            var resp = JSON.parse(xhr.responseText);
+            if (resp.success && resp.text) {
+                ta.value = resp.text;
+                ta.style.borderColor = '#28a745';
+                ta.style.boxShadow = '0 0 0 3px rgba(40,167,69,0.2)';
+                setTimeout(function() {
+                    ta.style.borderColor = '';
+                    ta.style.boxShadow = '';
+                }, 2500);
+                var printDiv = ta.parentElement ? ta.parentElement.nextElementSibling : null;
+                if (!printDiv || !printDiv.classList.contains('comment-print-text')) {
+                    printDiv = ta.nextElementSibling;
                 }
-            } catch (e) {
-                feedback.className = 'passport-save-feedback error no-print';
-                feedback.textContent = 'Errore di comunicazione con il server.';
+                if (printDiv && printDiv.classList.contains('comment-print-text')) {
+                    printDiv.innerHTML = ta.value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+                }
+            } else {
+                alert('Errore AI: ' + (resp.message || 'Risposta non valida'));
             }
-            feedback.style.display = 'block';
-            // Auto-hide after 5 seconds.
-            setTimeout(function() {
-                feedback.style.display = 'none';
-            }, 5000);
+        } catch(e) {
+            alert('Errore di comunicazione con il server.');
         }
     };
-
     xhr.send(params);
+}
+
+/**
+ * Generate ALL comments + final note in a single call.
+ */
+function generateAll() {
+    var cvText = document.getElementById('ai-cv-text').value.trim();
+    var btn = document.getElementById('ai-generate-btn');
+    var spinner = document.getElementById('ai-spinner');
+
+    btn.disabled = true;
+    spinner.style.display = 'inline-block';
+    setAiProgress(5);
+    setAiStatus('Invio dati al server...');
+
+    var params = 'sesskey=' + encodeURIComponent(AI_SESSKEY)
+        + '&userid=' + AI_USERID
+        + '&courseid=' + AI_COURSEID
+        + '&action=all'
+        + '&cv_text=' + encodeURIComponent(cvText);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', AI_ENDPOINT, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        try {
+            var resp = JSON.parse(xhr.responseText);
+            if (resp.success) {
+                setAiProgress(100);
+                setAiStatus('Commenti generati. Salvataggio in corso...');
+                if (resp.areas) {
+                    Object.keys(resp.areas).forEach(function(areaKey) {
+                        var ta = document.querySelector('textarea[data-area="' + areaKey + '"]');
+                        if (ta) {
+                            ta.value = resp.areas[areaKey];
+                            var printDiv = ta.parentElement ? ta.parentElement.nextElementSibling : null;
+                            if (!printDiv || !printDiv.classList.contains('comment-print-text')) {
+                                printDiv = ta.nextElementSibling;
+                            }
+                            if (printDiv && printDiv.classList.contains('comment-print-text')) {
+                                printDiv.innerHTML = ta.value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+                            }
+                        }
+                    });
+                }
+                if (resp.final_note) {
+                    var fnTa = document.getElementById('passport-final-note');
+                    if (fnTa) fnTa.value = resp.final_note;
+                }
+                setTimeout(function() {
+                    savePassportComments();
+                    saveFinalNote();
+                    setAiStatus('Salvato!');
+                    setTimeout(function() { closeAiModal(); }, 1200);
+                }, 500);
+            } else {
+                setAiStatus('Errore: ' + (resp.message || 'Risposta non valida'));
+            }
+        } catch(e) {
+            setAiStatus('Errore di comunicazione con il server.');
+        }
+    };
+    xhr.send(params);
+}
+
+// Attach per-area AI buttons.
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.ai-area-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var areaKey  = btn.getAttribute('data-area');
+            var areaName = btn.getAttribute('data-area-name');
+            var pct      = parseFloat(btn.getAttribute('data-pct')) || 0;
+            generateAiSingle(areaKey, areaName, pct, btn);
+        });
+    });
+});
+
+</script>
+<?php endif; ?>
+
+<?php if ($canEvaluate): ?>
+<script>
+var SAVE_URL      = '<?php echo (new moodle_url('/local/competencymanager/ajax_save_passport_comments.php'))->out(false); ?>';
+var SAVE_SESSKEY  = '<?php echo sesskey(); ?>';
+var SAVE_USERID   = <?php echo $userid; ?>;
+var SAVE_COURSEID = <?php echo $courseid; ?>;
+
+window.addEventListener('beforeprint', function() {
+    document.querySelectorAll('.passport-comment').forEach(function(ta) {
+        var printDiv = ta.nextElementSibling;
+        if (printDiv && printDiv.classList.contains('comment-print-text')) {
+            printDiv.innerHTML = ta.value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+        }
+    });
+});
+
+function showSaveFeedback(ok, msg) {
+    var f = document.getElementById('passport-save-feedback');
+    if (!f) return;
+    f.className = 'passport-save-feedback ' + (ok ? 'success' : 'error') + ' no-print';
+    f.textContent = msg;
+    f.style.display = 'block';
+    setTimeout(function() { f.style.display = 'none'; }, 5000);
+}
+
+function ajaxSaveComments(commentsArr, successMsg) {
+    var xhr = new XMLHttpRequest();
+    var params = 'sesskey=' + encodeURIComponent(SAVE_SESSKEY)
+        + '&userid=' + SAVE_USERID
+        + '&courseid=' + SAVE_COURSEID
+        + '&comments=' + encodeURIComponent(JSON.stringify(commentsArr));
+    xhr.open('POST', SAVE_URL, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        try {
+            var resp = JSON.parse(xhr.responseText);
+            showSaveFeedback(resp.success, resp.success ? successMsg : (resp.message || 'Errore nel salvataggio.'));
+        } catch(e) {
+            showSaveFeedback(false, 'Errore di comunicazione con il server.');
+        }
+    };
+    xhr.send(params);
+}
+
+function savePassportComments() {
+    var comments = [];
+    document.querySelectorAll('.passport-comment').forEach(function(ta) {
+        comments.push({ area_code: ta.getAttribute('data-area'), comment: ta.value.trim() });
+    });
+    ajaxSaveComments(comments, 'Commenti salvati con successo.');
+}
+
+function saveFinalNote() {
+    var ta = document.getElementById('passport-final-note');
+    if (!ta) return;
+    ajaxSaveComments([{ area_code: 'FINAL_NOTE', comment: ta.value.trim() }], 'Nota finale salvata.');
 }
 </script>
 <?php endif; ?>

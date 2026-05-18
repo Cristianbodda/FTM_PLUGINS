@@ -32,6 +32,13 @@ try {
     $enabled_sections = optional_param('enabled_sections', '[]', PARAM_RAW);
     $section_order = optional_param('section_order', '[]', PARAM_RAW);
 
+    $ai_settore_target   = optional_param('ai_settore_target', '', PARAM_TEXT);
+    $ai_disponibilita    = optional_param('ai_disponibilita', '', PARAM_ALPHA);
+    $ai_mobilita         = optional_param('ai_mobilita', '', PARAM_ALPHANUMEXT);
+    $ai_punti_forza      = optional_param('ai_punti_forza', '', PARAM_TEXT);
+    $ai_note             = optional_param('ai_note', '', PARAM_TEXT);
+    $ai_pct_cerca_lavoro = optional_param('ai_pct_cerca_lavoro', 0, PARAM_INT);
+
     // Validate user exists.
     $user = $DB->get_record('user', ['id' => $userid, 'deleted' => 0]);
     if (!$user) {
@@ -49,6 +56,11 @@ try {
     // Validate display_format.
     if (!in_array($display_format, ['percentage', 'qualitative'])) {
         $display_format = 'percentage';
+    }
+
+    // Validate ai_disponibilita: only allow known values.
+    if (!in_array($ai_disponibilita, ['fulltime', 'parttime', 'entrambi', ''])) {
+        $ai_disponibilita = '';
     }
 
     $now = time();
@@ -78,6 +90,12 @@ try {
         $existing->custom_threshold = $custom_threshold_val;
         $existing->enabled_sections = json_encode($enabledSecs);
         $existing->section_order = json_encode($orderSecs);
+        $existing->ai_settore_target  = $ai_settore_target ?: null;
+        $existing->ai_disponibilita   = $ai_disponibilita ?: null;
+        $existing->ai_mobilita        = $ai_mobilita ?: null;
+        $existing->ai_punti_forza     = $ai_punti_forza ?: null;
+        $existing->ai_note            = $ai_note ?: null;
+        $existing->ai_pct_cerca_lavoro = ($ai_pct_cerca_lavoro >= 0 && $ai_pct_cerca_lavoro <= 100) ? $ai_pct_cerca_lavoro : 50;
         $existing->coachid = $coachid;
         $existing->timemodified = $now;
         $DB->update_record('local_garage_config', $existing);
@@ -96,6 +114,12 @@ try {
         $record->custom_threshold = $custom_threshold_val;
         $record->enabled_sections = json_encode($enabledSecs);
         $record->section_order = json_encode($orderSecs);
+        $record->ai_settore_target  = $ai_settore_target ?: null;
+        $record->ai_disponibilita   = $ai_disponibilita ?: null;
+        $record->ai_mobilita        = $ai_mobilita ?: null;
+        $record->ai_punti_forza     = $ai_punti_forza ?: null;
+        $record->ai_note            = $ai_note ?: null;
+        $record->ai_pct_cerca_lavoro = ($ai_pct_cerca_lavoro >= 0 && $ai_pct_cerca_lavoro <= 100) ? $ai_pct_cerca_lavoro : 50;
         $record->coachid = $coachid;
         $record->timecreated = $now;
         $record->timemodified = $now;

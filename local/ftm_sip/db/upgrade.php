@@ -491,5 +491,86 @@ function xmldb_local_ftm_sip_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026050401, 'local', 'ftm_sip');
     }
 
+    if ($oldversion < 2026060101) {
+        // Safety re-check: create local_ftm_sip_channel_usage if it was missed
+        // because the server DB version skipped step 2026050401.
+        $table = new xmldb_table('local_ftm_sip_channel_usage');
+
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('enrollmentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('channel_key', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('sip_week', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('activated_date', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+            $table->add_field('activatedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('enrollmentid_fk', XMLDB_KEY_FOREIGN, ['enrollmentid'], 'local_ftm_sip_enrollments', ['id']);
+            $table->add_key('activatedby_fk', XMLDB_KEY_FOREIGN, ['activatedby'], 'user', ['id']);
+
+            $table->add_index('enrollment_channel_uq', XMLDB_INDEX_UNIQUE, ['enrollmentid', 'channel_key']);
+            $table->add_index('enrollmentid_week_idx', XMLDB_INDEX_NOTUNIQUE, ['enrollmentid', 'sip_week']);
+
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026060101, 'local', 'ftm_sip');
+    }
+
+    if ($oldversion < 2026060200) {
+        // Ensure local_ftm_sip_channel_usage exists regardless of which upgrade path was used.
+        $table = new xmldb_table('local_ftm_sip_channel_usage');
+
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('enrollmentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('channel_key', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('sip_week', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('activated_date', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+            $table->add_field('activatedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('enrollmentid_fk', XMLDB_KEY_FOREIGN, ['enrollmentid'], 'local_ftm_sip_enrollments', ['id']);
+            $table->add_key('activatedby_fk', XMLDB_KEY_FOREIGN, ['activatedby'], 'user', ['id']);
+
+            $table->add_index('enrollment_channel_uq', XMLDB_INDEX_UNIQUE, ['enrollmentid', 'channel_key']);
+            $table->add_index('enrollmentid_week_idx', XMLDB_INDEX_NOTUNIQUE, ['enrollmentid', 'sip_week']);
+
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026060200, 'local', 'ftm_sip');
+    }
+
+    if ($oldversion < 2026060300) {
+        // New table: local_ftm_sip_channel_assess — channel assessment per enrollment.
+        $table = new xmldb_table('local_ftm_sip_channel_assess');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id',            XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('enrollmentid',  XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('channel_key',   XMLDB_TYPE_CHAR,    '50', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('level_initial', XMLDB_TYPE_INTEGER, '2',  null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('level_target',  XMLDB_TYPE_INTEGER, '2',  null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('level_final',   XMLDB_TYPE_INTEGER, '2',  null, null,          null, null);
+            $table->add_field('actions_text',  XMLDB_TYPE_TEXT,    null, null, null,          null, null);
+            $table->add_field('createdby',     XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('modifiedby',    XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timecreated',   XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timemodified',  XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('enrollmentid_fk', XMLDB_KEY_FOREIGN, ['enrollmentid'], 'local_ftm_sip_enrollments', ['id']);
+
+            $table->add_index('enrollment_channel_uq', XMLDB_INDEX_UNIQUE, ['enrollmentid', 'channel_key']);
+
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2026060300, 'local', 'ftm_sip');
+    }
+
     return true;
 }

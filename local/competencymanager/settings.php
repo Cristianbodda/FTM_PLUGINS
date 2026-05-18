@@ -12,6 +12,13 @@ defined('MOODLE_INTERNAL') || die();
 if ($hassiteconfig) {
     $settings = new admin_settingpage('local_competencymanager', get_string('pluginname', 'local_competencymanager'));
 
+    $settings->add(new admin_setting_configpasswordunmask(
+        'local_competencymanager/openai_apikey',
+        get_string('openai_apikey', 'local_competencymanager'),
+        get_string('openai_apikey_desc', 'local_competencymanager'),
+        ''
+    ));
+
     $settings->add(new admin_setting_configtext(
         'local_competencymanager/passport_threshold',
         get_string('passport_threshold', 'local_competencymanager'),

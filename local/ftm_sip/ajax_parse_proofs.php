@@ -207,6 +207,13 @@ function sip_call_openai_vision($apikey, $model, $base64, $mime) {
 // ============================================================================
 
 function sip_call_openai_text($apikey, $model, $text_content) {
+    // Remove null bytes and control characters that break JSON encoding.
+    $text_content = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text_content);
+    // Replace invalid UTF-8 sequences with a safe substitute.
+    $text_content = mb_convert_encoding($text_content, 'UTF-8', 'UTF-8');
+    // Cap at 12000 chars — more than enough for a Job-Room page.
+    $text_content = mb_substr($text_content, 0, 12000);
+
     $payload = [
         'model'      => $model,
         'max_tokens' => 3000,
@@ -232,7 +239,7 @@ function sip_openai_request($apikey, $payload) {
             'Content-Type: application/json',
             'Authorization: Bearer ' . $apikey,
         ],
-        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE),
     ]);
     $response = curl_exec($ch);
     $err      = curl_error($ch);
@@ -283,29 +290,105 @@ function sip_parse_pdf_file($file, $apikey, $model, $filename) {
         return ['error' => 'File vuoto'];
     }
     $text = sip_extract_pdf_text($content);
-    if (strlen($text) < 30) {
-        return ['error' => "$filename sembra un PDF scansionato. Convertilo in JPG/PNG e ricaricalo per l'analisi AI."];
+    if (strlen($text) < 20) {
+        return ['error' => "$filename: impossibile estrarre testo dal PDF. Prova a esportarlo di nuovo da Job-Room o convertilo in JPG/PNG."];
     }
     return sip_call_openai_text($apikey, $model, $text);
 }
 
 // ============================================================================
-// Helper: extract readable text from binary PDF (no external library)
-// Effective for text-based PDFs (e.g. Job-Room exports); returns "" for scanned.
+// Helper: extract readable text from binary PDF.
+// Handles FlateDecode (zlib) compressed streams — standard in modern PDFs
+// including Job-Room exports. Falls back to uncompressed scan for old PDFs.
 // ============================================================================
 
 function sip_extract_pdf_text($pdf_binary) {
     $text = '';
-    // Extract text strings enclosed in parentheses in PDF streams.
-    $cleaned = preg_replace('/[^\x20-\x7E\n\r\t]/', ' ', $pdf_binary);
-    preg_match_all('/\(([^)]{2,200})\)/', $cleaned, $m);
-    if (!empty($m[1])) {
-        foreach ($m[1] as $chunk) {
-            $chunk = trim($chunk);
-            if (strlen($chunk) > 2 && preg_match('/[a-zA-Z0-9]{2}/', $chunk)) {
-                $text .= $chunk . "\n";
+
+    // --- Pass 1: decompress FlateDecode streams (modern PDFs) ---
+    preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $pdf_binary, $streams);
+    foreach ($streams[1] as $stream_data) {
+        // gzinflate = raw deflate (most common FlateDecode).
+        $dec = @gzinflate($stream_data);
+        if ($dec === false) {
+            // gzuncompress = zlib with header (less common).
+            $dec = @gzuncompress($stream_data);
+        }
+        if ($dec !== false && strlen($dec) > 5) {
+            $text .= sip_pdf_stream_to_text($dec);
+        }
+    }
+
+    // --- Pass 2: fallback for uncompressed PDFs ---
+    if (strlen(trim($text)) < 20) {
+        $cleaned = preg_replace('/[^\x20-\x7E\n\r\t]/', ' ', $pdf_binary);
+        preg_match_all('/\(([^)]{2,200})\)/', $cleaned, $m);
+        if (!empty($m[1])) {
+            foreach ($m[1] as $chunk) {
+                $chunk = trim($chunk);
+                if (strlen($chunk) > 2 && preg_match('/[a-zA-Z0-9]{2}/', $chunk)) {
+                    $text .= $chunk . "\n";
+                }
             }
         }
     }
+
     return trim($text);
+}
+
+// ============================================================================
+// Helper: extract text strings from a decompressed PDF content stream.
+// Handles Tj (single string), TJ (array), ' and " operators.
+// ============================================================================
+
+function sip_pdf_stream_to_text($stream) {
+    $text = '';
+
+    // (string) Tj — single string show operator.
+    preg_match_all('/\(([^)\\\\]{0,400}(?:\\\\.[^)\\\\]{0,400})*)\)\s*Tj/s', $stream, $m1);
+    foreach ($m1[1] as $chunk) {
+        $chunk = sip_pdf_unescape($chunk);
+        if (strlen(trim($chunk)) > 0) {
+            $text .= $chunk . ' ';
+        }
+    }
+
+    // [(string1)(string2)...] TJ — array string show operator.
+    preg_match_all('/\[([^\]]+)\]\s*TJ/s', $stream, $m2);
+    foreach ($m2[1] as $arr) {
+        preg_match_all('/\(([^)]*)\)/', $arr, $sub);
+        foreach ($sub[1] as $chunk) {
+            $text .= sip_pdf_unescape($chunk);
+        }
+        $text .= ' ';
+    }
+
+    // (string) ' and (string) " — move-to-next-line-and-show operators.
+    preg_match_all('/\(([^)\\\\]{0,400}(?:\\\\.[^)\\\\]{0,400})*)\)\s*[\'"]/', $stream, $m3);
+    foreach ($m3[1] as $chunk) {
+        $chunk = sip_pdf_unescape($chunk);
+        if (strlen(trim($chunk)) > 0) {
+            $text .= $chunk . "\n";
+        }
+    }
+
+    return $text;
+}
+
+// ============================================================================
+// Helper: unescape PDF string escape sequences.
+// ============================================================================
+
+function sip_pdf_unescape($str) {
+    // PDF escape sequences → actual characters.
+    $str = str_replace(
+        ['\\n', '\\r', '\\t', '\\b', '\\f', '\\\\', '\\(', '\\)'],
+        ["\n",  "\r",  "\t",  "\x08", "\x0C", '\\',  '(',   ')'],
+        $str
+    );
+    // Octal \ddd → character.
+    $str = preg_replace_callback('/\\\\([0-7]{1,3})/', function ($m) {
+        return chr(octdec($m[1]));
+    }, $str);
+    return $str;
 }

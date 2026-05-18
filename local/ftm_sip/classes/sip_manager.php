@@ -577,7 +577,8 @@ class sip_manager {
         $enrollment = $DB->get_record('local_ftm_sip_enrollments',
             ['id' => $enrollmentid], '*', MUST_EXIST);
 
-        $sip_week = \local_ftm_sip_calculate_week($enrollment->date_start);
+        // Calculate week from the actual meeting date, not from today.
+        $sip_week = \local_ftm_sip_calculate_week($enrollment->date_start, $meeting_date);
 
         $now = time();
         $record = new \stdClass();
@@ -1454,5 +1455,71 @@ class sip_manager {
         $kpi->search_proofs = $DB->count_records('local_ftm_sip_search_proofs', ['enrollmentid' => $enrollmentid]);
 
         return $kpi;
+    }
+
+    /**
+     * Get all channel assessment records for an enrollment.
+     * Returns assoc array: channel_key => record object.
+     *
+     * @param int $enrollmentid
+     * @return array
+     */
+    public static function get_channel_assessment(int $enrollmentid): array {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('local_ftm_sip_channel_assess')) {
+            return [];
+        }
+        $rows = $DB->get_records('local_ftm_sip_channel_assess', ['enrollmentid' => $enrollmentid]);
+        $result = [];
+        foreach ($rows as $row) {
+            $result[$row->channel_key] = $row;
+        }
+        return $result;
+    }
+
+    /**
+     * Save (upsert) a channel assessment record.
+     *
+     * @param int    $enrollmentid
+     * @param string $channel_key
+     * @param array  $data  [level_initial, level_target, level_final, actions_text]
+     * @param int    $userid
+     * @return int  Record ID
+     */
+    public static function save_channel_assessment(int $enrollmentid, string $channel_key, array $data, int $userid): int {
+        global $DB;
+        $now = time();
+        $existing = $DB->get_record('local_ftm_sip_channel_assess', [
+            'enrollmentid' => $enrollmentid,
+            'channel_key'  => $channel_key,
+        ]);
+        if ($existing) {
+            $existing->level_initial  = (int)($data['level_initial'] ?? $existing->level_initial);
+            $existing->level_target   = (int)($data['level_target']  ?? $existing->level_target);
+            if (isset($data['level_final'])) {
+                $existing->level_final = ($data['level_final'] === '' || $data['level_final'] === null)
+                    ? null : (int)$data['level_final'];
+            }
+            $existing->actions_text   = $data['actions_text'] ?? $existing->actions_text;
+            $existing->modifiedby     = $userid;
+            $existing->timemodified   = $now;
+            $DB->update_record('local_ftm_sip_channel_assess', $existing);
+            return (int)$existing->id;
+        } else {
+            $record = (object)[
+                'enrollmentid' => $enrollmentid,
+                'channel_key'  => $channel_key,
+                'level_initial' => (int)($data['level_initial'] ?? 0),
+                'level_target'  => (int)($data['level_target']  ?? 0),
+                'level_final'   => isset($data['level_final']) && $data['level_final'] !== ''
+                    ? (int)$data['level_final'] : null,
+                'actions_text'  => $data['actions_text'] ?? '',
+                'createdby'     => $userid,
+                'modifiedby'    => $userid,
+                'timecreated'   => $now,
+                'timemodified'  => $now,
+            ];
+            return (int)$DB->insert_record('local_ftm_sip_channel_assess', $record);
+        }
     }
 }

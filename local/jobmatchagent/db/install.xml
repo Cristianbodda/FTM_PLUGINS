@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/jobmatchagent/db" VERSION="20260423" COMMENT="Tables for JobMatch Agent — daily job opportunity discovery + AI matching">
+  <TABLES>
+    <TABLE NAME="local_jobmatch_sources" COMMENT="Configured data sources (RSS, email, manual)">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="100" NOTNULL="true" COMMENT="Source name (e.g. job-room.ch RSS)"/>
+        <FIELD NAME="type" TYPE="char" LENGTH="20" NOTNULL="true" COMMENT="rss, email, manual"/>
+        <FIELD NAME="config" TYPE="text" NOTNULL="false" COMMENT="JSON config (URL, IMAP creds, filters)"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="last_fetch" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Timestamp of last successful fetch"/>
+        <FIELD NAME="last_error" TYPE="text" NOTNULL="false" COMMENT="Last error message if fetch failed"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="type_enabled_idx" UNIQUE="false" FIELDS="type, enabled"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_jobmatch_offers" COMMENT="Catalog of fetched job offers">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="source_id" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK to local_jobmatch_sources"/>
+        <FIELD NAME="external_id" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="ID from source (for dedup)"/>
+        <FIELD NAME="url" TYPE="char" LENGTH="500" NOTNULL="false" COMMENT="Original URL of the offer"/>
+        <FIELD NAME="title" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Job title"/>
+        <FIELD NAME="company" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Company name"/>
+        <FIELD NAME="location" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Job location (city, region)"/>
+        <FIELD NAME="location_lat" TYPE="number" LENGTH="10" DECIMALS="6" NOTNULL="false" COMMENT="Latitude (geocoded)"/>
+        <FIELD NAME="location_lng" TYPE="number" LENGTH="10" DECIMALS="6" NOTNULL="false" COMMENT="Longitude (geocoded)"/>
+        <FIELD NAME="company_size" TYPE="char" LENGTH="1" NOTNULL="false" COMMENT="S=small, M=medium, L=large, U=unknown"/>
+        <FIELD NAME="work_schedule" TYPE="char" LENGTH="20" NOTNULL="false" COMMENT="fulltime, parttime, shifts, flex, unknown"/>
+        <FIELD NAME="raw_html" TYPE="text" NOTNULL="false" COMMENT="Original HTML snippet"/>
+        <FIELD NAME="parsed_text" TYPE="text" NOTNULL="true" COMMENT="Cleaned text used for AI matching"/>
+        <FIELD NAME="fingerprint" TYPE="char" LENGTH="64" NOTNULL="true" COMMENT="SHA256 hash for deduplication"/>
+        <FIELD NAME="published_at" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Original publication date"/>
+        <FIELD NAME="expires_at" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Application deadline"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" COMMENT="active, expired, archived"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="source_fk" TYPE="foreign" FIELDS="source_id" REFTABLE="local_jobmatch_sources" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="fingerprint_uq" UNIQUE="true" FIELDS="fingerprint"/>
+        <INDEX NAME="status_time_idx" UNIQUE="false" FIELDS="status, timecreated"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_jobmatch_student_filters" COMMENT="Coach-managed search preferences per student">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Student user id"/>
+        <FIELD NAME="active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" COMMENT="1=agent active for this student"/>
+        <FIELD NAME="home_address" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Student home address (free text)"/>
+        <FIELD NAME="home_lat" TYPE="number" LENGTH="10" DECIMALS="6" NOTNULL="false"/>
+        <FIELD NAME="home_lng" TYPE="number" LENGTH="10" DECIMALS="6" NOTNULL="false"/>
+        <FIELD NAME="max_distance_km" TYPE="int" LENGTH="3" NOTNULL="false" DEFAULT="30" COMMENT="Max acceptable distance in km"/>
+        <FIELD NAME="company_sizes" TYPE="char" LENGTH="20" NOTNULL="false" COMMENT="Comma list: S,M,L"/>
+        <FIELD NAME="work_schedules" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="Comma list: fulltime,parttime,shifts,flex"/>
+        <FIELD NAME="desired_activities" TYPE="text" NOTNULL="false" COMMENT="JSON array of desired activity tags"/>
+        <FIELD NAME="extra_notes" TYPE="text" NOTNULL="false" COMMENT="Coach free-text notes (passed to AI)"/>
+        <FIELD NAME="manual_cv_text" TYPE="text" NOTNULL="false" COMMENT="Optional CV text manually pasted by coach (overrides JobAIDA latest)"/>
+        <FIELD NAME="updatedby" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Coach who last edited"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_uq" UNIQUE="true" FIELDS="userid"/>
+        <INDEX NAME="active_idx" UNIQUE="false" FIELDS="active"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_jobmatch_cv_snapshots" COMMENT="Immutable CV snapshots used for each match">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="cv_text" TYPE="text" NOTNULL="true" COMMENT="Full CV text at snapshot time"/>
+        <FIELD NAME="cv_source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="jobaida" COMMENT="jobaida, upload, manual"/>
+        <FIELD NAME="competencies_json" TYPE="text" NOTNULL="false" COMMENT="Snapshot of FTM competency Bloom levels"/>
+        <FIELD NAME="primary_sector" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="Primary FTM sector at snapshot time"/>
+        <FIELD NAME="all_sectors" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Comma list of all student sectors"/>
+        <FIELD NAME="fingerprint" TYPE="char" LENGTH="64" NOTNULL="true" COMMENT="SHA256 of cv_text for dedup"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_time_idx" UNIQUE="false" FIELDS="userid, timecreated"/>
+        <INDEX NAME="fingerprint_idx" UNIQUE="false" FIELDS="fingerprint"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_jobmatch_results" COMMENT="Match results: one row per (offer x student)">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="offer_id" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="cv_snapshot_id" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="score_global" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" COMMENT="0-100 weighted total"/>
+        <FIELD NAME="score_sector" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="score_distance" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="score_schedule" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="score_size" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="score_experience" TYPE="int" LENGTH="3" NOTNULL="false" COMMENT="AI-computed (null if not yet evaluated)"/>
+        <FIELD NAME="score_activity" TYPE="int" LENGTH="3" NOTNULL="false" COMMENT="Match with desired activities"/>
+        <FIELD NAME="ai_explanation_text" TYPE="text" NOTNULL="false" COMMENT="Narrative explanation from AI"/>
+        <FIELD NAME="ai_breakdown_json" TYPE="text" NOTNULL="false" COMMENT="Per-criterion breakdown JSON"/>
+        <FIELD NAME="ai_tokens_used" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0"/>
+        <FIELD NAME="ai_processed_at" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" COMMENT="pending, ai_done, published, discarded, onhold"/>
+        <FIELD NAME="coach_decision_userid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Coach who decided"/>
+        <FIELD NAME="coach_decision_time" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="coach_note" TYPE="text" NOTNULL="false" COMMENT="Optional note added by coach"/>
+        <FIELD NAME="published_to_student_at" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="seen_by_student_at" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="offer_fk" TYPE="foreign" FIELDS="offer_id" REFTABLE="local_jobmatch_offers" REFFIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="cv_snapshot_fk" TYPE="foreign" FIELDS="cv_snapshot_id" REFTABLE="local_jobmatch_cv_snapshots" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="offer_user_uq" UNIQUE="true" FIELDS="offer_id, userid"/>
+        <INDEX NAME="user_status_idx" UNIQUE="false" FIELDS="userid, status"/>
+        <INDEX NAME="status_score_idx" UNIQUE="false" FIELDS="status, score_global"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_jobmatch_student_actions" COMMENT="Student feedback loop on published matches">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="result_id" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="action" TYPE="char" LENGTH="30" NOTNULL="true" COMMENT="interested, not_interested, already_applied, applied, hired, rejected"/>
+        <FIELD NAME="reason_text" TYPE="text" NOTNULL="false" COMMENT="Optional reason / motivation"/>
+        <FIELD NAME="ai_letter_id" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="FK to local_jobaida_letters if generated"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="result_fk" TYPE="foreign" FIELDS="result_id" REFTABLE="local_jobmatch_results" REFFIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="result_action_idx" UNIQUE="false" FIELDS="result_id, action"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_jobmatch_learning" COMMENT="Per-student learned weight adjustments from feedback">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="criterion" TYPE="char" LENGTH="50" NOTNULL="true" COMMENT="e.g. company_size, work_schedule, sector"/>
+        <FIELD NAME="value" TYPE="char" LENGTH="100" NOTNULL="true" COMMENT="Specific value (e.g. L for large)"/>
+        <FIELD NAME="weight_adjustment" TYPE="number" LENGTH="4" DECIMALS="2" NOTNULL="true" DEFAULT="0" COMMENT="-1.0 to 1.0"/>
+        <FIELD NAME="reason" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Human-readable reason"/>
+        <FIELD NAME="sample_count" TYPE="int" LENGTH="5" NOTNULL="true" DEFAULT="0" COMMENT="Number of feedbacks supporting this"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="user_criterion_idx" UNIQUE="false" FIELDS="userid, criterion"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_jobmatch_logs" COMMENT="Audit log of cron runs and AI cost tracking">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="run_time" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Timestamp of cron run"/>
+        <FIELD NAME="task_name" TYPE="char" LENGTH="50" NOTNULL="true" COMMENT="fetch_offers, match_students, ai_explain, notify_coaches"/>
+        <FIELD NAME="source_id" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="offers_fetched" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="results_created" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="ai_calls" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="ai_tokens" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="errors_json" TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="duration_ms" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="task_time_idx" UNIQUE="false" FIELDS="task_name, run_time"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

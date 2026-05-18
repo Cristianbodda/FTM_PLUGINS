@@ -166,5 +166,7 @@ $string['passport_comments_saved'] = 'Commenti passaporto salvati con successo';
 $string['passport_print'] = 'Stampa Passaporto Tecnico';
 $string['passport_save_comments'] = 'Salva Commenti';
 $string['passport_back'] = 'Torna allo Student Report';
+$string['openai_apikey'] = 'Chiave API OpenAI';
+$string['openai_apikey_desc'] = 'Chiave API per OpenAI (usata per la generazione AI nel Passaporto Tecnico). Se vuota, usa quella di JobAIDA come fallback.';
 $string['passport_threshold'] = 'Soglia minima passaporto (%)';
 $string['passport_threshold_desc'] = 'Percentuale minima per includere una competenza nel Passaporto Tecnico. Default: 60';

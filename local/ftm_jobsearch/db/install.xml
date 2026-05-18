@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/ftm_jobsearch/db" VERSION="20260416" COMMENT="FTM Job Search tables">
+  <TABLES>
+
+    <TABLE NAME="local_ftm_jobsearch_offers" COMMENT="Offerte lavoro estratte dai siti">
+      <FIELDS>
+        <FIELD NAME="id"                 TYPE="int"    LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="titolo"             TYPE="char"   LENGTH="255" NOTNULL="true"/>
+        <FIELD NAME="azienda"            TYPE="char"   LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="descrizione"        TYPE="text"   NOTNULL="false"/>
+        <FIELD NAME="settore"            TYPE="char"   LENGTH="50"  NOTNULL="true"/>
+        <FIELD NAME="tipo_lavoro"        TYPE="char"   LENGTH="50"  NOTNULL="false"/>
+        <FIELD NAME="citta"              TYPE="char"   LENGTH="100" NOTNULL="false"/>
+        <FIELD NAME="lat"                TYPE="number" LENGTH="10"  DECIMALS="7" NOTNULL="false"/>
+        <FIELD NAME="lng"                TYPE="number" LENGTH="10"  DECIMALS="7" NOTNULL="false"/>
+        <FIELD NAME="url"                TYPE="text"   NOTNULL="true"/>
+        <FIELD NAME="fonte"              TYPE="char"   LENGTH="100" NOTNULL="true"/>
+        <FIELD NAME="data_pubblicazione" TYPE="char"   LENGTH="20"  NOTNULL="false"/>
+        <FIELD NAME="data_scraping"      TYPE="int"    LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="attivo"             TYPE="int"    LENGTH="1"   NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="url_hash"           TYPE="char"   LENGTH="64"  NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_settore"  UNIQUE="false" FIELDS="settore"/>
+        <INDEX NAME="idx_attivo"   UNIQUE="false" FIELDS="attivo"/>
+        <INDEX NAME="idx_url_hash" UNIQUE="true"  FIELDS="url_hash"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_ftm_jobsearch_searches" COMMENT="Storico ricerche utenti">
+      <FIELDS>
+        <FIELD NAME="id"          TYPE="int"  LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid"      TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="mansione"    TYPE="char" LENGTH="255"  NOTNULL="false"/>
+        <FIELD NAME="settore"     TYPE="char" LENGTH="50"   NOTNULL="false"/>
+        <FIELD NAME="tipo_lavoro" TYPE="char" LENGTH="50"   NOTNULL="false"/>
+        <FIELD NAME="citta"       TYPE="char" LENGTH="100"  NOTNULL="false"/>
+        <FIELD NAME="raggio_km"   TYPE="int"  LENGTH="5"    NOTNULL="true" DEFAULT="30"/>
+        <FIELD NAME="n_risultati" TYPE="int"  LENGTH="10"   NOTNULL="false" DEFAULT="0"/>
+        <FIELD NAME="timecreated" TYPE="int"  LENGTH="10"   NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_userid" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_ftm_jobsearch_cities" COMMENT="Citta Canton Ticino con coordinate GPS">
+      <FIELDS>
+        <FIELD NAME="id"   TYPE="int"    LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="nome" TYPE="char"   LENGTH="100" NOTNULL="true"/>
+        <FIELD NAME="lat"  TYPE="number" LENGTH="10"  DECIMALS="7" NOTNULL="true"/>
+        <FIELD NAME="lng"  TYPE="number" LENGTH="10"  DECIMALS="7" NOTNULL="true"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_nome" UNIQUE="true" FIELDS="nome"/>
+      </INDEXES>
+    </TABLE>
+
+  </TABLES>
+</XMLDB>
