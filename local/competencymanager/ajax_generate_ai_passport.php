@@ -254,7 +254,7 @@ try {
         $areasSummary .= "\n";
     }
 
-    $model = 'gpt-4o-mini';
+    $model = 'gpt-4.1-mini';
 
     // ----------------------------------------------------------------
     // ACTION: single area comment
@@ -292,21 +292,35 @@ try {
             ? implode("\n", array_map(function($n) { return "- {$n}"; }, $areaCompNames)) . "\n"
             : "";
 
+        // Determine opening strategy based on score range.
+        if ($primaryPct >= 70) {
+            $openingStrategy = "Apri DIRETTAMENTE con ciò che il candidato sa fare in modo concreto e specifico. "
+                . "Cita almeno 1-2 elementi tecnici dalla lista competenze. Non iniziare con 'Il sig.' ma con la competenza stessa.";
+        } elseif ($primaryPct >= 50) {
+            $openingStrategy = "Apri con la competenza principale presente, poi pivota subito su ciò che resta da sviluppare. "
+                . "Usa 'tuttavia', 'mentre', 'Da sviluppare' come punto di svolta. Cita elementi concreti.";
+        } elseif ($primaryPct >= 30) {
+            $openingStrategy = "Apri con il CONTESTO (da dove viene il candidato, esperienza pregressa) come spiegazione del gap, "
+                . "poi descrivi cosa sa fare e cosa manca. Cita elementi tecnici specifici mancanti.";
+        } else {
+            $openingStrategy = "Apri DIRETTAMENTE con le lacune concrete — nessuna apertura positiva artificiosa per punteggi <30%. "
+                . "Descrivi cosa non e' stato osservato o e' risultato insufficiente. Sii preciso, non vago.";
+        }
+
         $prompt = "=== PROFILO CANDIDATO ===\n{$profile}\n"
             . "=== AREA DI COMPETENZA ===\n"
             . "Area: {$area['code']}. {$area['name']}\n"
             . "*** PUNTEGGIO PASSAPORTO ({$primarySrc}): {$primaryPct}% → fascia: {$primaryLabel} ***\n"
-            . ($coachPct !== null ? "   Punteggio quiz (solo contesto, NON e' la metrica del passaporto): {$area['percentage']}%\n" : "")
+            . ($coachPct !== null ? "   Punteggio quiz (solo contesto): {$area['percentage']}%\n" : "")
             . ($autoPct !== null ? "   Autovalutazione candidato: {$autoPct}%\n" : "")
-            . ($areaCompList ? "\nCompetenze specifiche dell'area:\n{$areaCompList}" : "")
+            . ($areaCompList ? "\nCOMPETENZE SPECIFICHE DELL'AREA (cita almeno 1-2 di queste nel commento):\n{$areaCompList}" : "")
             . (!empty($cv_clean) ? "\n=== CV (anonimizzato) ===\n{$cv_clean}\n" : "")
             . "\n=== SCALA VALUTAZIONE ===\n{$scalaPunteggi}\n"
             . "=== ISTRUZIONE ===\n"
-            . "Il commento DEVE basarsi ESCLUSIVAMENTE sul PUNTEGGIO PASSAPORTO ({$primaryPct}% → fascia: {$primaryLabel}).\n"
-            . "Il punteggio quiz NON e' la metrica del passaporto — non citarlo come risultato principale.\n"
-            . "Scrivi 2 frasi che descrivono il livello '{$primaryLabel}' per questa area specifica.\n"
-            . "Dove pertinente, cita le competenze specifiche dell'area elencate sopra.\n"
-            . "Se {$primaryPct}% < 50%: descrivi le lacune — NON usare 'eccellente', 'ottimo', 'solido'.\n"
+            . "STRATEGIA DI APERTURA per {$primaryPct}%: {$openingStrategy}\n"
+            . "OBBLIGATORIO: cita almeno 1-2 elementi CONCRETI dalla lista competenze dell'area (non formule generiche).\n"
+            . "Il commento si basa SUL PUNTEGGIO PASSAPORTO ({$primaryPct}% → {$primaryLabel}), non sul quiz.\n"
+            . "Scrivi 2-3 frasi. Se <50%: sii diretto sulle lacune, MAI 'eccellente/ottimo/solido'.\n"
             . "Tono: scheda tecnica URC oggettiva. Lingua: italiano formale.";
 
         $text = ai_passport_call_openai($apikey, $model, $prompt, 600, $systemStyleExtra);
@@ -398,11 +412,17 @@ try {
             . (!empty($cv_clean) ? "\n=== CV (anonimizzato) ===\n{$cv_clean}\n\n" : "")
             . "=== SCALA VALUTAZIONE ===\n{$scalaPunteggi}\n"
             . "=== ISTRUZIONE ===\n"
-            . "Per OGNI area: il commento si basa ESCLUSIVAMENTE su PASSAPORTO(coach)=X% — NON sul punteggio quiz.\n"
-            . "Scrivi 2 frasi per area basandoti sulla fascia indicata nel campo PASSAPORTO.\n"
-            . "Se fascia = 'insufficiente' o 'base': descrivi le lacune — NON usare 'eccellente', 'ottimo', 'solido'.\n"
-            . "Nota finale (max 100 parole): basata sulla media passaporto {$allAvgPrimary}% — se <50% il candidato "
-            . "e' in fase formativa, dillo chiaramente. NO linguaggio promozionale.\n"
+            . "Per OGNI area: commento basato su PASSAPORTO(coach)=X% (NON il punteggio quiz).\n"
+            . "REGOLE OBBLIGATORIE:\n"
+            . "1. Cita almeno 1-2 elementi tecnici CONCRETI dalla lista competenze di ciascuna area (mai frasi vaghe).\n"
+            . "2. VARIA la struttura: non usare lo stesso schema per tutte le aree.\n"
+            . "   >=70%: apri con ciò che sa fare concretamente.\n"
+            . "   50-69%: apri con il punto di forza, poi pivota su sviluppi.\n"
+            . "   30-49%: apri con il contesto/background, poi descrivi il gap.\n"
+            . "   <30%: apri direttamente con le lacune concrete, senza apertura positiva.\n"
+            . "3. Non iniziare due aree con le stesse prime 3 parole.\n"
+            . "4. 2-3 frasi per area. Se <50%: MAI 'eccellente/ottimo/solido'.\n"
+            . "Nota finale (max 100 parole): media passaporto {$allAvgPrimary}%. Se <50%: candidato in fase formativa, dillo chiaramente. NO linguaggio promozionale.\n"
             . "Tono: scheda tecnica URC. Lingua: italiano formale.\n\n"
             . "Rispondi SOLO con JSON puro nel formato:\n"
             . "{\n"
@@ -549,26 +569,37 @@ function ai_passport_call_openai(string $apikey, string $model, string $prompt, 
         . "I commenti devono riflettere fedelmente i dati numerici. Non esagerare: punteggi bassi indicano lacune reali da descrivere onestamente.\n"
         . "\n"
         . "=== REGOLE DI STILE OBBLIGATORIE ===\n"
-        . "1. RIFERIMENTO: Usa SEMPRE il riferimento formale indicato nel profilo (es. 'Il sig. Rossi'). MAI 'l'assicurato' come forma principale.\n"
-        . "   Varianti accettabili: 'il/la professionista', 'il/la partecipante' — ma solo come alternativa, non come forma primaria.\n"
-        . "2. STRUTTURA A PIVOT: Inizia con le competenze presenti/positive, poi pivota sulle lacune con parole come:\n"
-        . "   'tuttavia', 'mentre', 'invece', 'Da sviluppare', 'Da rivedere', 'Appena sufficienti', 'Esistono margini di miglioramento'.\n"
-        . "3. SPECIFICITÀ: Cita strumenti, normative e competenze tecniche specifiche dell'area (es. multimetro, schemi unifilari, SEV, AS-BUILT, DPI).\n"
-        . "4. LUNGHEZZA: 1-3 frasi per area. Per aree complesse: due mini-paragrafi. NON elenchi puntati.\n"
-        . "5. ONESTÀ: Punteggio <50% → lacune significative, descritte chiaramente. MAI 'ottimo/eccellente' per punteggi bassi.\n"
-        . "6. CONTESTO: Se opportuno, cita il background del candidato come causa dello scarto (es. standard normativi diversi, esperienza settore limitrofo).\n"
+        . "1. RIFERIMENTO: Usa il riferimento formale indicato nel profilo (es. 'Il sig. Rossi'). MAI 'l'assicurato'. Alterna con 'il/la partecipante' o 'il/la professionista'.\n"
+        . "2. SPECIFICITÀ TECNICA: Cita SEMPRE almeno 1-2 strumenti, normative o competenze tecniche CONCRETE dall'area (vedi vocabolario sotto). MAI frasi vaghe come 'buone competenze nell'area'.\n"
+        . "3. STRUTTURA VARIABILE: La struttura dipende dal punteggio (vedi istruzione nel prompt). Non usare sempre lo stesso schema.\n"
+        . "4. LUNGHEZZA: 2-3 frasi per area. NON elenchi puntati. Per aree molto semplici: 1 frase precisa basta.\n"
+        . "5. ONESTÀ: <50% → lacune reali, descritte concretamente. MAI 'ottimo/eccellente' per punteggi bassi.\n"
+        . "6. CONTESTO: Se il background del candidato spiega il gap (settore limitrofo, paese d'origine), citalo.\n"
+        . "7. ANTI-RIPETIZIONE: Non iniziare due commenti diversi con le stesse prime 3 parole. Varia soggetto, verbo, struttura.\n"
         . "\n"
-        . "=== ESEMPI DI STILE FTM (imita questa scrittura) ===\n"
-        . "ESEMPIO A (punteggio 20%, area Installazione):\n"
-        . "  «Grazie alla propria esperienza nell'interfacciare impianti fotovoltaici con impianti civili, il sig. Busacca ha acquisito un livello di competenza appena sufficiente in quest'area. Da sviluppare la posa di canaline, derivazioni esterne e installazioni industriali.»\n"
-        . "ESEMPIO B (punteggio 40%, area Montaggio):\n"
+        . "=== VOCABOLARIO TECNICO PER SETTORE ===\n"
+        . "ELETTRICITA: multimetro, schemi unifilari/multifilari, SEV/NIBT, AS-BUILT, DPI, interruttori differenziali, quadri civili/industriali, posa canaline, cablaggi, derivazioni esterne, misure di isolamento/continuità, verifiche impianti\n"
+        . "AUTOMAZIONE: PLC (Siemens S7/Codesys), SCADA, HMI, sensori (induttivi/capacitivi/ottici), attuatori pneumatici/idraulici, programmazione ladder/FBD/STL, troubleshooting, Profibus/EtherNet-IP, schema elettrico pneumatico\n"
+        . "MECCANICA: tornitura/fresatura CNC, rettifica, micrometro/calibro/comparatore, tolleranze ISO/GD&T, disegno tecnico, montaggio cuscinetti, saldatura MIG/TIG, controllo dimensionale, manutenzione preventiva\n"
+        . "AUTOMOBILE: diagnosi OBD/oscilloscopio, distribuzione motore, frizione/cambio/differenziale, impianto frenante ABS/ESP, sospensioni, climatizzazione, carrozzeria/verniciatura, lettura schemi elettrici auto\n"
+        . "CHIMFARM: GMP/BPF, SOP, documentazione batch record, operazioni di produzione (mixing/granulazione/confezionamento), controllo qualità IPC, pulizia e sanificazione CIP/SIP, pesata materie prime, tracciabilità lotti\n"
+        . "LOGISTICA: WMS, picking/packing, ricevimento merci, inventario/conteggio cicli, carrelli elevatori (patente), ottimizzazione percorsi, gestione DDT/CMR, cross-docking, kitting, etichettatura doganale\n"
+        . "METALCOSTRUZIONE: saldatura MIG/MAG/TIG, lettura disegni costruttivi, taglio plasma/ossigas/laser, piegatura lamiera, assemblaggio strutture metalliche, controllo dimensionale, sabbiatura/verniciatura, montaggio in opera\n"
+        . "GENERICO: comunicazione, lavoro in team, gestione del tempo, problem solving, uso PC/Office, ricerca attiva del lavoro, colloquio di lavoro\n"
+        . "\n"
+        . "=== ESEMPI DI STILE FTM (imita la VARIETÀ di struttura) ===\n"
+        . "ESEMPIO A (20%, apertura con contesto):\n"
+        . "  «Grazie alla propria esperienza nell'interfacciare impianti fotovoltaici con impianti civili, il sig. Busacca ha acquisito un livello appena sufficiente in quest'area. Da sviluppare la posa di canaline, le derivazioni esterne e le installazioni industriali.»\n"
+        . "ESEMPIO B (40%, apertura con forza/gap diretto):\n"
         . "  «Il sig. Busacca possiede alcune competenze nel montaggio e nel cablaggio di quadri civili; nessuna competenza nel montaggio di quadri industriali né di cablaggio a bordo macchina.»\n"
-        . "ESEMPIO C (punteggio 60%, area Misure):\n"
-        . "  «Il sig. Prokic ha dimostrato un ottimo livello di competenza nell'utilizzo di strumenti di misura (multimetro) e nella verifica degli interruttori differenziali. Per quanto riguarda le misure di isolamento e di continuità ha dimostrato conoscenza teorica ma non esperienza diretta.»\n"
-        . "ESEMPIO D (punteggio 35%, area Progettazione con contesto):\n"
-        . "  «Il sig. Prokic dimostra buone competenze nel dimensionamento di impianti (sezioni, protezioni, caduta di tensione). Appena sufficienti invece quelle nell'interpretazione di schemi multi filari e nei calcoli di cortocircuito — margine probabilmente dovuto alla differenza tra standard CH e paese d'origine.»\n"
+        . "ESEMPIO C (60%, apertura con competenza specifica):\n"
+        . "  «Padronanza nell'utilizzo del multimetro e nella verifica degli interruttori differenziali. Per quanto riguarda le misure di isolamento e di continuità il sig. Prokic ha dimostrato conoscenza teorica ma non ancora esperienza diretta sul campo.»\n"
+        . "ESEMPIO D (35%, apertura con contesto normativo):\n"
+        . "  «Buone basi nel dimensionamento di impianti (sezioni, protezioni, caduta di tensione). L'interpretazione di schemi multifilari e i calcoli di cortocircuito risultano appena sufficienti — verosimilmente per la differenza tra standard CH e quelli del paese d'origine.»\n"
+        . "ESEMPIO E (<30%, apertura diretta sul gap):\n"
+        . "  «Non sono emerse competenze significative nella programmazione PLC né nell'utilizzo di sistemi HMI/SCADA. La conoscenza si limita a nozioni teoriche di base, senza esperienza pratica verificabile.»\n"
         . "ESEMPIO NOTA FINALE (profilo medio-basso):\n"
-        . "  «Il sig. Busacca ha maturato un'esperienza pratica principalmente legata al montaggio fotovoltaico e ad attività accessorie in ambito civile. Le competenze tecniche specifiche risultano tuttavia parziali e non ancora sufficienti per operare autonomamente in contesti impiantistici professionali.»\n";
+        . "  «Il sig. Busacca ha maturato esperienza principalmente nel montaggio fotovoltaico e in attività accessorie in ambito civile. Le competenze tecniche specifiche risultano parziali e non ancora sufficienti per operare autonomamente in contesti impiantistici professionali.»\n";
 
     if ($system_extra !== '') {
         $systemRole .= "\n=== ESEMPI AGGIUNTIVI (priorità massima) ===\n" . $system_extra;
@@ -581,7 +612,7 @@ function ai_passport_call_openai(string $apikey, string $model, string $prompt, 
             ['role' => 'user',   'content' => $prompt],
         ],
         'max_tokens'  => $max_tokens,
-        'temperature' => 0.4,
+        'temperature' => 0.5,
     ];
 
     $ch = curl_init('https://api.openai.com/v1/chat/completions');
