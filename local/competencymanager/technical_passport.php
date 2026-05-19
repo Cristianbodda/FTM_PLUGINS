@@ -1792,9 +1792,9 @@ echo $OUTPUT->header();
             <!-- Profilo precompilato (sola lettura nel modal, modificabile nel Garage) -->
             <div style="margin-top:14px;background:#f8f9fa;border-radius:6px;padding:14px;font-size:0.82rem;color:#555;line-height:1.8;">
                 <strong style="color:#333;">Profilo guidato (dal Garage FTM):</strong><br>
-                Settore target: <strong><?php echo s($aiSettoreTarget ?: '&mdash;'); ?></strong> &nbsp;|&nbsp;
-                Disponibilita: <strong><?php echo s($aiDisponibilita ?: '&mdash;'); ?></strong> &nbsp;|&nbsp;
-                Mobilita: <strong><?php echo s(str_replace('_', ' ', $aiMobilita) ?: '&mdash;'); ?></strong><br>
+                Settore target: <strong><?php echo $aiSettoreTarget ? s($aiSettoreTarget) : '&mdash;'; ?></strong> &nbsp;|&nbsp;
+                Disponibilita: <strong><?php echo $aiDisponibilita ? s($aiDisponibilita) : '&mdash;'; ?></strong> &nbsp;|&nbsp;
+                Mobilita: <strong><?php echo $aiMobilita ? s(str_replace('_', ' ', $aiMobilita)) : '&mdash;'; ?></strong><br>
                 Motivazione ricerca lavoro: <strong><?php echo $aiPctCercaLavoro; ?>%</strong><br>
                 <?php if ($aiPuntiForza): ?>Punti di forza: <em><?php echo s($aiPuntiForza); ?></em><br><?php endif; ?>
                 <?php if ($aiNote): ?>Note: <em><?php echo s($aiNote); ?></em><?php endif; ?>
