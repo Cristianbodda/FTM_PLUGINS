@@ -22,14 +22,15 @@ require_capability('local/competencymanager:evaluate', $context);
 header('Content-Type: application/json; charset=utf-8');
 
 try {
-    $userid   = required_param('userid', PARAM_INT);
-    $courseid = required_param('courseid', PARAM_INT);
-    $action   = required_param('action', PARAM_ALPHANUMEXT);
-    $area_key = optional_param('area_key', '', PARAM_ALPHANUMEXT);
-    $cv_text  = optional_param('cv_text', '', PARAM_TEXT);
+    $userid     = required_param('userid', PARAM_INT);
+    $courseid   = required_param('courseid', PARAM_INT);
+    $action     = required_param('action', PARAM_ALPHANUMEXT);
+    $area_key   = optional_param('area_key', '', PARAM_ALPHANUMEXT);
+    $cv_text    = optional_param('cv_text', '', PARAM_TEXT);
+    $draft_text = optional_param('draft_text', '', PARAM_TEXT);
 
     // Validate action.
-    if (!in_array($action, ['area', 'final_note', 'all'])) {
+    if (!in_array($action, ['area', 'final_note', 'all', 'improve', 'rewrite'])) {
         throw new Exception('Azione non valida');
     }
 
@@ -42,6 +43,18 @@ try {
            ?: '';
     if (empty($apikey)) {
         throw new Exception('Chiave API OpenAI non configurata. Configurarla in Amministrazione -> Plugins -> Competency Manager o JobAIDA.');
+    }
+
+    // ----------------------------------------------------------------
+    // Load style examples (admin setting — few-shot style reference).
+    // ----------------------------------------------------------------
+    $styleExamplesRaw = get_config('local_competencymanager', 'passport_style_examples') ?: '';
+    $systemStyleExtra = '';
+    if (!empty(trim($styleExamplesRaw))) {
+        $trimmed = mb_substr(trim($styleExamplesRaw), 0, 5000);
+        $systemStyleExtra = "ESEMPI DI STILE DA IMITARE (analizza la struttura, il lessico e il tono — NON copiare i contenuti):\n"
+            . "---\n{$trimmed}\n---\n"
+            . "Scrivi i nuovi commenti imitando fedelmente questo stile: lunghezza delle frasi, registro linguistico, scelta dei termini tecnici.";
     }
 
     // ----------------------------------------------------------------
@@ -187,7 +200,21 @@ try {
     // ----------------------------------------------------------------
     // Build profile context string (shared by all prompts).
     // ----------------------------------------------------------------
-    $profile = "Settore/Mansione target: " . ($aiSettoreTarget ?: 'non specificato') . "\n"
+
+    // Build the formal name reference (cognome only, like "Il sig. Rossi").
+    // Gender is inferred from the name; when ambiguous the AI uses both forms.
+    $studentLastname = trim($student->lastname);
+    $studentFirstname = trim($student->firstname);
+    // Simple Italian gender heuristic: names ending in 'a' are often female.
+    $likelyFemale = in_array(mb_strtolower(mb_substr($studentFirstname, -1)), ['a']) &&
+                    !in_array(mb_strtolower($studentFirstname), ['luca', 'andrea', 'nicola', 'mattia', 'simba', 'enea', 'bela']);
+    $formalRef = $likelyFemale
+        ? "La sig.ra {$studentLastname}"
+        : "Il sig. {$studentLastname}";
+
+    $profile = "RIFERIMENTO FORMALE DA USARE NEL TESTO: \"{$formalRef}\"\n"
+        . "(usa esclusivamente questo riferimento — varia solo tra '{$formalRef}', 'il/la partecipante', 'il/la professionista' ma MAI 'l\\'assicurato/a' come forma principale)\n"
+        . "Settore/Mansione target: " . ($aiSettoreTarget ?: 'non specificato') . "\n"
         . "Disponibilita: " . ($aiDisponibilita ?: 'non specificata') . "\n"
         . "Mobilita: " . (str_replace('_', ' ', $aiMobilita) ?: 'non specificata') . "\n"
         . "Motivazione ricerca lavoro: {$aiPctCercaLavoro}%\n";
@@ -282,7 +309,7 @@ try {
             . "Se {$primaryPct}% < 50%: descrivi le lacune — NON usare 'eccellente', 'ottimo', 'solido'.\n"
             . "Tono: scheda tecnica URC oggettiva. Lingua: italiano formale.";
 
-        $text = ai_passport_call_openai($apikey, $model, $prompt);
+        $text = ai_passport_call_openai($apikey, $model, $prompt, 600, $systemStyleExtra);
         echo json_encode(['success' => true, 'text' => $text]);
         die();
     }
@@ -313,7 +340,7 @@ try {
             . "NON citare i punteggi quiz come risultato principale. NO linguaggio promozionale.\n"
             . "Tono: scheda tecnica per operatore URC o datore di lavoro. Lingua: italiano formale.";
 
-        $text = ai_passport_call_openai($apikey, $model, $prompt);
+        $text = ai_passport_call_openai($apikey, $model, $prompt, 600, $systemStyleExtra);
         echo json_encode(['success' => true, 'text' => $text]);
         die();
     }
@@ -387,7 +414,7 @@ try {
             . "}\n"
             . "Usa esattamente gli area_key forniti sopra. Non aggiungere testo prima o dopo il JSON.";
 
-        $rawResponse = ai_passport_call_openai($apikey, $model, $prompt, 3000);
+        $rawResponse = ai_passport_call_openai($apikey, $model, $prompt, 3000, $systemStyleExtra);
 
         // Parse JSON response (strip potential markdown code fences).
         $rawResponse = preg_replace('/^```json\s*/i', '', trim($rawResponse));
@@ -414,6 +441,88 @@ try {
         die();
     }
 
+    // ----------------------------------------------------------------
+    // ACTION: improve — light polish of coach's existing draft text
+    // ----------------------------------------------------------------
+    if ($action === 'improve') {
+        if (empty($draft_text)) {
+            throw new Exception('Testo mancante. Scrivi un commento prima di usare Migliora.');
+        }
+        $draft_clean = mb_substr(trim($draft_text), 0, 2000);
+
+        $prompt = "Sei un revisore linguistico tecnico. Migliora il testo seguente in italiano formale:\n"
+            . "- Correggi grammatica, punteggiatura e sintassi\n"
+            . "- Migliora la fluidità e la chiarezza\n"
+            . "- Mantieni ESATTAMENTE lo stesso significato, gli stessi fatti e la stessa lunghezza\n"
+            . "- Non aggiungere, rimuovere o modificare informazioni\n"
+            . "- Rispondi SOLO con il testo migliorato, senza spiegazioni\n\n"
+            . "=== TESTO DA MIGLIORARE ===\n{$draft_clean}";
+
+        $text = ai_passport_call_openai($apikey, $model, $prompt, 500, $systemStyleExtra);
+        echo json_encode(['success' => true, 'text' => $text]);
+        die();
+    }
+
+    // ----------------------------------------------------------------
+    // ACTION: rewrite — full rewrite using data + coach draft as context
+    // ----------------------------------------------------------------
+    if ($action === 'rewrite') {
+        if (empty($area_key) || !isset($areasData[$area_key])) {
+            throw new Exception('Area non trovata: ' . $area_key);
+        }
+        if (empty($draft_text)) {
+            throw new Exception('Testo mancante. Scrivi un commento prima di usare Riscrivi.');
+        }
+
+        $area     = $areasData[$area_key];
+        $coachPct = $coachScorePerArea[$area_key] ?? null;
+        $autoSum  = 0;
+        $autoCount = 0;
+        foreach ($area['competencies'] as $comp) {
+            if (isset($autoData[$comp['idnumber'] ?? ''])) {
+                $autoSum  += $autoData[$comp['idnumber']];
+                $autoCount++;
+            }
+        }
+        $autoPct = $autoCount > 0 ? round($autoSum / $autoCount, 1) : null;
+
+        $primaryPct   = $coachPct !== null ? $coachPct : $area['percentage'];
+        $primaryLabel = passport_score_label((float)$primaryPct);
+        $primarySrc   = $coachPct !== null ? 'valutazione coach' : 'punteggio quiz';
+
+        $areaCompNames = array_unique(array_filter(array_map(
+            function($c) {
+                $desc = trim(strip_tags($c['description'] ?? ''));
+                return $desc ?: trim(strip_tags($c['name'] ?? ''));
+            },
+            $area['competencies']
+        )));
+        $areaCompList = !empty($areaCompNames)
+            ? implode("\n", array_map(function($n) { return "- {$n}"; }, $areaCompNames)) . "\n"
+            : "";
+
+        $draft_clean = mb_substr(trim($draft_text), 0, 1500);
+
+        $prompt = "=== PROFILO CANDIDATO ===\n{$profile}\n"
+            . "=== AREA DI COMPETENZA ===\n"
+            . "Area: {$area['code']}. {$area['name']}\n"
+            . "*** PUNTEGGIO PASSAPORTO ({$primarySrc}): {$primaryPct}% → fascia: {$primaryLabel} ***\n"
+            . ($coachPct !== null ? "   Punteggio quiz (solo contesto): {$area['percentage']}%\n" : "")
+            . ($autoPct !== null ? "   Autovalutazione candidato: {$autoPct}%\n" : "")
+            . ($areaCompList ? "\nCompetenze specifiche dell'area:\n{$areaCompList}" : "")
+            . "\n=== BOZZA DEL COACH (usa come contesto aggiuntivo) ===\n{$draft_clean}\n"
+            . "\n=== SCALA VALUTAZIONE ===\n{$scalaPunteggi}\n"
+            . "=== ISTRUZIONE ===\n"
+            . "Riscrivi il commento per questa area con struttura e stile professionale.\n"
+            . "Integra le osservazioni specifiche del coach (dalla bozza) con i dati oggettivi.\n"
+            . "Il commento finale si basa sul PUNTEGGIO PASSAPORTO ({$primaryPct}% → {$primaryLabel}).\n"
+            . "Scrivi 2-3 frasi. Tono: scheda tecnica URC. Lingua: italiano formale.";
+
+        $text = ai_passport_call_openai($apikey, $model, $prompt, 600, $systemStyleExtra);
+        echo json_encode(['success' => true, 'text' => $text]);
+        die();
+    }
+
 } catch (Exception $e) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
@@ -434,15 +543,45 @@ die();
  * @return string            Text content from the first choice.
  * @throws Exception         On network or API errors.
  */
-function ai_passport_call_openai(string $apikey, string $model, string $prompt, int $max_tokens = 600): string {
+function ai_passport_call_openai(string $apikey, string $model, string $prompt, int $max_tokens = 600, string $system_extra = ''): string {
+    $systemRole =
+        "Sei un valutatore tecnico della Fondazione Terzo Millennio (FTM) che compila schede per l'URC (Ufficio Regionale di Collocamento) in Svizzera.\n"
+        . "I commenti devono riflettere fedelmente i dati numerici. Non esagerare: punteggi bassi indicano lacune reali da descrivere onestamente.\n"
+        . "\n"
+        . "=== REGOLE DI STILE OBBLIGATORIE ===\n"
+        . "1. RIFERIMENTO: Usa SEMPRE il riferimento formale indicato nel profilo (es. 'Il sig. Rossi'). MAI 'l'assicurato' come forma principale.\n"
+        . "   Varianti accettabili: 'il/la professionista', 'il/la partecipante' — ma solo come alternativa, non come forma primaria.\n"
+        . "2. STRUTTURA A PIVOT: Inizia con le competenze presenti/positive, poi pivota sulle lacune con parole come:\n"
+        . "   'tuttavia', 'mentre', 'invece', 'Da sviluppare', 'Da rivedere', 'Appena sufficienti', 'Esistono margini di miglioramento'.\n"
+        . "3. SPECIFICITÀ: Cita strumenti, normative e competenze tecniche specifiche dell'area (es. multimetro, schemi unifilari, SEV, AS-BUILT, DPI).\n"
+        . "4. LUNGHEZZA: 1-3 frasi per area. Per aree complesse: due mini-paragrafi. NON elenchi puntati.\n"
+        . "5. ONESTÀ: Punteggio <50% → lacune significative, descritte chiaramente. MAI 'ottimo/eccellente' per punteggi bassi.\n"
+        . "6. CONTESTO: Se opportuno, cita il background del candidato come causa dello scarto (es. standard normativi diversi, esperienza settore limitrofo).\n"
+        . "\n"
+        . "=== ESEMPI DI STILE FTM (imita questa scrittura) ===\n"
+        . "ESEMPIO A (punteggio 20%, area Installazione):\n"
+        . "  «Grazie alla propria esperienza nell'interfacciare impianti fotovoltaici con impianti civili, il sig. Busacca ha acquisito un livello di competenza appena sufficiente in quest'area. Da sviluppare la posa di canaline, derivazioni esterne e installazioni industriali.»\n"
+        . "ESEMPIO B (punteggio 40%, area Montaggio):\n"
+        . "  «Il sig. Busacca possiede alcune competenze nel montaggio e nel cablaggio di quadri civili; nessuna competenza nel montaggio di quadri industriali né di cablaggio a bordo macchina.»\n"
+        . "ESEMPIO C (punteggio 60%, area Misure):\n"
+        . "  «Il sig. Prokic ha dimostrato un ottimo livello di competenza nell'utilizzo di strumenti di misura (multimetro) e nella verifica degli interruttori differenziali. Per quanto riguarda le misure di isolamento e di continuità ha dimostrato conoscenza teorica ma non esperienza diretta.»\n"
+        . "ESEMPIO D (punteggio 35%, area Progettazione con contesto):\n"
+        . "  «Il sig. Prokic dimostra buone competenze nel dimensionamento di impianti (sezioni, protezioni, caduta di tensione). Appena sufficienti invece quelle nell'interpretazione di schemi multi filari e nei calcoli di cortocircuito — margine probabilmente dovuto alla differenza tra standard CH e paese d'origine.»\n"
+        . "ESEMPIO NOTA FINALE (profilo medio-basso):\n"
+        . "  «Il sig. Busacca ha maturato un'esperienza pratica principalmente legata al montaggio fotovoltaico e ad attività accessorie in ambito civile. Le competenze tecniche specifiche risultano tuttavia parziali e non ancora sufficienti per operare autonomamente in contesti impiantistici professionali.»\n";
+
+    if ($system_extra !== '') {
+        $systemRole .= "\n=== ESEMPI AGGIUNTIVI (priorità massima) ===\n" . $system_extra;
+    }
+
     $payload = [
         'model'       => $model,
         'messages'    => [
-            ['role' => 'system', 'content' => 'Sei un valutatore tecnico che compila schede oggettive per l\'URC (Ufficio Regionale di Collocamento) in Svizzera. I commenti devono riflettere fedelmente i dati numerici forniti. Non esagerare mai: punteggi bassi indicano lacune reali che vanno descritte onestamente. La credibilita\' dell\'ente dipende dall\'accuratezza del rapporto.'],
+            ['role' => 'system', 'content' => $systemRole],
             ['role' => 'user',   'content' => $prompt],
         ],
         'max_tokens'  => $max_tokens,
-        'temperature' => 0.3,
+        'temperature' => 0.4,
     ];
 
     $ch = curl_init('https://api.openai.com/v1/chat/completions');

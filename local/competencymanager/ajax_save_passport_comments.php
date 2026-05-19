@@ -22,6 +22,8 @@ header('Content-Type: application/json; charset=utf-8');
 try {
     $userid = required_param('userid', PARAM_INT);
     $courseid = required_param('courseid', PARAM_INT);
+    // 1 = manual coach save (can create __ORIG baseline), 0 = AI auto-save (never touch __ORIG)
+    $is_coach_save = optional_param('is_coach_save', 1, PARAM_INT);
     // Comments come as JSON array: [{area_code: "AUTOMOBILE_A", comment: "text"}, ...]
     $comments_json = required_param('comments', PARAM_RAW);
 
@@ -78,6 +80,29 @@ try {
             $record->timemodified = $now;
             $DB->insert_record('local_passport_comments', $record);
             $saved++;
+        }
+
+        // When a coach saves manually, preserve the original text as an immutable baseline.
+        // The __ORIG record is created once and never overwritten — it is what the Ripristina
+        // button restores to, no matter how many AI rewrites are applied afterwards.
+        if ($is_coach_save && !empty($comment)) {
+            $orig_code = $area_code . '__ORIG';
+            $orig_exists = $DB->record_exists('local_passport_comments', [
+                'userid'    => $userid,
+                'courseid'  => $courseid,
+                'area_code' => $orig_code,
+            ]);
+            if (!$orig_exists) {
+                $orig = new stdClass();
+                $orig->userid      = $userid;
+                $orig->courseid    = $courseid;
+                $orig->area_code   = $orig_code;
+                $orig->comment     = $comment;
+                $orig->coachid     = $coachid;
+                $orig->timecreated = $now;
+                $orig->timemodified = $now;
+                $DB->insert_record('local_passport_comments', $orig);
+            }
         }
     }
 

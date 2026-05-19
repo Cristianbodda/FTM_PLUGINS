@@ -198,7 +198,7 @@ function passport_generate_svg_radar($data, $title = '', $size = 400, $fillColor
             . '" fill="none" stroke="#e0e0e0" stroke-width="1"/>';
         if ($p == 100) {
             $svg .= '<text x="' . ($cx + 5) . '" y="' . ($cy + $offsetY - $r - 3)
-                . '" font-size="8" fill="#999">' . $p . '%</text>';
+                . '" font-size="8" fill="#999" class="radar-pct">' . $p . '%</text>';
         }
     }
 
@@ -249,7 +249,7 @@ function passport_generate_svg_radar($data, $title = '', $size = 400, $fillColor
             $svg .= '<text x="' . $labelX . '" y="' . $labelY . '" text-anchor="' . $anchor
                 . '" font-size="' . $labelFontSize . '" fill="#333">' . htmlspecialchars($displayLabel) . '</text>';
             $svg .= '<text x="' . $labelX . '" y="' . ($labelY + $labelFontSize + 2) . '" text-anchor="' . $anchor
-                . '" font-size="' . ($labelFontSize + 1) . '" font-weight="bold" fill="' . $labelColor . '">'
+                . '" font-size="' . ($labelFontSize + 1) . '" font-weight="bold" fill="' . $labelColor . '" class="radar-pct">'
                 . $value . '%</text>';
         }
 
@@ -315,7 +315,7 @@ function passport_generate_svg_bar_chart($data, $title = '', $width = 400) {
         $svg .= '<rect x="' . $labelWidth . '" y="' . $y . '" width="' . $barWidth
             . '" height="' . $barHeight . '" fill="' . $color . '" rx="4"/>';
         $svg .= '<text x="' . ($width - 40) . '" y="' . ($y + 20)
-            . '" font-size="11" font-weight="bold" fill="' . $color . '">' . $value . '%</text>';
+            . '" font-size="11" font-weight="bold" fill="' . $color . '" class="radar-pct">' . $value . '%</text>';
 
         $y += $barHeight + $padding;
     }
@@ -603,15 +603,22 @@ $showOverlay = ($garageConfig && !empty($garageConfig->show_overlay)) ? true : f
 $areasData = passport_aggregate_by_area($competencies, $areaDescriptions, $sector);
 
 // Load existing coach comments from DB.
-$existingComments = [];
+// Records with area_code ending in '__ORIG' are permanent coach originals (never overwritten by AI).
+$existingComments  = [];
+$originalComments  = [];   // coach's permanent originals keyed by base area_code
 $dbman = $DB->get_manager();
 if ($dbman->table_exists('local_passport_comments')) {
     $commentRecords = $DB->get_records('local_passport_comments', [
-        'userid' => $userid,
+        'userid'   => $userid,
         'courseid' => $courseid,
     ]);
     foreach ($commentRecords as $rec) {
-        $existingComments[$rec->area_code] = $rec->comment;
+        if (substr($rec->area_code, -6) === '__ORIG') {
+            $baseKey = substr($rec->area_code, 0, -6);
+            $originalComments[$baseKey] = $rec->comment;
+        } else {
+            $existingComments[$rec->area_code] = $rec->comment;
+        }
     }
 }
 
@@ -1130,6 +1137,51 @@ echo $OUTPUT->header();
 .pct-sufficient { background: #f39c12; }
 .pct-critical { background: #c0392b; }
 
+/* AI inline button group */
+.ai-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex-shrink: 0;
+    min-width: 30px;
+}
+.ai-btn-group .passport-btn {
+    padding: 4px 7px;
+    font-size: 0.73rem;
+    border-radius: 5px;
+    white-space: nowrap;
+    line-height: 1.2;
+    border: none;
+    cursor: pointer;
+}
+.btn-ai-gen     { background: #7c3aed !important; color: #fff !important; }
+.btn-ai-improve { background: #0066cc !important; color: #fff !important; }
+.btn-ai-rewrite { background: #e67e22 !important; color: #fff !important; }
+.btn-ai-restore { background: #6c757d !important; color: #fff !important; }
+/* Auto-gen banner */
+#passport-autogen-banner {
+    background: linear-gradient(135deg,#7c3aed,#5b21b6);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 0.88rem;
+}
+#passport-autogen-banner button {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+.banner-btn-gen  { background: #fff; color: #7c3aed; }
+.banner-btn-skip { background: rgba(255,255,255,0.2); color: #fff; }
+
 .passport-table textarea {
     width: 100%;
     border: 1px solid #dee2e6;
@@ -1548,7 +1600,8 @@ echo $OUTPUT->header();
     }
 
     /* Show comments in print as plain text div (not textarea) */
-    .passport-table textarea {
+    .passport-table textarea,
+    #passport-final-note {
         display: none !important;
     }
     .comment-print-text {
@@ -1564,12 +1617,9 @@ echo $OUTPUT->header();
         min-height: 14px;
     }
 
-    /* Badge colors */
+    /* Badge colors: hidden in print — scores visible on screen, not in printed document */
     .pct-badge {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        padding: 2px 10px;
-        font-size: 10pt;
+        display: none !important;
     }
 
     /* Progress bar print */
@@ -1712,8 +1762,13 @@ echo $OUTPUT->header();
 }
 @media print {
     .ai-modal-overlay,
-    .ai-area-btn { display: none !important; }
+    .ai-area-btn,
+    .ai-btn-group,
+    .no-print { display: none !important; }
     #passport-final-note-section .passport-btn { display: none !important; }
+    /* Hide all percentage values from print output */
+    .radar-pct { display: none !important; }
+    .print-score-block { display: none !important; }
 }
 </style>
 
@@ -1759,6 +1814,17 @@ echo $OUTPUT->header();
                     &#129302; Genera Tutto
                 </button>
             </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Auto-generate banner (shown by JS if there are empty comment areas) -->
+    <?php if ($canEvaluate): ?>
+    <div id="passport-autogen-banner" class="no-print" style="display:none;">
+        <span id="passport-autogen-msg">&#9889; Alcune aree non hanno ancora un commento. Vuoi generarle automaticamente con AI?</span>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+            <button class="banner-btn-gen" onclick="autoGenerateEmpty()">&#129302; Genera automaticamente</button>
+            <button class="banner-btn-skip" onclick="dismissAutoBanner()">Ignora</button>
         </div>
     </div>
     <?php endif; ?>
@@ -1972,6 +2038,7 @@ echo $OUTPUT->header();
                                     <textarea
                                         name="comment_<?php echo s($areaKey); ?>"
                                         data-area="<?php echo s($areaKey); ?>"
+                                        data-original="<?php echo s($originalComments[$areaKey] ?? ''); ?>"
                                         rows="3"
                                         placeholder="Inserire commento..."
                                         class="passport-comment"
@@ -1979,15 +2046,28 @@ echo $OUTPUT->header();
                                         style="flex:1;"
                                     ><?php echo s($existingComment); ?></textarea>
                                     <?php if ($canEvaluate): ?>
-                                    <button type="button"
-                                            class="passport-btn ai-area-btn"
-                                            data-area="<?php echo s($areaKey); ?>"
-                                            data-area-name="<?php echo s($area['name']); ?>"
-                                            data-pct="<?php echo $cs['pct']; ?>"
-                                            title="Genera commento con AI"
-                                            style="background:#7c3aed;color:#fff;padding:6px 10px;font-size:0.78rem;white-space:nowrap;flex-shrink:0;">
-                                        &#129302;
-                                    </button>
+                                    <div class="ai-btn-group no-print"
+                                         data-group-area="<?php echo s($areaKey); ?>"
+                                         data-area-name="<?php echo s($area['name']); ?>"
+                                         data-pct="<?php echo $cs['pct']; ?>">
+                                        <button type="button"
+                                                class="passport-btn btn-ai-gen ai-area-btn"
+                                                data-area="<?php echo s($areaKey); ?>"
+                                                title="Genera commento da zero">&#129302;</button>
+                                        <button type="button"
+                                                class="passport-btn btn-ai-improve"
+                                                data-area="<?php echo s($areaKey); ?>"
+                                                title="Migliora testo esistente">&#10024;</button>
+                                        <button type="button"
+                                                class="passport-btn btn-ai-rewrite"
+                                                data-area="<?php echo s($areaKey); ?>"
+                                                title="Riscrivi (mantieni fatti, migliora testo)">&#128260;</button>
+                                        <button type="button"
+                                                class="passport-btn btn-ai-restore"
+                                                data-area="<?php echo s($areaKey); ?>"
+                                                title="Ripristina bozza salvata"
+                                                style="display:none;">&#8617;</button>
+                                    </div>
                                     <?php endif; ?>
                                 </div>
                                 <div class="comment-print-text"><?php echo nl2br(s($existingComment)); ?></div>
@@ -2384,18 +2464,36 @@ echo $OUTPUT->header();
         <div style="display:flex;gap:10px;align-items:flex-start;">
             <textarea id="passport-final-note"
                       data-area="FINAL_NOTE"
+                      data-original="<?php echo s($originalComments['FINAL_NOTE'] ?? ''); ?>"
                       rows="6"
                       placeholder="Inserire nota finale..."
                       class="passport-comment"
                       style="flex:1;font-size:0.92rem;"><?php echo s($finalNote); ?></textarea>
-            <button type="button"
-                    onclick="generateAiSingle('FINAL_NOTE', '', 0, this)"
-                    class="passport-btn"
-                    style="background:#7c3aed;color:#fff;padding:8px 14px;white-space:nowrap;flex-shrink:0;">
-                &#129302; Genera Nota
-            </button>
+            <div class="ai-btn-group no-print"
+                 data-group-area="FINAL_NOTE"
+                 data-area-name="Nota Finale"
+                 data-pct="0">
+                <button type="button"
+                        class="passport-btn btn-ai-gen ai-area-btn"
+                        data-area="FINAL_NOTE"
+                        title="Genera nota finale da zero">&#129302;</button>
+                <button type="button"
+                        class="passport-btn btn-ai-improve"
+                        data-area="FINAL_NOTE"
+                        title="Migliora testo esistente">&#10024;</button>
+                <button type="button"
+                        class="passport-btn btn-ai-rewrite"
+                        data-area="FINAL_NOTE"
+                        title="Riscrivi mantenendo i fatti">&#128260;</button>
+                <button type="button"
+                        class="passport-btn btn-ai-restore"
+                        data-area="FINAL_NOTE"
+                        title="Ripristina testo originale coach"
+                        style="display:none;">&#8617;</button>
+            </div>
         </div>
-        <div style="margin-top:10px;">
+        <div class="comment-print-text"><?php echo nl2br(s($finalNote)); ?></div>
+        <div class="no-print" style="margin-top:10px;">
             <button type="button" class="passport-btn passport-btn-success" onclick="saveFinalNote()">
                 Salva Nota Finale
             </button>
@@ -2415,13 +2513,14 @@ echo $OUTPUT->header();
 <?php if ($canEvaluate && !empty($areasData)): ?>
 <script>
 // ============================================================
-// AI PASSPORT GENERATION
+// AI PASSPORT GENERATION — v2 (auto-gen, improve, rewrite, baseline)
 // ============================================================
 var AI_ENDPOINT = '<?php echo (new moodle_url('/local/competencymanager/ajax_generate_ai_passport.php'))->out(false); ?>';
 var AI_SESSKEY  = '<?php echo sesskey(); ?>';
 var AI_USERID   = <?php echo $userid; ?>;
 var AI_COURSEID = <?php echo $courseid; ?>;
 
+// ---- Modal helpers ----
 function openAiModal() {
     document.getElementById('ai-modal-overlay').classList.add('open');
 }
@@ -2437,61 +2536,111 @@ function closeAiModalOnOverlay(e) {
 function setAiStatus(msg) {
     var el = document.getElementById('ai-modal-status');
     if (msg) { el.style.display = 'block'; el.textContent = msg; }
-    else { el.style.display = 'none'; el.textContent = ''; }
+    else      { el.style.display = 'none';  el.textContent = ''; }
 }
 function setAiProgress(pct) {
-    var bar = document.getElementById('ai-progress-bar');
-    bar.style.display = 'block';
+    document.getElementById('ai-progress-bar').style.display = 'block';
     document.getElementById('ai-progress-fill').style.width = pct + '%';
 }
 
+// ---- Baseline helpers (localStorage) ----
+function _blKey(areaKey) {
+    return 'passport_bl_' + AI_USERID + '_' + AI_COURSEID + '_' + areaKey;
+}
+function getBaseline(areaKey) {
+    return localStorage.getItem(_blKey(areaKey)) || '';
+}
+function setBaseline(areaKey, text) {
+    if (text) {
+        localStorage.setItem(_blKey(areaKey), text);
+    } else {
+        localStorage.removeItem(_blKey(areaKey));
+    }
+}
+
+// ---- Button group state ----
+// Gen / Migliora / Riscrivi are ALWAYS visible.
+// Restore (↩) appears when:
+//   - the textarea has a data-original (coach's DB-persisted original), AND
+//   - the current text differs from that original.
+function updateAreaButtons(ta) {
+    if (!ta) return;
+    var areaKey  = ta.getAttribute('data-area');
+    var group    = document.querySelector('.ai-btn-group[data-group-area="' + areaKey + '"]');
+    if (!group) return;
+    var original   = ta.getAttribute('data-original') || '';
+    var current    = ta.value.trim();
+    var hasOriginal = original.length > 0;
+    var isDirty    = hasOriginal && original !== current;
+    var btnRestore = group.querySelector('.btn-ai-restore');
+    if (btnRestore) btnRestore.style.display = isDirty ? 'block' : 'none';
+}
+
+// ---- Spinner helper ----
+var _spinnerHtml = '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;"></span>';
+function _btnSpin(btn, on, orig) {
+    if (!btn) return;
+    if (on)  { btn.disabled = true;  btn.innerHTML = _spinnerHtml; }
+    else     { btn.disabled = false; btn.innerHTML = orig; }
+}
+
+// ---- Fill textarea from AI response ----
+function _fillTextarea(ta, text) {
+    ta.value = text;
+    ta.style.borderColor = '#28a745';
+    ta.style.boxShadow   = '0 0 0 3px rgba(40,167,69,0.2)';
+    setTimeout(function() { ta.style.borderColor = ''; ta.style.boxShadow = ''; }, 2500);
+    // Sync print div
+    var printDiv = ta.parentElement ? ta.parentElement.nextElementSibling : ta.nextElementSibling;
+    if (printDiv && printDiv.classList.contains('comment-print-text')) {
+        printDiv.innerHTML = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    }
+    updateAreaButtons(ta);
+}
+
 /**
- * Generate comment for a single area (called from robot buttons in rows).
+ * Core AI call for a single area.
+ * aiAction: 'area' (generate from scratch), 'improve', 'rewrite'
  */
-function generateAiSingle(areaKey, areaName, areaPct, btnEl) {
-    var cvText = '';
-    var cvEl = document.getElementById('ai-cv-text');
-    if (cvEl) cvText = cvEl.value;
+function callAiForArea(areaKey, aiAction, btnEl) {
+    if (areaKey === 'FINAL_NOTE') {
+        _callFinalNote(btnEl, aiAction);
+        return;
+    }
 
-    var ta = areaKey === 'FINAL_NOTE'
-        ? document.getElementById('passport-final-note')
-        : document.querySelector('textarea[data-area="' + areaKey + '"]');
-
+    var ta = document.querySelector('textarea[data-area="' + areaKey + '"]');
     if (!ta) return;
 
-    var origText = btnEl ? btnEl.innerHTML : '';
-    if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;"></span>'; }
+    var cvText = (document.getElementById('ai-cv-text') || {}).value || '';
+    var draftText = (aiAction === 'improve' || aiAction === 'rewrite') ? ta.value.trim() : '';
+
+    // Require existing text for improve/rewrite
+    if ((aiAction === 'improve' || aiAction === 'rewrite') && !draftText) {
+        alert('Scrivi prima un testo nel commento, poi usa Migliora o Riscrivi.');
+        return;
+    }
+
+    var origHtml = btnEl ? btnEl.innerHTML : '';
+    _btnSpin(btnEl, true);
 
     var params = 'sesskey=' + encodeURIComponent(AI_SESSKEY)
         + '&userid=' + AI_USERID
         + '&courseid=' + AI_COURSEID
-        + '&action=' + (areaKey === 'FINAL_NOTE' ? 'final_note' : 'area')
+        + '&action=' + encodeURIComponent(aiAction)
         + '&area_key=' + encodeURIComponent(areaKey)
-        + '&cv_text=' + encodeURIComponent(cvText);
+        + '&cv_text=' + encodeURIComponent(cvText)
+        + '&draft_text=' + encodeURIComponent(draftText);
 
     var xhr = new XMLHttpRequest();
     xhr.open('POST', AI_ENDPOINT, true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.onreadystatechange = function() {
         if (xhr.readyState !== 4) return;
-        if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = origText; }
+        _btnSpin(btnEl, false, origHtml);
         try {
             var resp = JSON.parse(xhr.responseText);
             if (resp.success && resp.text) {
-                ta.value = resp.text;
-                ta.style.borderColor = '#28a745';
-                ta.style.boxShadow = '0 0 0 3px rgba(40,167,69,0.2)';
-                setTimeout(function() {
-                    ta.style.borderColor = '';
-                    ta.style.boxShadow = '';
-                }, 2500);
-                var printDiv = ta.parentElement ? ta.parentElement.nextElementSibling : null;
-                if (!printDiv || !printDiv.classList.contains('comment-print-text')) {
-                    printDiv = ta.nextElementSibling;
-                }
-                if (printDiv && printDiv.classList.contains('comment-print-text')) {
-                    printDiv.innerHTML = ta.value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-                }
+                _fillTextarea(ta, resp.text);
             } else {
                 alert('Errore AI: ' + (resp.message || 'Risposta non valida'));
             }
@@ -2502,8 +2651,50 @@ function generateAiSingle(areaKey, areaName, areaPct, btnEl) {
     xhr.send(params);
 }
 
+function _callFinalNote(btnEl, aiAction) {
+    var ta = document.getElementById('passport-final-note');
+    if (!ta) return;
+    aiAction = aiAction || 'final_note';
+    var cvText = (document.getElementById('ai-cv-text') || {}).value || '';
+    var draftText = (aiAction === 'improve' || aiAction === 'rewrite') ? ta.value.trim() : '';
+
+    if ((aiAction === 'improve' || aiAction === 'rewrite') && !draftText) {
+        alert('Scrivi prima un testo nella nota finale, poi usa Migliora o Riscrivi.');
+        return;
+    }
+
+    var action = (aiAction === 'improve' || aiAction === 'rewrite') ? aiAction : 'final_note';
+    var origHtml = btnEl ? btnEl.innerHTML : '';
+    _btnSpin(btnEl, true);
+
+    var params = 'sesskey=' + encodeURIComponent(AI_SESSKEY)
+        + '&userid=' + AI_USERID + '&courseid=' + AI_COURSEID
+        + '&action=' + encodeURIComponent(action) + '&area_key=FINAL_NOTE'
+        + '&cv_text=' + encodeURIComponent(cvText)
+        + '&draft_text=' + encodeURIComponent(draftText);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', AI_ENDPOINT, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        _btnSpin(btnEl, false, origHtml);
+        try {
+            var resp = JSON.parse(xhr.responseText);
+            if (resp.success && resp.text) { _fillTextarea(ta, resp.text); }
+            else alert('Errore AI: ' + (resp.message || 'Risposta non valida'));
+        } catch(e) { alert('Errore di comunicazione con il server.'); }
+    };
+    xhr.send(params);
+}
+
+// Legacy shim — still used by modal "Genera Tutto per area singola" buttons
+function generateAiSingle(areaKey, areaName, areaPct, btnEl) {
+    callAiForArea(areaKey, 'area', btnEl);
+}
+
 /**
- * Generate ALL comments + final note in a single call.
+ * Generate ALL comments + final note in a single call (modal "Genera Tutto").
  */
 function generateAll() {
     var cvText = document.getElementById('ai-cv-text').value.trim();
@@ -2534,18 +2725,9 @@ function generateAll() {
                 setAiProgress(100);
                 setAiStatus('Commenti generati. Salvataggio in corso...');
                 if (resp.areas) {
-                    Object.keys(resp.areas).forEach(function(areaKey) {
-                        var ta = document.querySelector('textarea[data-area="' + areaKey + '"]');
-                        if (ta) {
-                            ta.value = resp.areas[areaKey];
-                            var printDiv = ta.parentElement ? ta.parentElement.nextElementSibling : null;
-                            if (!printDiv || !printDiv.classList.contains('comment-print-text')) {
-                                printDiv = ta.nextElementSibling;
-                            }
-                            if (printDiv && printDiv.classList.contains('comment-print-text')) {
-                                printDiv.innerHTML = ta.value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-                            }
-                        }
+                    Object.keys(resp.areas).forEach(function(ak) {
+                        var ta = document.querySelector('textarea[data-area="' + ak + '"]');
+                        if (ta) _fillTextarea(ta, resp.areas[ak]);
                     });
                 }
                 if (resp.final_note) {
@@ -2553,8 +2735,8 @@ function generateAll() {
                     if (fnTa) fnTa.value = resp.final_note;
                 }
                 setTimeout(function() {
-                    savePassportComments();
-                    saveFinalNote();
+                    savePassportComments(false);  // AI auto-save: don't create __ORIG
+                    saveFinalNote(false);
                     setAiStatus('Salvato!');
                     setTimeout(function() { closeAiModal(); }, 1200);
                 }, 500);
@@ -2568,14 +2750,77 @@ function generateAll() {
     xhr.send(params);
 }
 
-// Attach per-area AI buttons.
+// ---- Auto-generate banner ----
+function dismissAutoBanner() {
+    var b = document.getElementById('passport-autogen-banner');
+    if (b) b.style.display = 'none';
+}
+function autoGenerateEmpty() {
+    dismissAutoBanner();
+    openAiModal();
+    // Slight delay to let modal open, then trigger generateAll
+    setTimeout(function() { generateAll(); }, 300);
+}
+
+// ---- Init on DOM ready ----
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.ai-area-btn').forEach(function(btn) {
+    var emptyCount = 0;
+
+    // Initialise button state for each textarea
+    document.querySelectorAll('.passport-comment').forEach(function(ta) {
+        var val = ta.value.trim();
+        if (!val) emptyCount++;
+        updateAreaButtons(ta);
+
+        // Update button state live as coach types
+        ta.addEventListener('input', function() { updateAreaButtons(ta); });
+    });
+
+    // Show auto-gen banner if there are empty areas
+    if (emptyCount > 0) {
+        var banner = document.getElementById('passport-autogen-banner');
+        var msg    = document.getElementById('passport-autogen-msg');
+        if (banner) {
+            if (msg) msg.textContent = '⚡ ' + emptyCount + ' aree senza commento. Vuoi generarle automaticamente con AI?';
+            banner.style.display = 'flex';
+        }
+    }
+
+    // Attach generate buttons (btn-ai-gen)
+    document.querySelectorAll('.btn-ai-gen').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            var areaKey  = btn.getAttribute('data-area');
-            var areaName = btn.getAttribute('data-area-name');
-            var pct      = parseFloat(btn.getAttribute('data-pct')) || 0;
-            generateAiSingle(areaKey, areaName, pct, btn);
+            callAiForArea(btn.getAttribute('data-area'), 'area', btn);
+        });
+    });
+
+    // Attach improve buttons
+    document.querySelectorAll('.btn-ai-improve').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            callAiForArea(btn.getAttribute('data-area'), 'improve', btn);
+        });
+    });
+
+    // Attach rewrite buttons
+    document.querySelectorAll('.btn-ai-rewrite').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            callAiForArea(btn.getAttribute('data-area'), 'rewrite', btn);
+        });
+    });
+
+    // Attach restore buttons — always use data-original (DB-persisted coach baseline)
+    document.querySelectorAll('.btn-ai-restore').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var areaKey = btn.getAttribute('data-area');
+            var ta = document.querySelector('textarea[data-area="' + areaKey + '"]');
+            if (!ta) return;
+            var original = ta.getAttribute('data-original') || '';
+            if (!original) { alert('Nessun testo originale del coach salvato per questa area.'); return; }
+            ta.value = original;
+            var printDiv = ta.parentElement ? ta.parentElement.nextElementSibling : ta.nextElementSibling;
+            if (printDiv && printDiv.classList.contains('comment-print-text')) {
+                printDiv.innerHTML = original.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+            }
+            updateAreaButtons(ta);
         });
     });
 });
@@ -2592,7 +2837,8 @@ var SAVE_COURSEID = <?php echo $courseid; ?>;
 
 window.addEventListener('beforeprint', function() {
     document.querySelectorAll('.passport-comment').forEach(function(ta) {
-        var printDiv = ta.nextElementSibling;
+        // Print div is sibling of the flex container (ta.parentElement), same pattern as _fillTextarea
+        var printDiv = ta.parentElement ? ta.parentElement.nextElementSibling : ta.nextElementSibling;
         if (printDiv && printDiv.classList.contains('comment-print-text')) {
             printDiv.innerHTML = ta.value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
         }
@@ -2608,11 +2854,13 @@ function showSaveFeedback(ok, msg) {
     setTimeout(function() { f.style.display = 'none'; }, 5000);
 }
 
-function ajaxSaveComments(commentsArr, successMsg) {
+function ajaxSaveComments(commentsArr, successMsg, isCoachSave) {
+    var coachSave = (isCoachSave !== false) ? 1 : 0;
     var xhr = new XMLHttpRequest();
     var params = 'sesskey=' + encodeURIComponent(SAVE_SESSKEY)
         + '&userid=' + SAVE_USERID
         + '&courseid=' + SAVE_COURSEID
+        + '&is_coach_save=' + coachSave
         + '&comments=' + encodeURIComponent(JSON.stringify(commentsArr));
     xhr.open('POST', SAVE_URL, true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -2621,6 +2869,17 @@ function ajaxSaveComments(commentsArr, successMsg) {
         try {
             var resp = JSON.parse(xhr.responseText);
             showSaveFeedback(resp.success, resp.success ? successMsg : (resp.message || 'Errore nel salvataggio.'));
+            // After a coach save, lock in data-original for textareas that don't have it yet
+            if (resp.success && coachSave) {
+                commentsArr.forEach(function(item) {
+                    if (!item.comment) return;
+                    var ta = document.querySelector('textarea[data-area="' + item.area_code + '"]');
+                    if (ta && !ta.getAttribute('data-original')) {
+                        ta.setAttribute('data-original', item.comment);
+                        updateAreaButtons(ta);
+                    }
+                });
+            }
         } catch(e) {
             showSaveFeedback(false, 'Errore di comunicazione con il server.');
         }
@@ -2628,18 +2887,22 @@ function ajaxSaveComments(commentsArr, successMsg) {
     xhr.send(params);
 }
 
-function savePassportComments() {
+function savePassportComments(isCoachSave) {
     var comments = [];
     document.querySelectorAll('.passport-comment').forEach(function(ta) {
-        comments.push({ area_code: ta.getAttribute('data-area'), comment: ta.value.trim() });
+        var areaKey = ta.getAttribute('data-area');
+        var txt = ta.value.trim();
+        comments.push({ area_code: areaKey, comment: txt });
+        if (typeof updateAreaButtons === 'function') updateAreaButtons(ta);
     });
-    ajaxSaveComments(comments, 'Commenti salvati con successo.');
+    ajaxSaveComments(comments, 'Commenti salvati con successo.', isCoachSave !== false);
 }
 
-function saveFinalNote() {
+function saveFinalNote(isCoachSave) {
     var ta = document.getElementById('passport-final-note');
     if (!ta) return;
-    ajaxSaveComments([{ area_code: 'FINAL_NOTE', comment: ta.value.trim() }], 'Nota finale salvata.');
+    ajaxSaveComments([{ area_code: 'FINAL_NOTE', comment: ta.value.trim() }], 'Nota finale salvata.', isCoachSave !== false);
+    updateAreaButtons(ta);
 }
 </script>
 <?php endif; ?>

@@ -27,5 +27,13 @@ if ($hassiteconfig) {
         PARAM_INT
     ));
 
+    $settings->add(new admin_setting_configtextarea(
+        'local_competencymanager/passport_style_examples',
+        get_string('passport_style_examples', 'local_competencymanager'),
+        get_string('passport_style_examples_desc', 'local_competencymanager'),
+        '',
+        PARAM_RAW
+    ));
+
     $ADMIN->add('localplugins', $settings);
 }

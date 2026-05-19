@@ -170,3 +170,5 @@ $string['openai_apikey'] = 'Chiave API OpenAI';
 $string['openai_apikey_desc'] = 'Chiave API per OpenAI (usata per la generazione AI nel Passaporto Tecnico). Se vuota, usa quella di JobAIDA come fallback.';
 $string['passport_threshold'] = 'Soglia minima passaporto (%)';
 $string['passport_threshold_desc'] = 'Percentuale minima per includere una competenza nel Passaporto Tecnico. Default: 60';
+$string['passport_style_examples'] = 'Esempi di stile AI per Passaporto Tecnico';
+$string['passport_style_examples_desc'] = 'Incolla 1-2 passaporti tecnici completi scritti dai coach come riferimento di stile. L\'AI imiterà il registro linguistico, la struttura delle frasi e il lessico di questi esempi. Lascia vuoto per usare lo stile predefinito. Max ~5000 caratteri elaborati.';

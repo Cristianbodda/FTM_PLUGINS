@@ -299,6 +299,127 @@ if ($error) {
     }
 }
 
+// ============ STEP 5: job-room.ch REST API ============
+echo "<strong style='color:#89b4fa;'>== STEP 5: job-room.ch REST API (nessuna AI) ==</strong>\n";
+echo "L'app e' Angular - il fetch HTML classico non funziona. Qui si chiama direttamente l'API REST.\n\n";
+
+$jr_url = 'https://www.job-room.ch/jobadservice/api/jobAdvertisements/_search?page=0&size=20&sort=date_desc';
+$jr_body = json_encode([
+    'workloadPercentageMin' => 10,
+    'workloadPercentageMax' => 100,
+    'permanent'             => null,
+    'companyName'           => null,
+    'onlineSince'           => 60,
+    'displayRestricted'     => false,
+    'professionCodes'       => [],
+    'keywords'              => ['meccanico'],
+    'communalCodes'         => [],
+    'cantonCodes'           => ['TI'],
+]);
+
+echo "<span style='color:#f9e2af;'>POST {$jr_url}</span>\n";
+echo "Body: " . htmlspecialchars($jr_body) . "\n\n";
+
+$ch = curl_init($jr_url);
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => $jr_body,
+    CURLOPT_HEADER         => true,
+    CURLOPT_TIMEOUT        => 20,
+    CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+    CURLOPT_HTTPHEADER     => [
+        'Accept: application/json, text/plain, */*',
+        'Accept-Language: it-IT,it;q=0.9',
+        'Content-Type: application/json',
+        'X-Requested-With: XMLHttpRequest',
+    ],
+    CURLOPT_SSL_VERIFYPEER => true,
+]);
+
+$raw      = curl_exec($ch);
+$httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$hsize    = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+$err      = curl_error($ch);
+curl_close($ch);
+
+if ($err) {
+    echo "<span style='color:#f38ba8;'>CURL Error: {$err}</span>\n";
+} else {
+    echo "HTTP Code: {$httpcode}\n";
+
+    $resp_headers = substr($raw, 0, $hsize);
+    $resp_body    = substr($raw, $hsize);
+
+    // Leggi X-Total-Count
+    $total = 0;
+    if (preg_match('/X-Total-Count:\s*(\d+)/i', $resp_headers, $m)) {
+        $total = (int)$m[1];
+    }
+    echo "X-Total-Count: {$total} offerte totali disponibili\n";
+    echo "Body ricevuto: " . strlen($resp_body) . " bytes\n\n";
+
+    if ($httpcode !== 200) {
+        echo "<span style='color:#f38ba8;'>Errore HTTP {$httpcode}</span>\n";
+        echo htmlspecialchars(substr($resp_body, 0, 500)) . "\n";
+    } else {
+        $jobs = json_decode($resp_body, true);
+
+        if (!is_array($jobs)) {
+            echo "<span style='color:#f38ba8;'>JSON PARSE ERROR: " . json_last_error_msg() . "</span>\n";
+            echo "Raw body: " . htmlspecialchars(substr($resp_body, 0, 500)) . "\n";
+        } else if (empty($jobs)) {
+            echo "<span style='color:#fab387;'>Array vuoto - nessuna offerta trovata per questa keyword/canton.</span>\n";
+            echo "Prova con un'altra keyword (es. manutentore, elettricista, saldatore).\n";
+        } else {
+            echo "<span style='color:#a6e3a1;'>OK - " . count($jobs) . " offerte ricevute nella pagina</span>\n\n";
+
+            foreach (array_slice($jobs, 0, 5) as $i => $job) {
+                $uuid  = $job['id'] ?? '?';
+                $title = '';
+                $tobj  = $job['title'] ?? null;
+                if (is_array($tobj)) {
+                    $title = $tobj['it'] ?? $tobj['de'] ?? $tobj['fr'] ?? $tobj['en'] ?? '';
+                }
+                if (empty($title)) {
+                    foreach ($job['jobContent']['jobDescriptions'] ?? [] as $d) {
+                        if (!empty($d['title'])) { $title = $d['title']; break; }
+                    }
+                }
+                $azienda  = $job['company']['name'] ?? '-';
+                $citta    = $job['jobContent']['location']['city'] ?? '-';
+                $canton   = $job['jobContent']['location']['cantonCode'] ?? '-';
+                $data_pub = $job['publication']['startDate'] ?? '-';
+                $lat      = $job['jobContent']['location']['coordinates']['lat'] ?? null;
+                $lng      = $job['jobContent']['location']['coordinates']['lon'] ?? null;
+                $tipo_perm = !empty($job['jobContent']['jobType']['permanent']) ? 'permanente' : '';
+                $tipo_temp = !empty($job['jobContent']['jobType']['temporary']) ? 'temporaneo' : '';
+                $tipo      = $tipo_perm ?: $tipo_temp ?: '-';
+
+                echo "<span style='color:#cba6f7;'>Offerta " . ($i + 1) . ":</span>\n";
+                echo "  UUID: {$uuid}\n";
+                echo "  Titolo: " . htmlspecialchars($title) . "\n";
+                echo "  Azienda: " . htmlspecialchars($azienda) . "\n";
+                echo "  Citta: " . htmlspecialchars($citta) . " ({$canton})";
+                if ($lat && $lng) {
+                    echo " - coords: {$lat}, {$lng}";
+                }
+                echo "\n";
+                echo "  Tipo: {$tipo}\n";
+                echo "  Pubblicato: {$data_pub}\n";
+                echo "  URL: https://www.job-room.ch/job-search/detail/{$uuid}\n\n";
+            }
+
+            if (count($jobs) > 5) {
+                echo "... e altre " . (count($jobs) - 5) . " offerte in questa pagina.\n";
+            }
+            if ($total > 20) {
+                echo "\n<span style='color:#94e2d5;'>NOTA: " . ($total - count($jobs)) . " offerte aggiuntive disponibili su altre pagine (paginazione).</span>\n";
+            }
+        }
+    }
+}
+
 echo "\n<strong style='color:#89b4fa;'>== FINE DIAGNOSTICA ==</strong>\n";
 echo '</pre>';
 

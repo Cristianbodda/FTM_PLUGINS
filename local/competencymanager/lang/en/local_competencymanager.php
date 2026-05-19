@@ -174,3 +174,5 @@ $string['openai_apikey'] = 'OpenAI API Key';
 $string['openai_apikey_desc'] = 'API key for OpenAI (used for AI generation in Technical Passport). Also accepted from JobAIDA plugin if left empty.';
 $string['passport_threshold'] = 'Passport minimum threshold (%)';
 $string['passport_threshold_desc'] = 'Minimum competency percentage to appear in the Technical Passport. Default: 60';
+$string['passport_style_examples'] = 'AI Style Examples for Technical Passport';
+$string['passport_style_examples_desc'] = 'Paste 1-2 complete Technical Passports written by coaches as style references. The AI will imitate the linguistic register, sentence structure and vocabulary from these examples. Leave empty to use the default style. Max ~5000 characters processed.';

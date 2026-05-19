@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida per Claude
 
-**Ultimo aggiornamento:** 04 Maggio 2026 (v4)
+**Ultimo aggiornamento:** 19 Maggio 2026 (v5)
 
 ## Panoramica Progetto
 
@@ -13,7 +13,7 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 
 ---
 
-## STATO ATTUALE SVILUPPO (04/05/2026)
+## STATO ATTUALE SVILUPPO (19/05/2026)
 
 ### COMPLETATI E FUNZIONANTI
 
@@ -199,13 +199,32 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Fix punti interrogativi:** Rimossi emoji Unicode (TCPDF non li supporta) tramite `pdf_strip_emoji()`
 - **Fix tabelle strette:** Width da px fissi a percentuali (dual legend, gap analysis, overlay)
 
-#### 10. Passaporto Tecnico + Garage FTM (local_competencymanager) - 01/04/2026
+#### 10. Passaporto Tecnico + Garage FTM (local_competencymanager) - 19/05/2026 (v2.9.4)
 - **Passaporto Tecnico** (`technical_passport.php`): Documento finale personalizzabile
   - 12 sezioni configurabili (panoramica, radar, piano, dettagli, overlay, gap, spunti, coach eval, ecc.)
   - Ordine sezioni configurabile dal Garage
   - Formato: percentuali numeriche o scala qualitativa (Eccellente/Buono/Sufficiente)
   - Radar SVG (stampabile), header FTM rosso con logo
   - Commenti coach per area (salvati in `local_passport_comments`)
+  - **Percentuali nascoste in stampa:** `.pct-badge`, `.radar-pct` (SVG), `.print-score-block`
+  - **Nota finale:** ha `.comment-print-text` div + `#passport-final-note` nascosto in @media print
+  - **`beforeprint` handler** usa `ta.parentElement.nextElementSibling` per aggiornare i div di stampa
+- **AI Passaporto** (`ajax_generate_ai_passport.php`) - v2.9.4:
+  - Azioni: `area` (genera), `improve` (migliora), `rewrite` (riscrivi), `final_note`, `all`
+  - Riferimento formale: "Il sig./La sig.ra Cognome" (euristica genere italiano), MAI "l'assicurato"
+  - Stile FTM hardcoded nel system role (5 esempi da passaporti Busacca/Prokic)
+  - Setting `passport_style_examples`: textarea admin per esempi stile aggiuntivi
+  - Temperature: 0.4, model: gpt-4o-mini
+- **4 bottoni AI per area + nota finale:** 🤖 Gen / ✨ Migliora / 🔄 Riscrivi / ↩ Ripristina
+  - Migliora: polish leggero grammatica/stile (non cambia i fatti)
+  - Riscrivi: riscrittura completa con dati oggettivi + bozza coach come contesto
+  - Ripristina: torna al testo originale del coach (dalla DB via `data-original`)
+- **Baseline coach permanente (`__ORIG`):**
+  - Al primo salvataggio coach: crea record `area_code + '__ORIG'` in `local_passport_comments`
+  - Il record `__ORIG` non viene mai aggiornato (freeze permanente)
+  - `is_coach_save=0` (AI auto-save) non crea mai `__ORIG`
+  - `data-original` aggiornato nel DOM dopo il primo salvataggio (senza reload)
+- **Auto-gen banner:** appare se tutti i commenti sono vuoti → offre generazione automatica
 - **Garage FTM** (`garage_ftm.php`): Area costruzione passaporto
   - Selettore competenze con checkbox per area/competenza
   - Toggle formato visualizzazione (% vs qualitativo)
@@ -214,8 +233,16 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
   - Soglia personalizzabile per studente (override globale)
   - Configurazione salvata in `local_garage_config` per studente
 - **Soglia globale:** Amministrazione -> Plugin -> Competency Manager -> Soglia minima %
+- **Setting esempi stile:** Amministrazione -> Plugin -> Competency Manager -> Esempi di stile AI
 
-#### 11. JobAIDA (local_jobaida) - 10/04/2026 (v1.1.0 BETA)
+#### 11. JobSearch + JobMatchAgent - 19/05/2026
+- **ftm_jobsearch** (`local/ftm_jobsearch/`): Scraping offerte lavoro con AI
+  - Siti: jobs.admin.ch, jobs.ch, jobup.ch, jobscout24.ch, carriera.ch
+  - **job-room.ch (arbeit.swiss) via REST API** (`ai_scraper.php` + `debug_scraper.php`): endpoint `/jobadservice/api/jobAdvertisements/_search` — nessuna AI parsing, dati strutturati diretti
+  - Multi-keyword, HTML 15k, dedup per url_hash
+- **jobmatchagent** (`local/jobmatchagent/`): Matching AI offerte/studenti — coach review, student view, wizard, RSS fetcher
+
+#### 12. JobAIDA (local_jobaida) - 10/04/2026 (v1.1.0 BETA)
 - Generatore lettere di presentazione AIDA con AI (Azure OpenAI)
 - **Dual mode:** Express Writers + Coaching Writers
 - **Interview simulation:** Simulazione colloqui con AI

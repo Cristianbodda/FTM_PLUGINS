@@ -85,6 +85,17 @@ class ai_scraper {
         $static_done = []; // Sites without {QUERY}: scraped once per sector run, not once per keyword.
 
         foreach ($queries as $query) {
+            // job-room.ch via REST API (no AI, no HTML parsing).
+            try {
+                $jr_offers = self::scrape_jobroom($settore, $query);
+                if (!empty($jr_offers)) {
+                    $all_offers = array_merge($all_offers, $jr_offers);
+                    $sites_scraped++;
+                }
+            } catch (\Exception $e) {
+                debugging("ftm_jobsearch: errore job-room.ch query '{$query}': " . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+
             foreach (self::SITES as $site_name => $url_template) {
                 $is_static = strpos($url_template, '{QUERY}') === false;
                 if ($is_static) {
@@ -243,6 +254,171 @@ class ai_scraper {
             debugging("ftm_jobsearch: CV matching error: " . $e->getMessage(), DEBUG_DEVELOPER);
             return [];
         }
+    }
+
+    /**
+     * Fetch job offers from job-room.ch REST API (arbeit.swiss).
+     * Returns structured offers directly — no AI parsing needed.
+     * Paginates up to 3 pages (60 results) per keyword.
+     *
+     * @param string $settore FTM sector code
+     * @param string $query   Search keyword
+     * @return array Offer rows ready for save_offers()
+     */
+    private static function scrape_jobroom(string $settore, string $query): array {
+        $base_url = 'https://www.job-room.ch/jobadservice/api/jobAdvertisements/_search';
+        $now = time();
+        $max_age_days = (int)(get_config('local_ftm_jobsearch', 'max_offer_age_days') ?: 90);
+        $age_cutoff_ts = strtotime("-{$max_age_days} days");
+
+        $offers = [];
+        $page = 0;
+        $max_pages = 3;
+
+        do {
+            $url = $base_url . '?page=' . $page . '&size=20&sort=date_desc';
+
+            $body = json_encode([
+                'workloadPercentageMin' => 10,
+                'workloadPercentageMax' => 100,
+                'permanent' => null,
+                'companyName' => null,
+                'onlineSince' => 60,
+                'displayRestricted' => false,
+                'professionCodes' => [],
+                'keywords' => [$query],
+                'communalCodes' => [],
+                'cantonCodes' => ['TI'],
+            ]);
+
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $body,
+                CURLOPT_TIMEOUT => 20,
+                CURLOPT_HEADER => true,
+                CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/json, text/plain, */*',
+                    'Accept-Language: it-IT,it;q=0.9',
+                    'Content-Type: application/json',
+                    'X-Requested-With: XMLHttpRequest',
+                ],
+                CURLOPT_SSL_VERIFYPEER => true,
+            ]);
+
+            $raw = curl_exec($ch);
+            $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+            curl_close($ch);
+
+            if ($httpcode !== 200 || empty($raw)) {
+                break;
+            }
+
+            // Separate headers and body.
+            $response_headers = substr($raw, 0, $header_size);
+            $response_body = substr($raw, $header_size);
+
+            $jobs = json_decode($response_body, true);
+            if (!is_array($jobs) || empty($jobs)) {
+                break;
+            }
+
+            // Extract X-Total-Count to decide if more pages exist.
+            $total_count = 0;
+            if (preg_match('/X-Total-Count:\s*(\d+)/i', $response_headers, $m)) {
+                $total_count = (int)$m[1];
+            }
+
+            foreach ($jobs as $job) {
+                $uuid = $job['id'] ?? null;
+                if (empty($uuid)) {
+                    continue;
+                }
+
+                // Title: prefer Italian, then DE/FR/EN.
+                $title = '';
+                $title_obj = $job['title'] ?? null;
+                if (is_array($title_obj)) {
+                    $title = $title_obj['it'] ?? $title_obj['de'] ?? $title_obj['fr'] ?? $title_obj['en'] ?? '';
+                }
+                if (empty($title)) {
+                    foreach ($job['jobContent']['jobDescriptions'] ?? [] as $d) {
+                        if (!empty($d['title'])) {
+                            $title = $d['title'];
+                            break;
+                        }
+                    }
+                }
+                if (empty($title)) {
+                    $title = 'Offerta di lavoro';
+                }
+
+                // Company.
+                $azienda = $job['company']['name'] ?? null;
+
+                // Location.
+                $location = $job['jobContent']['location'] ?? [];
+                $citta = $location['city'] ?? null;
+                $lat = isset($location['coordinates']['lat']) ? (float)$location['coordinates']['lat'] : null;
+                $lng = isset($location['coordinates']['lon']) ? (float)$location['coordinates']['lon'] : null;
+
+                // Description (strip HTML).
+                $descrizione = '';
+                foreach ($job['jobContent']['jobDescriptions'] ?? [] as $d) {
+                    if (!empty($d['description'])) {
+                        $descrizione = mb_substr(strip_tags($d['description']), 0, 1000);
+                        break;
+                    }
+                }
+
+                // Work type.
+                $job_type = $job['jobContent']['jobType'] ?? [];
+                $tipo = null;
+                if (!empty($job_type['temporary'])) {
+                    $tipo = 'temporaneo';
+                } elseif (!empty($job_type['permanent'])) {
+                    $tipo = 'fulltime';
+                }
+                $pmax = $job['jobContent']['workingTimePercentageMax'] ?? null;
+                if ($pmax !== null && $pmax <= 60) {
+                    $tipo = 'parttime';
+                }
+
+                // Publication date — skip if too old.
+                $data_pub = $job['publication']['startDate'] ?? null;
+                if ($data_pub) {
+                    $pub_ts = strtotime($data_pub);
+                    if ($pub_ts && $pub_ts < $age_cutoff_ts) {
+                        continue;
+                    }
+                }
+
+                $offers[] = [
+                    'titolo'             => $title,
+                    'azienda'            => $azienda,
+                    'citta'              => $citta,
+                    'tipo_lavoro'        => $tipo,
+                    'url'                => "https://www.job-room.ch/job-search/detail/{$uuid}",
+                    'data_pubblicazione' => $data_pub,
+                    'descrizione'        => $descrizione,
+                    'fonte'              => 'job-room.ch',
+                    'settore'            => $settore,
+                    'data_scraping'      => $now,
+                    'attivo'             => 1,
+                    '_lat'               => $lat,
+                    '_lng'               => $lng,
+                ];
+            }
+
+            $page++;
+            $fetched_so_far = $page * 20;
+
+        } while ($page < $max_pages && $fetched_so_far < $total_count);
+
+        return $offers;
     }
 
     /**
@@ -431,8 +607,14 @@ class ai_scraper {
                 continue;
             }
 
-            // Geocode city if possible.
-            $coords = self::geocode_city($offer['citta'] ?? '');
+            // Prefer coordinates from API (job-room.ch), fall back to DB geocoding.
+            $api_lat = isset($offer['_lat']) ? $offer['_lat'] : null;
+            $api_lng = isset($offer['_lng']) ? $offer['_lng'] : null;
+            if ($api_lat !== null && $api_lng !== null) {
+                $coords = ['lat' => $api_lat, 'lng' => $api_lng];
+            } else {
+                $coords = self::geocode_city($offer['citta'] ?? '');
+            }
 
             $record = new \stdClass();
             $record->titolo = mb_substr($offer['titolo'] ?? 'Senza titolo', 0, 255);
