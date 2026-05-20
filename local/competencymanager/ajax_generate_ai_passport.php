@@ -58,6 +58,13 @@ try {
     }
 
     // ----------------------------------------------------------------
+    // Load approved passport examples for the same sector (AI training).
+    // Up to 3 most recent approved passports, excluding this student.
+    // ----------------------------------------------------------------
+    $approvedExtraText = '';
+
+    // Load approved passports after sector is known (filled below, used in system role).
+    // ----------------------------------------------------------------
     // Load all student data.
     // ----------------------------------------------------------------
     $radardata    = \local_competencymanager\report_generator::get_radar_chart_data($userid, $courseid);
@@ -85,6 +92,58 @@ try {
         });
         if (!empty($filtered)) {
             $competencies = array_values($filtered);
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // Load approved passport examples for this sector (AI calibration).
+    // Query up to 3 most recent approved passports for the same sector,
+    // excluding this student. Inject them as high-priority few-shot examples.
+    // ----------------------------------------------------------------
+    if (!empty($sector)) {
+        $approvedRows = $DB->get_records_sql(
+            "SELECT pc.comment, pc.timemodified, pc.userid
+               FROM {local_passport_comments} pc
+              WHERE pc.area_code = :acode
+                AND pc.userid != :selfuid
+                AND pc.comment != ''
+              ORDER BY pc.timemodified DESC",
+            ['acode' => '__PASSPORT_APPROVED__', 'selfuid' => $userid],
+            0, 10
+        );
+
+        $approvedExamples = [];
+        foreach ($approvedRows as $row) {
+            $snap = json_decode($row->comment, true);
+            if (!is_array($snap) || empty($snap['examples'])) {
+                continue;
+            }
+            // Filter by sector (case-insensitive).
+            $snapSector = strtoupper($snap['sector'] ?? '');
+            if ($snapSector !== '' && $snapSector !== $sector) {
+                continue;
+            }
+            $approvedExamples[] = $snap;
+            if (count($approvedExamples) >= 3) {
+                break;
+            }
+        }
+
+        if (!empty($approvedExamples)) {
+            $approvedExtraText = "=== PASSAPORTI APPROVATI DAI COACH (esempi reali - priorità massima) ===\n"
+                . "Questi passaporti sono stati approvati dai coach come modelli di qualità per il settore {$sector}. "
+                . "Imita fedelmente lo stile, la struttura delle frasi e il tono tecnico.\n\n";
+            $exNum = 1;
+            foreach ($approvedExamples as $snap) {
+                $approvedExtraText .= "--- Esempio {$exNum} (approvato da " . ($snap['coach_name'] ?? 'coach') . ") ---\n";
+                foreach ($snap['examples'] as $ex) {
+                    if (!empty($ex['comment'])) {
+                        $approvedExtraText .= "[{$ex['area_key']}]: " . $ex['comment'] . "\n";
+                    }
+                }
+                $approvedExtraText .= "\n";
+                $exNum++;
+            }
         }
     }
 
@@ -252,6 +311,11 @@ try {
             $areasSummary .= ", autovalut.=" . round($autoSum / $autoCount, 1) . "%";
         }
         $areasSummary .= "\n";
+    }
+
+    // Prepend approved examples to style extra (highest priority).
+    if (!empty($approvedExtraText)) {
+        $systemStyleExtra = $approvedExtraText . ($systemStyleExtra ? "\n" . $systemStyleExtra : '');
     }
 
     $model = 'gpt-4.1-mini';

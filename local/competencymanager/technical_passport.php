@@ -616,9 +616,31 @@ if ($dbman->table_exists('local_passport_comments')) {
         if (substr($rec->area_code, -6) === '__ORIG') {
             $baseKey = substr($rec->area_code, 0, -6);
             $originalComments[$baseKey] = $rec->comment;
-        } else {
+        } elseif ($rec->area_code !== '__PASSPORT_APPROVED__') {
             $existingComments[$rec->area_code] = $rec->comment;
         }
+    }
+}
+
+// Load approval status.
+$approvalRecord = null;
+$isApproved = false;
+$approvalTimeFormatted = '';
+$approvalCoachName = '';
+if ($dbman->table_exists('local_passport_comments')) {
+    $approvalRecord = $DB->get_record('local_passport_comments', [
+        'userid'    => $userid,
+        'courseid'  => $courseid,
+        'area_code' => '__PASSPORT_APPROVED__',
+    ]);
+    if ($approvalRecord) {
+        $isApproved = true;
+        $approvalData = json_decode($approvalRecord->comment, true);
+        $approvalTimeFormatted = userdate(
+            $approvalData['timestamp'] ?? $approvalRecord->timecreated,
+            get_string('strftimedatetime', 'langconfig')
+        );
+        $approvalCoachName = $approvalData['coach_name'] ?? '';
     }
 }
 
@@ -1675,6 +1697,54 @@ echo $OUTPUT->header();
     }
 }
 
+/* ---- Bottom action bar ---- */
+#passport-bottom-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    border-top: 2px solid #dee2e6;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
+    padding: 10px 24px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+#passport-bottom-bar-feedback {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 6px;
+    display: none;
+}
+#passport-bottom-bar-feedback.success { background:#d4edda; color:#155724; display:block; }
+#passport-bottom-bar-feedback.error   { background:#f8d7da; color:#721c24; display:block; }
+.btn-approved {
+    background: #28a745 !important;
+    color: #fff !important;
+    border-color: #28a745 !important;
+}
+.btn-approved:hover { background: #218838 !important; }
+
+/* ---- Approval stamp (shown in print if approved) ---- */
+.passport-approval-stamp {
+    display: none;
+    margin-top: 32px;
+    padding: 14px 20px;
+    border: 2px solid #28a745;
+    border-radius: 8px;
+    background: #f0fff4;
+    color: #155724;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-align: center;
+}
+.passport-approval-stamp.is-approved {
+    display: block;
+}
+
 /* Hide print header on screen */
 .passport-print-header {
     display: none;
@@ -1766,9 +1836,12 @@ echo $OUTPUT->header();
     .ai-btn-group,
     .no-print { display: none !important; }
     #passport-final-note-section .passport-btn { display: none !important; }
+    #passport-bottom-bar { display: none !important; }
     /* Hide all percentage values from print output */
     .radar-pct { display: none !important; }
     .print-score-block { display: none !important; }
+    /* Show approval stamp in print */
+    .passport-approval-stamp.is-approved { display: block !important; }
 }
 </style>
 
@@ -2508,7 +2581,42 @@ echo $OUTPUT->header();
     </div>
     <?php endif; ?>
 
+    <!-- Approval stamp — visible in print, hidden on screen unless approved -->
+    <div class="passport-approval-stamp <?php echo $isApproved ? 'is-approved' : ''; ?>" id="passport-approval-stamp">
+        &#10003; Passaporto Tecnico approvato<?php if ($isApproved): ?> il <?php echo s($approvalTimeFormatted); ?> da <?php echo s($approvalCoachName); ?><?php endif; ?>
+    </div>
+
+</div><!-- end passport-container -->
+
+<?php if ($canEvaluate): ?>
+<!-- Bottom action bar — sticky, no-print -->
+<div id="passport-bottom-bar" class="no-print" style="padding-bottom: max(10px, env(safe-area-inset-bottom));">
+    <div id="passport-approval-info" style="font-size:0.88rem;font-weight:600;">
+        <?php if ($isApproved): ?>
+        <span style="color:#28a745;">&#10003; Approvato il <?php echo s($approvalTimeFormatted); ?> da <?php echo s($approvalCoachName); ?></span>
+        <?php else: ?>
+        <span style="color:#888;">Passaporto non ancora approvato</span>
+        <?php endif; ?>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <span id="passport-bottom-bar-feedback"></span>
+        <button type="button" class="passport-btn passport-btn-success" onclick="savePassportComments()">
+            Salva Commenti
+        </button>
+        <button type="button"
+                id="btn-approve-passport"
+                class="passport-btn <?php echo $isApproved ? 'btn-approved' : ''; ?>"
+                style="<?php echo $isApproved ? '' : 'background:#6c757d;color:#fff;'; ?>"
+                onclick="toggleApproval()">
+            <?php echo $isApproved ? '&#10003; Approvato &mdash; Annulla' : '&#10003; Approva Passaporto'; ?>
+        </button>
+    </div>
 </div>
+<style>
+/* Padding body so content not hidden behind bar */
+.passport-container { padding-bottom: 70px; }
+</style>
+<?php endif; ?>
 
 <?php if ($canEvaluate && !empty($areasData)): ?>
 <script>
@@ -2834,6 +2942,7 @@ var SAVE_URL      = '<?php echo (new moodle_url('/local/competencymanager/ajax_s
 var SAVE_SESSKEY  = '<?php echo sesskey(); ?>';
 var SAVE_USERID   = <?php echo $userid; ?>;
 var SAVE_COURSEID = <?php echo $courseid; ?>;
+var APPROVE_URL   = '<?php echo (new moodle_url('/local/competencymanager/ajax_approve_passport.php'))->out(false); ?>';
 
 window.addEventListener('beforeprint', function() {
     document.querySelectorAll('.passport-comment').forEach(function(ta) {
@@ -2846,12 +2955,78 @@ window.addEventListener('beforeprint', function() {
 });
 
 function showSaveFeedback(ok, msg) {
+    // Bottom bar feedback
+    var fb = document.getElementById('passport-bottom-bar-feedback');
+    if (fb) {
+        fb.className = ok ? 'success' : 'error';
+        fb.textContent = msg;
+        setTimeout(function() { fb.className = ''; fb.textContent = ''; }, 4000);
+    }
+    // Top feedback (legacy)
     var f = document.getElementById('passport-save-feedback');
-    if (!f) return;
-    f.className = 'passport-save-feedback ' + (ok ? 'success' : 'error') + ' no-print';
-    f.textContent = msg;
-    f.style.display = 'block';
-    setTimeout(function() { f.style.display = 'none'; }, 5000);
+    if (f) {
+        f.className = 'passport-save-feedback ' + (ok ? 'success' : 'error') + ' no-print';
+        f.textContent = msg;
+        f.style.display = 'block';
+        setTimeout(function() { f.style.display = 'none'; }, 5000);
+    }
+}
+
+function toggleApproval() {
+    var btn = document.getElementById('btn-approve-passport');
+    var isCurrentlyApproved = btn && btn.classList.contains('btn-approved');
+    var action = isCurrentlyApproved ? 'revoke' : 'approve';
+
+    if (isCurrentlyApproved && !confirm('Sei sicuro di voler annullare l\'approvazione di questo passaporto?')) return;
+
+    if (btn) btn.disabled = true;
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', APPROVE_URL, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        if (btn) btn.disabled = false;
+        try {
+            var resp = JSON.parse(xhr.responseText);
+            if (!resp.success) { alert('Errore: ' + (resp.message || 'Operazione fallita')); return; }
+
+            var stamp  = document.getElementById('passport-approval-stamp');
+            var info   = document.getElementById('passport-approval-info');
+
+            if (action === 'approve') {
+                // Update button
+                if (btn) {
+                    btn.classList.add('btn-approved');
+                    btn.style.background = ''; btn.style.color = '';
+                    btn.innerHTML = '&#10003; Approvato &mdash; Annulla';
+                }
+                // Update info bar
+                if (info) info.innerHTML = '<span style="color:#28a745;font-weight:600;">&#10003; Approvato il ' + resp.date + ' da ' + resp.coach + '</span>';
+                // Update / show stamp
+                if (stamp) {
+                    stamp.innerHTML = '&#10003; Passaporto Tecnico approvato il ' + resp.date + ' da ' + resp.coach;
+                    stamp.classList.add('is-approved');
+                }
+                showSaveFeedback(true, 'Passaporto approvato. I commenti saranno usati come esempio per la AI (' + resp.examples_count + ' aree salvate).');
+            } else {
+                if (btn) {
+                    btn.classList.remove('btn-approved');
+                    btn.style.background = '#6c757d'; btn.style.color = '#fff';
+                    btn.innerHTML = '&#10003; Approva Passaporto';
+                }
+                if (info) info.innerHTML = '<span style="color:#888;">Passaporto non ancora approvato</span>';
+                if (stamp) stamp.classList.remove('is-approved');
+                showSaveFeedback(true, 'Approvazione annullata.');
+            }
+        } catch(e) {
+            alert('Errore di comunicazione con il server.');
+        }
+    };
+    xhr.send('sesskey=' + encodeURIComponent(SAVE_SESSKEY)
+        + '&userid=' + SAVE_USERID
+        + '&courseid=' + SAVE_COURSEID
+        + '&action=' + action);
 }
 
 function ajaxSaveComments(commentsArr, successMsg, isCoachSave) {
