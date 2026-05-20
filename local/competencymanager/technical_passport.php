@@ -1699,18 +1699,19 @@ echo $OUTPUT->header();
 
 /* ---- Bottom action bar ---- */
 #passport-bottom-bar {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
+    position: sticky;
+    bottom: 0;
     background: #fff;
     border-top: 2px solid #dee2e6;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
-    padding: 10px 24px;
-    z-index: 1000;
+    box-shadow: 0 -3px 10px rgba(0,0,0,0.08);
+    padding: 7px 16px;
+    z-index: 100;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    justify-content: flex-end;
+    gap: 8px;
     flex-wrap: wrap;
+    margin-top: 16px;
 }
 #passport-bottom-bar-feedback {
     font-size: 0.85rem;
@@ -2586,19 +2587,16 @@ echo $OUTPUT->header();
         &#10003; Passaporto Tecnico approvato<?php if ($isApproved): ?> il <?php echo s($approvalTimeFormatted); ?> da <?php echo s($approvalCoachName); ?><?php endif; ?>
     </div>
 
-</div><!-- end passport-container -->
-
-<?php if ($canEvaluate): ?>
-<!-- Bottom action bar — sticky, no-print -->
-<div id="passport-bottom-bar" class="no-print" style="padding-bottom: max(10px, env(safe-area-inset-bottom));">
-    <div id="passport-approval-info" style="font-size:0.88rem;font-weight:600;">
-        <?php if ($isApproved): ?>
-        <span style="color:#28a745;">&#10003; Approvato il <?php echo s($approvalTimeFormatted); ?> da <?php echo s($approvalCoachName); ?></span>
-        <?php else: ?>
-        <span style="color:#888;">Passaporto non ancora approvato</span>
-        <?php endif; ?>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <?php if ($canEvaluate): ?>
+    <!-- Bottom action bar — sticky inside content column, no-print -->
+    <div id="passport-bottom-bar" class="no-print">
+        <span id="passport-approval-info" style="font-size:0.82rem;font-weight:600;margin-right:auto;">
+            <?php if ($isApproved): ?>
+            <span style="color:#28a745;">&#10003; Approvato il <?php echo s($approvalTimeFormatted); ?> da <?php echo s($approvalCoachName); ?></span>
+            <?php else: ?>
+            <span style="color:#888;">Non ancora approvato</span>
+            <?php endif; ?>
+        </span>
         <span id="passport-bottom-bar-feedback"></span>
         <button type="button" class="passport-btn passport-btn-success" onclick="savePassportComments()">
             Salva Commenti
@@ -2608,15 +2606,12 @@ echo $OUTPUT->header();
                 class="passport-btn <?php echo $isApproved ? 'btn-approved' : ''; ?>"
                 style="<?php echo $isApproved ? '' : 'background:#6c757d;color:#fff;'; ?>"
                 onclick="toggleApproval()">
-            <?php echo $isApproved ? '&#10003; Approvato &mdash; Annulla' : '&#10003; Approva Passaporto'; ?>
+            <?php echo $isApproved ? '&#10003; Approvato &mdash; Annulla' : '&#10003; Approva'; ?>
         </button>
     </div>
-</div>
-<style>
-/* Padding body so content not hidden behind bar */
-.passport-container { padding-bottom: 70px; }
-</style>
-<?php endif; ?>
+    <?php endif; ?>
+
+</div><!-- end passport-container -->
 
 <?php if ($canEvaluate && !empty($areasData)): ?>
 <script>
@@ -3002,7 +2997,7 @@ function toggleApproval() {
                     btn.innerHTML = '&#10003; Approvato &mdash; Annulla';
                 }
                 // Update info bar
-                if (info) info.innerHTML = '<span style="color:#28a745;font-weight:600;">&#10003; Approvato il ' + resp.date + ' da ' + resp.coach + '</span>';
+                if (info) info.innerHTML = '<span style="color:#28a745;">&#10003; Approvato il ' + resp.date + ' da ' + resp.coach + '</span>';
                 // Update / show stamp
                 if (stamp) {
                     stamp.innerHTML = '&#10003; Passaporto Tecnico approvato il ' + resp.date + ' da ' + resp.coach;
@@ -3013,9 +3008,9 @@ function toggleApproval() {
                 if (btn) {
                     btn.classList.remove('btn-approved');
                     btn.style.background = '#6c757d'; btn.style.color = '#fff';
-                    btn.innerHTML = '&#10003; Approva Passaporto';
+                    btn.innerHTML = '&#10003; Approva';
                 }
-                if (info) info.innerHTML = '<span style="color:#888;">Passaporto non ancora approvato</span>';
+                if (info) info.innerHTML = '<span style="color:#888;">Non ancora approvato</span>';
                 if (stamp) stamp.classList.remove('is-approved');
                 showSaveFeedback(true, 'Approvazione annullata.');
             }
