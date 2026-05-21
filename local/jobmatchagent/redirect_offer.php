@@ -212,6 +212,7 @@ echo $OUTPUT->header();
                   action="<?php echo (new moodle_url('/local/jobmatchagent/redirect_offer.php'))->out(false); ?>"
                   style="margin:0;"
                   onsubmit="return confirm('Eliminare definitivamente questo annuncio e tutti i suoi match? Questa azione non può essere annullata.');">
+                <input type="hidden" name="offerid"       value="<?php echo (int)$offerid; ?>">
                 <input type="hidden" name="deleteofferid" value="<?php echo (int)$offerid; ?>">
                 <input type="hidden" name="userid"        value="<?php echo (int)$userid; ?>">
                 <input type="hidden" name="from"          value="<?php echo s($from); ?>">
