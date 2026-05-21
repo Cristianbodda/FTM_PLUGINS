@@ -64,6 +64,39 @@ if (empty($offer->url)) {
 
 $url = $offer->url;
 
+// Domains known to block server-side requests (anti-bot / Cloudflare / JS challenge).
+// For these we skip the liveness check and redirect directly — false positives are worse
+// than the rare case of an expired offer slipping through.
+$ANTIBOT_DOMAINS = [
+    'randstad.ch',
+    'randstad.com',
+    'manpower.ch',
+    'adecco.ch',
+    'adecco.com',
+    'linkedin.com',
+    'indeed.com',
+    'monster.ch',
+    'monster.com',
+    'michael-page.ch',
+    'hays.ch',
+];
+
+function url_is_antibot(string $url, array $domains): bool {
+    $host = strtolower(parse_url($url, PHP_URL_HOST) ?? '');
+    foreach ($domains as $d) {
+        if ($host === $d || str_ends_with($host, '.' . $d)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+if (url_is_antibot($url, $ANTIBOT_DOMAINS)) {
+    // Skip liveness check — redirect immediately.
+    redirect($url);
+    die();
+}
+
 // --- Verify URL via curl (HEAD, fallback GET with small read) ---
 function check_url_alive($url) {
     if (!function_exists('curl_init')) {
