@@ -92,8 +92,68 @@ function url_is_antibot(string $url, array $domains): bool {
 }
 
 if (url_is_antibot($url, $ANTIBOT_DOMAINS)) {
-    // Skip liveness check — redirect immediately.
-    redirect($url);
+    // Cannot check server-side — show interstitial so coach can open + delete if expired.
+    $PAGE->set_context($context);
+    $PAGE->set_url(new moodle_url('/local/jobmatchagent/redirect_offer.php', ['offerid' => $offerid]));
+    $PAGE->set_title('Annuncio esterno');
+    $PAGE->set_heading('Annuncio esterno');
+    $PAGE->set_pagelayout('standard');
+    $host = strtolower(parse_url($url, PHP_URL_HOST) ?? '');
+    echo $OUTPUT->header();
+    ?>
+    <style>
+    .antibot-card { max-width:720px; margin:2rem auto; }
+    .antibot-header { background:#0066cc; color:#fff; padding:1.1rem 1.5rem; border-radius:8px 8px 0 0; }
+    .antibot-body { border:1px solid #dee2e6; border-top:none; border-radius:0 0 8px 8px; padding:1.5rem; background:#fff; }
+    .antibot-details { background:#f8f9fa; border-radius:6px; padding:1rem; margin-bottom:1rem; font-size:.9rem; }
+    .antibot-note { background:#fff8e1; border-left:4px solid #f59e0b; padding:.7rem 1rem; border-radius:4px; font-size:.85rem; margin-bottom:1rem; color:#78350f; }
+    </style>
+    <div class="antibot-card">
+        <div class="antibot-header">
+            <h4 class="mb-1">&#128279; Annuncio su <?php echo s($host); ?></h4>
+            <div style="font-size:.85rem;opacity:.85;">Questo sito non può essere verificato dal server — apri in una nuova scheda per controllare se l'annuncio è ancora disponibile.</div>
+        </div>
+        <div class="antibot-body">
+            <div class="antibot-details">
+                <strong><?php echo s($offer->title); ?></strong>
+                <?php if (!empty($offer->company)): ?>
+                    — <?php echo s($offer->company); ?>
+                <?php endif; ?>
+                <?php if (!empty($offer->location)): ?>
+                    <br><span class="text-muted">&#128205; <?php echo s($offer->location); ?></span>
+                <?php endif; ?>
+            </div>
+            <div class="antibot-note">
+                &#9888; Se aprendo il link vedi una pagina bianca o "Application error", l'annuncio è scaduto su <?php echo s($host); ?>.
+                Usa il tasto <strong>Elimina annuncio</strong> per rimuoverlo dal sistema.
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="<?php echo s($backUrl); ?>" class="btn btn-outline-secondary">
+                    &#8592; Torna ai risultati
+                </a>
+                <a href="<?php echo s($url); ?>" target="_blank" rel="noopener" class="btn btn-primary">
+                    &#128279; Apri su <?php echo s($host); ?> &#8599;
+                </a>
+                <?php if ($canCoach): ?>
+                <form method="post"
+                      action="<?php echo (new moodle_url('/local/jobmatchagent/redirect_offer.php'))->out(false); ?>"
+                      style="margin:0;"
+                      onsubmit="return confirm('Eliminare definitivamente questo annuncio e tutti i suoi match? Non può essere annullato.');">
+                    <input type="hidden" name="offerid"       value="<?php echo (int)$offerid; ?>">
+                    <input type="hidden" name="deleteofferid" value="<?php echo (int)$offerid; ?>">
+                    <input type="hidden" name="userid"        value="<?php echo (int)$userid; ?>">
+                    <input type="hidden" name="from"          value="<?php echo s($from); ?>">
+                    <input type="hidden" name="sesskey"       value="<?php echo sesskey(); ?>">
+                    <button type="submit" class="btn btn-danger">
+                        &#128465; Elimina annuncio
+                    </button>
+                </form>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <?php
+    echo $OUTPUT->footer();
     die();
 }
 
