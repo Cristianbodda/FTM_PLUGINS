@@ -167,8 +167,10 @@ foreach ($results as $r) {
         html_writer::div(nl2br(s($r->offer_text)), 'p-2 bg-light border rounded small') .
         ($r->offer_url
             ? html_writer::div(
-                html_writer::link($r->offer_url, '🔗 ' . get_string('sv_view_offer', 'local_jobmatchagent'),
-                    ['target' => '_blank', 'rel' => 'noopener', 'class' => 'btn btn-sm btn-outline-primary mt-2']),
+                html_writer::link(
+                    (new moodle_url('/local/jobmatchagent/redirect_offer.php', ['offerid' => $r->offer_id, 'from' => 'student']))->out(false),
+                    '🔗 ' . get_string('sv_view_offer', 'local_jobmatchagent'),
+                    ['target' => '_blank', 'class' => 'btn btn-sm btn-outline-primary mt-2']),
                 'mt-2')
             : ''),
         ['class' => 'mb-3']

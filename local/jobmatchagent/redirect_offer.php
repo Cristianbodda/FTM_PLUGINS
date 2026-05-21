@@ -19,15 +19,45 @@ if (!$canCoach && !$canStudent) {
     throw new required_capability_exception($context, 'local/jobmatchagent:manage', 'nopermissions', '');
 }
 
-$offerid = required_param('offerid', PARAM_INT);
+$offerid  = required_param('offerid', PARAM_INT);
+$userid   = optional_param('userid', 0, PARAM_INT);   // for back button
+$from     = optional_param('from', 'review', PARAM_ALPHA); // 'review' | 'wizard' | 'student'
+
+// ---- Handle delete action (coaches only) ----------------------------
+$deleteAction = optional_param('deleteofferid', 0, PARAM_INT);
+if ($deleteAction && confirm_sesskey() && $canCoach) {
+    // Delete results first (pending/ai_done/discarded), then the offer.
+    $DB->delete_records_select('local_jobmatch_results',
+        "offer_id = :oid AND status IN ('pending','ai_done','discarded')",
+        ['oid' => $deleteAction]);
+    $DB->delete_records('local_jobmatch_offers', ['id' => $deleteAction]);
+    // Redirect back to results page.
+    $backUrl = $userid
+        ? (new moodle_url('/local/jobmatchagent/coach_review.php', ['userid' => $userid]))->out(false)
+        : (new moodle_url('/local/jobmatchagent/coach_dashboard.php'))->out(false);
+    redirect(new moodle_url($backUrl), 'Annuncio eliminato.', 2);
+    die();
+}
 
 $offer = $DB->get_record('local_jobmatch_offers', ['id' => $offerid], '*', MUST_EXIST);
 
+// Build back URL once, reused everywhere.
+if ($from === 'wizard' && $userid) {
+    $backUrl = (new moodle_url('/local/jobmatchagent/wizard.php', ['step' => 3, 'userid' => $userid]))->out(false);
+} elseif ($from === 'student') {
+    $backUrl = (new moodle_url('/local/jobmatchagent/student_view.php'))->out(false);
+} elseif ($userid) {
+    $backUrl = (new moodle_url('/local/jobmatchagent/coach_review.php', ['userid' => $userid]))->out(false);
+} else {
+    $backUrl = (new moodle_url('/local/jobmatchagent/coach_dashboard.php'))->out(false);
+}
+
 if (empty($offer->url)) {
-    $PAGE->set_context(context_system::instance());
+    $PAGE->set_context($context);
     $PAGE->set_url(new moodle_url('/local/jobmatchagent/redirect_offer.php', ['offerid' => $offerid]));
     echo $OUTPUT->header();
     echo $OUTPUT->notification('Nessuna URL disponibile per questa offerta.', 'error');
+    echo html_writer::link($backUrl, '← Torna ai risultati', ['class' => 'btn btn-secondary mt-2']);
     echo $OUTPUT->footer();
     die();
 }
@@ -168,14 +198,29 @@ echo $OUTPUT->header();
             Risposta server: HTTP <?php echo (int)$check['code']; ?>
         </p>
 
-        <div class="d-flex gap-2 mt-3">
-            <a href="<?php echo (new moodle_url('/local/jobmatchagent/wizard.php', ['step' => 3, 'userid' => optional_param('userid', 0, PARAM_INT)]))->out(false); ?>"
-               class="btn btn-outline-secondary">&#8592; Torna ai risultati</a>
-            <a href="<?php echo s($url); ?>" target="_blank" rel="noopener"
-               class="btn btn-outline-danger"
-               onclick="return confirm('L\'URL potrebbe non funzionare. Aprire comunque?')">
-               Apri URL comunque &#8599;
+        <div class="d-flex gap-2 mt-3 flex-wrap">
+            <a href="<?php echo s($backUrl); ?>" class="btn btn-outline-secondary">
+                &#8592; Torna ai risultati
             </a>
+            <a href="<?php echo s($url); ?>" target="_blank" rel="noopener"
+               class="btn btn-outline-secondary"
+               onclick="return confirm('L\'URL potrebbe non funzionare. Aprire comunque?')">
+               Apri comunque &#8599;
+            </a>
+            <?php if ($canCoach): ?>
+            <form method="post"
+                  action="<?php echo (new moodle_url('/local/jobmatchagent/redirect_offer.php'))->out(false); ?>"
+                  style="margin:0;"
+                  onsubmit="return confirm('Eliminare definitivamente questo annuncio e tutti i suoi match? Questa azione non può essere annullata.');">
+                <input type="hidden" name="deleteofferid" value="<?php echo (int)$offerid; ?>">
+                <input type="hidden" name="userid"        value="<?php echo (int)$userid; ?>">
+                <input type="hidden" name="from"          value="<?php echo s($from); ?>">
+                <input type="hidden" name="sesskey"       value="<?php echo sesskey(); ?>">
+                <button type="submit" class="btn btn-danger">
+                    &#128465; Elimina annuncio
+                </button>
+            </form>
+            <?php endif; ?>
         </div>
     </div>
 </div>

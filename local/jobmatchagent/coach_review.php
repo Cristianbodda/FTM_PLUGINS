@@ -53,7 +53,7 @@ $inparams['uid'] = $studentid;
 $results = $DB->get_records_sql(
     "SELECT r.*, o.title AS offer_title, o.company AS offer_company, o.location AS offer_location,
             o.url AS offer_url, o.parsed_text AS offer_text, o.work_schedule AS offer_schedule,
-            o.company_size AS offer_size
+            o.company_size AS offer_size, o.timecreated AS offer_scraped_at
      FROM {local_jobmatch_results} r
      INNER JOIN {local_jobmatch_offers} o ON o.id = r.offer_id
      WHERE r.userid = :uid AND r.status $insql
@@ -162,8 +162,13 @@ foreach ($results as $r) {
             (get_string_manager()->string_exists($key, 'local_jobmatchagent') ? get_string($key, 'local_jobmatchagent') : s($r->offer_size));
     }
     if (!empty($r->offer_url)) {
-        $metaparts[] = html_writer::link($r->offer_url, '🔗 ' . s($r->offer_url),
-            ['target' => '_blank', 'rel' => 'noopener']);
+        $redirect_url = (new moodle_url('/local/jobmatchagent/redirect_offer.php', [
+            'offerid' => $r->offer_id ?? $r->id,
+            'userid'  => $studentid,
+            'from'    => 'review',
+        ]))->out(false);
+        $metaparts[] = html_writer::link($redirect_url, '🔗 ' . s(shorten_text($r->offer_url, 60)),
+            ['target' => '_blank', 'title' => 'Verifica che l\'annuncio sia disponibile prima di aprirlo']);
     }
     if (!empty($metaparts)) {
         echo html_writer::div(implode(' &nbsp;|&nbsp; ', $metaparts), 'text-muted small mb-2');

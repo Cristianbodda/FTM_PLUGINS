@@ -492,7 +492,7 @@ function render_step3($studentid, $student, $studentname) {
     $allmatches = $DB->get_records_sql(
         "SELECT r.*, o.title AS offer_title, o.company AS offer_company,
                 o.location AS offer_location, o.url AS offer_url, o.parsed_text AS offer_text,
-                o.work_schedule AS offer_schedule
+                o.work_schedule AS offer_schedule, o.timecreated AS offer_scraped_at
          FROM {local_jobmatch_results} r
          INNER JOIN {local_jobmatch_offers} o ON o.id = r.offer_id
          WHERE r.userid = :uid AND r.status IN ('pending', 'ai_done')
@@ -519,6 +519,25 @@ function render_step3($studentid, $student, $studentname) {
         ['userid' => $studentid, 'status' => 'discarded']);
 
     echo html_writer::tag('h3', '🎯 Risultati per ' . s($studentname), ['class' => 'mb-3']);
+
+    // Check for duplicate offers and warn admin.
+    if (is_siteadmin()) {
+        $dup_count = $DB->get_field_sql(
+            "SELECT COUNT(*) FROM (
+                SELECT url FROM {local_jobmatch_offers}
+                WHERE url IS NOT NULL AND url != ''
+                GROUP BY url HAVING COUNT(*) > 1
+             ) sub"
+        );
+        if ($dup_count > 0) {
+            $cleanup_url = new moodle_url('/local/jobmatchagent/admin_cleanup_offers.php');
+            echo html_writer::div(
+                '⚠ <strong>' . $dup_count . ' URL duplicate</strong> nel catalogo offerte (stessi annunci scrappati più volte). '
+                . html_writer::link($cleanup_url, 'Vai al cleanup →', ['class' => 'alert-link']),
+                'alert alert-warning py-2 mb-3'
+            );
+        }
+    }
 
     // Summary box.
     echo html_writer::start_div('row g-3 mb-3');
@@ -687,8 +706,13 @@ function render_opportunity_card($r, $studentid) {
         $meta[] = '⏱ ' . s($r->offer_schedule);
     }
     if (!empty($r->offer_url)) {
-        $meta[] = html_writer::link($r->offer_url, '🔗 vedi annuncio',
-            ['target' => '_blank', 'rel' => 'noopener']);
+        $redirect_url = (new moodle_url('/local/jobmatchagent/redirect_offer.php', [
+            'offerid' => $r->offer_id,
+            'userid'  => $userid ?? 0,
+            'from'    => 'wizard',
+        ]))->out(false);
+        $meta[] = html_writer::link($redirect_url, '🔗 vedi annuncio',
+            ['target' => '_blank', 'title' => 'Verifica che l\'annuncio sia disponibile prima di aprirlo']);
     }
     if (!empty($meta)) {
         echo html_writer::div(implode(' &nbsp;|&nbsp; ', $meta), 'text-muted small mb-2');
