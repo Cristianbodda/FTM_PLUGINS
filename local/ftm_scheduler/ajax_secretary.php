@@ -224,7 +224,7 @@ try {
 
             // Gestione data e orario
             $date = optional_param('date', null, PARAM_TEXT);
-            $time_slot = optional_param('time_slot', null, PARAM_ALPHA);
+            $time_slot = optional_param('time_slot', null, PARAM_ALPHANUMEXT);
 
             if ($date !== null || $time_slot !== null) {
                 $date_str = $date ?? date('Y-m-d', $activity->date_start);
@@ -232,13 +232,18 @@ try {
 
                 if ($slot === 'matt') {
                     $update->date_start = strtotime($date_str . ' 08:30:00');
-                    $update->date_end = strtotime($date_str . ' 11:45:00');
+                    $update->date_end   = strtotime($date_str . ' 11:45:00');
                 } elseif ($slot === 'pom') {
                     $update->date_start = strtotime($date_str . ' 13:15:00');
-                    $update->date_end = strtotime($date_str . ' 16:30:00');
-                } else { // all - tutto il giorno
+                    $update->date_end   = strtotime($date_str . ' 16:30:00');
+                } elseif ($slot === 'custom') {
+                    $tstart = optional_param('time_start', '08:30', PARAM_TEXT);
+                    $tend   = optional_param('time_end',   '16:30', PARAM_TEXT);
+                    $update->date_start = strtotime($date_str . ' ' . $tstart . ':00');
+                    $update->date_end   = strtotime($date_str . ' ' . $tend   . ':00');
+                } else { // all
                     $update->date_start = strtotime($date_str . ' 08:30:00');
-                    $update->date_end = strtotime($date_str . ' 16:30:00');
+                    $update->date_end   = strtotime($date_str . ' 16:30:00');
                 }
             }
 
@@ -337,6 +342,87 @@ try {
                 'success' => true,
                 'message' => 'Prenotazione eliminata con successo'
             ];
+            break;
+
+        case 'save_status':
+            global $DB;
+
+            $actor_name = required_param('actor_name', PARAM_ALPHANUMEXT);
+            $actor_type = required_param('actor_type', PARAM_ALPHA);
+            $date_str   = required_param('date', PARAM_TEXT);
+            $slot       = required_param('slot', PARAM_ALPHA);
+            $status     = required_param('status', PARAM_ALPHA); // 'sw','absent','present'
+
+            $day_ts = mktime(0, 0, 0,
+                (int)date('n', strtotime($date_str)),
+                (int)date('j', strtotime($date_str)),
+                (int)date('Y', strtotime($date_str))
+            );
+
+            $existing = $DB->get_record('local_ftm_daily_status', [
+                'actor_name' => $actor_name,
+                'date_day'   => $day_ts,
+                'slot'       => $slot,
+            ]);
+
+            if ($status === 'present') {
+                if ($existing) {
+                    $DB->delete_records('local_ftm_daily_status', ['id' => $existing->id]);
+                }
+            } else {
+                if ($existing) {
+                    $existing->status = $status;
+                    $existing->timemodified = time();
+                    $DB->update_record('local_ftm_daily_status', $existing);
+                } else {
+                    $rec = new stdClass();
+                    $rec->actor_name   = $actor_name;
+                    $rec->actor_type   = $actor_type;
+                    $rec->date_day     = $day_ts;
+                    $rec->slot         = $slot;
+                    $rec->status       = $status;
+                    $rec->timecreated  = time();
+                    $rec->timemodified = time();
+                    $DB->insert_record('local_ftm_daily_status', $rec);
+                }
+            }
+
+            $result = ['success' => true, 'status' => $status];
+            break;
+
+        case 'save_extra':
+            global $DB;
+
+            $date_str = required_param('date', PARAM_TEXT);
+            $slot     = required_param('slot', PARAM_ALPHA);
+            $notes    = optional_param('notes', '', PARAM_TEXT);
+
+            $day_ts = mktime(0, 0, 0,
+                (int)date('n', strtotime($date_str)),
+                (int)date('j', strtotime($date_str)),
+                (int)date('Y', strtotime($date_str))
+            );
+
+            $existing = $DB->get_record('local_ftm_extra_activities', [
+                'date_day' => $day_ts,
+                'slot'     => $slot,
+            ]);
+
+            if ($existing) {
+                $existing->notes = $notes;
+                $existing->timemodified = time();
+                $DB->update_record('local_ftm_extra_activities', $existing);
+            } else if ($notes !== '') {
+                $rec = new stdClass();
+                $rec->date_day     = $day_ts;
+                $rec->slot         = $slot;
+                $rec->notes        = $notes;
+                $rec->timecreated  = time();
+                $rec->timemodified = time();
+                $DB->insert_record('local_ftm_extra_activities', $rec);
+            }
+
+            $result = ['success' => true];
             break;
 
         // ============================================

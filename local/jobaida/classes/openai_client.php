@@ -60,13 +60,15 @@ class openai_client {
             . "{\n"
             . "  \"attention\": \"Testo della sezione Attention\",\n"
             . "  \"attention_rationale\": \"Spiegazione educativa con riferimenti esatti all'annuncio e al CV\",\n"
-            . "  \"interest\": \"Testo della sezione Interest\",\n"
+            . "  \"interest\": \"Testo della sezione Interest (Modello Manzoni - narrativo)\",\n"
             . "  \"interest_rationale\": \"Spiegazione educativa con mapping requisiti-competenze\",\n"
+            . "  \"interest_svizzero\": \"Testo della sezione Interest nel Modello Svizzerò (una frase introduttiva + bullet points con → per ogni requisito)\",\n"
             . "  \"desire\": \"Testo della sezione Desire\",\n"
             . "  \"desire_rationale\": \"Spiegazione educativa su come valori e cultura si collegano\",\n"
             . "  \"action\": \"Testo della sezione Action\",\n"
             . "  \"action_rationale\": \"Spiegazione educativa sulla strategia di chiusura\",\n"
-            . "  \"full_letter\": \"La lettera completa formale pronta da inviare\"\n"
+            . "  \"full_letter\": \"Lettera completa con sezione Interest narrativa (Modello Manzoni)\",\n"
+            . "  \"full_letter_svizzero\": \"Lettera completa identica ma con la sezione interest_svizzero al posto di interest (Modello Svizzerò)\"\n"
             . "}";
 
         $userprompt = "Genera una lettera di candidatura in {$langname} basata sul modello AIDA.\n\n"
@@ -80,12 +82,21 @@ class openai_client {
             . "- Esempio: 'La vostra ricerca di un [ruolo] con esperienza in [X] ha catturato la mia attenzione, avendo maturato [Y anni] in questo ambito presso [azienda dal CV].'\n"
             . "- VIETATO: 'Con la presente...', 'Mi permetto di...', aperture generiche.\n"
             . "- Nel rationale: spiega QUALE elemento dell'annuncio hai scelto come gancio e PERCHE, citando la riga esatta.\n\n"
-            . "INTEREST (Dimostra che il candidato ha le competenze richieste):\n"
+            . "INTEREST - MODELLO MANZONI (campo 'interest' - stile narrativo):\n"
             . "- Prendi OGNI requisito chiave dall'annuncio e trova la competenza/esperienza CORRISPONDENTE nel CV.\n"
+            . "- Scrivi un paragrafo narrativo fluido che integra almeno 3 match concreti tra annuncio e CV.\n"
             . "- Cita specificamente: nome azienda, ruolo svolto, durata, risultati ottenuti.\n"
             . "- Se un requisito non e coperto dal CV, NON inventarlo. Menziona competenze trasferibili reali o la volonta di apprendere.\n"
-            . "- Usa almeno 3 match concreti tra annuncio e CV.\n"
             . "- Nel rationale: elenca i match trovati in formato 'Requisito annuncio -> Competenza CV' e spiega perche ogni match e convincente.\n\n"
+            . "INTEREST - MODELLO SVIZZERÒ (campo 'interest_svizzero' - stile puntato):\n"
+            . "Questa e la variante svizzera moderna della sezione Interest. STRUTTURA OBBLIGATORIA:\n"
+            . "- PRIMA RIGA: una frase introduttiva breve che aggancia l'azienda e introduce l'elenco puntato.\n"
+            . "  Esempio: 'Sono particolarmente interessato alla vostra enfasi su [elemento specifico annuncio]. Durante i miei [X anni] presso [azienda dal CV],'\n"
+            . "- POI: per OGNI requisito principale dell'annuncio, UNA RIGA con il simbolo → all'inizio:\n"
+            . "  → [argomento concreto dal CV che risponde ESATTAMENTE a quel requisito: nome azienda, ruolo, durata, competenza tecnica specifica]\n"
+            . "- Usa ESATTAMENTE il simbolo → (freccia unicode) come prefisso di ogni bullet, su una riga separata.\n"
+            . "- Minimo 3 bullet points, uno per ogni requisito principale. Ogni bullet: 1-2 frasi concrete.\n"
+            . "- NON duplicare il testo del Modello Manzoni: e una versione piu strutturata e diretta.\n\n"
             . "DESIRE (Crea la connessione emotiva/valoriale):\n"
             . "- Usa gli obiettivi personali del candidato per creare un collegamento autentico con l'azienda.\n"
             . "- Se l'annuncio menziona valori aziendali, cultura, missione: collegali ai valori del candidato.\n"
@@ -96,7 +107,7 @@ class openai_client {
             . "- Mostra proattivita senza arroganza.\n"
             . "- Includi disponibilita specifica (es. 'Sono disponibile per un colloquio a partire da...').\n"
             . "- Nel rationale: spiega perche questa chiusura e efficace e quale impressione lascia.\n\n"
-            . "FULL_LETTER - FORMATO OBBLIGATORIO (ogni elemento su riga separata con \\n):\n\n"
+            . "FULL_LETTER MANZONI (campo 'full_letter') - FORMATO OBBLIGATORIO (ogni elemento su riga separata con \\n):\n\n"
             . "La lettera DEVE seguire ESATTAMENTE questo modello:\n\n"
             . "--- INIZIO MODELLO ---\n"
             . "Nome Cognome\n"
@@ -120,6 +131,10 @@ class openai_client {
             . "4. CORPO: Le 4 sezioni AIDA assemblate in modo fluido come testo unico. MASSIMO 300 parole.\n"
             . "5. CHIUSURA: Formula di saluto formale (es. 'Ringraziandovi per l'attenzione, porgo i miei piu cordiali saluti.').\n"
             . "   NON aggiungere firma/nome dopo i saluti.\n\n"
+            . "FULL_LETTER SVIZZERÒ (campo 'full_letter_svizzero'):\n"
+            . "Lettera IDENTICA a full_letter (stessa intestazione, stesso ATTENTION, stesso DESIRE, stesso ACTION e chiusura),\n"
+            . "MA con il contenuto di 'interest_svizzero' al posto della sezione INTEREST narrativa.\n"
+            . "I bullet → devono apparire come righe separate nel testo della lettera.\n\n"
             . "RICORDA: Ogni rationale deve essere una LEZIONE per lo studente. Spiega la strategia comunicativa, "
             . "fai riferimento a parti ESATTE dell'annuncio e del CV, e insegna PERCHE certe scelte sono efficaci nel contesto del mercato del lavoro svizzero.\n\n"
             . "Rispondi SOLO con il JSON, nessun altro testo.";
@@ -130,7 +145,8 @@ class openai_client {
                 ['role' => 'system', 'content' => $systemprompt],
                 ['role' => 'user', 'content' => $userprompt],
             ],
-            'max_tokens' => $this->maxtokens,
+            // Extra headroom for both Manzoni + Svizzerò letters in a single response.
+            'max_tokens' => max($this->maxtokens, 5500),
             'temperature' => 0.5,
         ];
 
@@ -182,11 +198,13 @@ class openai_client {
         $result->attention_rationale = $letter['attention_rationale'] ?? '';
         $result->interest = $letter['interest'] ?? '';
         $result->interest_rationale = $letter['interest_rationale'] ?? '';
+        $result->interest_svizzero = $letter['interest_svizzero'] ?? '';
         $result->desire = $letter['desire'] ?? '';
         $result->desire_rationale = $letter['desire_rationale'] ?? '';
         $result->action = $letter['action'] ?? '';
         $result->action_rationale = $letter['action_rationale'] ?? '';
         $result->full_letter = $letter['full_letter'] ?? '';
+        $result->full_letter_svizzero = $letter['full_letter_svizzero'] ?? '';
         $result->model_used = $this->model;
         $result->tokens_used = ($data['usage']['total_tokens'] ?? 0);
 

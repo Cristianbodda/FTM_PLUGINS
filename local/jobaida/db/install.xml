@@ -10,13 +10,15 @@
         <FIELD NAME="objectives" TYPE="text" NOTNULL="false" COMMENT="Personal objectives text input"/>
         <FIELD NAME="attention" TYPE="text" NOTNULL="false" COMMENT="AIDA - Attention section"/>
         <FIELD NAME="attention_rationale" TYPE="text" NOTNULL="false" COMMENT="Why this attention hook was chosen"/>
-        <FIELD NAME="interest" TYPE="text" NOTNULL="false" COMMENT="AIDA - Interest section"/>
+        <FIELD NAME="interest" TYPE="text" NOTNULL="false" COMMENT="AIDA - Interest section (Modello Manzoni, narrativo)"/>
         <FIELD NAME="interest_rationale" TYPE="text" NOTNULL="false" COMMENT="Why these matches were highlighted"/>
+        <FIELD NAME="interest_svizzero" TYPE="text" NOTNULL="false" COMMENT="AIDA - Interest section (Modello Svizzero, bullet points)"/>
         <FIELD NAME="desire" TYPE="text" NOTNULL="false" COMMENT="AIDA - Desire section"/>
         <FIELD NAME="desire_rationale" TYPE="text" NOTNULL="false" COMMENT="Why this connection was made"/>
         <FIELD NAME="action" TYPE="text" NOTNULL="false" COMMENT="AIDA - Action section"/>
         <FIELD NAME="action_rationale" TYPE="text" NOTNULL="false" COMMENT="Why this call to action"/>
-        <FIELD NAME="full_letter" TYPE="text" NOTNULL="false" COMMENT="Complete assembled letter"/>
+        <FIELD NAME="full_letter" TYPE="text" NOTNULL="false" COMMENT="Complete assembled letter (Modello Manzoni)"/>
+        <FIELD NAME="full_letter_svizzero" TYPE="text" NOTNULL="false" COMMENT="Complete assembled letter (Modello Svizzero, bullet interest)"/>
         <FIELD NAME="language" TYPE="char" LENGTH="5" NOTNULL="true" DEFAULT="it" COMMENT="Language code"/>
         <FIELD NAME="model_used" TYPE="char" LENGTH="50" NOTNULL="false" COMMENT="AI model used"/>
         <FIELD NAME="tokens_used" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Total tokens consumed"/>

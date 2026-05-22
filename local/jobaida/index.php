@@ -619,6 +619,20 @@ if (!$isauthorized) {
     <!-- Result Section (initially hidden) -->
     <div class="jobaida-result" id="jobaida-result">
 
+        <!-- Selettore Modello -->
+        <div id="model-selector" style="display:flex; align-items:center; gap:10px; margin-bottom:18px; padding:12px 16px; background:#f8f9fa; border-radius:8px; border:1px solid #dee2e6;">
+            <span style="font-size:13px; font-weight:600; color:#374151;">Modello lettera:</span>
+            <button type="button" id="btn-model-manzoni" onclick="switchLetterModel('manzoni')"
+                style="padding:6px 18px; border-radius:6px; border:2px solid #0066cc; background:#0066cc; color:#fff; font-size:13px; font-weight:600; cursor:pointer;">
+                📝 Manzoni
+            </button>
+            <button type="button" id="btn-model-svizzero" onclick="switchLetterModel('svizzero')"
+                style="padding:6px 18px; border-radius:6px; border:2px solid #dee2e6; background:#fff; color:#374151; font-size:13px; font-weight:500; cursor:pointer;">
+                🇨🇭 Svizzerò
+            </button>
+            <span id="model-label" style="font-size:11px; color:#6b7280; margin-left:6px;">Interest narrativo</span>
+        </div>
+
         <!-- Attention -->
         <div class="jobaida-aida-card">
             <div class="aida-header aida-header-attention">
@@ -1141,6 +1155,96 @@ if (!$isauthorized) {
     }
 
     /**
+     * Switch between Modello Manzoni (narrativo) and Modello Svizzerò (bullet points).
+     * @param {string} model - 'manzoni' or 'svizzero'
+     */
+    window.switchLetterModel = function(model) {
+        if (!lastGeneratedData) return;
+
+        var isSvizzero = (model === 'svizzero');
+
+        // Swap INTEREST content.
+        var interestEl = document.getElementById('result-interest');
+        if (isSvizzero && lastGeneratedData.interest_svizzero) {
+            renderSvizzeroInterest(interestEl, lastGeneratedData.interest_svizzero);
+        } else {
+            interestEl.textContent = lastGeneratedData.interest_manzoni || lastGeneratedData.interest || '';
+        }
+
+        // Swap full letter content.
+        var fullLetterEl = document.getElementById('result-full-letter');
+        if (isSvizzero && lastGeneratedData.full_letter_svizzero) {
+            fullLetterEl.textContent = lastGeneratedData.full_letter_svizzero;
+        } else {
+            fullLetterEl.textContent = lastGeneratedData.full_letter_manzoni || lastGeneratedData.full_letter || '';
+        }
+
+        // Update lastGeneratedData so export/copy always use the active model.
+        lastGeneratedData.interest = isSvizzero
+            ? (lastGeneratedData.interest_svizzero || lastGeneratedData.interest_manzoni)
+            : lastGeneratedData.interest_manzoni;
+        lastGeneratedData.full_letter = isSvizzero
+            ? (lastGeneratedData.full_letter_svizzero || lastGeneratedData.full_letter_manzoni)
+            : lastGeneratedData.full_letter_manzoni;
+
+        // Update toggle button styles.
+        var btnM = document.getElementById('btn-model-manzoni');
+        var btnS = document.getElementById('btn-model-svizzero');
+        var label = document.getElementById('model-label');
+        if (btnM && btnS) {
+            if (isSvizzero) {
+                btnM.style.background = '#fff'; btnM.style.color = '#374151'; btnM.style.borderColor = '#dee2e6';
+                btnS.style.background = '#0066cc'; btnS.style.color = '#fff'; btnS.style.borderColor = '#0066cc';
+                if (label) label.textContent = 'Interest con bullet → per ogni requisito';
+            } else {
+                btnM.style.background = '#0066cc'; btnM.style.color = '#fff'; btnM.style.borderColor = '#0066cc';
+                btnS.style.background = '#fff'; btnS.style.color = '#374151'; btnS.style.borderColor = '#dee2e6';
+                if (label) label.textContent = 'Interest narrativo';
+            }
+        }
+    };
+
+    /**
+     * Render Svizzerò interest: intro paragraph + → bullet lines as styled list.
+     * @param {Element} el - The container element.
+     * @param {string} text - Raw text with → prefixed bullet lines.
+     */
+    function renderSvizzeroInterest(el, text) {
+        var lines = text.split('\n');
+        var introLines = [];
+        var bullets = [];
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (line.indexOf('→') === 0 || line.indexOf('• →') === 0 || line.indexOf('- →') === 0) {
+                bullets.push(line.replace(/^[•\-]?\s*→\s*/, ''));
+            } else if (line !== '') {
+                if (bullets.length === 0) introLines.push(line);
+            }
+        }
+        // Build HTML.
+        var html = '';
+        if (introLines.length > 0) {
+            html += '<p style="margin:0 0 10px;">' + escHtml(introLines.join(' ')) + '</p>';
+        }
+        if (bullets.length > 0) {
+            html += '<ul style="list-style:none; padding:0; margin:0;">';
+            for (var j = 0; j < bullets.length; j++) {
+                html += '<li style="padding:4px 0 4px 0; display:flex; gap:8px; align-items:flex-start;">'
+                    + '<span style="color:#0066cc; font-weight:700; flex-shrink:0;">→</span>'
+                    + '<span>' + escHtml(bullets[j]) + '</span>'
+                    + '</li>';
+            }
+            html += '</ul>';
+        }
+        if (!html) { el.textContent = text; return; }
+        el.innerHTML = html;
+    }
+
+    function escHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /**
      * Generate the letter via AJAX.
      */
     window.generateLetter = function() {
@@ -1223,11 +1327,15 @@ if (!$isauthorized) {
                 attention_rationale: result.attention_rationale || '',
                 interest: result.interest || '',
                 interest_rationale: result.interest_rationale || '',
+                interest_svizzero: result.interest_svizzero || '',
                 desire: result.desire || '',
                 desire_rationale: result.desire_rationale || '',
                 action: result.action || '',
                 action_rationale: result.action_rationale || '',
                 full_letter: result.full_letter || '',
+                full_letter_svizzero: result.full_letter_svizzero || '',
+                interest_manzoni: result.interest || '',
+                full_letter_manzoni: result.full_letter || '',
                 model_used: result.model_used || '',
                 tokens_used: result.tokens_used || 0
             };
@@ -1237,6 +1345,9 @@ if (!$isauthorized) {
             var saveBtn = document.getElementById('btn-save');
             saveBtn.disabled = false;
             saveBtn.textContent = 'Salva nello Storico';
+
+            // Reset model selector to Manzoni.
+            switchLetterModel('manzoni');
 
             // Show result section.
             document.getElementById('jobaida-result').classList.add('visible');
@@ -1325,13 +1436,15 @@ if (!$isauthorized) {
         formData.append('objectives', lastGeneratedData.objectives);
         formData.append('attention', lastGeneratedData.attention);
         formData.append('attention_rationale', lastGeneratedData.attention_rationale);
-        formData.append('interest', lastGeneratedData.interest);
+        formData.append('interest', lastGeneratedData.interest_manzoni || lastGeneratedData.interest);
         formData.append('interest_rationale', lastGeneratedData.interest_rationale);
+        formData.append('interest_svizzero', lastGeneratedData.interest_svizzero || '');
         formData.append('desire', lastGeneratedData.desire);
         formData.append('desire_rationale', lastGeneratedData.desire_rationale);
         formData.append('action_text', lastGeneratedData.action);
         formData.append('action_rationale', lastGeneratedData.action_rationale);
-        formData.append('full_letter', lastGeneratedData.full_letter);
+        formData.append('full_letter', lastGeneratedData.full_letter_manzoni || lastGeneratedData.full_letter);
+        formData.append('full_letter_svizzero', lastGeneratedData.full_letter_svizzero || '');
         formData.append('model_used', lastGeneratedData.model_used);
         formData.append('tokens_used', lastGeneratedData.tokens_used);
 

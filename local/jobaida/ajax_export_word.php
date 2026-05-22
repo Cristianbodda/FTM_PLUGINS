@@ -77,10 +77,36 @@ if (!empty($attention_rationale)) {
 }
 echo '</div>';
 
-// Section I - Interest.
+// Section I - Interest (detect Svizzerò bullet format).
 echo '<div class="section">';
 echo '<div class="section-header interest">I - INTEREST: Suscita Interesse</div>';
-echo '<div class="section-content">' . nl2br(s($interest)) . '</div>';
+if (strpos($interest, '→') !== false) {
+    // Modello Svizzerò: render bullet lines as styled list.
+    $lines = explode("\n", $interest);
+    $intro = [];
+    $bullets = [];
+    foreach ($lines as $ln) {
+        $ln = trim($ln);
+        if (preg_match('/^[•\-]?\s*→\s*(.+)/', $ln, $m)) {
+            $bullets[] = $m[1];
+        } elseif ($ln !== '') {
+            if (empty($bullets)) $intro[] = $ln;
+        }
+    }
+    echo '<div class="section-content">';
+    if ($intro) echo '<p>' . nl2br(s(implode(' ', $intro))) . '</p>';
+    if ($bullets) {
+        echo '<ul style="list-style:none; padding:0; margin:8px 0;">';
+        foreach ($bullets as $b) {
+            echo '<li style="padding:3px 0; display:flex; gap:6px;"><span style="color:#0066cc; font-weight:bold;">→</span><span>' . s($b) . '</span></li>';
+        }
+        echo '</ul>';
+    }
+    echo '</div>';
+} else {
+    // Modello Manzoni: testo narrativo normale.
+    echo '<div class="section-content">' . nl2br(s($interest)) . '</div>';
+}
 if (!empty($interest_rationale)) {
     echo '<div class="rationale"><div class="rationale-title">Perche questa scelta</div>' . nl2br(s($interest_rationale)) . '</div>';
 }

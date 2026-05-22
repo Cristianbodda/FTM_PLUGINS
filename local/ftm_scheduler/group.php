@@ -80,14 +80,37 @@ $PAGE->set_heading('Dettagli Gruppo');
 // Get group members
 $members = \local_ftm_scheduler\manager::get_group_members($id);
 
-// Get activities for this group
+// Get activities for this group (include coach/teacher info).
 $activities = $DB->get_records_sql("
-    SELECT a.*, r.name as room_name
+    SELECT a.*, r.name as room_name, r.id as room_id,
+           u.firstname as coach_firstname, u.lastname as coach_lastname,
+           c.id as coach_row_id
     FROM {local_ftm_activities} a
     LEFT JOIN {local_ftm_rooms} r ON r.id = a.roomid
+    LEFT JOIN {user} u ON u.id = a.teacherid
+    LEFT JOIN {local_ftm_coaches} c ON c.userid = a.teacherid AND c.active = 1
     WHERE a.groupid = ?
     ORDER BY a.date_start ASC
 ", [$id]);
+
+// Load rooms, coaches and activity catalogs for the edit modal selects.
+$modal_rooms   = $DB->get_records('local_ftm_rooms',  ['active' => 1], 'sortorder ASC, id ASC');
+$modal_coaches = [];
+if ($DB->get_manager()->table_exists('local_ftm_coaches')) {
+    $modal_coaches = $DB->get_records_sql(
+        "SELECT c.id, c.userid, u.firstname, u.lastname
+         FROM {local_ftm_coaches} c
+         JOIN {user} u ON u.id = c.userid
+         WHERE c.active = 1
+         ORDER BY u.lastname, u.firstname"
+    );
+}
+$modal_week1   = $DB->get_manager()->table_exists('local_ftm_week1_template')
+    ? $DB->get_records('local_ftm_week1_template', ['active' => 1], 'day_of_week ASC, sortorder ASC')
+    : [];
+$modal_atelier = $DB->get_manager()->table_exists('local_ftm_atelier_catalog')
+    ? $DB->get_records('local_ftm_atelier_catalog', ['active' => 1], 'sortorder ASC, id ASC')
+    : [];
 
 // Calculate current week in the 6-week journey
 $current_week = 0;
@@ -441,7 +464,7 @@ echo $OUTPUT->header();
                 <?php endif; ?>
             </div>
         <?php else: ?>
-            <table class="activities-table">
+            <table class="activities-table" id="activities-table">
                 <thead>
                     <tr>
                         <th>Data</th>
@@ -449,30 +472,67 @@ echo $OUTPUT->header();
                         <th>Attività</th>
                         <th>Tipo</th>
                         <th>Aula</th>
+                        <th>Coach</th>
+                        <?php if (has_capability('local/ftm_scheduler:manage', $context)): ?>
+                        <th style="width:48px"></th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($activities as $activity):
-                        $time_slot = (date('H', $activity->date_start) < 12) ? 'Mattina' : 'Pomeriggio';
+                        $hour = (int)date('H', $activity->date_start);
+                        $time_slot_label = ($hour < 12) ? 'Mattina' : 'Pomeriggio';
+                        $time_slot_val   = ($hour < 12) ? 'matt' : 'pom';
+                        // Detect custom: not exactly 08:30/11:45 and not 13:15/16:30
+                        $is_custom = !(
+                            (date('H:i', $activity->date_start) === '08:30' && date('H:i', $activity->date_end) === '11:45') ||
+                            (date('H:i', $activity->date_start) === '13:15' && date('H:i', $activity->date_end) === '16:30')
+                        );
+                        if ($is_custom) { $time_slot_val = 'custom'; $time_slot_label = 'Personalizzato'; }
                         $type_labels = [
-                            'week1' => 'Settimana 1',
-                            'week2_mon_tue' => 'Sett. 2 (Lun-Mar)',
-                            'week2_thu_fri' => 'Sett. 2 (Gio-Ven)',
-                            'week3_5' => 'Settimane 3-5',
-                            'week6' => 'Settimana 6',
-                            'atelier' => 'Atelier',
+                            'week1'        => 'Settimana 1',
+                            'week2_mon_tue'=> 'Sett. 2 (Lun-Mar)',
+                            'week2_thu_fri'=> 'Sett. 2 (Gio-Ven)',
+                            'week3_5'      => 'Settimane 3-5',
+                            'week6'        => 'Settimana 6',
+                            'atelier'      => 'Atelier',
                         ];
+                        $coach_name = ($activity->coach_firstname || $activity->coach_lastname)
+                            ? trim($activity->coach_firstname . ' ' . $activity->coach_lastname)
+                            : '';
                     ?>
-                    <tr>
-                        <td><strong><?php echo date('d/m/Y', $activity->date_start); ?></strong><br>
-                            <small style="color: #666;"><?php echo local_ftm_scheduler_format_date($activity->date_start, 'weekday'); ?></small>
+                    <tr id="act-row-<?php echo $activity->id; ?>">
+                        <td>
+                            <strong><?php echo date('d/m/Y', $activity->date_start); ?></strong><br>
+                            <small style="color:#666"><?php echo local_ftm_scheduler_format_date($activity->date_start, 'weekday'); ?></small>
                         </td>
-                        <td><?php echo date('H:i', $activity->date_start); ?> - <?php echo date('H:i', $activity->date_end); ?><br>
-                            <small style="color: #666;"><?php echo $time_slot; ?></small>
+                        <td>
+                            <?php echo date('H:i', $activity->date_start); ?> – <?php echo date('H:i', $activity->date_end); ?><br>
+                            <small style="color:#666"><?php echo $time_slot_label; ?></small>
                         </td>
                         <td><?php echo s($activity->name); ?></td>
                         <td><span class="status-badge status-planning"><?php echo $type_labels[$activity->activity_type] ?? $activity->activity_type; ?></span></td>
-                        <td><?php echo s($activity->room_name ?? '-'); ?></td>
+                        <td><?php echo s($activity->room_name ?? '—'); ?></td>
+                        <td style="color:#555;font-size:13px"><?php echo $coach_name ? s($coach_name) : '<span style="color:#bbb">—</span>'; ?></td>
+                        <?php if (has_capability('local/ftm_scheduler:manage', $context)): ?>
+                        <td>
+                            <button type="button"
+                                    class="gp-edit-btn"
+                                    data-id="<?php echo (int)$activity->id; ?>"
+                                    data-date="<?php echo date('Y-m-d', $activity->date_start); ?>"
+                                    data-slot="<?php echo $time_slot_val; ?>"
+                                    data-tstart="<?php echo date('H:i', $activity->date_start); ?>"
+                                    data-tend="<?php echo date('H:i', $activity->date_end); ?>"
+                                    data-name="<?php echo htmlspecialchars($activity->name, ENT_QUOTES); ?>"
+                                    data-type="<?php echo htmlspecialchars($activity->activity_type, ENT_QUOTES); ?>"
+                                    data-roomid="<?php echo (int)($activity->roomid ?? 0); ?>"
+                                    data-teacherid="<?php echo (int)($activity->teacherid ?? 0); ?>"
+                                    title="Modifica attività"
+                                    style="background:none;border:1px solid #dee2e6;border-radius:5px;padding:5px 8px;cursor:pointer;color:#0066cc;font-size:15px;line-height:1">
+                                ✏️
+                            </button>
+                        </td>
+                        <?php endif; ?>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -675,6 +735,236 @@ document.addEventListener('keydown', function(e) {
 <?php if ($edit_error): ?>
 document.getElementById('modal-editGroup').classList.add('active');
 <?php endif; ?>
+</script>
+<?php endif; ?>
+
+<?php if (has_capability('local/ftm_scheduler:manage', $context)): ?>
+<!-- ===== Edit Activity Modal ===== -->
+<style>
+.ea-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:10000; align-items:center; justify-content:center; }
+.ea-overlay.active { display:flex; }
+.ea-modal { background:#fff; border-radius:12px; width:100%; max-width:560px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+.ea-header { padding:16px 22px; background:#f8f9fa; border-bottom:1px solid #dee2e6; border-radius:12px 12px 0 0; display:flex; justify-content:space-between; align-items:center; }
+.ea-header h3 { margin:0; font-size:16px; }
+.ea-close { background:none; border:none; font-size:22px; cursor:pointer; color:#666; }
+.ea-body { padding:22px; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.ea-full { grid-column:1/-1; }
+.ea-group label { display:block; font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:.4px; margin-bottom:5px; }
+.ea-group input, .ea-group select { width:100%; padding:8px 11px; border:1px solid #dee2e6; border-radius:6px; font-size:14px; }
+.ea-group input:focus, .ea-group select:focus { outline:none; border-color:#0066cc; box-shadow:0 0 0 3px rgba(0,102,204,.1); }
+.ea-footer { padding:14px 22px; background:#f8f9fa; border-top:1px solid #dee2e6; border-radius:0 0 12px 12px; display:flex; justify-content:flex-end; gap:10px; }
+.ea-slot-row { display:flex; gap:8px; }
+.ea-slot-btn { flex:1; padding:8px; border:1px solid #dee2e6; border-radius:6px; background:#fff; cursor:pointer; font-size:13px; font-weight:500; text-align:center; transition:all .15s; }
+.ea-slot-btn.active { background:#0066cc; color:#fff; border-color:#0066cc; }
+#ea-custom-times { display:none; }
+</style>
+
+<div class="ea-overlay" id="modal-editActivity" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="ea-modal">
+    <div class="ea-header">
+      <h3>✏️ Modifica Attività</h3>
+      <button class="ea-close" onclick="document.getElementById('modal-editActivity').classList.remove('active')">×</button>
+    </div>
+    <div class="ea-body">
+      <!-- Scegli dall'elenco -->
+      <div class="ea-group ea-full">
+        <label>Scegli dall'elenco</label>
+        <select id="ea-catalog" onchange="gpPickFromCatalog(this)">
+          <option value="">— Seleziona oppure scrivi sotto —</option>
+          <?php if (!empty($modal_week1)): ?>
+          <optgroup label="Attività Settimana 1">
+            <?php foreach ($modal_week1 as $w): ?>
+            <option value="<?php echo htmlspecialchars($w->name, ENT_QUOTES); ?>"><?php echo htmlspecialchars($w->name, ENT_QUOTES); ?></option>
+            <?php endforeach; ?>
+          </optgroup>
+          <?php endif; ?>
+          <?php if (!empty($modal_atelier)): ?>
+          <optgroup label="Atelier">
+            <?php foreach ($modal_atelier as $at): ?>
+            <option value="<?php echo htmlspecialchars($at->name, ENT_QUOTES); ?>"><?php echo htmlspecialchars($at->name, ENT_QUOTES); ?></option>
+            <?php endforeach; ?>
+          </optgroup>
+          <?php endif; ?>
+        </select>
+      </div>
+      <!-- Nome -->
+      <div class="ea-group ea-full">
+        <label>Nome Attività <small style="color:#999;font-weight:normal">(modifica libera)</small></label>
+        <input type="text" id="ea-name" autocomplete="off">
+      </div>
+      <!-- Data -->
+      <div class="ea-group">
+        <label>Data</label>
+        <input type="date" id="ea-date">
+      </div>
+      <!-- Tipo -->
+      <div class="ea-group">
+        <label>Tipo Settimana</label>
+        <select id="ea-type">
+          <option value="week1">Settimana 1</option>
+          <option value="week2_mon_tue">Sett. 2 (Lun-Mar)</option>
+          <option value="week2_thu_fri">Sett. 2 (Gio-Ven)</option>
+          <option value="week3_5">Settimane 3-5</option>
+          <option value="week6">Settimana 6</option>
+          <option value="atelier">Atelier</option>
+        </select>
+      </div>
+      <!-- Slot mattina / pomeriggio / personalizzato -->
+      <div class="ea-group ea-full">
+        <label>Orario</label>
+        <div class="ea-slot-row">
+          <button type="button" class="ea-slot-btn" id="ea-btn-matt" onclick="gpSetSlot('matt')">🌅 Mattina<br><small>08:30 – 11:45</small></button>
+          <button type="button" class="ea-slot-btn" id="ea-btn-pom"  onclick="gpSetSlot('pom')">🌇 Pomeriggio<br><small>13:15 – 16:30</small></button>
+          <button type="button" class="ea-slot-btn" id="ea-btn-custom" onclick="gpSetSlot('custom')">🕐 Personalizzato</button>
+        </div>
+      </div>
+      <!-- Orari personalizzati -->
+      <div class="ea-group ea-full" id="ea-custom-times">
+        <label>Orari manuali</label>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="flex:1"><label style="font-size:11px;color:#999">Inizio</label><input type="time" id="ea-time-start" step="300"></div>
+          <span style="padding-top:18px;color:#666">→</span>
+          <div style="flex:1"><label style="font-size:11px;color:#999">Fine</label><input type="time" id="ea-time-end" step="300"></div>
+        </div>
+      </div>
+      <!-- Aula -->
+      <div class="ea-group">
+        <label>Aula</label>
+        <select id="ea-roomid">
+          <option value="0">— Nessuna aula —</option>
+          <?php foreach ($modal_rooms as $room): ?>
+          <option value="<?php echo (int)$room->id; ?>"><?php echo s($room->name); ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <!-- Coach -->
+      <div class="ea-group">
+        <label>Coach</label>
+        <select id="ea-teacherid">
+          <option value="0">— Nessun coach —</option>
+          <?php foreach ($modal_coaches as $coach): ?>
+          <option value="<?php echo (int)$coach->userid; ?>"><?php echo s($coach->firstname . ' ' . $coach->lastname); ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+    </div>
+    <div class="ea-footer">
+      <button type="button" onclick="document.getElementById('modal-editActivity').classList.remove('active')"
+              style="padding:8px 18px;border:1px solid #dee2e6;background:#fff;border-radius:6px;cursor:pointer;font-size:14px">Annulla</button>
+      <button type="button" onclick="gpSaveActivity()"
+              style="padding:8px 18px;background:#0066cc;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600">
+        💾 Salva Modifiche
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+var gpCurrentActId = 0;
+var gpCurrentSlot  = 'matt';
+var gpSesskey      = '<?php echo sesskey(); ?>';
+var gpAjaxUrl      = '<?php echo (new moodle_url('/local/ftm_scheduler/ajax_secretary.php'))->out(false); ?>';
+
+var gpRoomNames    = <?php echo json_encode(array_column(array_map(function($r){ return ['id'=>(int)$r->id,'name'=>$r->name]; }, $modal_rooms), null, 'id')); ?>;
+var gpCoachNames   = <?php echo json_encode(array_column(array_map(function($c){ return ['id'=>(int)$c->userid,'name'=>$c->firstname.' '.$c->lastname]; }, $modal_coaches), null, 'id')); ?>;
+var gpTypeLabels   = {
+    'week1':'Settimana 1','week2_mon_tue':'Sett. 2 (Lun-Mar)',
+    'week2_thu_fri':'Sett. 2 (Gio-Ven)','week3_5':'Settimane 3-5',
+    'week6':'Settimana 6','atelier':'Atelier'
+};
+
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.gp-edit-btn');
+    if (!btn) return;
+    var d = btn.dataset;
+    gpCurrentActId = d.id;
+    document.getElementById('ea-name').value      = d.name;
+    document.getElementById('ea-date').value      = d.date;
+    document.getElementById('ea-type').value      = d.type;
+    document.getElementById('ea-roomid').value    = d.roomid;
+    document.getElementById('ea-teacherid').value = d.teacherid;
+    document.getElementById('ea-time-start').value = d.tstart;
+    document.getElementById('ea-time-end').value   = d.tend;
+    gpSetSlot(d.slot);
+    document.getElementById('modal-editActivity').classList.add('active');
+});
+
+function gpSetSlot(slot) {
+    gpCurrentSlot = slot;
+    ['matt','pom','custom'].forEach(function(s) {
+        document.getElementById('ea-btn-' + s).classList.toggle('active', s === slot);
+    });
+    document.getElementById('ea-custom-times').style.display = (slot === 'custom') ? 'block' : 'none';
+    if (slot === 'matt') {
+        document.getElementById('ea-time-start').value = '08:30';
+        document.getElementById('ea-time-end').value   = '11:45';
+    } else if (slot === 'pom') {
+        document.getElementById('ea-time-start').value = '13:15';
+        document.getElementById('ea-time-end').value   = '16:30';
+    }
+}
+
+function gpPickFromCatalog(sel) {
+    if (sel.value) {
+        document.getElementById('ea-name').value = sel.value;
+        sel.value = '';
+    }
+}
+
+function gpSaveActivity() {
+    var fd = new FormData();
+    fd.append('action',       'update_activity');
+    fd.append('sesskey',      gpSesskey);
+    fd.append('id',           gpCurrentActId);
+    fd.append('name',         document.getElementById('ea-name').value);
+    fd.append('date',         document.getElementById('ea-date').value);
+    fd.append('time_slot',    gpCurrentSlot);
+    fd.append('time_start',   document.getElementById('ea-time-start').value);
+    fd.append('time_end',     document.getElementById('ea-time-end').value);
+    fd.append('activity_type', document.getElementById('ea-type').value);
+    fd.append('roomid',       document.getElementById('ea-roomid').value);
+    fd.append('teacherid',    document.getElementById('ea-teacherid').value);
+
+    fetch(gpAjaxUrl, { method: 'POST', body: fd })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+            if (!data.success) { alert('Errore: ' + (data.message || 'sconosciuto')); return; }
+
+            // Aggiorna la riga nella tabella senza ricaricare la pagina.
+            var date    = document.getElementById('ea-date').value;
+            var tstart  = document.getElementById('ea-time-start').value;
+            var tend    = document.getElementById('ea-time-end').value;
+            var name    = document.getElementById('ea-name').value;
+            var type    = document.getElementById('ea-type').value;
+            var roomid  = parseInt(document.getElementById('ea-roomid').value);
+            var tid     = parseInt(document.getElementById('ea-teacherid').value);
+
+            var slotLabel = gpCurrentSlot === 'matt' ? 'Mattina' :
+                            gpCurrentSlot === 'pom'  ? 'Pomeriggio' : 'Personalizzato';
+
+            var d = new Date(date + 'T' + tstart);
+            var weekdays = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+            var dateStr = d.getDate().toString().padStart(2,'0') + '/' +
+                          (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
+            var wday = weekdays[d.getDay()];
+
+            var row = document.getElementById('act-row-' + gpCurrentActId);
+            var cells = row.querySelectorAll('td');
+            cells[0].innerHTML = '<strong>' + dateStr + '</strong><br><small style="color:#666">' + wday + '</small>';
+            cells[1].innerHTML = tstart + ' – ' + tend + '<br><small style="color:#666">' + slotLabel + '</small>';
+            cells[2].textContent = name;
+            cells[3].innerHTML = '<span class="status-badge status-planning">' + (gpTypeLabels[type] || type) + '</span>';
+            cells[4].textContent = (roomid && gpRoomNames[roomid]) ? gpRoomNames[roomid].name : '—';
+            cells[5].textContent = (tid && gpCoachNames[tid]) ? gpCoachNames[tid].name : '—';
+
+            document.getElementById('modal-editActivity').classList.remove('active');
+        })
+        .catch(function(){ alert('Errore di connessione.'); });
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') document.getElementById('modal-editActivity').classList.remove('active');
+});
 </script>
 <?php endif; ?>
 

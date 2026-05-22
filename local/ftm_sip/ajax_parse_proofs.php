@@ -75,10 +75,9 @@ try {
                     $entry['source_file'] = $filename;
                     // Auto-calculate sip_week from entry_date and enrollment date_start.
                     $ts = !empty($entry['entry_date']) ? strtotime($entry['entry_date']) : 0;
-                    if ($ts && $date_start > 0 && $ts >= $date_start) {
-                        $diff = $ts - $date_start;
-                        $week = (int)(floor($diff / (7 * 86400)) + 1);
-                        $entry['sip_week'] = max(1, min(10, $week));
+                    if ($ts && $date_start > 0) {
+                        $week = local_ftm_sip_calculate_week($date_start, $ts);
+                        $entry['sip_week'] = max(1, min(10, $week ?: 1));
                     } else {
                         $entry['sip_week'] = 1;
                     }

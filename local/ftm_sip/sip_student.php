@@ -1684,11 +1684,10 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
             ];
             $elig_totale = (int)($eligibility->totale ?? 0);
             $elig_decisione = $eligibility->decisione ?? 'pending';
-            // 3 criteri attivi per display.
             $elig_criteria_display = [
-                'autonomia'   => ['label' => 'Autonomia',     'value' => (int)($eligibility->autonomia    ?? 0)],
-                'occupabilita'=> ['label' => 'Collocabilità', 'value' => (int)($eligibility->occupabilita ?? 0)],
-                'motivazione' => ['label' => 'Motivazione',   'value' => (int)($eligibility->motivazione  ?? 0)],
+                'autonomia'    => ['label' => 'Autonomia',    'value' => (int)($eligibility->autonomia    ?? 0)],
+                'occupabilita' => ['label' => 'Collocabilità','value' => (int)($eligibility->occupabilita ?? 0)],
+                'motivazione'  => ['label' => 'Motivazione',  'value' => (int)($eligibility->motivazione  ?? 0)],
             ];
         ?>
         <div class="sip-eligibility-summary" id="sip-eligibility-summary">
@@ -1744,6 +1743,16 @@ a.sip-btn, a.sip-btn:visited, a.sip-btn:hover, a.sip-btn:active { color: white !
                     ?>
                     <?php echo get_string('coach', 'local_ftm_sip'); ?>: <?php echo $assessor ? s(fullname($assessor)) : '-'; ?> &mdash; <?php echo $assess_date; ?>
                 </div>
+
+                <!-- Bottone Modifica Valutazione PCI -->
+                <?php if ($canedit): ?>
+                <div style="margin-top:10px;">
+                    <button onclick="openEditEligModal()" id="btn-edit-elig"
+                            style="padding:6px 14px; background:#6b7280; color:#fff; border:none; border-radius:6px; font-size:0.82rem; cursor:pointer;">
+                        ✏️ Modifica valutazione PCI
+                    </button>
+                </div>
+                <?php endif; ?>
 
                 <!-- Bottone Richiesta Attivazione CI -->
                 <?php if ($canedit && in_array($elig_decisione, ['idoneo', 'idoneo_prioritario'])): ?>
@@ -6252,6 +6261,152 @@ function deleteKpiEntry(table, id) {
     kpiPost('delete_entry', { table: table, id: id });
 }
 </script>
+
+<?php if ($canedit): ?>
+<!-- ===== MODAL: Modifica Valutazione PCI ===== -->
+<div id="modal-edit-elig" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;justify-content:center;align-items:center;">
+<div style="background:#fff;border-radius:12px;padding:28px;max-width:620px;width:94%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <h3 style="margin:0 0 6px;color:#0891B2;font-size:17px;">✏️ Modifica Valutazione PCI</h3>
+    <div style="font-size:14px;font-weight:600;margin-bottom:16px;color:#374151;"><?php echo s(fullname($student)); ?></div>
+
+    <div style="background:#f8fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:14px;">
+        <?php
+        $edit_criteria = [
+            'autonomia'    => ['label' => 'Autonomia',    'low' => 'Molto autonomo',    'high' => 'Totalmente dipendente'],
+            'occupabilita' => ['label' => 'Collocabilità','low' => 'Alta (non urgente)','high' => 'Bassa, necessita supporto'],
+            'motivazione'  => ['label' => 'Motivazione',  'low' => 'Passivo',           'high' => 'Proattivo'],
+        ];
+        foreach ($edit_criteria as $ckey => $cdata):
+            $cur_val = (int)($eligibility->$ckey ?? 0);
+        ?>
+        <div style="padding:10px 0;border-bottom:1px solid #f3f4f6;" id="editRow_<?php echo $ckey; ?>">
+            <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:5px;"><?php echo $cdata['label']; ?></div>
+            <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;">
+                <span style="font-size:10px;color:#dc3545;max-width:100px;line-height:1.2;"><?php echo $cdata['low']; ?></span>
+                <div style="display:flex;gap:6px;">
+                    <?php for ($v = 1; $v <= 6; $v++): ?>
+                    <button type="button"
+                            style="width:34px;height:34px;border-radius:6px;border:2px solid #dee2e6;background:<?php echo ($v <= $cur_val) ? '#0891B2' : '#fff'; ?>;color:<?php echo ($v <= $cur_val) ? '#fff' : '#6b7280'; ?>;font-weight:700;cursor:pointer;font-size:13px;"
+                            id="editBtn_<?php echo $ckey; ?>_<?php echo $v; ?>"
+                            onclick="setEditRating('<?php echo $ckey; ?>', <?php echo $v; ?>)"><?php echo $v; ?></button>
+                    <?php endfor; ?>
+                </div>
+                <span style="font-size:10px;color:#28a745;max-width:100px;line-height:1.2;text-align:right;"><?php echo $cdata['high']; ?></span>
+                <span style="font-size:14px;font-weight:700;color:#0891B2;min-width:18px;text-align:center;" id="editVal_<?php echo $ckey; ?>"><?php echo $cur_val ?: '–'; ?></span>
+            </div>
+        </div>
+        <?php endforeach; ?>
+
+        <div style="margin-top:12px;padding-top:12px;border-top:2px solid #333;display:flex;align-items:center;gap:12px;">
+            <span style="font-size:14px;font-weight:700;color:#374151;">Totale</span>
+            <span id="editEligTotal" style="font-size:22px;font-weight:800;color:#0891B2;"><?php echo (int)($eligibility->totale ?? 0); ?></span>
+            <span style="color:#9ca3af;">/ 18</span>
+            <span id="editDecisioneLabel" style="margin-left:auto;font-size:13px;font-weight:700;padding:4px 12px;border-radius:6px;background:#dee2e6;color:#6b7280;">–</span>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:14px;font-size:11px;color:#6b7280;justify-content:center;">
+            <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#dc3545;margin-right:3px;"></span>3-10 Non idoneo</span>
+            <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#f59e0b;margin-right:3px;"></span>11-14 Idoneo</span>
+            <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#28a745;margin-right:3px;"></span>15-18 Prioritario</span>
+        </div>
+    </div>
+
+    <!-- Note -->
+    <div style="margin-bottom:14px;">
+        <label style="font-size:12px;font-weight:600;color:#6b7280;display:block;margin-bottom:4px;">Note</label>
+        <textarea id="editEligNote" rows="2" style="width:100%;border:1px solid #dee2e6;border-radius:6px;padding:8px;font-size:13px;resize:vertical;"><?php echo s($eligibility->note ?? ''); ?></textarea>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="closeEditEligModal()" style="padding:8px 18px;border:1px solid #dee2e6;background:#f8f9fa;border-radius:6px;cursor:pointer;font-size:13px;">Annulla</button>
+        <button onclick="saveEditElig()" style="padding:8px 18px;background:#0891B2;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">💾 Salva valutazione</button>
+    </div>
+    <div id="editEligFeedback" style="margin-top:8px;font-size:13px;text-align:center;"></div>
+</div>
+</div>
+
+<script>
+var editEligRatings = {
+    autonomia:    <?php echo (int)($eligibility->autonomia    ?? 0); ?>,
+    occupabilita: <?php echo (int)($eligibility->occupabilita ?? 0); ?>,
+    motivazione:  <?php echo (int)($eligibility->motivazione  ?? 0); ?>
+};
+
+function openEditEligModal() {
+    updateEditTotal();
+    document.getElementById('modal-edit-elig').style.display = 'flex';
+}
+
+function closeEditEligModal() {
+    document.getElementById('modal-edit-elig').style.display = 'none';
+}
+
+function setEditRating(criterion, value) {
+    editEligRatings[criterion] = value;
+    for (var v = 1; v <= 6; v++) {
+        var btn = document.getElementById('editBtn_' + criterion + '_' + v);
+        if (btn) {
+            btn.style.background = (v <= value) ? '#0891B2' : '#fff';
+            btn.style.color      = (v <= value) ? '#fff' : '#6b7280';
+            btn.style.borderColor= (v <= value) ? '#0891B2' : '#dee2e6';
+        }
+    }
+    var valEl = document.getElementById('editVal_' + criterion);
+    if (valEl) valEl.textContent = value;
+    updateEditTotal();
+}
+
+function updateEditTotal() {
+    var total = 0;
+    for (var k in editEligRatings) total += editEligRatings[k];
+    document.getElementById('editEligTotal').textContent = total;
+    var dl = document.getElementById('editDecisioneLabel');
+    if (total >= 15) {
+        dl.textContent = 'Idoneo Prioritario'; dl.style.background = '#d4edda'; dl.style.color = '#155724';
+    } else if (total >= 11) {
+        dl.textContent = 'Idoneo'; dl.style.background = '#fff3cd'; dl.style.color = '#856404';
+    } else if (total > 0) {
+        dl.textContent = 'Non idoneo'; dl.style.background = '#f8d7da'; dl.style.color = '#721c24';
+    } else {
+        dl.textContent = '–'; dl.style.background = '#dee2e6'; dl.style.color = '#6b7280';
+    }
+}
+
+function saveEditElig() {
+    var allRated = true;
+    for (var k in editEligRatings) { if (editEligRatings[k] < 1) { allRated = false; break; } }
+    if (!allRated) { alert('Valutare tutti i 3 criteri (1-6)'); return; }
+
+    var fd = new FormData();
+    fd.append('sesskey', M.cfg.sesskey);
+    fd.append('userid', <?php echo $userid; ?>);
+    fd.append('activate', '0');
+    for (var k in editEligRatings) fd.append(k, editEligRatings[k]);
+    fd.append('note', document.getElementById('editEligNote').value.trim());
+
+    var btn = document.querySelector('#modal-edit-elig button[onclick="saveEditElig()"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio...'; }
+
+    fetch(M.cfg.wwwroot + '/local/ftm_sip/ajax_activate_sip.php', {method: 'POST', body: fd})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        var fb = document.getElementById('editEligFeedback');
+        if (d.success) {
+            fb.style.color = '#28a745';
+            fb.textContent = '✓ Valutazione salvata correttamente.';
+            setTimeout(function() { location.reload(); }, 1200);
+        } else {
+            fb.style.color = '#dc3545';
+            fb.textContent = d.message || 'Errore durante il salvataggio.';
+            if (btn) { btn.disabled = false; btn.textContent = '💾 Salva valutazione'; }
+        }
+    })
+    .catch(function() {
+        document.getElementById('editEligFeedback').textContent = 'Errore di rete.';
+        if (btn) { btn.disabled = false; btn.textContent = '💾 Salva valutazione'; }
+    });
+}
+</script>
+<?php endif; ?>
 
 <?php
 echo $OUTPUT->footer();

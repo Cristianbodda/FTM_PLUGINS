@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_ftm_scheduler';
-$plugin->version = 2026020601;  // YYYYMMDDXX - Added student individual program tables
+$plugin->version = 2026052201;  // YYYYMMDDXX - Unified calendar table (daily status + extra activities)
 $plugin->requires = 2023100900; // Moodle 4.3+
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v1.2.0';
+$plugin->release = 'v1.3.0';
 
 // Dipendenze da altri plugin FTM
 $plugin->dependencies = [

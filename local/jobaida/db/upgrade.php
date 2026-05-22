@@ -40,5 +40,22 @@ function xmldb_local_jobaida_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026041001, 'local', 'jobaida');
     }
 
+    if ($oldversion < 2026052201) {
+
+        $table = new xmldb_table('local_jobaida_letters');
+
+        $field_is = new xmldb_field('interest_svizzero', XMLDB_TYPE_TEXT, null, null, null, null, null, 'interest_rationale');
+        if (!$dbman->field_exists($table, $field_is)) {
+            $dbman->add_field($table, $field_is);
+        }
+
+        $field_fls = new xmldb_field('full_letter_svizzero', XMLDB_TYPE_TEXT, null, null, null, null, null, 'full_letter');
+        if (!$dbman->field_exists($table, $field_fls)) {
+            $dbman->add_field($table, $field_fls);
+        }
+
+        upgrade_plugin_savepoint(true, 2026052201, 'local', 'jobaida');
+    }
+
     return true;
 }

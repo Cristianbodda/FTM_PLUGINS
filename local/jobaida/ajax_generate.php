@@ -57,11 +57,13 @@ try {
     $record->attention_rationale = $result->attention_rationale;
     $record->interest = $result->interest;
     $record->interest_rationale = $result->interest_rationale;
+    $record->interest_svizzero = $result->interest_svizzero;
     $record->desire = $result->desire;
     $record->desire_rationale = $result->desire_rationale;
     $record->action = $result->action;
     $record->action_rationale = $result->action_rationale;
     $record->full_letter = $result->full_letter;
+    $record->full_letter_svizzero = $result->full_letter_svizzero;
     $record->language = $language;
     $record->model_used = $result->model_used;
     $record->tokens_used = $result->tokens_used;
@@ -76,11 +78,13 @@ try {
             'attention_rationale' => $result->attention_rationale,
             'interest' => $result->interest,
             'interest_rationale' => $result->interest_rationale,
+            'interest_svizzero' => $result->interest_svizzero,
             'desire' => $result->desire,
             'desire_rationale' => $result->desire_rationale,
             'action' => $result->action,
             'action_rationale' => $result->action_rationale,
             'full_letter' => $result->full_letter,
+            'full_letter_svizzero' => $result->full_letter_svizzero,
             'tokens_used' => $result->tokens_used,
             'model_used' => $result->model_used,
         ],

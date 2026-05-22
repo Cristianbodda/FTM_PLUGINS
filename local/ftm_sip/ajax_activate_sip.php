@@ -82,17 +82,21 @@ try {
             }
         }
 
-        // Calculate totale (sum of all 6 criteria, max 36).
+        // Calculate totale (sum of all criteria).
         $totale = array_sum($criteria);
 
-        // Auto-determine decisione based on totale (semaphore system).
-        // 0-20: non_idoneo (rosso), 21-28: idoneo (arancione), 29-36: idoneo_prioritario (verde).
-        if ($totale >= 29) {
-            $decisione = 'idoneo_prioritario';
-        } else if ($totale >= 21) {
-            $decisione = 'idoneo';
+        // Auto-determine decisione based on totale.
+        // 3-criteria mode (max 18): 3-10 non_idoneo / 11-14 idoneo / 15-18 idoneo_prioritario
+        // 6-criteria mode (max 36): 6-20 non_idoneo / 21-28 idoneo / 29-36 idoneo_prioritario
+        $using_3_criteria = ($chiarezza_obiettivo == 0 && $bisogno_coaching == 0 && $comportamento == 0);
+        if ($using_3_criteria) {
+            if ($totale >= 15) $decisione = 'idoneo_prioritario';
+            else if ($totale >= 11) $decisione = 'idoneo';
+            else $decisione = 'non_idoneo';
         } else {
-            $decisione = 'non_idoneo';
+            if ($totale >= 29) $decisione = 'idoneo_prioritario';
+            else if ($totale >= 21) $decisione = 'idoneo';
+            else $decisione = 'non_idoneo';
         }
 
         // Validate decisione.

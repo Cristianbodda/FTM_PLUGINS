@@ -46,7 +46,8 @@ try {
 
             if ($activity) {
                 $colors = local_ftm_scheduler_get_colors();
-                $color_info = $colors[$activity->group_color ?? 'giallo'] ?? $colors['giallo'];
+                $has_group = !empty($activity->groupid);
+                $color_info = $has_group ? ($colors[$activity->group_color] ?? $colors['giallo']) : ['emoji' => '', 'name' => ''];
 
                 // Get enrollments
                 $enrollments = \local_ftm_scheduler\manager::get_activity_enrollments($id);
@@ -112,7 +113,11 @@ try {
                     if (!empty($enrolled_groups)) {
                         $single_kw = $enrolled_groups[0]->calendar_week ? ' KW' . str_pad($enrolled_groups[0]->calendar_week, 2, '0', STR_PAD_LEFT) : '';
                     }
-                    $content .= '<p><strong>🎨 Gruppo:</strong> <span class="gruppo-badge gruppo-' . ($activity->group_color ?? 'giallo') . '">' . $color_info['emoji'] . ' ' . $color_info['name'] . $single_kw . '</span></p>';
+                    if ($has_group) {
+                        $content .= '<p><strong>🎨 Gruppo:</strong> <span class="gruppo-badge gruppo-' . $activity->group_color . '">' . $color_info['emoji'] . ' ' . $color_info['name'] . $single_kw . '</span></p>';
+                    } else {
+                        $content .= '<p><strong>🎨 Gruppo:</strong> <span style="color:#999;font-style:italic;">Nessun gruppo</span></p>';
+                    }
                 }
 
                 $content .= '<p><strong>📊 Tipo:</strong> ' . ucfirst($activity->activity_type) . '</p>';

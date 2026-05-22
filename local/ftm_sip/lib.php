@@ -120,9 +120,15 @@ function local_ftm_sip_calculate_week($date_start, $reference_time = null) {
     if (!$date_start || $date_start > $now) {
         return 0;
     }
-    $diff = $now - $date_start;
-    $weeks = floor($diff / (7 * 86400)) + 1;
-    return (int) $weeks;
+    // Normalize both to start-of-day (local timezone) so that the time-of-day
+    // when the enrollment was activated never shifts week boundaries.
+    $start_day = mktime(0, 0, 0, (int)date('n', $date_start), (int)date('j', $date_start), (int)date('Y', $date_start));
+    $ref_day   = mktime(0, 0, 0, (int)date('n', $now),        (int)date('j', $now),        (int)date('Y', $now));
+    if ($ref_day < $start_day) {
+        return 0;
+    }
+    $weeks = (int)floor(($ref_day - $start_day) / (7 * 86400)) + 1;
+    return max(1, $weeks);
 }
 
 /**

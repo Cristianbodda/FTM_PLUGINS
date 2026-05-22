@@ -118,8 +118,8 @@ switch ($action) {
             $data->date_end = strtotime($date_str . ' 16:30:00');
         }
 
-        // Null for empty values
-        $data->groupid = $data->groupid ?: null;
+        // Null for empty values — use > 0 check to avoid any browser autocomplete leakage
+        $data->groupid = ($data->groupid > 0) ? (int)$data->groupid : null;
         $data->roomid = $data->roomid ?: null;
         $data->teacherid = $data->teacherid ?: null;
 

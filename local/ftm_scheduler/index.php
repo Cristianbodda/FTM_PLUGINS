@@ -124,8 +124,7 @@ echo $OUTPUT->header();
 .ftm-scheduler {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #333;
-    max-width: 1600px;
-    margin: 0 auto;
+    max-width: 100%;
 }
 
 /* Buttons */
@@ -212,10 +211,10 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 6px;
 }
 
-.page-title h2 { font-size: 24px; margin: 0; }
+.page-title h2 { font-size: 18px; margin: 0; }
 
 .page-title-buttons {
     display: flex;
@@ -233,10 +232,11 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
 }
 
 .ftm-tab {
-    padding: 15px 25px;
+    padding: 7px 14px;
     cursor: pointer;
     border-bottom: 3px solid transparent;
     font-weight: 500;
+    font-size: 13px;
     color: #666;
     text-decoration: none;
 }
@@ -248,42 +248,47 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
     background: white;
     border: 1px solid #dee2e6;
     border-radius: 0 0 8px 8px;
-    padding: 20px;
+    padding: 8px;
 }
 
 /* Stats */
 .stats-row {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 15px;
-    margin-bottom: 20px;
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
 }
 
 .stat-card {
     background: white;
-    border-radius: 8px;
-    padding: 15px 20px;
+    border-radius: 6px;
+    padding: 5px 10px;
     border: 1px solid #dee2e6;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 110px;
 }
 
-.stat-card.yellow { border-left: 4px solid #EAB308; }
-.stat-card.blue { border-left: 4px solid #0066cc; }
-.stat-card.green { border-left: 4px solid #28a745; }
-.stat-card.orange { border-left: 4px solid #fd7e14; }
-.stat-card.red { border-left: 4px solid #dc3545; }
+.stat-card.yellow { border-left: 3px solid #EAB308; }
+.stat-card.blue { border-left: 3px solid #0066cc; }
+.stat-card.green { border-left: 3px solid #28a745; }
+.stat-card.orange { border-left: 3px solid #fd7e14; }
+.stat-card.red { border-left: 3px solid #dc3545; }
 
-.stat-number { font-size: 28px; font-weight: 700; }
-.stat-label { font-size: 12px; color: #666; margin-top: 5px; }
+.stat-number { font-size: 18px; font-weight: 700; }
+.stat-label { font-size: 10px; color: #666; }
 
 /* Alert */
 .ftm-alert {
-    padding: 15px 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    font-size: 12px;
 }
 
 .ftm-alert-success {
@@ -331,8 +336,8 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
 /* Filters */
 .filters {
     display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
+    gap: 10px;
+    margin-bottom: 8px;
     flex-wrap: wrap;
     align-items: flex-end;
 }
@@ -350,11 +355,11 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
 }
 
 .filter-group select, .filter-group input {
-    padding: 8px 12px;
+    padding: 5px 8px;
     border: 1px solid #dee2e6;
     border-radius: 6px;
-    font-size: 14px;
-    min-width: 150px;
+    font-size: 12px;
+    min-width: 120px;
 }
 
 /* Calendar */
@@ -1394,8 +1399,8 @@ foreach ($atelier_catalog as $at) {
                     </div>
                     <div class="form-group">
                         <label>Gruppo</label>
-                        <select name="groupid" id="newact-groupid" autocomplete="off">
-                            <option value="" selected>-- Nessun gruppo --</option>
+                        <select name="groupid" id="newact-groupid" autocomplete="new-password">
+                            <option value="0" selected>-- Nessun gruppo --</option>
                             <?php foreach ($groups as $group):
                                 $color_info = $colors[$group->color] ?? $colors['giallo'];
                                 $kw = $group->calendar_week ? ' - KW' . str_pad($group->calendar_week, 2, '0', STR_PAD_LEFT) : '';
@@ -1560,7 +1565,7 @@ function ftmOpenModal(modalName) {
         document.getElementById('newact-name').value = '';
         document.getElementById('newact-type').value = 'week1';
         document.getElementById('newact-atelierid').value = '';
-        document.getElementById('newact-groupid').value = '';
+        document.getElementById('newact-groupid').value = '0';
         document.getElementById('newact-date').value = new Date().toISOString().substring(0, 10);
         document.getElementById('newact-slot').value = 'matt';
         document.getElementById('newact-roomid').value = '';

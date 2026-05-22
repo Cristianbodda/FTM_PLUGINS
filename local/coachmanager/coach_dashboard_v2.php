@@ -4157,14 +4157,14 @@ function sipToggleRecommendation() {
 
 function sipSaveAssessment(andActivate) {
     console.log('sipSaveAssessment called, activate=' + andActivate, 'ratings=', JSON.stringify(sipRatings));
-    // Validate all 6 criteria are rated.
+    // Validate all 3 criteria are rated.
     var allRated = true;
     for (var k in sipRatings) {
         if (sipRatings[k] < 1) { allRated = false; break; }
     }
     if (!allRated) { alert('Valutare tutti i 3 criteri (1-6)'); return; }
 
-    // Decisione auto-calcolata dal semaforo.
+    // Decisione auto-calcolata dal semaforo (soglie: 11/15, max 18).
     var total = 0;
     for (var k in sipRatings) { total += sipRatings[k]; }
     var decisioneVal = 'non_idoneo';
@@ -4188,7 +4188,6 @@ function sipSaveAssessment(andActivate) {
     var formData = new FormData();
     formData.append('userid', sipCurrentUserId);
     formData.append('sesskey', M.cfg.sesskey);
-    // 3 criteri attivi + 3 a 0 per compatibilità DB.
     formData.append('autonomia', sipRatings.autonomia);
     formData.append('occupabilita', sipRatings.occupabilita);
     formData.append('motivazione', sipRatings.motivazione);
@@ -4287,22 +4286,22 @@ document.getElementById('sipModal')?.addEventListener('click', function(e) {
         // Criteria with descriptions matching the official CPI paper form.
         $elig_criteria_v2 = [
             'autonomia' => [
-                'label' => 'Autonomia',
-                'question' => 'Quanto e autonoma la PCI nella ricerca d\'impiego?',
-                'low' => 'Molto autonoma',
-                'high' => 'Totalmente dipendente',
+                'label'    => 'Autonomia',
+                'question' => 'Quanto è autonoma la PCI nella ricerca d\'impiego?',
+                'low'      => 'Molto autonoma',
+                'high'     => 'Totalmente dipendente',
             ],
             'occupabilita' => [
-                'label' => 'Collocabilita',
-                'question' => 'Qual e la probabilita di trovare impiego della PCI?',
-                'low' => 'Alta collocabilita',
-                'high' => 'Molto bassa',
+                'label'    => 'Collocabilità',
+                'question' => 'Qual è la probabilità di trovare impiego della PCI?',
+                'low'      => 'Alta collocabilità',
+                'high'     => 'Molto bassa',
             ],
             'motivazione' => [
-                'label' => 'Motivazione',
-                'question' => 'La PCI e motivata a frequentare un percorso di coaching di 10 settimane?',
-                'low' => 'Passivo / poco coinvolto',
-                'high' => 'Proattivo, coinvolto, orientato al risultato',
+                'label'    => 'Motivazione',
+                'question' => 'La PCI è motivata a frequentare un percorso di coaching di 10 settimane?',
+                'low'      => 'Passivo / poco coinvolto',
+                'high'     => 'Proattivo, coinvolto, orientato al risultato',
             ],
         ];
         foreach ($elig_criteria_v2 as $ckey => $cdata):
