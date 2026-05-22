@@ -31,11 +31,6 @@ try {
     switch ($action) {
 
         case 'search':
-            $access_code = required_param('access_code', PARAM_RAW);
-            if (trim($access_code) !== '6807') {
-                throw new Exception('Codice di accesso non valido.');
-            }
-
             $settori_raw = optional_param('settori', '', PARAM_TEXT);
             $mansione    = optional_param('mansione', '', PARAM_TEXT);
             $tipo        = optional_param('tipo_lavoro', '', PARAM_ALPHANUMEXT);

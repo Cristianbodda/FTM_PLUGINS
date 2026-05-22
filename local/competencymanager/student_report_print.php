@@ -1006,6 +1006,37 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
     // Ricalcola certProgress
     $certProgress = generate_certification_progress($competencies);
 }
+
+// ============================================
+// RICOSTRUZIONE OVERLAY DAL areasData FILTRATO
+// Eseguita solo quando un filtro settore è attivo.
+// Usa $overlayAreas (keyed by short code) come sorgente dati
+// e itera $areasData (già filtrato per settore) per i label corretti.
+// ============================================
+$hasActiveSectorFilter = ($cm_sector_filter !== 'all') ||
+                         (!empty($printSectorFilter) && $printSectorFilter !== 'all');
+
+if ($hasActiveSectorFilter && !empty($overlayLabels) && !empty($areasData) && !empty($overlayAreas)) {
+    $newOL = []; $newOQ = []; $newOA = []; $newOLV = []; $newOC = [];
+    foreach ($areasData as $areaKey => $areaData) {
+        $shortCode = $areaData['code'];
+        if (isset($overlayAreas[$shortCode])) {
+            $ovEntry = $overlayAreas[$shortCode];
+            $newOL[]  = $areaData['name'];
+            $newOQ[]  = $ovEntry['quiz'] ?? null;
+            $newOA[]  = $ovEntry['auto'] ?? null;
+            $newOLV[] = $ovEntry['labeval'] ?? null;
+            $newOC[]  = $ovEntry['coach'] ?? null;
+        }
+    }
+    if (!empty($newOL)) {
+        $overlayLabels   = $newOL;
+        $overlayQuiz     = $newOQ;
+        $overlayAuto     = $newOA;
+        $overlayLabeval  = $newOLV;
+        $overlayCoach    = $newOC;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="it">

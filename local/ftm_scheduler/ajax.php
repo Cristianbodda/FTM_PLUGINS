@@ -34,7 +34,7 @@ require_capability('local/ftm_scheduler:view', $context);
 
 $action = required_param('action', PARAM_ALPHANUMEXT);
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
 $result = ['success' => false];
 
@@ -87,7 +87,14 @@ try {
                 $content .= '<p><strong>🏫 Aula:</strong> <span class="aula-badge aula-' . ($activity->roomid ?? 2) . '">' . ($activity->room_name ?? 'AULA 2') . '</span></p>';
                 $content .= '</div>';
                 $content .= '<div>';
-                $content .= '<p><strong>👤 Docente:</strong> Coach ' . ($activity->teacher_firstname ? substr($activity->teacher_firstname, 0, 1) . substr($activity->teacher_lastname, 0, 1) : 'GM') . '</p>';
+                $teacher_label = '';
+                if (!empty($activity->teacher_firstname) || !empty($activity->teacher_lastname)) {
+                    $teacher_label = strtoupper(
+                        substr($activity->teacher_firstname ?? '', 0, 1) .
+                        substr($activity->teacher_lastname  ?? '', 0, 1)
+                    );
+                }
+                $content .= '<p><strong>👤 Docente:</strong> ' . ($teacher_label ? 'Coach ' . $teacher_label : '<em style="color:#999">Non assegnato</em>') . '</p>';
 
                 // Show all groups participating
                 if (count($enrolled_groups) > 1) {
@@ -112,34 +119,54 @@ try {
                 $content .= '</div>';
                 $content .= '</div>';
                 
-                // Enrollments table
+                // Enrollments table — full list with remove buttons
                 $content .= '<h4 style="margin-bottom: 10px;">👥 Studenti Iscritti (' . $enrolled_count . '/' . ($activity->max_participants ?? 10) . ')</h4>';
                 $content .= '<table class="data-table">';
-                $content .= '<thead><tr><th>Studente</th><th>Email</th><th>Notifica</th></tr></thead>';
-                $content .= '<tbody>';
-                
-                $shown = 0;
+                $content .= '<thead><tr><th>Studente</th><th>Email</th><th>Notifica</th><th></th></tr></thead>';
+                $content .= '<tbody id="enroll-list-' . $id . '">';
+
                 foreach ($enrollments as $enrollment) {
-                    if ($shown < 3) {
-                        $content .= '<tr>';
-                        $content .= '<td>' . fullname($enrollment) . '</td>';
-                        $content .= '<td>' . $enrollment->email . '</td>';
-                        $content .= '<td>' . ($enrollment->notification_sent ? '✅ Inviata' : '⏳ In attesa') . '</td>';
-                        $content .= '</tr>';
-                    }
-                    $shown++;
+                    $content .= '<tr id="enroll-row-' . $enrollment->id . '">';
+                    $content .= '<td>' . s(fullname($enrollment)) . '</td>';
+                    $content .= '<td style="font-size:12px;color:#666;">' . s($enrollment->email) . '</td>';
+                    $content .= '<td>' . ($enrollment->notification_sent ? '✅' : '⏳') . '</td>';
+                    $content .= '<td><button onclick="ftmUnenrollStudent(' . $id . ',' . $enrollment->id . ',this)"'
+                        . ' style="background:none;border:none;cursor:pointer;color:#dc3545;font-size:15px;padding:2px 6px;" title="Rimuovi studente">🗑️</button></td>';
+                    $content .= '</tr>';
                 }
-                
-                if ($enrolled_count > 3) {
-                    $content .= '<tr><td colspan="3" style="text-align: center; color: #666;">... altri ' . ($enrolled_count - 3) . ' studenti</td></tr>';
-                }
-                
+
                 if ($enrolled_count == 0) {
-                    $content .= '<tr><td colspan="3" style="text-align: center; color: #999;">Nessuno studente iscritto</td></tr>';
+                    $content .= '<tr id="enroll-row-empty"><td colspan="4" style="text-align:center;color:#999;">Nessuno studente iscritto</td></tr>';
                 }
-                
+
                 $content .= '</tbody></table>';
-                
+
+                // Add-student section
+                $view_groups = \local_ftm_scheduler\manager::get_groups();
+                $view_colors = local_ftm_scheduler_get_colors();
+
+                $content .= '<div style="margin-top:14px;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid #dee2e6;">';
+                $content .= '<p style="font-weight:600;margin:0 0 8px;font-size:13px;">➕ Aggiungi Studenti</p>';
+                $content .= '<div style="position:relative;">';
+                $content .= '<input type="text" id="view-student-search" placeholder="Cerca per nome o email..."'
+                    . ' autocomplete="off" oninput="ftmSearchForEnroll(this)"'
+                    . ' style="width:100%;padding:8px 12px;border:1px solid #dee2e6;border-radius:6px;font-size:13px;">';
+                $content .= '<div id="view-search-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;'
+                    . 'border:1px solid #dee2e6;border-radius:0 0 6px 6px;box-shadow:0 4px 12px rgba(0,0,0,0.1);'
+                    . 'max-height:160px;overflow-y:auto;z-index:20000;"></div>';
+                $content .= '</div>';
+                // Group bulk enroll
+                $content .= '<select onchange="ftmEnrollGroupToActivity(this)" autocomplete="off"'
+                    . ' style="margin-top:6px;width:100%;padding:8px 12px;border:1px solid #dee2e6;border-radius:6px;font-size:13px;color:#555;">';
+                $content .= '<option value="">+ Aggiungi tutti gli studenti di un gruppo...</option>';
+                foreach ($view_groups as $vg) {
+                    $vgi = $view_colors[$vg->color] ?? $view_colors['giallo'];
+                    $vgkw = $vg->calendar_week ? ' - KW' . str_pad($vg->calendar_week, 2, '0', STR_PAD_LEFT) : '';
+                    $content .= '<option value="' . (int)$vg->id . '">' . s($vgi['emoji'] . ' ' . $vgi['name'] . $vgkw) . '</option>';
+                }
+                $content .= '</select>';
+                $content .= '</div>';
+
                 // Edit/Delete buttons
                 $content .= '<div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">';
                 $content .= '<a href="' . (new moodle_url('/local/ftm_scheduler/edit_activity.php', ['id' => $id]))->out() . '" class="ftm-btn ftm-btn-primary" style="margin-right: 10px;">✏️ Modifica</a>';
@@ -205,6 +232,87 @@ try {
             }
             break;
             
+        case 'search_users':
+            $q = required_param('q', PARAM_TEXT);
+            $q = trim($q);
+            if (core_text::strlen($q) < 2) {
+                $result = ['success' => true, 'users' => []];
+                break;
+            }
+            $search = '%' . $DB->sql_like_escape($q) . '%';
+            $users_raw = $DB->get_records_sql(
+                "SELECT u.id, u.firstname, u.lastname, u.email
+                   FROM {user} u
+                  WHERE u.deleted = 0 AND u.suspended = 0
+                    AND (" . $DB->sql_like('u.firstname', ':s1', false) . "
+                         OR " . $DB->sql_like('u.lastname', ':s2', false) . "
+                         OR " . $DB->sql_like('u.email', ':s3', false) . ")
+                  ORDER BY u.lastname, u.firstname",
+                ['s1' => $search, 's2' => $search, 's3' => $search],
+                0, 20
+            );
+            $users_out = [];
+            foreach ($users_raw as $u) {
+                $users_out[] = [
+                    'id'       => (int)$u->id,
+                    'fullname' => fullname($u),
+                    'email'    => $u->email,
+                ];
+            }
+            $result = ['success' => true, 'users' => $users_out];
+            break;
+
+        case 'get_group_members':
+            $groupid = required_param('groupid', PARAM_INT);
+            $members = \local_ftm_scheduler\manager::get_group_members($groupid);
+            $members_out = [];
+            foreach ($members as $m) {
+                if (empty($m->userid)) continue;
+                $members_out[] = [
+                    'userid'   => (int)$m->userid,
+                    'fullname' => fullname($m),
+                ];
+            }
+            $result = ['success' => true, 'members' => $members_out];
+            break;
+
+        case 'enroll_student':
+            require_sesskey();
+            require_capability('local/ftm_scheduler:manage', $context);
+            $activityid = required_param('activityid', PARAM_INT);
+            $userid     = required_param('userid', PARAM_INT);
+            // Avoid duplicates.
+            if (!$DB->record_exists('local_ftm_enrollments', ['activityid' => $activityid, 'userid' => $userid])) {
+                \local_ftm_scheduler\manager::enroll_user($activityid, $userid, null);
+            }
+            $result = ['success' => true];
+            break;
+
+        case 'unenroll_student':
+            require_sesskey();
+            require_capability('local/ftm_scheduler:manage', $context);
+            $enrollmentid = required_param('enrollmentid', PARAM_INT);
+            $DB->delete_records('local_ftm_enrollments', ['id' => $enrollmentid]);
+            $result = ['success' => true];
+            break;
+
+        case 'enroll_group':
+            require_sesskey();
+            require_capability('local/ftm_scheduler:manage', $context);
+            $activityid = required_param('activityid', PARAM_INT);
+            $groupid    = required_param('groupid', PARAM_INT);
+            $members    = \local_ftm_scheduler\manager::get_group_members($groupid);
+            $count      = 0;
+            foreach ($members as $m) {
+                if (empty($m->userid)) continue;
+                if (!$DB->record_exists('local_ftm_enrollments', ['activityid' => $activityid, 'userid' => $m->userid])) {
+                    \local_ftm_scheduler\manager::enroll_user($activityid, $m->userid, $groupid);
+                    $count++;
+                }
+            }
+            $result = ['success' => true, 'enrolled' => $count];
+            break;
+
         default:
             $result = ['success' => false, 'error' => 'Invalid action'];
     }

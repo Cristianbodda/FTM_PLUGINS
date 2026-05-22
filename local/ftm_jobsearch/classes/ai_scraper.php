@@ -14,29 +14,94 @@ defined('MOODLE_INTERNAL') || die();
 
 class ai_scraper {
 
-    /** @var string[] Search URLs per site. {QUERY} is replaced at runtime. Sites without {QUERY} are static and scraped once per sector run. */
+    /**
+     * Sites to scrape — page 1. {QUERY} is replaced at runtime.
+     * Sites without {QUERY} are static (scraped once per sector run).
+     */
     private const SITES = [
-        // jobs.ch: keyword search sorted by date (newest first).
         'jobs.ch'        => 'https://www.jobs.ch/en/vacancies/?region=4&term={QUERY}&sort=date',
-        // randstad.ch: keyword search sorted by date.
-        'randstad.ch'    => 'https://www.randstad.ch/it/lavoro/q-{QUERY}/re-ticino/?sort=date',
-        // jobup.ch: Ticino region (id=25).
         'jobup.ch'       => 'https://www.jobup.ch/it/impieghi/?region=25&term={QUERY}',
-        // jobscout24.ch: Ticino filter in URL path.
         'jobscout24.ch'  => 'https://www.jobscout24.ch/it/jobs/{QUERY}/ticino',
-        // carriera.ch: static page (no keyword filter), all offers mixed. Scraped once per sector run.
+        'ch.indeed.com'  => 'https://ch.indeed.com/jobs?q={QUERY}&l=Canton+Ticino&sort=date',
         'carriera.ch'    => 'https://www.carriera.ch/cgi-bin/annunci_offerte_lavoro.cgi',
+        // manpower.ch — agenzia interinale attiva in Ticino
+        'manpower.ch'    => 'https://www.manpower.ch/it/offerte-di-lavoro/?query={QUERY}&location=Ticino',
+        // adecco.ch — agenzia interinale, offerte in Ticino
+        'adecco.ch'      => 'https://www.adecco.ch/it-ch/candidati/offerte-di-lavoro/?query={QUERY}&location=Ticino',
     ];
 
-    /** @var string[] Keywords per FTM sector — first keyword is used as search query. */
+    /**
+     * Page 2 URLs — doubles HTML volume.
+     */
+    private const SITES_PAGE2 = [
+        'jobs.ch'       => 'https://www.jobs.ch/en/vacancies/?region=4&term={QUERY}&sort=date&page=2',
+        'jobup.ch'      => 'https://www.jobup.ch/it/impieghi/?region=25&term={QUERY}&p=2',
+        'ch.indeed.com' => 'https://ch.indeed.com/jobs?q={QUERY}&l=Canton+Ticino&sort=date&start=10',
+        'manpower.ch'   => 'https://www.manpower.ch/it/offerte-di-lavoro/?query={QUERY}&location=Ticino&page=2',
+    ];
+
+    /**
+     * Page 3 — triples HTML volume for high-demand sectors.
+     */
+    private const SITES_PAGE3 = [
+        'jobs.ch'       => 'https://www.jobs.ch/en/vacancies/?region=4&term={QUERY}&sort=date&page=3',
+        'jobup.ch'      => 'https://www.jobup.ch/it/impieghi/?region=25&term={QUERY}&p=3',
+        'ch.indeed.com' => 'https://ch.indeed.com/jobs?q={QUERY}&l=Canton+Ticino&sort=date&start=20',
+    ];
+
+    /**
+     * Keywords per FTM sector — expanded with related (affini) job titles.
+     * All keywords are searched on each site + job-room.ch API.
+     */
     private const SECTOR_KEYWORDS = [
-        'MECCANICA'        => ['meccanico', 'CNC', 'fresatore', 'tornitore'],
-        'AUTOMOBILE'       => ['meccanico auto', 'carrozziere', 'autofficina'],
-        'CHIMFARM'         => ['operatore chimico', 'farmaceutico', 'laboratorio'],
-        'LOGISTICA'        => ['magazziniere', 'logistica', 'mulettista'],
-        'ELETTRICITA'      => ['elettricista', 'impianti elettrici', 'quadrista'],
-        'AUTOMAZIONE'      => ['automazione', 'PLC', 'meccatronico'],
-        'METALCOSTRUZIONE' => ['saldatore', 'carpentiere metallico', 'lamierista'],
+        'MECCANICA'        => [
+            'meccanico', 'CNC', 'fresatore', 'tornitore', 'operatore meccanico',
+            'attrezzista', 'manutentore meccanico', 'tecnico meccanico',
+            'operatore produzione', 'stampista', 'elettromeccanico', 'montatore',
+        ],
+        'AUTOMOBILE'       => [
+            'meccanico auto', 'meccanico veicoli', 'carrozziere', 'officina meccanica',
+            'manutenzione auto', 'elettrauto', 'gommista', 'diagnostica auto',
+            'verniciatore auto', 'meccanico moto', 'tecnico automotive', 'riparatore veicoli',
+        ],
+        'CHIMFARM'         => [
+            'operatore chimico', 'farmaceutico', 'laboratorio chimico', 'operatore produzione',
+            'tecnico laboratorio', 'quality control', 'analista chimico',
+            'operatore GMP', 'produzione farmaceutica', 'tecnico chimico',
+            'controllo qualità', 'operatore life science',
+        ],
+        'LOGISTICA'        => [
+            'magazziniere', 'logistica', 'mulettista', 'addetto magazzino', 'spedizioniere',
+            'operatore logistico', 'preparatore ordini', 'carrellista',
+            'coordinatore logistica', 'addetto spedizioni', 'supply chain', 'driver interno',
+        ],
+        'ELETTRICITA'      => [
+            'elettricista', 'impianti elettrici', 'quadrista', 'installatore elettrico',
+            'tecnico elettrico', 'elettrotecnico', 'installatore fotovoltaico',
+            'tecnico impianti', 'manutentore elettrico', 'cablatore',
+            'operatore impianti elettrici', 'installatore BT',
+        ],
+        'AUTOMAZIONE'      => [
+            'automazione', 'PLC', 'meccatronico', 'tecnico automazione', 'elettrotecnico',
+            'programmatore PLC', 'robotica', 'tecnico meccatronico', 'SCADA',
+            'manutentore impianti', 'tecnico strumentazione', 'Industry 4.0',
+        ],
+        'METALCOSTRUZIONE' => [
+            'saldatore', 'carpentiere metallico', 'lamierista', 'costruttore metallico',
+            'serramentista', 'saldatura', 'strutture metalliche', 'carpenteria',
+            'assemblatore', 'calderaio', 'lattoniere', 'fabbro',
+        ],
+    ];
+
+    /**
+     * Generic Ticino keywords — searched regardless of student sector.
+     * Covers common blue-collar + technical jobs in Canton Ticino.
+     * These produce a broad "tutto Ticino" catalog independently of sector filters.
+     */
+    private const BROAD_TICINO_KEYWORDS = [
+        'operaio', 'tecnico', 'addetto produzione', 'manutentore',
+        'montatore', 'elettromeccanico', 'operatore macchine',
+        'tuttofare', 'addetto assemblaggio', 'controllo qualita',
     ];
 
     /**
@@ -96,6 +161,7 @@ class ai_scraper {
                 debugging("ftm_jobsearch: errore job-room.ch query '{$query}': " . $e->getMessage(), DEBUG_DEVELOPER);
             }
 
+            // Page 1 — all sites.
             foreach (self::SITES as $site_name => $url_template) {
                 $is_static = strpos($url_template, '{QUERY}') === false;
                 if ($is_static) {
@@ -113,12 +179,118 @@ class ai_scraper {
                     debugging("ftm_jobsearch: errore scraping {$site_name} query '{$query}': " . $e->getMessage(), DEBUG_DEVELOPER);
                 }
             }
+
+            // Page 2 — doubles HTML volume.
+            foreach (self::SITES_PAGE2 as $site_name => $url_template) {
+                try {
+                    $offers = self::scrape_site($site_name, $url_template, $query, $settore, $apikey, $model);
+                    if (!empty($offers)) {
+                        $all_offers = array_merge($all_offers, $offers);
+                        $sites_scraped++;
+                    }
+                } catch (\Exception $e) {
+                    debugging("ftm_jobsearch: errore scraping {$site_name} p2 query '{$query}': " . $e->getMessage(), DEBUG_DEVELOPER);
+                }
+            }
+
+            // Page 3 — triples HTML volume.
+            foreach (self::SITES_PAGE3 as $site_name => $url_template) {
+                try {
+                    $offers = self::scrape_site($site_name, $url_template, $query, $settore, $apikey, $model);
+                    if (!empty($offers)) {
+                        $all_offers = array_merge($all_offers, $offers);
+                        $sites_scraped++;
+                    }
+                } catch (\Exception $e) {
+                    debugging("ftm_jobsearch: errore scraping {$site_name} p3 query '{$query}': " . $e->getMessage(), DEBUG_DEVELOPER);
+                }
+            }
         }
 
-        // Save to DB with dedup by url_hash — safe to call with duplicates across keywords.
+        // Save to DB with dedup by url_hash.
         $saved = self::save_offers($all_offers, $settore);
 
         return ['offers' => $all_offers, 'from_cache' => false, 'scraped_sites' => $sites_scraped, 'saved' => $saved];
+    }
+
+    /**
+     * Scrape broad Ticino jobs — not sector-specific.
+     * Uses BROAD_TICINO_KEYWORDS + job-room.ch with empty keyword (returns all recent Ticino jobs).
+     * Call this once per catalog update to populate the catalog regardless of student sectors.
+     *
+     * @param bool $force Skip cache
+     * @return array ['saved' => int, 'scraped_sites' => int]
+     */
+    public static function scrape_broad_ticino(bool $force = false): array {
+        global $DB;
+
+        if (!$force) {
+            $cache_hours = (int)(get_config('local_ftm_jobsearch', 'cache_hours') ?: 24);
+            $cache_cutoff = time() - ($cache_hours * 3600);
+            $cached = $DB->count_records_select(
+                'local_ftm_jobsearch_offers',
+                "settore = 'GENERICO' AND attivo = 1 AND data_scraping > :cutoff",
+                ['cutoff' => $cache_cutoff]
+            );
+            if ($cached > 0) {
+                return ['saved' => 0, 'scraped_sites' => 0, 'from_cache' => true];
+            }
+        }
+
+        $all_offers  = [];
+        $sites_scraped = 0;
+
+        // 1. job-room.ch: empty keyword = all recent Ticino jobs (up to 250 most recent).
+        try {
+            $jr_offers = self::scrape_jobroom('GENERICO', '');
+            if (!empty($jr_offers)) {
+                $all_offers = array_merge($all_offers, $jr_offers);
+                $sites_scraped++;
+            }
+        } catch (\Exception $e) {
+            debugging("ftm_jobsearch: errore job-room broad: " . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+
+        // 2. job-room.ch with broad Ticino keywords.
+        foreach (self::BROAD_TICINO_KEYWORDS as $query) {
+            try {
+                $jr_offers = self::scrape_jobroom('GENERICO', $query);
+                if (!empty($jr_offers)) {
+                    $all_offers = array_merge($all_offers, $jr_offers);
+                    $sites_scraped++;
+                }
+            } catch (\Exception $e) {
+                debugging("ftm_jobsearch: errore job-room broad '{$query}': " . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+        }
+
+        // 3. HTML scraping with broad keywords (no AI key required for job-room, but needed for HTML).
+        $apikey = self::get_api_key();
+        $model = get_config('local_ftm_jobsearch', 'openai_model') ?: 'gpt-4o-mini';
+        if (!empty($apikey)) {
+            $static_done = [];
+            foreach (self::BROAD_TICINO_KEYWORDS as $query) {
+                foreach (self::SITES as $site_name => $url_template) {
+                    $is_static = strpos($url_template, '{QUERY}') === false;
+                    if ($is_static) {
+                        if (in_array($site_name, $static_done)) {
+                            continue;
+                        }
+                        $static_done[] = $site_name;
+                    }
+                    try {
+                        $offers = self::scrape_site($site_name, $url_template, $query, 'GENERICO', $apikey, $model);
+                        $all_offers = array_merge($all_offers, $offers);
+                        $sites_scraped++;
+                    } catch (\Exception $e) {
+                        debugging("ftm_jobsearch: errore broad scraping {$site_name}: " . $e->getMessage(), DEBUG_DEVELOPER);
+                    }
+                }
+            }
+        }
+
+        $saved = self::save_offers($all_offers, 'GENERICO');
+        return ['saved' => $saved, 'scraped_sites' => $sites_scraped, 'from_cache' => false];
     }
 
     /**
@@ -273,10 +445,10 @@ class ai_scraper {
 
         $offers = [];
         $page = 0;
-        $max_pages = 3;
+        $max_pages = 5;   // up from 3 — up to 250 offers per keyword
 
         do {
-            $url = $base_url . '?page=' . $page . '&size=20&sort=date_desc';
+            $url = $base_url . '?page=' . $page . '&size=50&sort=date_desc';
 
             $body = json_encode([
                 'workloadPercentageMin' => 10,
@@ -332,57 +504,63 @@ class ai_scraper {
                 $total_count = (int)$m[1];
             }
 
-            foreach ($jobs as $job) {
+            foreach ($jobs as $item) {
+                // Real API response: [{favouriteItem, jobAdvertisement: {...}}, ...]
+                $job = $item['jobAdvertisement'] ?? $item;
+
                 $uuid = $job['id'] ?? null;
                 if (empty($uuid)) {
                     continue;
                 }
 
-                // Title: prefer Italian, then DE/FR/EN.
+                $job_content = $job['jobContent'] ?? [];
+
+                // Title from jobDescriptions (prefer Italian, fallback to first available).
                 $title = '';
-                $title_obj = $job['title'] ?? null;
-                if (is_array($title_obj)) {
-                    $title = $title_obj['it'] ?? $title_obj['de'] ?? $title_obj['fr'] ?? $title_obj['en'] ?? '';
-                }
-                if (empty($title)) {
-                    foreach ($job['jobContent']['jobDescriptions'] ?? [] as $d) {
-                        if (!empty($d['title'])) {
-                            $title = $d['title'];
-                            break;
-                        }
+                $descs = $job_content['jobDescriptions'] ?? [];
+                foreach ($descs as $d) {
+                    if (($d['languageIsoCode'] ?? '') === 'it' && !empty($d['title'])) {
+                        $title = strip_tags($d['title']);
+                        break;
                     }
+                }
+                if (empty($title) && !empty($descs[0]['title'])) {
+                    $title = strip_tags($descs[0]['title']);
                 }
                 if (empty($title)) {
                     $title = 'Offerta di lavoro';
                 }
 
-                // Company.
-                $azienda = $job['company']['name'] ?? null;
+                // Company is inside jobContent.
+                $azienda = $job_content['company']['name'] ?? null;
 
                 // Location.
-                $location = $job['jobContent']['location'] ?? [];
+                $location = $job_content['location'] ?? [];
                 $citta = $location['city'] ?? null;
                 $lat = isset($location['coordinates']['lat']) ? (float)$location['coordinates']['lat'] : null;
                 $lng = isset($location['coordinates']['lon']) ? (float)$location['coordinates']['lon'] : null;
 
-                // Description (strip HTML).
+                // Description (strip HTML, prefer Italian).
                 $descrizione = '';
-                foreach ($job['jobContent']['jobDescriptions'] ?? [] as $d) {
-                    if (!empty($d['description'])) {
+                foreach ($descs as $d) {
+                    if (($d['languageIsoCode'] ?? '') === 'it' && !empty($d['description'])) {
                         $descrizione = mb_substr(strip_tags($d['description']), 0, 1000);
                         break;
                     }
                 }
-
-                // Work type.
-                $job_type = $job['jobContent']['jobType'] ?? [];
-                $tipo = null;
-                if (!empty($job_type['temporary'])) {
-                    $tipo = 'temporaneo';
-                } elseif (!empty($job_type['permanent'])) {
-                    $tipo = 'fulltime';
+                if (empty($descrizione) && !empty($descs[0]['description'])) {
+                    $descrizione = mb_substr(strip_tags($descs[0]['description']), 0, 1000);
                 }
-                $pmax = $job['jobContent']['workingTimePercentageMax'] ?? null;
+
+                // Work type from employment block.
+                $employment = $job_content['employment'] ?? [];
+                $tipo = null;
+                if (!empty($employment['permanent'])) {
+                    $tipo = 'fulltime';
+                } elseif (isset($employment['endDate'])) {
+                    $tipo = 'temporaneo';
+                }
+                $pmax = isset($employment['workloadPercentageMax']) ? (int)$employment['workloadPercentageMax'] : null;
                 if ($pmax !== null && $pmax <= 60) {
                     $tipo = 'parttime';
                 }
@@ -396,12 +574,25 @@ class ai_scraper {
                     }
                 }
 
+                // Prefer externalUrl (company's own page) over the Angular SPA detail URL.
+                // job-room.ch Angular detail URLs redirect to generic search when expired.
+                $apply_channel = $job_content['applyChannel'] ?? [];
+                $external_url  = $apply_channel['url']     // online application form URL
+                              ?? $apply_channel['formUrl'] // alternative field name
+                              ?? ($job['publication']['externalUrl'] ?? null); // source posting URL
+                // Only use externalUrl if it looks like a real URL (not mailto:).
+                if (!empty($external_url) && str_starts_with($external_url, 'http')) {
+                    $offer_url = $external_url;
+                } else {
+                    $offer_url = "https://www.job-room.ch/job-search/detail/{$uuid}";
+                }
+
                 $offers[] = [
                     'titolo'             => $title,
                     'azienda'            => $azienda,
                     'citta'              => $citta,
                     'tipo_lavoro'        => $tipo,
-                    'url'                => "https://www.job-room.ch/job-search/detail/{$uuid}",
+                    'url'                => $offer_url,
                     'data_pubblicazione' => $data_pub,
                     'descrizione'        => $descrizione,
                     'fonte'              => 'job-room.ch',
@@ -414,7 +605,7 @@ class ai_scraper {
             }
 
             $page++;
-            $fetched_so_far = $page * 20;
+            $fetched_so_far = $page * 50;
 
         } while ($page < $max_pages && $fetched_so_far < $total_count);
 
@@ -463,7 +654,7 @@ class ai_scraper {
             . "- azienda: nome azienda (null se non presente)\n"
             . "- citta: citta del posto (null se non presente)\n"
             . "- tipo_lavoro: fulltime/parttime/stage/apprendistato/temporaneo (null se non chiaro)\n"
-            . "- url: link all'offerta completa (ricostruisci URL assoluto se relativo, base: https://www.{$site_name})\n"
+            . "- url: link all'offerta completa (ricostruisci URL assoluto se relativo, base: " . self::site_base_url($site_name) . ")\n"
             . "- data_pubblicazione: data in formato YYYY-MM-DD (null se non leggibile). "
             . "Se la data indica che l'offerta e' precedente al {$cutoff}, NON includerla.\n\n"
             . "REGOLA CRITICA: escludi offerte con data_pubblicazione antecedente a {$cutoff}. "
@@ -681,6 +872,69 @@ class ai_scraper {
             return $key;
         }
         return get_config('local_jobaida', 'openai_apikey') ?: '';
+    }
+
+    /**
+     * Extract 3-6 specific job search keywords from a CV, personalized to the student's profile.
+     * Produces far better search results than the generic SECTOR_KEYWORDS because it reflects the
+     * candidate's actual experience (e.g. "operatore CNC" instead of just "meccanico").
+     *
+     * @param string $cv_text  Full CV text of the student
+     * @param string $sector   Primary FTM sector as context hint
+     * @return string[]        Array of search query strings (may be empty on API error)
+     */
+    public static function extract_search_queries_from_cv(string $cv_text, string $sector = ''): array {
+        $apikey = self::get_api_key();
+        if (empty($apikey)) {
+            return [];
+        }
+
+        $cv_short    = mb_substr(trim($cv_text), 0, 3000);
+        $sector_hint = $sector ? "\nSettore principale: {$sector}." : '';
+
+        $prompt = "Analizza questo CV e restituisci 8-10 parole chiave di ricerca lavoro per Canton Ticino.{$sector_hint}\n\n"
+            . "Includi:\n"
+            . "- 4-5 query SPECIFICHE per il profilo primario (mansioni concrete che ha svolto)\n"
+            . "- 3-4 query per LAVORI AFFINI che potrebbe fare con le sue competenze (apertura a ruoli correlati)\n"
+            . "- 1-2 query GENERICHE per massimizzare copertura (es. 'operatore produzione', 'manutentore')\n\n"
+            . "Criteri:\n"
+            . "- Termini reali usati nelle offerte di lavoro in Canton Ticino\n"
+            . "- Diversi tra loro per massimizzare la copertura\n"
+            . "- In italiano (o tedesco se il settore lo richiede)\n\n"
+            . "Esempi CORRETTI: [\"operatore CNC\", \"fresatore\", \"manutentore meccanico\", \"addetto produzione\", "
+            . "\"elettromeccanico\", \"montatore industriale\", \"tecnico impianti\", \"operaio specializzato\"]\n"
+            . "Esempi ERRATI: [\"meccanica\", \"settore industriale\", \"esperienza lavorativa\"]\n\n"
+            . "Rispondi SOLO con un JSON array di stringhe.\n\n"
+            . "=== CV ===\n{$cv_short}";
+
+        try {
+            $response = self::call_openai($apikey, 'gpt-4o-mini', [
+                ['role' => 'system', 'content' => 'Sei un esperto HR in Canton Ticino. Estrai parole chiave di ricerca lavoro inclusi lavori affini. Rispondi solo JSON array.'],
+                ['role' => 'user',   'content' => $prompt],
+            ], 250, 0.3);
+
+            $response = preg_replace('/^```json\s*/i', '', trim($response));
+            $response = preg_replace('/\s*```$/i', '', $response);
+            $queries  = json_decode(trim($response), true);
+
+            if (!is_array($queries)) {
+                return [];
+            }
+            return array_values(array_filter(array_slice(array_map('trim', $queries), 0, 10)));
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Return the canonical base URL for a site (used in GPT prompt for URL reconstruction).
+     * Needed because ch.indeed.com uses a subdomain, not www.
+     */
+    private static function site_base_url(string $site_name): string {
+        $overrides = [
+            'ch.indeed.com' => 'https://ch.indeed.com',
+        ];
+        return $overrides[$site_name] ?? 'https://www.' . $site_name;
     }
 
     /**

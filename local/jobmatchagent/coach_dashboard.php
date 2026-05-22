@@ -103,7 +103,7 @@ echo html_writer::div(
     html_writer::span($totalsources . ' RSS ' . get_string('cd_catalog_sources', 'local_jobmatchagent'),
         'badge bg-info me-2') .
     ($aiavailable
-        ? html_writer::span('🤖 AI Scraper attivo (jobs.ch / randstad / carriera)', 'badge bg-success')
+        ? html_writer::span('🤖 AI Scraper attivo (jobs.ch / job-room.ch / carriera)', 'badge bg-success')
         : html_writer::span('⚠ AI Scraper non disponibile', 'badge bg-warning text-dark')),
     'alert alert-light py-2 mb-3'
 );

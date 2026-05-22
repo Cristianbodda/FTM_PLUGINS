@@ -64,7 +64,7 @@ $test_urls = [
     'jobs.ch'     => 'https://www.jobs.ch/en/vacancies/?region=4&term=meccanico',
     'adecco.ch'   => 'https://www.adecco.com/it-ch/ricerca-lavoro?jobTitle=meccanico&jobLocation=Ticino%2C+Svizzera&radius=100',
     'manpower.ch' => 'https://www.manpower.ch/it/trova-lavoro?page=1&searchKeyword=meccanico&place=Ticino,+Svizzera',
-    'randstad.ch' => 'https://www.randstad.ch/it/lavoro/q-meccanico/re-ticino/',
+    'job-room.ch' => 'https://www.job-room.ch/job-search?query-values=%7B%22keywords%22%3A%5B%22meccanico%22%5D%7D',
     'job-room.ch' => 'https://www.job-room.ch/job-search?query-values=%7B%22occupations%22%3A%5B%5D%2C%22keywords%22%3A%5B%22meccanico%22%5D%2C%22localities%22%3A%5B%7B%22type%22%3A%22canton%22%2C%22payload%22%3A%7B%22cantonCode%22%3A%22TI%22%7D%2C%22label%22%3A%22Ticino%20(TI)%22%2C%22order%22%3A0%2C%22_id%22%3A%22canton_Ticino%20(TI)%22%7D%5D%2C%22radius%22%3A30%7D',
     'carriera.ch' => 'https://www.carriera.ch/cgi-bin/annunci_offerte_lavoro.cgi',
     'tuttojob.ch' => 'https://tuttojob.ch/search/?searchText=meccanico&idZona=230',
@@ -374,27 +374,30 @@ if ($err) {
         } else {
             echo "<span style='color:#a6e3a1;'>OK - " . count($jobs) . " offerte ricevute nella pagina</span>\n\n";
 
-            foreach (array_slice($jobs, 0, 5) as $i => $job) {
+            foreach (array_slice($jobs, 0, 5) as $i => $item) {
+                // Real structure: {favouriteItem, jobAdvertisement: {...}}
+                $job  = $item['jobAdvertisement'] ?? $item;
+                $jc   = $job['jobContent'] ?? [];
+                $descs = $jc['jobDescriptions'] ?? [];
+
                 $uuid  = $job['id'] ?? '?';
                 $title = '';
-                $tobj  = $job['title'] ?? null;
-                if (is_array($tobj)) {
-                    $title = $tobj['it'] ?? $tobj['de'] ?? $tobj['fr'] ?? $tobj['en'] ?? '';
-                }
-                if (empty($title)) {
-                    foreach ($job['jobContent']['jobDescriptions'] ?? [] as $d) {
-                        if (!empty($d['title'])) { $title = $d['title']; break; }
+                foreach ($descs as $d) {
+                    if (($d['languageIsoCode'] ?? '') === 'it' && !empty($d['title'])) {
+                        $title = strip_tags($d['title']); break;
                     }
                 }
-                $azienda  = $job['company']['name'] ?? '-';
-                $citta    = $job['jobContent']['location']['city'] ?? '-';
-                $canton   = $job['jobContent']['location']['cantonCode'] ?? '-';
+                if (empty($title) && !empty($descs[0]['title'])) {
+                    $title = strip_tags($descs[0]['title']);
+                }
+                $azienda  = $jc['company']['name'] ?? '-';
+                $citta    = $jc['location']['city'] ?? '-';
+                $canton   = $jc['location']['cantonCode'] ?? '-';
                 $data_pub = $job['publication']['startDate'] ?? '-';
-                $lat      = $job['jobContent']['location']['coordinates']['lat'] ?? null;
-                $lng      = $job['jobContent']['location']['coordinates']['lon'] ?? null;
-                $tipo_perm = !empty($job['jobContent']['jobType']['permanent']) ? 'permanente' : '';
-                $tipo_temp = !empty($job['jobContent']['jobType']['temporary']) ? 'temporaneo' : '';
-                $tipo      = $tipo_perm ?: $tipo_temp ?: '-';
+                $lat      = $jc['location']['coordinates']['lat'] ?? null;
+                $lng      = $jc['location']['coordinates']['lon'] ?? null;
+                $employ   = $jc['employment'] ?? [];
+                $tipo     = !empty($employ['permanent']) ? 'permanente' : (!empty($employ['endDate']) ? 'temporaneo' : '-');
 
                 echo "<span style='color:#cba6f7;'>Offerta " . ($i + 1) . ":</span>\n";
                 echo "  UUID: {$uuid}\n";

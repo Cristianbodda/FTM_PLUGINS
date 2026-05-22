@@ -43,10 +43,13 @@ global $DB, $USER;
 
 $starttime = microtime(true);
 
-// Phase 1: RSS feeds (if any configured).
+// Ensure ti.ch and admin.ch RSS feeds are configured.
+\local_jobmatchagent\source_manager::ensure_default_sources();
+
+// Phase 1: RSS feeds (ti.ch, admin.ch + any custom feeds).
 $rsstotals = \local_jobmatchagent\source_manager::run_all();
 
-// Phase 2: AI scraper via ftm_jobsearch (jobs.ch / randstad / carriera).
+// Phase 2: AI scraper via ftm_jobsearch (jobs.ch / job-room / carriera).
 $aitotals = \local_jobmatchagent\source_manager::run_ai_scraping_for_all_students($force);
 
 // Phase 3: AI matching CV -> offerte (uses jobsearch::match_cv_to_offers).
@@ -125,7 +128,7 @@ $table->data = [
         . ' · ' . $rsstotals['offers_added'] . ' nuovi annunci',
     ],
     [
-        '<strong>🤖 Fase 2 — AI Scraper (jobs.ch / randstad / carriera)</strong>',
+        '<strong>🤖 Fase 2 — AI Scraper (jobs.ch / job-room / carriera)</strong>',
         $aitotals['available']
             ? (count($aitotals['sectors_scraped']) . ' nuove + ' . count($aitotals['sectors_cached']) . ' da cache · '
                 . $aitotals['offers_imported'] . ' annunci importati')

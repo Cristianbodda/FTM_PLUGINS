@@ -157,7 +157,100 @@ class source_manager {
     }
 
     /**
-     * Run AI-powered scraping (jobs.ch / randstad.ch / carriera.ch) for all
+     * Ensure default RSS sources (ti.ch, admin.ch, Indeed Ticino) exist in DB.
+     * Safe to call multiple times — uses INSERT IGNORE via record_exists check.
+     */
+    public static function ensure_default_sources() {
+        global $DB;
+
+        // Indeed RSS base URL for Canton Ticino (one feed per keyword, sorted by date).
+        $indeedBase = 'https://ch.indeed.com/rss?l=Canton+Ticino&sort=date&radius=100&q=';
+
+        $defaults = [
+            // --- Fonti istituzionali CH ---
+            [
+                'name' => 'Canton Ticino — Posti di lavoro (RSS)',
+                'url'  => 'https://www4.ti.ch/can/rss/posti-di-lavoro/',
+            ],
+            [
+                'name' => 'Confederazione CH — Posti vacanti (RSS)',
+                'url'  => 'https://www.stelle.admin.ch/stellenangebote/feeds/rss.xml',
+            ],
+            // --- Indeed Ticino — offerte generali ---
+            [
+                'name' => 'Indeed Ticino — operaio',
+                'url'  => $indeedBase . 'operaio',
+            ],
+            [
+                'name' => 'Indeed Ticino — tecnico',
+                'url'  => $indeedBase . 'tecnico',
+            ],
+            [
+                'name' => 'Indeed Ticino — addetto produzione',
+                'url'  => $indeedBase . 'addetto+produzione',
+            ],
+            [
+                'name' => 'Indeed Ticino — montatore',
+                'url'  => $indeedBase . 'montatore',
+            ],
+            [
+                'name' => 'Indeed Ticino — manutentore',
+                'url'  => $indeedBase . 'manutentore',
+            ],
+            [
+                'name' => 'Indeed Ticino — elettricista',
+                'url'  => $indeedBase . 'elettricista',
+            ],
+            [
+                'name' => 'Indeed Ticino — meccanico',
+                'url'  => $indeedBase . 'meccanico',
+            ],
+            [
+                'name' => 'Indeed Ticino — logistica magazzino',
+                'url'  => $indeedBase . 'logistica+magazzino',
+            ],
+            [
+                'name' => 'Indeed Ticino — automazione',
+                'url'  => $indeedBase . 'automazione',
+            ],
+            [
+                'name' => 'Indeed Ticino — elettromeccanico',
+                'url'  => $indeedBase . 'elettromeccanico',
+            ],
+            [
+                'name' => 'Indeed Ticino — carpentiere',
+                'url'  => $indeedBase . 'carpentiere',
+            ],
+            [
+                'name' => 'Indeed Ticino — saldatore',
+                'url'  => $indeedBase . 'saldatore',
+            ],
+            [
+                'name' => 'Indeed Ticino — autista',
+                'url'  => $indeedBase . 'autista',
+            ],
+            [
+                'name' => 'Indeed Ticino — chimico farmaceutico',
+                'url'  => $indeedBase . 'chimico+farmaceutico',
+            ],
+        ];
+
+        foreach ($defaults as $d) {
+            if (!$DB->record_exists('local_jobmatch_sources', ['name' => $d['name']])) {
+                $DB->insert_record('local_jobmatch_sources', (object)[
+                    'name'         => $d['name'],
+                    'type'         => 'rss',
+                    'config'       => json_encode(['url' => $d['url']]),
+                    'enabled'      => 1,
+                    'timecreated'  => time(),
+                    'timemodified' => time(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Run AI-powered scraping (jobs.ch / job-room.ch / carriera.ch) for all
      * active students, deduplicated by (sector, mansione) combo.
      * Uses local_ftm_jobsearch's ai_scraper.
      *
@@ -220,12 +313,35 @@ class source_manager {
                     }
                 }
             } else {
-                // Nessuna attivita specificata: usa settore primario FTM.
+                // Nessuna attivita specificata: prova a derivare query specifiche dal CV.
                 $sectors = matcher::get_student_sectors($f->userid);
                 if (empty($sectors)) {
                     continue;
                 }
-                $combos = [[$sectors[0], '']];
+
+                $cv_queries = [];
+                $cvres = matcher::resolve_cv($f->userid, $f);
+                if (!empty($cvres['text']) && class_exists('\local_ftm_jobsearch\ai_scraper')) {
+                    try {
+                        $cv_queries = \local_ftm_jobsearch\ai_scraper::extract_search_queries_from_cv(
+                            $cvres['text'], $sectors[0]
+                        );
+                    } catch (\Throwable $e) {
+                        // Fallback al metodo precedente.
+                    }
+                }
+
+                if (!empty($cv_queries)) {
+                    // Query personalizzate dal CV × tutti i settori rilevanti.
+                    $combos = [];
+                    foreach ($sectors as $sec) {
+                        foreach ($cv_queries as $q) {
+                            $combos[] = [$sec, $q];
+                        }
+                    }
+                } else {
+                    $combos = [[$sectors[0], '']];
+                }
             }
 
             foreach ($combos as [$sector, $mansione]) {
@@ -250,7 +366,124 @@ class source_manager {
             $totals['students_processed']++;
         }
 
+        // Broad Ticino scrape — runs regardless of student sectors.
+        // Ensures catalog always has recent generic Ticino offers.
+        if (class_exists('\local_ftm_jobsearch\ai_scraper')) {
+            try {
+                \local_ftm_jobsearch\ai_scraper::scrape_broad_ticino($force);
+            } catch (\Throwable $e) {
+                $totals['errors']['broad_ticino'] = $e->getMessage();
+            }
+        }
+
         // Import all jobsearch offers into our catalog (regardless of cache state).
+        $imp = self::import_jobsearch_offers();
+        $totals['offers_imported'] = $imp['offers_added'];
+        $totals['matches_created'] = $imp['matches_created'];
+
+        return $totals;
+    }
+
+    /**
+     * Run AI-powered scraping for a SINGLE student (called from wizard).
+     * Same logic as run_ai_scraping_for_all_students() but for one userid only.
+     *
+     * @param int  $studentid
+     * @param bool $force Bypass 24h cache
+     * @return array stats
+     */
+    public static function run_ai_scraping_for_student($studentid, $force = false) {
+        global $DB;
+
+        $totals = [
+            'available' => self::is_ftm_jobsearch_available(),
+            'offers_imported' => 0,
+            'matches_created' => 0,
+            'errors' => [],
+        ];
+
+        if (!$totals['available']) {
+            return $totals;
+        }
+
+        $f = $DB->get_record('local_jobmatch_student_filters', ['userid' => $studentid, 'active' => 1]);
+        if (!$f) {
+            // No active filters: still run broad Ticino scrape.
+            if (class_exists('\local_ftm_jobsearch\ai_scraper')) {
+                try {
+                    \local_ftm_jobsearch\ai_scraper::scrape_broad_ticino($force);
+                } catch (\Throwable $e) {
+                    $totals['errors']['broad_ticino'] = $e->getMessage();
+                }
+            }
+            $imp = self::import_jobsearch_offers();
+            $totals['offers_imported'] = $imp['offers_added'];
+            return $totals;
+        }
+
+        $activities = !empty($f->desired_activities) ? json_decode($f->desired_activities, true) : [];
+        $hasactivities = is_array($activities) && !empty($activities);
+        $combos = [];
+
+        if ($hasactivities) {
+            $cvres = matcher::resolve_cv($f->userid, $f);
+            $sectorstoscrape = [];
+            if (!empty($cvres['text']) && class_exists('\local_ftm_jobsearch\ai_scraper')) {
+                try {
+                    $sectorstoscrape = \local_ftm_jobsearch\ai_scraper::detect_sectors_from_cv($cvres['text']);
+                } catch (\Throwable $e) {
+                    $sectorstoscrape = matcher::get_student_sectors($f->userid);
+                }
+            }
+            if (empty($sectorstoscrape)) {
+                $sectorstoscrape = matcher::get_student_sectors($f->userid);
+            }
+            foreach ($sectorstoscrape as $sec) {
+                foreach ($activities as $act) {
+                    $combos[] = [$sec, $act];
+                }
+            }
+        } else {
+            $sectors = matcher::get_student_sectors($f->userid);
+            $cv_queries = [];
+            $cvres = matcher::resolve_cv($f->userid, $f);
+            if (!empty($cvres['text']) && class_exists('\local_ftm_jobsearch\ai_scraper')) {
+                try {
+                    $cv_queries = \local_ftm_jobsearch\ai_scraper::extract_search_queries_from_cv(
+                        $cvres['text'], $sectors[0] ?? ''
+                    );
+                } catch (\Throwable $e) {
+                    // Use sector only.
+                }
+            }
+            if (!empty($cv_queries)) {
+                foreach ($sectors as $sec) {
+                    foreach ($cv_queries as $q) {
+                        $combos[] = [$sec, $q];
+                    }
+                }
+            } else if (!empty($sectors)) {
+                $combos = [[$sectors[0], '']];
+            }
+        }
+
+        foreach ($combos as [$sector, $mansione]) {
+            try {
+                \local_ftm_jobsearch\ai_scraper::scrape_sector($sector, $mansione, $force);
+            } catch (\Throwable $e) {
+                $totals['errors'][$sector . '|' . $mansione] = $e->getMessage();
+            }
+        }
+
+        // Always run broad Ticino.
+        if (class_exists('\local_ftm_jobsearch\ai_scraper')) {
+            try {
+                \local_ftm_jobsearch\ai_scraper::scrape_broad_ticino($force);
+            } catch (\Throwable $e) {
+                $totals['errors']['broad_ticino'] = $e->getMessage();
+            }
+        }
+
         $imp = self::import_jobsearch_offers();
         $totals['offers_imported'] = $imp['offers_added'];
         $totals['matches_created'] = $imp['matches_created'];
@@ -278,7 +511,7 @@ class source_manager {
         $sourceid = $DB->get_field('local_jobmatch_sources', 'id', ['type' => 'scraper']);
         if (!$sourceid) {
             $sourceid = $DB->insert_record('local_jobmatch_sources', (object) [
-                'name' => 'AI Scraper (jobs.ch + randstad + carriera)',
+                'name' => 'AI Scraper (jobs.ch + job-room + carriera)',
                 'type' => 'scraper',
                 'config' => null,
                 'enabled' => 1,
@@ -294,6 +527,11 @@ class source_manager {
             $company = $jo->azienda ?? '';
             $url = $jo->url;
 
+            // Primary dedup: same URL = same job, regardless of sector scraped.
+            if (!empty($url) && $DB->record_exists('local_jobmatch_offers', ['url' => substr($url, 0, 500)])) {
+                continue;
+            }
+
             $textparts = [];
             if (!empty($company)) {
                 $textparts[] = 'Azienda: ' . $company;
@@ -301,9 +539,8 @@ class source_manager {
             if (!empty($jo->citta)) {
                 $textparts[] = 'Localita: ' . $jo->citta;
             }
-            if (!empty($jo->settore)) {
-                $textparts[] = 'Settore FTM: ' . $jo->settore;
-            }
+            // NOTE: settore NOT included in text — same job scraped under multiple sectors
+            // would produce different fingerprints and be imported as duplicates.
             if (!empty($jo->descrizione)) {
                 $textparts[] = $jo->descrizione;
             }

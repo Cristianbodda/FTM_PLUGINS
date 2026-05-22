@@ -23,6 +23,15 @@ $action_rationale = optional_param('action_rationale', '', PARAM_RAW);
 $full_letter = required_param('full_letter', PARAM_RAW);
 $student_name = optional_param('student_name', fullname($USER), PARAM_TEXT);
 
+$context = context_system::instance();
+$isauthorized = is_siteadmin()
+    || has_capability('local/jobaida:use', $context)
+    || $DB->record_exists('local_jobaida_auth', ['userid' => $USER->id, 'active' => 1]);
+if (!$isauthorized) {
+    http_response_code(403);
+    die('Non autorizzato.');
+}
+
 // Build Word document as HTML (simple .doc compatible format).
 $filename = 'Lettera_AIDA_' . clean_filename($student_name) . '_' . date('Y-m-d') . '.doc';
 

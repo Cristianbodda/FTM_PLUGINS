@@ -16,6 +16,16 @@ require_sesskey();
 
 header('Content-Type: application/json; charset=utf-8');
 
+$context = context_system::instance();
+$isauthorized = is_siteadmin()
+    || has_capability('local/jobaida:use', $context)
+    || $DB->record_exists('local_jobaida_auth', ['userid' => $USER->id, 'active' => 1]);
+if (!$isauthorized) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Non autorizzato.']);
+    die();
+}
+
 try {
     if (empty($_FILES['file'])) {
         throw new Exception('Nessun file caricato');

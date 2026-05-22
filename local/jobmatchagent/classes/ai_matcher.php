@@ -38,8 +38,9 @@ class ai_matcher {
 
         $model = get_config('local_jobmatchagent', 'openai_model') ?: 'gpt-4o-mini';
 
-        // Truncate CV to control cost.
-        $cvshort = mb_substr(trim($cvtext), 0, 4000);
+        // Extract CV for matching: increase limit and always include education section
+        // even when it appears near the end (common in CH-format CVs).
+        $cvshort = self::extract_cv_for_matching($cvtext);
 
         // Build offer list with descriptions.
         $offerlist = '';
@@ -88,14 +89,29 @@ class ai_matcher {
             . "- 10-29: settore diverso o requisito esplicito BLOCCANTE non soddisfatto\n"
             . "- 0-9: profili totalmente disallineati\n\n"
 
+            . "=== TITOLI PROFESSIONALI SVIZZERI — EQUIVALENZE (CRITICO!) ===\n"
+            . "In Svizzera i titoli AFC hanno nomi ufficiali che NON corrispondono al linguaggio comune degli annunci. "
+            . "Devi conoscere queste equivalenze per valutare correttamente:\n"
+            . "- 'Meccanico di manutenzione per veicoli leggeri AFC' = meccanico auto / meccanico officina / automotive mechanic\n"
+            . "- 'Meccanico di manutenzione per veicoli pesanti AFC' = meccanico camion / veicoli industriali\n"
+            . "- 'Meccatronico AFC' = meccanico + elettronico, qualificato sia per meccanica che elettronica veicoli\n"
+            . "- 'Operatore meccanico AFC' = tornio, fresa, lavorazioni meccaniche\n"
+            . "- 'Elettricista di montaggio AFC' = elettricista impianti civili/industriali\n"
+            . "- 'Addetto agli approvvigionamenti AFC' = magazziniere / logistica\n"
+            . "Un candidato con AFC in meccanica veicoli leggeri che si candida per 'meccanico di manutenzione automobili' "
+            . "va valutato 75-90%, non penalizzato per 'titolo diverso'. L'AFC è la formazione professionale completa (4 anni).\n\n"
+
             . "=== REGOLE SVIZZERA / TICINO (applicare SOLO se l'annuncio le richiede ESPLICITAMENTE) ===\n\n"
 
             . "1) FORMAZIONE REGOLAMENTATA (AFC/CFC/diploma/attestato):\n"
+            . "   - La sezione 'Formazione' o 'Studi' nel CV appare SPESSO IN FONDO: leggila con attenzione.\n"
             . "   - SE l'annuncio richiede esplicitamente AFC/CFC/diploma/attestato professionale "
             . "(parole tipo: 'AFC obbligatorio', 'titolo richiesto', 'CFC indispensabile', 'diploma cantonale', "
             . "'patente professionale', 'iscrizione albo', 'attestato federale')\n"
             . "   E il CV NON mostra esplicitamente quel titolo → MAX 35%.\n"
             . "   - SE l'annuncio NON menziona requisiti formativi specifici → NON penalizzare il CV per assenza di AFC.\n"
+            . "   - SE il candidato HA un AFC pertinente al ruolo (vedi equivalenze sopra) → 70%+ anche senza "
+            . "anni di esperienza nel ruolo specifico (l'AFC garantisce la formazione completa).\n"
             . "   - Professioni tipicamente regolamentate in CH/TI (per riconoscere il contesto): "
             . "elettricista (USIE), idraulico/sanitario, lattoniere, riscaldamenti, infermiere, OSS, "
             . "fisioterapista, autista CE/D, parrucchiere, estetista, cuoco AFC (vs aiuto cuoco non regolamentato), "
@@ -171,6 +187,47 @@ class ai_matcher {
             ];
         }
         return $result;
+    }
+
+    /**
+     * Prepare CV text for AI matching.
+     *
+     * Problem: Swiss CVs often list education LAST (after a long competency section).
+     * If truncated at 4000 chars, the AI never sees the AFC/diploma — leading to
+     * severe under-scoring of qualified candidates.
+     *
+     * Solution:
+     * - Increase limit to 7000 chars (covers most CVs completely).
+     * - If the CV is still longer than 7000 chars AND the education section would
+     *   be cut off, extract and prepend it so the AI always sees qualifications.
+     *
+     * @param string $cv  Raw CV text
+     * @return string     Processed CV text (max ~7000 chars, education always visible)
+     */
+    private static function extract_cv_for_matching(string $cv): string {
+        $cv = trim($cv);
+        $maxchars = 7000;
+
+        if (mb_strlen($cv) <= $maxchars) {
+            return $cv;
+        }
+
+        // Look for a "formazione / studi / education" section header.
+        // These section titles are common in Italian/Swiss CVs.
+        $edu_header_pattern = '/\n[ \t]*(studi|formazione|istruzione|education|qualifiche?|titoli di studio|percorso formativo)/iu';
+
+        if (preg_match($edu_header_pattern, $cv, $match, PREG_OFFSET_CAPTURE)) {
+            $edu_start = (int) $match[0][1];
+
+            // Education section is beyond the truncation point — extract and prepend it.
+            if ($edu_start > ($maxchars - 500)) {
+                $edu_block = mb_substr($cv, $edu_start, 1000);
+                $main_block = mb_substr($cv, 0, $maxchars - mb_strlen($edu_block) - 60);
+                return $main_block . "\n\n[...]\n\n" . trim($edu_block);
+            }
+        }
+
+        return mb_substr($cv, 0, $maxchars);
     }
 
     /**

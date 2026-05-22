@@ -34,8 +34,9 @@ $capabilities = [
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [
+            'teacher'        => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW,
+            'manager'        => CAP_ALLOW,
         ],
     ],
 
@@ -44,8 +45,9 @@ $capabilities = [
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [
+            'teacher'        => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW,
+            'manager'        => CAP_ALLOW,
         ],
     ],
 
@@ -55,7 +57,30 @@ $capabilities = [
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [
             'student' => CAP_ALLOW,
-            'user' => CAP_ALLOW,
+            'user'    => CAP_ALLOW,
+        ],
+    ],
+
+    // Manage the Ticino company database (import, edit, classify).
+    'local/jobmatchagent:managecompanies' => [
+        'riskbitmask' => RISK_CONFIG,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'teacher'        => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager'        => CAP_ALLOW,
+        ],
+    ],
+
+    // Create and manage student autocandidatura targets.
+    'local/jobmatchagent:managetargets' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'teacher'        => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager'        => CAP_ALLOW,
         ],
     ],
 ];

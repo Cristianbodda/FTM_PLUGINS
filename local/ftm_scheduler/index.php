@@ -476,6 +476,14 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
     border-left-style: dashed;
 }
 
+.activity-block.neutro {
+    background: #F8FAFC;
+    border-left-color: #94A3B8;
+    color: #334155;
+}
+
+.dot-neutro { background: #94A3B8; }
+
 .activity-title {
     font-weight: 600;
     margin-bottom: 3px;
@@ -613,6 +621,83 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
 }
 
 .gruppo-card-footer .ftm-btn { flex: 1; justify-content: center; }
+
+/* ===== Room Occupancy Grid ===== */
+.room-occ-section {
+    margin-top: 28px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.room-occ-header {
+    background: #f8f9fa;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #dee2e6;
+    cursor: pointer;
+    user-select: none;
+}
+.room-occ-header h4 { margin: 0; font-size: 14px; font-weight: 600; }
+.room-occ-toggle { margin-left: auto; font-size: 12px; color: #0066cc; }
+.room-occ-body { overflow-x: auto; }
+.room-occ-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 700px;
+}
+.room-occ-table th {
+    background: #f8f9fa;
+    padding: 6px 8px;
+    text-align: center;
+    border: 1px solid #dee2e6;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.room-occ-table th.room-col {
+    text-align: left;
+    min-width: 90px;
+}
+.room-occ-table th.slot-th {
+    font-weight: 500;
+    font-size: 11px;
+    color: #666;
+    padding: 4px 6px;
+}
+.room-occ-table td {
+    border: 1px solid #eee;
+    padding: 5px 7px;
+    vertical-align: top;
+    min-width: 90px;
+}
+.room-occ-table td.room-label {
+    background: #f8f9fa;
+    font-weight: 600;
+    font-size: 12px;
+    white-space: nowrap;
+    border-color: #dee2e6;
+}
+.room-occ-table td.room-label small { display: block; font-weight: 400; color: #888; font-size: 10px; }
+.room-occ-cell { min-height: 36px; }
+.room-occ-cell.free { color: #bbb; text-align: center; line-height: 36px; font-size: 13px; }
+.room-occ-activity {
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 11px;
+    line-height: 1.4;
+}
+.room-occ-activity.ext  { background: #DBEAFE; border-left: 3px solid #2563EB; }
+.room-occ-activity.giallo  { background: #FEFCE8; border-left: 3px solid #EAB308; }
+.room-occ-activity.grigio  { background: #F3F4F6; border-left: 3px solid #6B7280; }
+.room-occ-activity.rosso   { background: #FEE2E2; border-left: 3px solid #EF4444; }
+.room-occ-activity.marrone { background: #FEF3C7; border-left: 3px solid #92400E; }
+.room-occ-activity.viola   { background: #F3E8FF; border-left: 3px solid #7C3AED; }
+.room-occ-name  { font-weight: 600; display: block; }
+.room-occ-coach { color: #555; font-size: 10px; }
+.room-occ-activity:hover { filter: brightness(0.93); }
+.room-occ-cell.free:hover { background: #f0f7ff; color: #0066cc !important; }
 
 /* Data Table */
 .data-table {
@@ -923,6 +1008,9 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
 .month-activity-mini.marrone { background: #FED7AA; border-left-color: #92400E; }
 .month-activity-mini.viola { background: #F3E8FF; border-left-color: #7C3AED; }
 .month-activity-mini.external { background: #DBEAFE; border-left-color: #2563EB; }
+.month-activity-mini.neutro   { background: #F1F5F9; border-left-color: #94A3B8; color: #475569; }
+
+.room-occ-activity.neutro { background: #F1F5F9; border-left: 3px solid #94A3B8; }
 
 .month-more-link {
     font-size: 10px;
@@ -1000,7 +1088,7 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
     </div>
     
     <!-- Barra Gruppi Attivi -->
-    <div class="gruppi-bar">
+    <div class="gruppi-bar" style="display:none">
         <span class="gruppi-bar-title">🎨 GRUPPI ATTIVI:</span>
         <?php if (empty($active_groups)): ?>
             <span style="color: #999; font-size: 13px;">Nessun gruppo attivo</span>
@@ -1259,26 +1347,33 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
 </div>
 
 <!-- Modal: Nuova Attività -->
+<?php
+// Atelier catalog as JS map {id: name} for auto-fill
+$atelier_js_map = [];
+foreach ($atelier_catalog as $at) {
+    $atelier_js_map[(int)$at->id] = $at->name;
+}
+?>
 <div class="ftm-modal-overlay" id="modal-newActivity">
-    <div class="ftm-modal">
+    <div class="ftm-modal" style="max-width: 750px;">
         <div class="ftm-modal-header">
             <h3>📅 Crea Nuova Attività</h3>
             <button class="ftm-modal-close" onclick="ftmCloseModal('newActivity')">×</button>
         </div>
-        <form action="<?php echo new moodle_url('/local/ftm_scheduler/action.php'); ?>" method="post">
+        <form action="<?php echo new moodle_url('/local/ftm_scheduler/action.php'); ?>" method="post" autocomplete="off" id="form-newActivity">
             <input type="hidden" name="action" value="create_activity">
             <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
             <div class="ftm-modal-body">
                 <div class="form-group">
                     <label>Nome Attività *</label>
-                    <input type="text" name="name" required placeholder="es. Settimana 1 - Teoria">
+                    <input type="text" name="name" id="newact-name" required placeholder="es. Settimana 1 - Teoria" autocomplete="off">
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label>Tipo Attività *</label>
-                        <select name="activity_type" required onchange="toggleAtelierSelect(this)">
-                            <option value="week1">Settimana 1</option>
+                        <select name="activity_type" id="newact-type" required autocomplete="off" onchange="toggleAtelierSelect(this)">
+                            <option value="week1" selected>Settimana 1</option>
                             <option value="week2_mon_tue">Settimana 2 (Lun-Mar)</option>
                             <option value="week2_thu_fri">Settimana 2 (Gio-Ven)</option>
                             <option value="week3_5">Settimane 3-5</option>
@@ -1288,19 +1383,19 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
                     </div>
                     <div class="form-group" id="atelierSelectGroup" style="display:none;">
                         <label>Atelier dal catalogo</label>
-                        <select name="atelierid">
-                            <option value="">-- Seleziona atelier --</option>
+                        <select name="atelierid" id="newact-atelierid" autocomplete="off" onchange="ftmAtelierSelected(this)">
+                            <option value="" selected>-- Seleziona atelier --</option>
                             <?php foreach ($atelier_catalog as $at): ?>
                             <option value="<?php echo $at->id; ?>">
-                                <?php echo $at->name; ?><?php echo $at->is_mandatory ? ' (Obbligatorio)' : ''; ?>
+                                <?php echo s($at->name); ?><?php echo $at->is_mandatory ? ' (Obbligatorio)' : ''; ?>
                             </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Gruppo</label>
-                        <select name="groupid">
-                            <option value="">-- Nessun gruppo --</option>
+                        <select name="groupid" id="newact-groupid" autocomplete="off">
+                            <option value="" selected>-- Nessun gruppo --</option>
                             <?php foreach ($groups as $group):
                                 $color_info = $colors[$group->color] ?? $colors['giallo'];
                                 $kw = $group->calendar_week ? ' - KW' . str_pad($group->calendar_week, 2, '0', STR_PAD_LEFT) : '';
@@ -1316,12 +1411,12 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
                 <div class="form-row">
                     <div class="form-group">
                         <label>Data *</label>
-                        <input type="date" name="date" value="<?php echo date('Y-m-d'); ?>" required>
+                        <input type="date" name="date" id="newact-date" value="<?php echo date('Y-m-d'); ?>" required autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label>Fascia Oraria *</label>
-                        <select name="time_slot">
-                            <option value="matt">Mattina (08:30-11:45)</option>
+                        <select name="time_slot" id="newact-slot" autocomplete="off">
+                            <option value="matt" selected>Mattina (08:30-11:45)</option>
                             <option value="pom">Pomeriggio (13:15-16:30)</option>
                             <option value="all">Tutto il giorno (08:30-16:30)</option>
                         </select>
@@ -1331,24 +1426,24 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
                 <div class="form-row">
                     <div class="form-group">
                         <label>Aula</label>
-                        <select name="roomid">
-                            <option value="">-- Nessuna aula --</option>
+                        <select name="roomid" id="newact-roomid" autocomplete="off">
+                            <option value="" selected>-- Nessuna aula --</option>
                             <?php foreach ($rooms as $room): ?>
                                 <option value="<?php echo $room->id; ?>">
-                                    <?php echo $room->name; ?> (<?php echo $room->capacity; ?> posti)
+                                    <?php echo s($room->name); ?> (<?php echo $room->capacity; ?> posti)
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Coach/Docente</label>
-                        <select name="teacherid">
-                            <option value="">-- Nessun coach --</option>
+                        <select name="teacherid" id="newact-teacherid" autocomplete="off">
+                            <option value="" selected>-- Nessun coach --</option>
                             <?php
                             $coaches = $manager::get_coaches();
                             foreach ($coaches as $c): ?>
                                 <option value="<?php echo $c->userid; ?>">
-                                    <?php echo $c->initials . ' - ' . $c->firstname . ' ' . $c->lastname; ?>
+                                    <?php echo s($c->initials . ' - ' . $c->firstname . ' ' . $c->lastname); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -1357,12 +1452,64 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
 
                 <div class="form-group">
                     <label>Partecipanti Max</label>
-                    <input type="number" name="max_participants" value="10" min="1" max="50">
+                    <input type="number" name="max_participants" id="newact-max" value="10" min="1" max="50" autocomplete="off">
+                </div>
+
+                <!-- Sezione iscrizione studenti via ricerca -->
+                <div class="form-group">
+                    <label>👥 Iscrivi Studenti</label>
+
+                    <!-- Ricerca individuale -->
+                    <div style="position: relative;">
+                        <input type="text" id="student-search-input"
+                               placeholder="Cerca per nome o email..."
+                               autocomplete="off"
+                               oninput="ftmStudentSearch(this)"
+                               style="width:100%; padding:9px 12px; border:1px solid #dee2e6; border-radius:6px; font-size:14px;">
+                        <div id="student-search-results"
+                             style="display:none; position:absolute; top:100%; left:0; right:0; background:white;
+                                    border:1px solid #dee2e6; border-radius:0 0 6px 6px; box-shadow:0 4px 12px rgba(0,0,0,0.1);
+                                    max-height:180px; overflow-y:auto; z-index:20000;"></div>
+                    </div>
+
+                    <!-- Aggiunta gruppo intero -->
+                    <div style="margin-top:6px;">
+                        <select id="group-bulk-add"
+                                autocomplete="off"
+                                onchange="ftmAddGroupToSelection(this)"
+                                style="width:100%; padding:8px 12px; border:1px solid #dee2e6; border-radius:6px; font-size:13px; color:#555;">
+                            <option value="">+ Aggiungi tutti gli studenti di un gruppo...</option>
+                            <?php foreach ($groups as $group):
+                                $gi = $colors[$group->color] ?? $colors['giallo'];
+                                $gkw = $group->calendar_week ? ' - KW' . str_pad($group->calendar_week, 2, '0', STR_PAD_LEFT) : '';
+                            ?>
+                            <option value="<?php echo $group->id; ?>">
+                                <?php echo $gi['emoji'] . ' ' . $gi['name'] . $gkw; ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <!-- Studenti selezionati -->
+                    <div style="margin-top: 8px; display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:12px; color:#666;">Selezionati:</span>
+                        <span id="selected-students-count" style="font-size:12px; color:#0066cc; font-weight:600;"></span>
+                        <button type="button" id="btn-clear-students"
+                                onclick="ftmClearStudents()"
+                                style="display:none; background:none; border:none; color:#dc3545; cursor:pointer; font-size:12px; text-decoration:underline; padding:0;">
+                            Rimuovi tutti
+                        </button>
+                    </div>
+                    <div id="selected-students-list"
+                         style="margin-top:6px; min-height:30px; display:flex; flex-wrap:wrap; gap:4px;">
+                        <p style="color:#999; font-size:12px; margin:0;">Nessuno studente selezionato</p>
+                    </div>
+                    <div id="enroll-hidden-inputs"></div>
                 </div>
 
                 <div class="form-group">
                     <label>Note</label>
-                    <textarea name="notes" rows="3" placeholder="Note opzionali..."></textarea>
+                    <textarea name="notes" id="newact-notes" rows="2" placeholder="Note opzionali..." autocomplete="off"></textarea>
                 </div>
             </div>
             <div class="ftm-modal-footer">
@@ -1391,22 +1538,323 @@ a.ftm-btn, a.ftm-btn:visited, a.ftm-btn:hover, a.ftm-btn:active { color: white !
 </div>
 
 <script>
-// Modal functions
+// Global config
+var ftmWwwroot = '<?php echo $CFG->wwwroot; ?>';
+var ftmSesskey = '<?php echo sesskey(); ?>';
+
+// Atelier catalog data for name auto-fill
+var ftmAtelierNames = <?php echo json_encode($atelier_js_map); ?>;
+
+// Selected students map: { userid: { fullname, email } }
+var ftmSelectedStudents = {};
+
+// Current activity id open in the view modal
+var ftmCurrentActivityId = 0;
+
+// ─── Modal open/close ────────────────────────────────────────────────────────
+
 function ftmOpenModal(modalName) {
-    document.getElementById('modal-' + modalName).classList.add('active');
+    var modal = document.getElementById('modal-' + modalName);
+    if (!modal) return;
+    if (modalName === 'newActivity') {
+        document.getElementById('newact-name').value = '';
+        document.getElementById('newact-type').value = 'week1';
+        document.getElementById('newact-atelierid').value = '';
+        document.getElementById('newact-groupid').value = '';
+        document.getElementById('newact-date').value = new Date().toISOString().substring(0, 10);
+        document.getElementById('newact-slot').value = 'matt';
+        document.getElementById('newact-roomid').value = '';
+        document.getElementById('newact-teacherid').value = '';
+        document.getElementById('newact-max').value = '10';
+        document.getElementById('newact-notes').value = '';
+        document.getElementById('atelierSelectGroup').style.display = 'none';
+        document.getElementById('group-bulk-add').value = '';
+        // reset student search
+        document.getElementById('student-search-input').value = '';
+        document.getElementById('student-search-results').style.display = 'none';
+        ftmSelectedStudents = {};
+        ftmRenderSelectedStudents();
+    }
+    modal.classList.add('active');
 }
 
 function ftmCloseModal(modalName) {
     document.getElementById('modal-' + modalName).classList.remove('active');
 }
 
-// Toggle atelier catalog select when activity_type = 'atelier'
+// ─── Atelier ─────────────────────────────────────────────────────────────────
+
 function toggleAtelierSelect(selectEl) {
     var atelierGroup = document.getElementById('atelierSelectGroup');
-    if (atelierGroup) {
-        atelierGroup.style.display = selectEl.value === 'atelier' ? '' : 'none';
+    if (!atelierGroup) return;
+    if (selectEl.value === 'atelier') {
+        atelierGroup.style.display = '';
+    } else {
+        atelierGroup.style.display = 'none';
+        var nameField = document.getElementById('newact-name');
+        if (nameField && nameField.dataset.atFilled === '1') {
+            nameField.value = '';
+            nameField.dataset.atFilled = '0';
+        }
     }
 }
+
+function ftmAtelierSelected(selectEl) {
+    var nameField = document.getElementById('newact-name');
+    if (!nameField) return;
+    var id = parseInt(selectEl.value);
+    if (id && ftmAtelierNames[id]) {
+        nameField.value = ftmAtelierNames[id];
+        nameField.dataset.atFilled = '1';
+    } else {
+        if (nameField.dataset.atFilled === '1') { nameField.value = ''; }
+        nameField.dataset.atFilled = '0';
+    }
+}
+
+// ─── Student search ───────────────────────────────────────────────────────────
+
+var _searchTimer = null;
+
+function ftmStudentSearch(input) {
+    var q = input.value.trim();
+    var results = document.getElementById('student-search-results');
+    if (q.length < 2) { results.style.display = 'none'; return; }
+
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(function() {
+        fetch(ftmWwwroot + '/local/ftm_scheduler/ajax.php' +
+              '?action=search_users&q=' + encodeURIComponent(q) +
+              '&sesskey=' + ftmSesskey)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.success || !data.users || data.users.length === 0) {
+                    results.innerHTML = '<div style="padding:10px;font-size:13px;color:#999;">Nessun risultato</div>';
+                    results.style.display = '';
+                    return;
+                }
+                var html = '';
+                data.users.forEach(function(u) {
+                    var already = ftmSelectedStudents[u.id] ? ' style="opacity:.4;pointer-events:none;"' : '';
+                    html += '<div class="student-result-item"' + already +
+                            ' onclick="ftmAddStudent(' +
+                            JSON.stringify(u).replace(/</g,'\\u003c') +
+                            ')">' +
+                            '<strong>' + u.fullname + '</strong>' +
+                            '<span style="color:#888;font-size:11px;margin-left:8px;">' + u.email + '</span>' +
+                            '</div>';
+                });
+                results.innerHTML = html;
+                results.style.display = '';
+            })
+            .catch(function() {
+                results.style.display = 'none';
+            });
+    }, 280);
+}
+
+function ftmAddStudent(u) {
+    if (ftmSelectedStudents[u.id]) return;
+    ftmSelectedStudents[u.id] = u;
+    ftmRenderSelectedStudents();
+    // Clear search
+    document.getElementById('student-search-input').value = '';
+    document.getElementById('student-search-results').style.display = 'none';
+}
+
+function ftmRemoveStudent(userid) {
+    delete ftmSelectedStudents[userid];
+    ftmRenderSelectedStudents();
+}
+
+function ftmClearStudents() {
+    ftmSelectedStudents = {};
+    ftmRenderSelectedStudents();
+}
+
+function ftmRenderSelectedStudents() {
+    var list    = document.getElementById('selected-students-list');
+    var countEl = document.getElementById('selected-students-count');
+    var inputs  = document.getElementById('enroll-hidden-inputs');
+    var clearBtn = document.getElementById('btn-clear-students');
+
+    var keys = Object.keys(ftmSelectedStudents);
+    var count = keys.length;
+
+    countEl.textContent = count > 0 ? count + ' selezionat' + (count === 1 ? 'o' : 'i') : '';
+    if (clearBtn) clearBtn.style.display = count > 0 ? '' : 'none';
+
+    // Rebuild hidden inputs
+    inputs.innerHTML = '';
+    keys.forEach(function(uid) {
+        var inp = document.createElement('input');
+        inp.type  = 'hidden';
+        inp.name  = 'enroll_userids[]';
+        inp.value = uid;
+        inputs.appendChild(inp);
+    });
+
+    // Rebuild chips
+    if (count === 0) {
+        list.innerHTML = '<p style="color:#999;font-size:12px;margin:0;">Nessuno studente selezionato</p>';
+        return;
+    }
+    list.innerHTML = '';
+    keys.forEach(function(uid) {
+        var s = ftmSelectedStudents[uid];
+        var chip = document.createElement('div');
+        chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;background:#DBEAFE;' +
+                             'border-radius:20px;padding:3px 10px;font-size:12px;border:1px solid #BFDBFE;';
+        chip.innerHTML = '<span>' + s.fullname + '</span>' +
+                         '<button type="button" onclick="ftmRemoveStudent(' + uid + ')" ' +
+                         'style="background:none;border:none;color:#1E40AF;cursor:pointer;' +
+                         'font-size:16px;padding:0;line-height:1;font-weight:700;" title="Rimuovi">×</button>';
+        list.appendChild(chip);
+    });
+}
+
+// Add all members of a group to the create-modal selection
+function ftmAddGroupToSelection(select) {
+    var groupid = parseInt(select.value);
+    select.value = '';
+    if (!groupid) return;
+
+    fetch(ftmWwwroot + '/local/ftm_scheduler/ajax.php' +
+          '?action=get_group_members&groupid=' + groupid + '&sesskey=' + ftmSesskey)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.success) return;
+            data.members.forEach(function(m) {
+                if (!ftmSelectedStudents[m.userid]) {
+                    ftmSelectedStudents[m.userid] = { id: m.userid, fullname: m.fullname, email: '' };
+                }
+            });
+            ftmRenderSelectedStudents();
+        });
+}
+
+// ─── View-modal enrollment management ────────────────────────────────────────
+
+var _enrollSearchTimer = null;
+
+function ftmSearchForEnroll(input) {
+    var q = input.value.trim();
+    var results = document.getElementById('view-search-results');
+    if (!results) return;
+    if (q.length < 2) { results.style.display = 'none'; return; }
+
+    clearTimeout(_enrollSearchTimer);
+    _enrollSearchTimer = setTimeout(function() {
+        fetch(ftmWwwroot + '/local/ftm_scheduler/ajax.php' +
+              '?action=search_users&q=' + encodeURIComponent(q) + '&sesskey=' + ftmSesskey)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.success || !data.users || data.users.length === 0) {
+                    results.innerHTML = '<div style="padding:8px 12px;font-size:13px;color:#999;">Nessun risultato</div>';
+                    results.style.display = '';
+                    return;
+                }
+                var html = '';
+                data.users.forEach(function(u) {
+                    html += '<div class="enroll-result-item" onclick="ftmEnrollInActivity(' + u.id + ',this)">' +
+                            '<strong>' + u.fullname + '</strong>' +
+                            '<span style="color:#888;font-size:11px;margin-left:8px;">' + u.email + '</span>' +
+                            '</div>';
+                });
+                results.innerHTML = html;
+                results.style.display = '';
+            });
+    }, 280);
+}
+
+function ftmEnrollInActivity(userId, clickedEl) {
+    if (clickedEl) { clickedEl.style.opacity = '0.5'; clickedEl.style.pointerEvents = 'none'; }
+
+    var formData = new FormData();
+    formData.append('action', 'enroll_student');
+    formData.append('activityid', ftmCurrentActivityId);
+    formData.append('userid', userId);
+    formData.append('sesskey', ftmSesskey);
+
+    fetch(ftmWwwroot + '/local/ftm_scheduler/ajax.php', { method: 'POST', body: formData })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                ftmViewActivity(ftmCurrentActivityId);
+            } else {
+                alert('Errore: ' + (data.error || 'Iscrizione fallita'));
+                if (clickedEl) { clickedEl.style.opacity = ''; clickedEl.style.pointerEvents = ''; }
+            }
+        });
+}
+
+function ftmUnenrollStudent(activityId, enrollmentId, btn) {
+    if (!confirm('Rimuovere questo studente dall\'attività?')) return;
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+    var formData = new FormData();
+    formData.append('action', 'unenroll_student');
+    formData.append('enrollmentid', enrollmentId);
+    formData.append('sesskey', ftmSesskey);
+
+    fetch(ftmWwwroot + '/local/ftm_scheduler/ajax.php', { method: 'POST', body: formData })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                ftmViewActivity(activityId);
+            } else {
+                alert('Errore: ' + (data.error || 'Rimozione fallita'));
+                if (btn) { btn.disabled = false; btn.textContent = '🗑️'; }
+            }
+        });
+}
+
+function ftmEnrollGroupToActivity(select) {
+    var groupid = parseInt(select.value);
+    select.value = '';
+    if (!groupid) return;
+
+    var formData = new FormData();
+    formData.append('action', 'enroll_group');
+    formData.append('activityid', ftmCurrentActivityId);
+    formData.append('groupid', groupid);
+    formData.append('sesskey', ftmSesskey);
+
+    fetch(ftmWwwroot + '/local/ftm_scheduler/ajax.php', { method: 'POST', body: formData })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                ftmViewActivity(ftmCurrentActivityId);
+            } else {
+                alert('Errore: ' + (data.error || 'Iscrizione gruppo fallita'));
+            }
+        });
+}
+
+// Close search results when clicking outside
+document.addEventListener('click', function(e) {
+    var inp = document.getElementById('student-search-input');
+    var res = document.getElementById('student-search-results');
+    if (inp && res && !inp.contains(e.target) && !res.contains(e.target)) {
+        res.style.display = 'none';
+    }
+    // also close view-modal search results
+    var vinp = document.getElementById('view-student-search');
+    var vres = document.getElementById('view-search-results');
+    if (vinp && vres && !vinp.contains(e.target) && !vres.contains(e.target)) {
+        vres.style.display = 'none';
+    }
+});
+
+// CSS for search result items (create-modal + view-modal)
+(function() {
+    var style = document.createElement('style');
+    style.textContent =
+        '.student-result-item,.enroll-result-item{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f0f0;}' +
+        '.student-result-item:last-child,.enroll-result-item:last-child{border-bottom:none;}' +
+        '.student-result-item:hover,.enroll-result-item:hover{background:#EFF6FF;}';
+    document.head.appendChild(style);
+})();
 
 // Color selection
 function ftmSelectColor(element) {
@@ -1447,14 +1895,21 @@ function ftmUpdateGroupName(select) {
 
 // View activity details
 function ftmViewActivity(activityId) {
-    // AJAX call to get activity details
-    fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_scheduler/ajax.php?action=get_activity&id=' + activityId)
+    ftmCurrentActivityId = activityId;
+    fetch(ftmWwwroot + '/local/ftm_scheduler/ajax.php?action=get_activity&id=' + activityId)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 document.getElementById('activity-modal-title').innerHTML = data.title;
                 document.getElementById('activity-modal-body').innerHTML = data.content;
                 document.querySelector('#modal-viewActivity .ftm-modal-header').style.background = data.bg_color;
+                // Wire "Modifica" button to edit page.
+                var modBtn = document.querySelector('#modal-viewActivity .ftm-modal-footer .ftm-btn-primary');
+                if (modBtn) {
+                    modBtn.onclick = function() {
+                        window.location.href = ftmWwwroot + '/local/ftm_scheduler/edit_activity.php?id=' + activityId;
+                    };
+                }
                 ftmOpenModal('viewActivity');
             } else {
                 alert('Errore: ' + (data.error || 'Impossibile caricare i dettagli'));
@@ -1466,9 +1921,30 @@ function ftmViewActivity(activityId) {
         });
 }
 
+// Open newActivity modal pre-filled from room occupancy grid click.
+function ftmQuickCreate(roomid, dateStr, slot) {
+    // ftmOpenModal resets the form first, then we override specific fields.
+    ftmOpenModal('newActivity');
+    var modal = document.getElementById('modal-newActivity');
+    if (!modal) return;
+    var form = modal.querySelector('form');
+
+    var dateField = form.querySelector('[name="date"]');
+    if (dateField) dateField.value = dateStr;
+
+    var slotField = form.querySelector('[name="time_slot"]');
+    if (slotField) slotField.value = slot;
+
+    var roomField = form.querySelector('[name="roomid"]');
+    if (roomField) roomField.value = String(roomid);
+
+    var nameField = form.querySelector('[name="name"]');
+    if (nameField) nameField.focus();
+}
+
 // View external booking details
 function ftmViewExternal(bookingId) {
-    fetch('<?php echo $CFG->wwwroot; ?>/local/ftm_scheduler/ajax.php?action=get_external&id=' + bookingId)
+    fetch(ftmWwwroot + '/local/ftm_scheduler/ajax.php?action=get_external&id=' + bookingId)
         .then(response => response.json())
         .then(data => {
             if (data.success) {

@@ -13,7 +13,7 @@ global $CFG;
 ?>
 
 <!-- Legend -->
-<div class="legend">
+<div class="legend" style="display:none">
     <span style="font-weight: 600; margin-right: 10px;">Legenda:</span>
     <?php foreach ($active_groups as $group):
         $color_info = $colors[$group->color] ?? $colors['giallo'];
@@ -177,45 +177,43 @@ function ftmChangeWeekYear(selectedYear) {
                          style="cursor: pointer;"
                          onclick="ftmViewExternal(<?php echo $activity->id; ?>)"
                          data-groupid=""
-                         data-roomid="<?php echo $activity->room_id ?? ''; ?>"
+                         data-roomid="<?php echo $activity->roomid ?? ''; ?>"
                          data-type="external">
                         <div class="activity-title"><?php echo $activity->project_name; ?></div>
                         <div class="activity-info"><?php echo $activity->room_shortname ?? 'AULA'; ?> - <?php echo $activity->responsible; ?></div>
                     </div>
                 <?php else:
-                    $group_color = $activity->group_color ?? 'giallo';
-                    $color_info = $colors[$group_color] ?? $colors['giallo'];
+                    $group_color = $activity->group_color ?? 'neutro';
+                    $color_info = $colors[$group_color] ?? ['emoji' => '⬜', 'name' => ''];
                     $activity_type = !empty($activity->is_atelier) ? 'atelier' : 'week1';
                 ?>
+                    <?php
+                    $coach_initials = '';
+                    if (!empty($activity->teacher_firstname) || !empty($activity->teacher_lastname)) {
+                        $coach_initials = strtoupper(
+                            substr($activity->teacher_firstname ?? '', 0, 1) .
+                            substr($activity->teacher_lastname  ?? '', 0, 1)
+                        );
+                    }
+                    ?>
                     <div class="activity-block <?php echo $group_color; ?>"
                          style="cursor: pointer;"
                          onclick="ftmViewActivity(<?php echo $activity->id; ?>)"
                          data-groupid="<?php echo $activity->groupid ?? ''; ?>"
-                         data-roomid="<?php echo $activity->room_id ?? ''; ?>"
+                         data-roomid="<?php echo $activity->roomid ?? ''; ?>"
                          data-type="<?php echo $activity_type; ?>">
                         <div class="activity-title">
                             <span class="activity-gruppo-dot dot-<?php echo $group_color; ?>"></span>
                             <?php echo $activity->name; ?>
                         </div>
-                        <div class="activity-info"><?php echo $activity->room_shortname ?? 'AULA 2'; ?> - Coach <?php echo $activity->teacher_initials ?? 'GM'; ?></div>
+                        <div class="activity-info">
+                            <?php echo $activity->room_shortname ?? ''; ?>
+                            <?php if ($coach_initials): ?> - Coach <?php echo $coach_initials; ?><?php endif; ?>
+                        </div>
                         <div class="activity-info"><?php echo $activity->enrolled_count ?? 0; ?>/<?php echo $activity->max_participants ?? 10; ?> iscritti</div>
                     </div>
                 <?php endif; ?>
             <?php endforeach; ?>
-
-            <?php
-            // Show REMOTO for Wednesday if no activities
-            if ($day['day_of_week'] === 3 && empty($day_activities)):
-                foreach ($active_groups as $group):
-                    $color_info = $colors[$group->color] ?? $colors['giallo'];
-            ?>
-                <div class="remote-slot">
-                    <?php echo $color_info['emoji']; ?> <?php echo $color_info['name']; ?>: REMOTO
-                </div>
-            <?php
-                endforeach;
-            endif;
-            ?>
         </div>
     <?php endforeach; ?>
 
@@ -237,46 +235,142 @@ function ftmChangeWeekYear(selectedYear) {
                          style="cursor: pointer;"
                          onclick="ftmViewExternal(<?php echo $activity->id; ?>)"
                          data-groupid=""
-                         data-roomid="<?php echo $activity->room_id ?? ''; ?>"
+                         data-roomid="<?php echo $activity->roomid ?? ''; ?>"
                          data-type="external">
                         <div class="activity-title"><?php echo $activity->project_name; ?></div>
                         <div class="activity-info"><?php echo $activity->room_shortname ?? 'AULA'; ?> - <?php echo $activity->responsible; ?></div>
                     </div>
                 <?php else:
-                    $group_color = $activity->group_color ?? 'giallo';
-                    $color_info = $colors[$group_color] ?? $colors['giallo'];
+                    $group_color = $activity->group_color ?? 'neutro';
+                    $color_info = $colors[$group_color] ?? ['emoji' => '⬜', 'name' => ''];
                     $activity_type = !empty($activity->is_atelier) ? 'atelier' : 'week1';
                 ?>
+                    <?php
+                    $coach_initials_pom = '';
+                    if (!empty($activity->teacher_firstname) || !empty($activity->teacher_lastname)) {
+                        $coach_initials_pom = strtoupper(
+                            substr($activity->teacher_firstname ?? '', 0, 1) .
+                            substr($activity->teacher_lastname  ?? '', 0, 1)
+                        );
+                    }
+                    ?>
                     <div class="activity-block <?php echo $group_color; ?>"
                          style="cursor: pointer;"
                          onclick="ftmViewActivity(<?php echo $activity->id; ?>)"
                          data-groupid="<?php echo $activity->groupid ?? ''; ?>"
-                         data-roomid="<?php echo $activity->room_id ?? ''; ?>"
+                         data-roomid="<?php echo $activity->roomid ?? ''; ?>"
                          data-type="<?php echo $activity_type; ?>">
                         <div class="activity-title">
                             <span class="activity-gruppo-dot dot-<?php echo $group_color; ?>"></span>
                             <?php echo $activity->name; ?>
                         </div>
-                        <div class="activity-info"><?php echo $activity->room_shortname ?? 'AULA 2'; ?> - Coach <?php echo $activity->teacher_initials ?? 'GM'; ?></div>
+                        <div class="activity-info">
+                            <?php echo $activity->room_shortname ?? ''; ?>
+                            <?php if ($coach_initials_pom): ?> - Coach <?php echo $coach_initials_pom; ?><?php endif; ?>
+                        </div>
                     </div>
                 <?php endif; ?>
             <?php endforeach; ?>
-
-            <?php
-            // Show REMOTO for Wednesday and Friday afternoon if no activities
-            if (($day['day_of_week'] === 3 || $day['day_of_week'] === 5) && empty($day_activities)):
-                foreach ($active_groups as $group):
-                    $color_info = $colors[$group->color] ?? $colors['giallo'];
-            ?>
-                <div class="remote-slot">
-                    <?php echo $color_info['emoji']; ?> <?php echo $color_info['name']; ?>: REMOTO
-                </div>
-            <?php
-                endforeach;
-            endif;
-            ?>
         </div>
     <?php endforeach; ?>
+</div>
+
+<?php
+// ---- Room Occupancy Grid (week view only) ----
+// Build matrix: $room_matrix[$roomid][$day_of_week][$slot] = activity|booking
+$room_matrix = [];
+foreach ($week_dates as $wday) {
+    foreach (['matt', 'pom'] as $slot) {
+        foreach ($calendar_data[$wday['day_of_week']][$slot] ?? [] as $act) {
+            $rid = (int)($act->roomid ?? 0);
+            if ($rid > 0) {
+                $room_matrix[$rid][$wday['day_of_week']][$slot] = $act;
+            }
+        }
+    }
+}
+?>
+
+<div class="room-occ-section">
+    <div class="room-occ-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? '' : 'none'; this.querySelector('.room-occ-toggle').textContent = this.nextElementSibling.style.display === 'none' ? '▼ Mostra' : '▲ Nascondi';">
+        <h4>🏫 Occupazione Aule — KW<?php echo str_pad($week, 2, '0', STR_PAD_LEFT); ?></h4>
+        <span class="room-occ-toggle">▲ Nascondi</span>
+    </div>
+    <div class="room-occ-body">
+        <table class="room-occ-table">
+            <thead>
+                <tr>
+                    <th class="room-col" rowspan="2">Aula</th>
+                    <?php foreach ($week_dates as $wday): ?>
+                        <th colspan="2"><?php echo $wday['day_name']; ?><br><small style="font-weight:400"><?php echo date('j/n', $wday['timestamp']); ?></small></th>
+                    <?php endforeach; ?>
+                </tr>
+                <tr>
+                    <?php foreach ($week_dates as $wday): ?>
+                        <th class="slot-th">Matt</th>
+                        <th class="slot-th">Pom</th>
+                    <?php endforeach; ?>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($rooms as $room): ?>
+                <tr>
+                    <td class="room-label">
+                        <?php echo s($room->shortname ?: $room->name); ?>
+                        <small><?php if ($room->shortname && $room->name !== $room->shortname) echo s($room->name); ?></small>
+                    </td>
+                    <?php foreach ($week_dates as $wday): ?>
+                        <?php foreach (['matt', 'pom'] as $slot): ?>
+                            <?php $act = $room_matrix[$room->id][$wday['day_of_week']][$slot] ?? null; ?>
+                            <td>
+                            <?php if ($act): ?>
+                                <?php if (!empty($act->is_external)): ?>
+                                    <div class="room-occ-activity ext"
+                                         onclick="ftmViewExternal(<?php echo (int)$act->id; ?>)"
+                                         style="cursor:pointer" title="Clicca per vedere/modificare">
+                                        <span class="room-occ-name"><?php echo s($act->project_name); ?></span>
+                                        <span class="room-occ-coach"><?php echo s($act->responsible); ?></span>
+                                    </div>
+                                <?php else:
+                                    $color = $act->group_color ?? 'neutro';
+                                    $initials = '';
+                                    if (!empty($act->teacher_firstname) || !empty($act->teacher_lastname)) {
+                                        $initials = strtoupper(
+                                            substr($act->teacher_firstname ?? '', 0, 1) .
+                                            substr($act->teacher_lastname  ?? '', 0, 1)
+                                        );
+                                    }
+                                ?>
+                                    <div class="room-occ-activity <?php echo $color; ?>"
+                                         onclick="ftmViewActivity(<?php echo (int)$act->id; ?>)"
+                                         style="cursor:pointer" title="Clicca per vedere/modificare">
+                                        <span class="room-occ-name"><?php echo s($act->name); ?></span>
+                                        <?php if ($initials || !empty($act->group_name)): ?>
+                                        <span class="room-occ-coach">
+                                            <?php if ($initials) echo $initials; ?>
+                                            <?php if (!empty($act->group_name)) echo ' · ' . s($act->group_name); ?>
+                                        </span>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
+                            <?php else:
+                                $pre_date = date('Y-m-d', $wday['timestamp']);
+                            ?>
+                                <div class="room-occ-cell free"
+                                     onclick="ftmQuickCreate(<?php echo (int)$room->id; ?>, '<?php echo $pre_date; ?>', '<?php echo $slot; ?>')"
+                                     style="cursor:pointer;text-align:center;line-height:36px;font-size:18px;color:#ccc"
+                                     title="Crea attività — <?php echo s($room->shortname ?: $room->name); ?>, <?php echo date('d/m', $wday['timestamp']); ?> <?php echo $slot === 'matt' ? 'Mattina' : 'Pomeriggio'; ?>">
+                                    +
+                                </div>
+                            <?php endif; ?>
+                            </td>
+                        <?php endforeach; ?>
+                    <?php endforeach; ?>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <?php else: ?>
@@ -382,7 +476,7 @@ function ftmChangeYear(selectedYear) {
                             <?php echo substr($activity->project_name, 0, 15); ?>
                         </div>
                     <?php else:
-                        $group_color = $activity->group_color ?? 'giallo';
+                        $group_color = $activity->group_color ?? 'neutro';
                     ?>
                         <div class="month-activity-mini <?php echo $group_color; ?>" onclick="ftmViewActivity(<?php echo $activity->id; ?>)">
                             <?php echo substr($activity->name, 0, 15); ?>

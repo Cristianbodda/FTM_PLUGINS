@@ -66,6 +66,32 @@ if (!empty($printSectorFilter) && $printSectorFilter !== 'all') {
     $certProgress = generate_certification_progress($competencies);
 }
 
+// Ricostruzione overlay dal areasData filtrato (solo con filtro settore attivo)
+$hasActiveSectorFilter = ($cm_sector_filter !== 'all') ||
+                         (!empty($printSectorFilter) && $printSectorFilter !== 'all');
+
+if ($hasActiveSectorFilter && !empty($overlayLabels) && !empty($areasData) && !empty($overlayAreas)) {
+    $newOL = []; $newOQ = []; $newOA = []; $newOLV = []; $newOC = [];
+    foreach ($areasData as $areaKey => $areaData) {
+        $shortCode = $areaData['code'];
+        if (isset($overlayAreas[$shortCode])) {
+            $ovEntry  = $overlayAreas[$shortCode];
+            $newOL[]  = $areaData['name'];
+            $newOQ[]  = $ovEntry['quiz'] ?? null;
+            $newOA[]  = $ovEntry['auto'] ?? null;
+            $newOLV[] = $ovEntry['labeval'] ?? null;
+            $newOC[]  = $ovEntry['coach'] ?? null;
+        }
+    }
+    if (!empty($newOL)) {
+        $overlayLabels   = $newOL;
+        $overlayQuiz     = $newOQ;
+        $overlayAuto     = $newOA;
+        $overlayLabeval  = $newOLV;
+        $overlayCoach    = $newOC;
+    }
+}
+
 // ============================================
 // HELPER: Strip emoji (TCPDF non supporta Unicode emoji, li rende come "?")
 // ============================================

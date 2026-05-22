@@ -14,7 +14,8 @@ $capabilities = [
         'captype' => 'read',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [
-            'user' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager'        => CAP_ALLOW,
         ],
     ],
     'local/ftm_jobsearch:manage' => [

@@ -1217,6 +1217,9 @@ echo $OUTPUT->header();
 .comment-print-text {
     display: none;
 }
+.score-print-text {
+    display: none;
+}
 .passport-table textarea:focus {
     border-color: #0066cc;
     outline: none;
@@ -1641,6 +1644,19 @@ echo $OUTPUT->header();
 
     /* Badge colors: hidden in print — scores visible on screen, not in printed document */
     .pct-badge {
+        display: none !important;
+    }
+
+    /* Coach score plain text — visible only in print */
+    .score-print-text {
+        display: inline !important;
+        font-size: 10pt;
+        font-weight: 700;
+        color: #333;
+    }
+
+    /* Hide descriptive paragraph in final note section */
+    #passport-final-note-section > p {
         display: none !important;
     }
 
@@ -2100,8 +2116,10 @@ echo $OUTPUT->header();
                                 <?php if ($coachCount > 0): ?>
                                     <?php if ($displayFormat === 'qualitative'): ?>
                                     <span class="pct-badge <?php echo $pctClass; ?>"><?php echo passport_level_label($pct); ?></span>
+                                    <span class="score-print-text"><?php echo passport_level_label($pct); ?></span>
                                     <?php else: ?>
                                     <span class="pct-badge <?php echo $pctClass; ?>"><?php echo $pct; ?>%</span>
+                                    <span class="score-print-text"><?php echo $pct; ?>%</span>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <span style="color:#9ca3af; font-size:0.82rem;">Non valutato</span>

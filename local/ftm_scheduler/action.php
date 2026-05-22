@@ -124,9 +124,22 @@ switch ($action) {
         $data->teacherid = $data->teacherid ?: null;
 
         // Create the activity
-        \local_ftm_scheduler\manager::create_activity($data);
+        $activityid = \local_ftm_scheduler\manager::create_activity($data);
 
-        \core\notification::success('Attività creata con successo');
+        // Enroll selected students (from enrollment checkboxes in the modal)
+        $enroll_userids = optional_param_array('enroll_userids', [], PARAM_INT);
+        foreach ($enroll_userids as $uid) {
+            if ($uid > 0) {
+                \local_ftm_scheduler\manager::enroll_user($activityid, $uid, $data->groupid);
+            }
+        }
+
+        $enrolled_count = count(array_filter($enroll_userids));
+        $msg = 'Attività creata con successo';
+        if ($enrolled_count > 0) {
+            $msg .= ' — ' . $enrolled_count . ' studenti iscritti';
+        }
+        \core\notification::success($msg);
 
         $returnurl = new moodle_url('/local/ftm_scheduler/index.php', ['tab' => 'calendario']);
         break;

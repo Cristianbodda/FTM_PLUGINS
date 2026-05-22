@@ -17,10 +17,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_jobmatchagent';
-$plugin->version = 2026042700;
+$plugin->version = 2026052201;
 $plugin->requires = 2024042200; // Moodle 4.4+
 $plugin->maturity = MATURITY_ALPHA;
-$plugin->release = 'v0.7.0 — Prompt AI svizzero/TI con regole AFC, lingue, esperienza';
+$plugin->release = 'v0.8.2';
 $plugin->dependencies = [
     'local_jobaida' => ANY_VERSION,
     'local_competencymanager' => ANY_VERSION,

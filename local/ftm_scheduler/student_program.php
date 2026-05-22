@@ -548,7 +548,7 @@ echo $OUTPUT->header();
     </div>
 
     <!-- Legend -->
-    <div class="legend no-print">
+    <div class="legend no-print" style="display:none">
         <div class="legend-item">
             <div class="legend-color presenza"></div>
             <span>In Presenza</span>

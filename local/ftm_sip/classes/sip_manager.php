@@ -1274,6 +1274,9 @@ class sip_manager {
      */
     public static function get_weekly_summary($enrollmentid) {
         global $DB;
+        if (!$DB->get_manager()->table_exists('local_ftm_sip_search_entries')) {
+            return [];
+        }
         $sql = "SELECT area_key, sip_week, COUNT(*) AS cnt
                 FROM {local_ftm_sip_search_entries}
                 WHERE enrollmentid = ?
@@ -1426,33 +1429,44 @@ class sip_manager {
         $kpi = self::get_kpi_summary($enrollmentid);
 
         // v2 tracking counts per area.
-        $weekly = self::get_weekly_summary($enrollmentid);
-        $kpi->tracking_per_area = $weekly;
+        $kpi->tracking_per_area = self::get_weekly_summary($enrollmentid); // guarded internally
 
         // Total entries across all areas.
-        $kpi->total_entries = $DB->count_records('local_ftm_sip_search_entries', ['enrollmentid' => $enrollmentid]);
+        $kpi->total_entries = 0;
+        if ($DB->get_manager()->table_exists('local_ftm_sip_search_entries')) {
+            $kpi->total_entries = $DB->count_records('local_ftm_sip_search_entries', ['enrollmentid' => $enrollmentid]);
+        }
 
         // Acceptance data.
-        $acceptance = self::get_acceptance($enrollmentid);
         $kpi->acceptance_accepted = 0;
-        $kpi->acceptance_total = count($acceptance);
+        $kpi->acceptance_total = 0;
         $kpi->acceptance_progress = [];
-        foreach ($acceptance as $key => $a) {
-            if ($a->accepted) {
-                $kpi->acceptance_accepted++;
+        if ($DB->get_manager()->table_exists('local_ftm_sip_acceptance')) {
+            $acceptance = self::get_acceptance($enrollmentid);
+            $kpi->acceptance_total = count($acceptance);
+            foreach ($acceptance as $key => $a) {
+                if ($a->accepted) {
+                    $kpi->acceptance_accepted++;
+                }
+                $kpi->acceptance_progress[$key] = (object)[
+                    'target' => (int)$a->target_value,
+                    'actual' => (int)$a->actual_value,
+                    'pct' => $a->target_value > 0 ? min(100, round(($a->actual_value / $a->target_value) * 100)) : 0,
+                ];
             }
-            $kpi->acceptance_progress[$key] = (object)[
-                'target' => (int)$a->target_value,
-                'actual' => (int)$a->actual_value,
-                'pct' => $a->target_value > 0 ? min(100, round(($a->actual_value / $a->target_value) * 100)) : 0,
-            ];
         }
 
         // Coach evaluations.
-        $kpi->coach_evals = self::get_coach_evals($enrollmentid);
+        $kpi->coach_evals = [];
+        if ($DB->get_manager()->table_exists('local_ftm_sip_coach_evals')) {
+            $kpi->coach_evals = self::get_coach_evals($enrollmentid);
+        }
 
         // Search proofs count.
-        $kpi->search_proofs = $DB->count_records('local_ftm_sip_search_proofs', ['enrollmentid' => $enrollmentid]);
+        $kpi->search_proofs = 0;
+        if ($DB->get_manager()->table_exists('local_ftm_sip_search_proofs')) {
+            $kpi->search_proofs = $DB->count_records('local_ftm_sip_search_proofs', ['enrollmentid' => $enrollmentid]);
+        }
 
         return $kpi;
     }

@@ -15,6 +15,17 @@ require_once(__DIR__ . '/../../config.php');
 require_login();
 require_sesskey();
 
+$context = context_system::instance();
+$isauthorized = is_siteadmin()
+    || has_capability('local/jobaida:use', $context)
+    || $DB->record_exists('local_jobaida_auth', ['userid' => $USER->id, 'active' => 1]);
+if (!$isauthorized) {
+    header('Content-Type: application/json; charset=utf-8');
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Non autorizzato.']);
+    die();
+}
+
 try {
     $text = required_param('text', PARAM_RAW);
 

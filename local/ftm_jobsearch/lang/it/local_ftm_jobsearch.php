@@ -15,3 +15,4 @@ $string['setting_cache'] = 'Cache risultati (ore)';
 $string['setting_cache_desc'] = 'Ore prima di ri-scrapare lo stesso settore. Default: 24.';
 $string['ftm_jobsearch:use'] = 'Usare la ricerca lavoro FTM';
 $string['ftm_jobsearch:manage'] = 'Gestire le offerte di lavoro FTM';
+$string['task_scrape_jobs'] = 'FTM Job Search - Importa annunci (job-room.ch + Indeed)';

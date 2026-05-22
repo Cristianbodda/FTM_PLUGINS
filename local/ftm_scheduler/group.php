@@ -17,9 +17,59 @@ require_capability('local/ftm_scheduler:view', $context);
 
 $id = required_param('id', PARAM_INT);
 
+$colors = local_ftm_scheduler_get_colors();
+
+// Handle edit form submission.
+$edit_error = '';
+if (optional_param('action', '', PARAM_ALPHA) === 'edit') {
+    require_capability('local/ftm_scheduler:manage', $context);
+    require_sesskey();
+
+    $new_color     = required_param('color', PARAM_ALPHA);
+    $new_entry     = required_param('entry_date', PARAM_TEXT);
+    $new_end       = required_param('planned_end_date', PARAM_TEXT);
+    $new_kw        = required_param('calendar_week', PARAM_INT);
+    $new_status    = required_param('status', PARAM_ALPHANUMEXT);
+
+    $entry_ts = strtotime($new_entry);
+    $end_ts   = strtotime($new_end);
+
+    $valid_statuses = ['planning', 'active', 'completed'];
+    if (!$entry_ts || !$end_ts) {
+        $edit_error = 'Date non valide.';
+    } elseif ($end_ts <= $entry_ts) {
+        $edit_error = 'La data di fine deve essere successiva alla data di inizio.';
+    } elseif (!isset($colors[$new_color])) {
+        $edit_error = 'Colore non valido.';
+    } elseif (!in_array($new_status, $valid_statuses)) {
+        $edit_error = 'Stato non valido.';
+    } else {
+        $ci = $colors[$new_color];
+        $kw_str = str_pad($new_kw, 2, '0', STR_PAD_LEFT);
+
+        $upd = new stdClass();
+        $upd->id               = $id;
+        $upd->color            = $new_color;
+        $upd->color_hex        = $ci['hex'];
+        $upd->entry_date       = $entry_ts;
+        $upd->planned_end_date = $end_ts;
+        $upd->calendar_week    = $new_kw;
+        $upd->name             = 'Gruppo ' . $ci['name'] . ' - KW' . $kw_str;
+        $upd->status           = $new_status;
+        $upd->timemodified     = time();
+
+        $DB->update_record('local_ftm_groups', $upd);
+        redirect(
+            new moodle_url('/local/ftm_scheduler/group.php', ['id' => $id]),
+            'Gruppo aggiornato con successo.',
+            2,
+            \core\output\notification::NOTIFY_SUCCESS
+        );
+    }
+}
+
 // Get group info
 $group = $DB->get_record('local_ftm_groups', ['id' => $id], '*', MUST_EXIST);
-$colors = local_ftm_scheduler_get_colors();
 $color_info = $colors[$group->color] ?? $colors['giallo'];
 
 $PAGE->set_context($context);
@@ -320,8 +370,22 @@ echo $OUTPUT->header();
     <!-- Header -->
     <div class="group-header <?php echo $group->color; ?>">
         <h2><?php echo $color_info['emoji']; ?> <?php echo s($group->name); ?></h2>
-        <span class="status-badge <?php echo $status_class; ?>"><?php echo $status_label; ?></span>
+        <div style="display:flex;align-items:center;gap:12px">
+            <span class="status-badge <?php echo $status_class; ?>"><?php echo $status_label; ?></span>
+            <?php if (has_capability('local/ftm_scheduler:manage', $context)): ?>
+            <button onclick="document.getElementById('modal-editGroup').classList.add('active')"
+                    style="background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.5);color:inherit;padding:7px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">
+                ✏️ Modifica
+            </button>
+            <?php endif; ?>
+        </div>
     </div>
+
+    <?php if ($edit_error): ?>
+    <div style="background:#fee;border:1px solid #dc3545;color:#7b0000;padding:10px 16px;border-radius:6px;margin-bottom:16px">
+        ⚠️ <?php echo s($edit_error); ?>
+    </div>
+    <?php endif; ?>
 
     <div class="group-body">
         <!-- Info Cards -->
@@ -472,6 +536,147 @@ echo $OUTPUT->header();
         </div>
     </div>
 </div>
+
+<?php if (has_capability('local/ftm_scheduler:manage', $context)): ?>
+<!-- ===== Edit Group Modal ===== -->
+<style>
+.eg-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+.eg-overlay.active { display: flex; }
+.eg-modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.eg-header {
+    padding: 18px 24px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.eg-header h3 { margin: 0; font-size: 17px; }
+.eg-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #666; line-height: 1; }
+.eg-body { padding: 24px; }
+.eg-footer { padding: 16px 24px; background: #f8f9fa; border-top: 1px solid #dee2e6; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end; gap: 10px; }
+.eg-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.eg-form-group { margin-bottom: 16px; }
+.eg-form-group label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .4px; }
+.eg-form-group input, .eg-form-group select {
+    width: 100%; padding: 9px 12px; border: 1px solid #dee2e6; border-radius: 6px; font-size: 14px;
+}
+.eg-form-group input:focus, .eg-form-group select:focus { outline: none; border-color: #0066cc; box-shadow: 0 0 0 3px rgba(0,102,204,.1); }
+/* Color picker */
+.eg-color-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+.eg-color-opt {
+    width: 44px; height: 44px; border-radius: 8px; cursor: pointer;
+    border: 3px solid transparent; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; transition: transform .15s, border-color .15s;
+}
+.eg-color-opt:hover { transform: scale(1.1); }
+.eg-color-opt.selected { border-color: #0066cc; transform: scale(1.1); box-shadow: 0 0 0 2px #fff, 0 0 0 4px #0066cc; }
+</style>
+
+<div class="eg-overlay" id="modal-editGroup" onclick="if(event.target===this)this.classList.remove('active')">
+    <div class="eg-modal">
+        <div class="eg-header">
+            <h3>✏️ Modifica Gruppo</h3>
+            <button class="eg-close" onclick="document.getElementById('modal-editGroup').classList.remove('active')">×</button>
+        </div>
+        <form method="post" action="<?php echo (new moodle_url('/local/ftm_scheduler/group.php', ['id' => $id]))->out(false); ?>">
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
+            <input type="hidden" name="color" id="eg-color-hidden" value="<?php echo $group->color; ?>">
+            <div class="eg-body">
+
+                <!-- Color -->
+                <div class="eg-form-group">
+                    <label>Colore Gruppo</label>
+                    <div class="eg-color-grid">
+                        <?php foreach ($colors as $ckey => $cval): ?>
+                        <div class="eg-color-opt <?php echo $group->color === $ckey ? 'selected' : ''; ?>"
+                             style="background:<?php echo $cval['hex']; ?>"
+                             title="<?php echo s($cval['name']); ?>"
+                             onclick="egSelectColor('<?php echo $ckey; ?>', this)">
+                            <?php echo $cval['emoji']; ?>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- Dates -->
+                <div class="eg-form-row">
+                    <div class="eg-form-group" style="margin-bottom:0">
+                        <label>Data Inizio</label>
+                        <input type="date" name="entry_date" required
+                               value="<?php echo date('Y-m-d', $group->entry_date); ?>">
+                    </div>
+                    <div class="eg-form-group" style="margin-bottom:0">
+                        <label>Data Fine</label>
+                        <input type="date" name="planned_end_date" required
+                               value="<?php echo date('Y-m-d', $group->planned_end_date); ?>">
+                    </div>
+                </div>
+
+                <!-- KW + Status -->
+                <div class="eg-form-row" style="margin-top:16px">
+                    <div class="eg-form-group" style="margin-bottom:0">
+                        <label>Settimana Calendario (KW)</label>
+                        <input type="number" name="calendar_week" min="1" max="53" required
+                               value="<?php echo (int)$group->calendar_week; ?>">
+                    </div>
+                    <div class="eg-form-group" style="margin-bottom:0">
+                        <label>Stato</label>
+                        <select name="status">
+                            <option value="planning"   <?php echo $group->status === 'planning'   ? 'selected' : ''; ?>>In pianificazione</option>
+                            <option value="active"     <?php echo $group->status === 'active'     ? 'selected' : ''; ?>>Attivo</option>
+                            <option value="completed"  <?php echo $group->status === 'completed'  ? 'selected' : ''; ?>>Completato</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+            <div class="eg-footer">
+                <button type="button" onclick="document.getElementById('modal-editGroup').classList.remove('active')"
+                        style="padding:9px 20px;border:1px solid #dee2e6;background:#fff;border-radius:6px;cursor:pointer;font-size:14px">
+                    Annulla
+                </button>
+                <button type="submit"
+                        style="padding:9px 20px;background:#0066cc;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600">
+                    💾 Salva Modifiche
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function egSelectColor(colorKey, el) {
+    document.querySelectorAll('.eg-color-opt').forEach(function(o) { o.classList.remove('selected'); });
+    el.classList.add('selected');
+    document.getElementById('eg-color-hidden').value = colorKey;
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') document.getElementById('modal-editGroup').classList.remove('active');
+});
+<?php if ($edit_error): ?>
+document.getElementById('modal-editGroup').classList.add('active');
+<?php endif; ?>
+</script>
+<?php endif; ?>
 
 <?php
 echo $OUTPUT->footer();

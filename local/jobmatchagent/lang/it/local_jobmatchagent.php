@@ -61,7 +61,7 @@ $string['cd_agent_on'] = 'Agente ON';
 $string['cd_runsearch'] = 'Cerca opportunita';
 $string['cd_runsearch_all'] = 'Cerca per tutti gli attivi';
 $string['cd_fetch_now'] = 'Aggiorna catalogo (RSS + AI Scraper)';
-$string['cd_fetch_confirm'] = 'Avviare l\'aggiornamento catalogo? Il sistema scarichera annunci da tutte le fonti RSS configurate E lancera l\'AI Scraper su jobs.ch, randstad.ch e carriera.ch per i settori e attivita degli studenti attivi. Puo richiedere fino a 5 minuti.';
+$string['cd_fetch_confirm'] = 'Avviare l\'aggiornamento catalogo? Il sistema scarichera annunci da tutte le fonti RSS configurate (ti.ch, admin.ch, Indeed Ticino) E lancera l\'AI Scraper su jobs.ch, job-room.ch e carriera.ch per i settori e attivita degli studenti attivi. Puo richiedere fino a 5 minuti.';
 $string['cd_manage_sources'] = 'Gestisci fonti RSS';
 $string['cd_search_settings'] = 'Impostazioni ricerca';
 $string['cd_catalog'] = 'Catalogo';
@@ -104,14 +104,14 @@ $string['fn_matches_created'] = 'Match generati per studenti attivi';
 $string['fn_per_source'] = 'Dettaglio per fonte';
 $string['fn_status'] = 'Stato';
 $string['fn_rss_sources'] = 'Fonti RSS';
-$string['fn_ai_scraper'] = 'AI Scraper (jobs.ch / randstad / carriera)';
+$string['fn_ai_scraper'] = 'AI Scraper (jobs.ch / job-room.ch / carriera)';
 $string['fn_ai_not_available'] = 'Plugin local_ftm_jobsearch non installato';
 $string['fn_sectors_scraped'] = 'settori scrappati';
 $string['fn_offers_imported'] = 'annunci importati';
 $string['fn_total_offers'] = 'Totale nuovi annunci nel catalogo';
 $string['fn_rss_detail'] = 'Dettaglio fonti RSS';
 $string['fn_ai_detail'] = 'Dettaglio AI Scraper';
-$string['fn_ai_explanation'] = 'L\'AI Scraper interroga jobs.ch, randstad.ch e carriera.ch per ogni combinazione settore + attivita desiderata degli studenti attivi.';
+$string['fn_ai_explanation'] = 'L\'AI Scraper interroga jobs.ch, job-room.ch e carriera.ch per ogni combinazione settore + attivita desiderata degli studenti attivi.';
 $string['fn_sector_mansione'] = 'Combo settore | mansione';
 $string['fn_errors'] = 'Errori';
 
@@ -233,3 +233,157 @@ $string['err_invalid_student'] = 'Studente non valido o non gestito da te.';
 $string['err_invalid_match'] = 'Match non trovato.';
 $string['err_no_text'] = 'Devi incollare il testo dell\'annuncio.';
 $string['err_no_title'] = 'Devi inserire un titolo.';
+
+// Capabilities — aziende e target.
+$string['jobmatchagent:managecompanies'] = 'Gestisci database aziende Ticino';
+$string['jobmatchagent:managetargets'] = 'Gestisci aziende target per studenti';
+
+// Student targets page.
+$string['st_title']                    = 'Autocandidature — {$a}';
+$string['st_info_sector']              = 'Settore';
+$string['st_info_coach']               = 'Coach';
+$string['st_ci_active']                = 'CI attivo';
+$string['st_ci_inactive']              = 'CI non attivo';
+$string['st_student_view']             = 'Vista studente';
+$string['st_sv_on']                    = 'ON';
+$string['st_sv_off']                   = 'OFF';
+$string['st_sv_toggle_help']           = 'Attiva/disattiva la visualizzazione delle autocandidature per lo studente';
+$string['st_sv_activated']             = 'Vista studente attivata';
+$string['st_sv_deactivated']           = 'Vista studente disattivata';
+$string['st_targets_list']             = 'Aziende target';
+$string['st_add_target']               = 'Aggiungi azienda target';
+$string['st_no_targets']               = 'Nessuna azienda target. Clicca "Aggiungi azienda target" per iniziare.';
+$string['st_note_per_ai']              = 'Note per lettera AI';
+$string['st_note_per_ai_placeholder']  = 'Es: Candidatura spontanea per ruolo di elettricista. Enfatizza esperienza con impianti industriali.';
+$string['st_note_per_ai_help']         = 'Queste note vengono passate a JobAIDA per personalizzare la lettera di presentazione.';
+$string['st_registered_ci']            = 'Registrato in CI';
+$string['st_btn_generate_letter']      = 'Genera lettera';
+$string['st_btn_confirm_sent']         = 'Conferma invio';
+$string['st_btn_delete']               = 'Elimina';
+$string['st_btn_add']                  = 'Aggiungi';
+$string['st_confirm_delete']           = 'Eliminare questa azienda target? L\'operazione non puo essere annullata.';
+$string['st_confirm_sent_help']        = 'Confermare che la candidatura e stata inviata a questa azienda?';
+$string['st_note_saved']               = 'Nota salvata.';
+$string['st_target_created']           = 'Azienda target aggiunta.';
+$string['st_target_deleted']           = 'Azienda target eliminata.';
+$string['st_status_updated']           = 'Stato aggiornato.';
+
+// Status labels for student targets.
+$string['st_status_pending']           = 'Da inviare';
+$string['st_status_lettera_generata']  = 'Lettera generata';
+$string['st_status_inviata']           = 'Inviata';
+$string['st_status_risposta']          = 'Risposta ricevuta';
+$string['st_status_colloquio']         = 'Colloquio';
+$string['st_status_assunto']           = 'Assunto';
+$string['st_status_rifiutato']         = 'Rifiutato';
+
+// Modal: add target.
+$string['st_modal_title']              = 'Aggiungi azienda target';
+$string['st_modal_search']             = 'Cerca azienda';
+$string['st_modal_search_placeholder'] = 'Nome azienda...';
+$string['st_modal_filter_sector']      = 'Settore';
+$string['st_modal_all_sectors']        = 'Tutti i settori';
+$string['st_modal_type_to_search']     = 'Digita almeno 2 caratteri per cercare';
+$string['st_modal_no_results']         = 'Nessuna azienda trovata';
+$string['st_modal_selected']           = 'Selezionata';
+
+// AI suggest targets.
+$string['st_ai_suggest']               = 'Suggerisci aziende AI';
+$string['st_ai_suggest_title']         = 'Suggerimenti AI — Aziende target';
+$string['st_ai_suggest_loading']       = 'Analisi profilo in corso...';
+$string['st_ai_suggest_none']          = 'Nessun suggerimento trovato. Aggiungi più aziende al database.';
+$string['st_ai_suggest_already']       = '✓ Già nel piano';
+$string['st_ai_add_target']            = '+ Aggiungi target';
+$string['st_ai_added']                 = '✓ Aggiunto';
+$string['st_btn_detail']               = 'Dettaglio';
+$string['st_detail_title']             = 'Scheda azienda';
+$string['st_detail_loading']           = 'Analisi sito in corso...';
+$string['st_detail_no_website']        = 'Nessun sito web disponibile per questa azienda.';
+
+// Modal: note esito.
+$string['st_modal_note_esito']         = 'Note sull\'esito';
+$string['st_note_esito_placeholder']   = 'Es: Rifiutato per mancanza esperienza specifica. / Colloquio il 05/06.';
+$string['st_btn_confirm_status']       = 'Conferma';
+
+// Errors.
+$string['st_err_target_not_found']     = 'Azienda target non trovata.';
+$string['st_err_company_not_found']    = 'Azienda non trovata nel database.';
+$string['st_err_invalid_action']       = 'Azione non valida.';
+$string['st_err_invalid_status']       = 'Stato non valido.';
+
+// Navigazione — aziende e target.
+$string['companies'] = 'Aziende';
+$string['companiesdb'] = 'Database Aziende Ticino';
+$string['studenttargets'] = 'Aziende Target Studente';
+
+// Pagina Aziende (companies.php).
+$string['companies_title'] = 'Database Aziende Ticino';
+$string['companies_tab_all'] = 'Tutte';
+$string['companies_tab_toclassify'] = 'Da Classificare';
+$string['companies_tab_discover'] = 'Scopri Azienda';
+$string['companies_tab_import'] = 'Importa CSV';
+$string['companies_filter_sector'] = 'Settore';
+$string['companies_filter_status'] = 'Stato';
+$string['companies_filter_search'] = 'Cerca azienda...';
+$string['companies_col_nome'] = 'Azienda';
+$string['companies_col_settore'] = 'Settore';
+$string['companies_col_localita'] = 'Localita\'';
+$string['companies_col_status'] = 'Stato';
+$string['companies_col_anno'] = 'Anno';
+$string['companies_col_azioni'] = 'Azioni';
+$string['companies_add'] = 'Aggiungi Azienda';
+$string['companies_edit'] = 'Modifica';
+$string['companies_activate'] = 'Attiva';
+$string['companies_deactivate'] = 'Disattiva';
+$string['companies_classify_batch'] = 'Classifica con AI (batch)';
+$string['companies_classifying'] = 'Classificazione in corso...';
+$string['companies_classified'] = '{$a->n} aziende classificate automaticamente';
+$string['companies_import_success'] = 'Importazione completata: {$a->inserted} inserite, {$a->skipped} gia\' presenti, {$a->errors} errori';
+$string['companies_discover_url'] = 'URL sito web aziendale';
+$string['companies_discover_analyze'] = 'Analizza';
+$string['companies_discover_found'] = 'Cosa ho capito';
+$string['companies_discover_questions'] = 'Domande';
+$string['companies_discover_add'] = 'Aggiungi al Database';
+$string['companies_discover_discard'] = 'Scarta';
+$string['companies_status_active'] = 'Attiva';
+$string['companies_status_inactive'] = 'Inattiva';
+$string['companies_status_unverified'] = 'Non verificata';
+$string['companies_saved'] = 'Azienda salvata con successo';
+$string['companies_notfound'] = 'Nessuna azienda trovata';
+
+// Settori FTM.
+$string['sector_AUTOMOBILE'] = 'Automotive';
+$string['sector_AUTOMAZIONE'] = 'Automazione';
+$string['sector_CHIMFARM'] = 'Chimica/Farmaceutica';
+$string['sector_ELETTRICITA'] = 'Elettricita\'';
+$string['sector_LOGISTICA'] = 'Logistica';
+$string['sector_MECCANICA'] = 'Meccanica';
+$string['sector_METALCOSTRUZIONE'] = 'Metalcostruzione';
+$string['sector_ALTRO'] = 'Altro/Non classificato';
+
+// Pagina Target Studente (student_targets.php).
+$string['targets_title'] = 'Autocandidature — {$a}';
+$string['targets_add_company'] = '+ Aggiungi Azienda Target';
+$string['targets_note_ai'] = 'Note per la lettera AI';
+$string['targets_note_ai_help'] = 'Es: Marco e\' forte su CNC, punta su questo';
+$string['targets_generate_letter'] = '✉ Genera Lettera';
+$string['targets_confirm_sent'] = '✓ Conferma Invio';
+$string['targets_delete'] = 'Elimina';
+$string['targets_ci_registered'] = '✓ Registrato in CI';
+$string['targets_ci_active'] = 'CI Attivo';
+$string['targets_ci_inactive'] = 'CI Non Attivo';
+$string['targets_view_enabled'] = 'Vista studente attivata';
+$string['targets_view_disabled'] = 'Vista studente disattivata';
+$string['targets_view_toggle'] = 'Vista studente';
+$string['targets_status_pending'] = 'In attesa';
+$string['targets_status_lettera_generata'] = 'Lettera generata';
+$string['targets_status_inviata'] = 'Inviata';
+$string['targets_status_risposta'] = 'Risposta ricevuta';
+$string['targets_status_colloquio'] = 'Colloquio';
+$string['targets_status_assunto'] = 'Assunto';
+$string['targets_status_rifiutato'] = 'Rifiutato';
+$string['targets_search_company'] = 'Cerca azienda...';
+$string['targets_no_targets'] = 'Nessuna azienda target assegnata. Clicca "+ Aggiungi" per iniziare.';
+$string['targets_added'] = 'Azienda aggiunta ai target';
+$string['targets_deleted'] = 'Target eliminato';
+$string['targets_status_updated'] = 'Stato aggiornato';

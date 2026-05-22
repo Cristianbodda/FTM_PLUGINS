@@ -1715,8 +1715,8 @@ echo $OUTPUT->header();
                 <li><strong>Pianificazione:</strong> Crea nuove attività e vedi slot liberi</li>
             </ul>
 
-            <h4>🎨 Legenda Colori</h4>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">
+            <h4 style="display:none">🎨 Legenda Colori</h4>
+            <div style="display:none">
                 <span style="background: #FEF9C3; padding: 5px 10px; border-radius: 4px; border-left: 4px solid #EAB308;">🟡 Giallo</span>
                 <span style="background: #F3F4F6; padding: 5px 10px; border-radius: 4px; border-left: 4px solid #6B7280;">⚫ Grigio</span>
                 <span style="background: #FEE2E2; padding: 5px 10px; border-radius: 4px; border-left: 4px solid #EF4444;">🔴 Rosso</span>

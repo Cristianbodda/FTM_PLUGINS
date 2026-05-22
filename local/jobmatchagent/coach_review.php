@@ -23,8 +23,25 @@ require_capability('local/jobmatchagent:manage', $context);
 
 $studentid = required_param('userid', PARAM_INT);
 $show = optional_param('show', 'pending', PARAM_ALPHA); // pending, published, discarded
+$action = optional_param('action', '', PARAM_ALPHANUMEXT);
 
 global $USER, $DB;
+
+// Reset AI scores so the improved matcher re-evaluates this student's pending matches.
+if ($action === 'reset_ai_scores' && confirm_sesskey()) {
+    $DB->execute(
+        "UPDATE {local_jobmatch_results}
+            SET score_experience = NULL, score_global = 50, ai_explanation_text = NULL,
+                ai_processed_at = NULL, status = 'pending'
+          WHERE userid = :uid AND status IN ('pending', 'ai_done')",
+        ['uid' => $studentid]
+    );
+    redirect(
+        new moodle_url('/local/jobmatchagent/coach_review.php', ['userid' => $studentid]),
+        'Punteggi AI resettati — verranno ricalcolati al prossimo aggiornamento.',
+        3
+    );
+}
 
 if (!\local_jobmatchagent\match_engine::coach_can_manage_student($USER->id, $studentid)) {
     throw new moodle_exception('err_invalid_student', 'local_jobmatchagent');
@@ -50,13 +67,21 @@ if ($show === 'published') {
 list($insql, $inparams) = $DB->get_in_or_equal($statusfilter, SQL_PARAMS_NAMED, 'st');
 $inparams['uid'] = $studentid;
 
+// Exclude expired/old offers from the pending queue (coaches only see actionable items).
+if ($show === 'pending') {
+    $inparams['cutoff'] = time() - (30 * DAYSECS);
+    $extra_where = "AND o.status = 'active' AND o.timecreated > :cutoff";
+} else {
+    $extra_where = '';
+}
+
 $results = $DB->get_records_sql(
     "SELECT r.*, o.title AS offer_title, o.company AS offer_company, o.location AS offer_location,
             o.url AS offer_url, o.parsed_text AS offer_text, o.work_schedule AS offer_schedule,
             o.company_size AS offer_size, o.timecreated AS offer_scraped_at
      FROM {local_jobmatch_results} r
      INNER JOIN {local_jobmatch_offers} o ON o.id = r.offer_id
-     WHERE r.userid = :uid AND r.status $insql
+     WHERE r.userid = :uid AND r.status $insql $extra_where
      ORDER BY r.score_global DESC, r.timecreated DESC",
     $inparams
 );
@@ -78,6 +103,7 @@ foreach ($tabs as $key => $label) {
     echo html_writer::tag('li',
         html_writer::link($url, $label, ['class' => 'nav-link' . $active]),
         ['class' => 'nav-item']);
+
 }
 echo html_writer::end_tag('ul');
 
@@ -111,6 +137,19 @@ echo html_writer::link($clearurl, '🗑 Reset (cancella tutto)',
         'class' => 'btn btn-outline-danger',
         'title' => 'Cancella tutti i match per testare da zero',
         'onclick' => 'return confirm(' . json_encode('Cancellare TUTTI i match (pending+published+discarded) e snapshot CV per ' . $studentname . '? Operazione non reversibile.') . ');',
+    ]);
+
+// Button to re-run AI scoring with the improved matcher (fixes wrong scores from old logic).
+$resetaiurl = new moodle_url('/local/jobmatchagent/coach_review.php', [
+    'userid'  => $studentid,
+    'action'  => 'reset_ai_scores',
+    'sesskey' => sesskey(),
+]);
+echo html_writer::link($resetaiurl->out(false), '🤖 Ricalcola punteggi AI',
+    [
+        'class'   => 'btn btn-warning',
+        'title'   => 'Resetta i punteggi AI e ricalcola con la logica migliorata (corregge errori di valutazione)',
+        'onclick' => 'return confirm(' . json_encode('Resettare i punteggi AI per ' . $studentname . ' e ricalcolarli? Verranno rivalutati al prossimo aggiornamento.') . ');',
     ]);
 echo html_writer::end_div();
 
@@ -239,6 +278,21 @@ foreach ($results as $r) {
         echo $publishform . html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'decision', 'value' => 'onhold']) .
             html_writer::tag('button', get_string('cr_onhold', 'local_jobmatchagent'),
                 ['type' => 'submit', 'class' => 'btn btn-outline-secondary']) . '</form>';
+
+        // JobAIDA button — generate cover letter for this offer.
+        if (file_exists($CFG->dirroot . '/local/jobaida/index.php')) {
+            $jobaida_url = new moodle_url('/local/jobaida/index.php', [
+                'userid'       => $studentid,
+                'job_title'    => $r->offer_title,
+                'company_name' => $r->offer_company ?? '',
+                'job_location' => $r->offer_location ?? '',
+                'job_text'     => substr(strip_tags($r->offer_text ?? ''), 0, 500),
+                'source'       => 'jobmatch',
+                'result_id'    => $r->id,
+            ]);
+            echo html_writer::link($jobaida_url, '&#9993; Genera lettera (JobAIDA)',
+                ['class' => 'btn btn-outline-primary', 'target' => '_blank']);
+        }
 
         echo html_writer::end_div();
     } else {

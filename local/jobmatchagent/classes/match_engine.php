@@ -81,7 +81,7 @@ class match_engine {
             return $stats;
         }
 
-        $offers = $DB->get_records('local_jobmatch_offers', ['status' => 'active'], 'timecreated DESC', '*', 0, 200);
+        $offers = $DB->get_records('local_jobmatch_offers', ['status' => 'active'], 'timecreated DESC', '*', 0, 2000);
         $stats['offers_in_catalog'] = count($offers);
 
         foreach ($offers as $offer) {

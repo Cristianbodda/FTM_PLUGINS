@@ -348,6 +348,47 @@ try {
             ];
             break;
 
+        case 'delete_group':
+            $groupid = required_param('groupid', PARAM_INT);
+            if (!$groupid) {
+                throw new Exception('groupid non valido');
+            }
+            $group = $DB->get_record('local_ftm_groups', ['id' => $groupid], '*', MUST_EXIST);
+
+            // 1. Enrollments linked to activities of this group.
+            $activityids = $DB->get_fieldset_select('local_ftm_activities', 'id', 'groupid = :gid', ['gid' => $groupid]);
+            $countEnrollments = 0;
+            if ($activityids) {
+                list($insql, $inparams) = $DB->get_in_or_equal($activityids);
+                $countEnrollments = $DB->count_records_select('local_ftm_enrollments', "activityid $insql", $inparams);
+                $DB->delete_records_select('local_ftm_enrollments', "activityid $insql", $inparams);
+            }
+
+            // 2. Activities of this group.
+            $countActivities = count($activityids);
+            $DB->delete_records('local_ftm_activities', ['groupid' => $groupid]);
+
+            // 3. Student-group specific records.
+            $DB->delete_records('local_ftm_week2_choices', ['groupid' => $groupid]);
+            $DB->delete_records('local_ftm_student_program', ['groupid' => $groupid]);
+            $DB->delete_records('local_ftm_student_tests', ['groupid' => $groupid]);
+
+            // 4. Group members.
+            $countMembers = $DB->count_records('local_ftm_group_members', ['groupid' => $groupid]);
+            $DB->delete_records('local_ftm_group_members', ['groupid' => $groupid]);
+
+            // 5. The group itself.
+            $DB->delete_records('local_ftm_groups', ['id' => $groupid]);
+
+            $result = [
+                'success'    => true,
+                'message'    => "Gruppo \"{$group->name}\" eliminato. {$countMembers} membri, {$countActivities} attività, {$countEnrollments} iscrizioni rimossi.",
+                'groupid'    => $groupid,
+                'members'    => $countMembers,
+                'activities' => $countActivities,
+            ];
+            break;
+
         default:
             throw new Exception('Azione non valida: ' . $action);
     }

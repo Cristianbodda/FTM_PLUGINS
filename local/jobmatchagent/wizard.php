@@ -258,9 +258,10 @@ function render_step1($coachid) {
         return;
     }
 
-    // Bulk fetch filter status.
     $userids = array_keys($students);
     list($insql, $inparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'uid');
+
+    // Bulk fetch filter status.
     $filters = $DB->get_records_select('local_jobmatch_student_filters', "userid $insql",
         $inparams, '', 'userid, active, manual_cv_text, desired_activities');
     $filtersmap = [];
@@ -279,11 +280,82 @@ function render_step1($coachid) {
         $inparams
     );
 
-    echo html_writer::start_div('row g-3');
+    // Bulk fetch group membership (local_ftm_groups + local_ftm_group_members).
+    $groupmap = [];
+    try {
+        $grouprows = $DB->get_records_sql(
+            "SELECT gm.userid, g.name AS groupname, g.color AS groupcolor
+               FROM {local_ftm_group_members} gm
+               JOIN {local_ftm_groups} g ON g.id = gm.groupid
+              WHERE gm.userid $insql",
+            $inparams
+        );
+        foreach ($grouprows as $gr) {
+            if (!isset($groupmap[$gr->userid])) {
+                $groupmap[$gr->userid] = $gr;
+            }
+        }
+    } catch (\Throwable $e) {
+        // Groups table might not exist on all installations — silently ignore.
+    }
+
+    // Collect distinct group names for the filter dropdown.
+    $allgroups = [];
+    foreach ($groupmap as $gr) {
+        $allgroups[$gr->groupname] = $gr->groupname;
+    }
+    ksort($allgroups);
+
+    // ---- Search bar + group filter ----
+    echo '<div class="card mb-3 shadow-sm" style="background:#f8f9fa;">';
+    echo '<div class="card-body py-2">';
+    echo '<div class="d-flex gap-2 flex-wrap align-items-center">';
+
+    // Text search.
+    echo '<div class="flex-fill" style="min-width:200px;">';
+    echo '<input type="text" id="jm-student-search" class="form-control" '
+        . 'placeholder="&#128269; Cerca per nome..." '
+        . 'oninput="jmFilterStudents()" autocomplete="off" style="max-width:320px;">';
+    echo '</div>';
+
+    // Group dropdown.
+    if (!empty($allgroups)) {
+        echo '<div>';
+        echo '<select id="jm-group-filter" class="form-select" style="min-width:160px;" onchange="jmFilterStudents()">';
+        echo '<option value="">Tutti i gruppi</option>';
+        foreach ($allgroups as $gname) {
+            echo '<option value="' . s($gname) . '">' . s($gname) . '</option>';
+        }
+        echo '</select>';
+        echo '</div>';
+    }
+
+    // "Da configurare" only filter.
+    echo '<div>';
+    echo '<label class="form-check-label d-flex align-items-center gap-1" style="cursor:pointer;white-space:nowrap;">';
+    echo '<input type="checkbox" id="jm-filter-missing" class="form-check-input" onchange="jmFilterStudents()"> ';
+    echo 'Solo da configurare</label>';
+    echo '</div>';
+
+    // Clear button.
+    echo '<button type="button" class="btn btn-outline-secondary btn-sm" onclick="jmClearFilters()">✕ Reset</button>';
+
+    echo '</div>'; // d-flex
+    echo '</div>'; // card-body
+
+    // Result counter.
+    echo '<div id="jm-student-count" class="px-3 pb-2 text-muted small">'
+        . count($students) . ' studenti</div>';
+
+    echo '</div>'; // card
+
+    // ---- Student cards grid ----
+    echo '<div id="jm-student-grid" class="row g-3">';
     foreach ($students as $s) {
         $name = fullname($s);
         $f = $filtersmap[$s->id] ?? null;
         $c = $counts[$s->id] ?? null;
+        $gr = $groupmap[$s->id] ?? null;
 
         $hascv = $f && !empty($f->manual_cv_text);
         $hasactivities = false;
@@ -292,8 +364,9 @@ function render_step1($coachid) {
             $hasactivities = is_array($arr) && !empty($arr);
         }
 
-        $pending = $c ? (int) $c->pending : 0;
+        $pending   = $c ? (int) $c->pending  : 0;
         $published = $c ? (int) $c->published : 0;
+        $needssetup = !($f && $f->active);
 
         $statusbadges = '';
         if ($f && $f->active) {
@@ -308,29 +381,93 @@ function render_step1($coachid) {
             $statusbadges .= html_writer::span($published . ' pubblicati', 'badge bg-secondary me-1');
         }
 
-        $url = new moodle_url('/local/jobmatchagent/wizard.php', [
-            'step' => 2, 'userid' => $s->id,
-        ]);
+        $url = new moodle_url('/local/jobmatchagent/wizard.php', ['step' => 2, 'userid' => $s->id]);
 
-        echo html_writer::start_div('col-md-6 col-lg-4');
+        // Group badge + color dot.
+        $groupbadge = '';
+        if ($gr) {
+            $dot_colors = [
+                'giallo' => '#FFCC00', 'grigio' => '#808080', 'rosso' => '#FF0000',
+                'marrone' => '#996633', 'viola' => '#7030A0',
+            ];
+            $dot_color = $dot_colors[strtolower($gr->groupcolor ?? '')] ?? '#0066cc';
+            $groupbadge = '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;'
+                . 'background:' . $dot_color . ';margin-right:4px;"></span>'
+                . s($gr->groupname);
+        }
+
+        // data-name and data-group for JS filtering.
+        echo '<div class="col-md-6 col-lg-4 jm-student-card"'
+            . ' data-name="' . s(strtolower($name)) . '"'
+            . ' data-group="' . s(strtolower($gr->groupname ?? '')) . '"'
+            . ' data-needssetup="' . ($needssetup ? '1' : '0') . '">';
+
         echo html_writer::start_tag('a', [
-            'href' => $url,
-            'class' => 'card h-100 text-decoration-none text-dark shadow-sm',
-            'style' => 'border: 2px solid #dee2e6; transition: all 0.2s;',
+            'href'        => $url,
+            'class'       => 'card h-100 text-decoration-none text-dark shadow-sm',
+            'style'       => 'border: 2px solid #dee2e6; transition: all 0.2s;',
             'onmouseover' => "this.style.borderColor='#0066cc'; this.style.transform='translateY(-2px)';",
-            'onmouseout' => "this.style.borderColor='#dee2e6'; this.style.transform='translateY(0)';",
+            'onmouseout'  => "this.style.borderColor='#dee2e6'; this.style.transform='translateY(0)';",
         ]);
         echo html_writer::start_div('card-body');
-        echo html_writer::tag('h5', s($name), ['class' => 'card-title mb-2']);
+        echo html_writer::tag('h5', s($name), ['class' => 'card-title mb-1']);
+        if ($groupbadge) {
+            echo '<div class="text-muted small mb-2">' . $groupbadge . '</div>';
+        }
         echo html_writer::div($statusbadges, 'mb-2');
-        echo html_writer::tag('p',
-            '👉 Clicca per cercare opportunita',
+        echo html_writer::tag('p', '👉 Clicca per cercare opportunita',
             ['class' => 'card-text text-primary mb-0']);
         echo html_writer::end_div();
         echo html_writer::end_tag('a');
-        echo html_writer::end_div();
+        echo '</div>'; // .jm-student-card
     }
-    echo html_writer::end_div();
+    echo '</div>'; // #jm-student-grid
+
+    echo '<div id="jm-no-results" class="alert alert-info mt-3" style="display:none;">Nessuno studente corrisponde ai filtri.</div>';
+
+    // Inline JS — lightweight, no dependencies.
+    ?>
+    <script>
+    function jmFilterStudents() {
+        var search  = (document.getElementById('jm-student-search').value || '').toLowerCase().trim();
+        var group   = (document.getElementById('jm-group-filter') ? document.getElementById('jm-group-filter').value : '').toLowerCase().trim();
+        var missing = document.getElementById('jm-filter-missing').checked;
+
+        var cards   = document.querySelectorAll('.jm-student-card');
+        var visible = 0;
+
+        cards.forEach(function(card) {
+            var nameOk    = !search || card.dataset.name.indexOf(search) !== -1;
+            var groupOk   = !group  || card.dataset.group.indexOf(group) !== -1;
+            var missingOk = !missing || card.dataset.needssetup === '1';
+
+            if (nameOk && groupOk && missingOk) {
+                card.style.display = '';
+                visible++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        document.getElementById('jm-student-count').textContent = visible + ' student' + (visible === 1 ? 'e' : 'i');
+        document.getElementById('jm-no-results').style.display = (visible === 0) ? '' : 'none';
+    }
+
+    function jmClearFilters() {
+        document.getElementById('jm-student-search').value = '';
+        if (document.getElementById('jm-group-filter')) {
+            document.getElementById('jm-group-filter').value = '';
+        }
+        document.getElementById('jm-filter-missing').checked = false;
+        jmFilterStudents();
+    }
+
+    // Auto-focus search on load.
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('jm-student-search').focus();
+    });
+    </script>
+    <?php
 }
 
 // ============================================================================
@@ -489,6 +626,7 @@ function render_step3($studentid, $student, $studentname) {
     // User-selectable filter (default 0 = mostra tutti).
     $minscore = optional_param('minscore', 0, PARAM_INT);
 
+    $offer_cutoff = time() - (90 * DAYSECS);
     $allmatches = $DB->get_records_sql(
         "SELECT r.*, o.title AS offer_title, o.company AS offer_company,
                 o.location AS offer_location, o.url AS offer_url, o.parsed_text AS offer_text,
@@ -496,8 +634,10 @@ function render_step3($studentid, $student, $studentname) {
          FROM {local_jobmatch_results} r
          INNER JOIN {local_jobmatch_offers} o ON o.id = r.offer_id
          WHERE r.userid = :uid AND r.status IN ('pending', 'ai_done')
+           AND o.status = 'active'
+           AND o.timecreated > :cutoff
          ORDER BY COALESCE(r.score_experience, 0) DESC, r.score_global DESC, r.timecreated DESC",
-        ['uid' => $studentid]
+        ['uid' => $studentid, 'cutoff' => $offer_cutoff]
     );
 
     // Apply user filter.
@@ -760,6 +900,22 @@ function render_opportunity_card($r, $studentid) {
         '⏭ Scarta',
         ['type' => 'submit', 'class' => 'btn btn-outline-secondary']) . '</form>';
 
+    // JobAIDA button.
+    global $CFG;
+    if (file_exists($CFG->dirroot . '/local/jobaida/index.php')) {
+        $jobaida_url = new moodle_url('/local/jobaida/index.php', [
+            'userid'       => $studentid,
+            'job_title'    => $r->offer_title,
+            'company_name' => $r->offer_company ?? '',
+            'job_location' => $r->offer_location ?? '',
+            'job_text'     => substr(strip_tags($r->offer_text ?? ''), 0, 500),
+            'source'       => 'jobmatch',
+            'result_id'    => $r->id,
+        ]);
+        echo html_writer::link($jobaida_url, '✉ Genera lettera (JobAIDA)',
+            ['class' => 'btn btn-outline-primary', 'target' => '_blank']);
+    }
+
     echo html_writer::end_div();
 
     echo html_writer::end_div();
@@ -793,12 +949,48 @@ function run_search_with_progress($studentid) {
     }
     ob_implicit_flush(true);
 
-    core_php_time_limit::raise(300);
+    core_php_time_limit::raise(600);
     raise_memory_limit(MEMORY_EXTRA);
 
     echo html_writer::start_div('alert alert-info', ['id' => 'search-progress']);
-    echo html_writer::tag('h5', '🔎 Sto cercando opportunita...', ['class' => 'mb-3']);
+    echo html_writer::tag('h5', '🔎 Sto cercando opportunita su Internet...', ['class' => 'mb-3']);
     echo html_writer::start_tag('ol', ['class' => 'mb-0']);
+    flush_output();
+
+    // Step 0a: ensure default RSS sources exist.
+    if (class_exists('\local_jobmatchagent\source_manager')) {
+        \local_jobmatchagent\source_manager::ensure_default_sources();
+    }
+
+    // Step 0b: fetch RSS feeds (ti.ch, admin.ch, Indeed Ticino...).
+    echo html_writer::tag('li', 'Scarico annunci dai feed RSS (ti.ch, admin.ch, Indeed Ticino)...');
+    flush_output();
+    $rssnew = 0;
+    if (class_exists('\local_jobmatchagent\source_manager')) {
+        try {
+            $rsstotals = \local_jobmatchagent\source_manager::run_all();
+            $rssnew = $rsstotals['offers_added'] ?? 0;
+        } catch (\Throwable $e) {
+            // Non bloccare se RSS fallisce.
+        }
+    }
+    echo html_writer::tag('li', '→ ' . $rssnew . ' nuovi annunci da feed RSS.', ['class' => 'text-muted small']);
+    flush_output();
+
+    // Step 0c: AI scraper (jobs.ch, job-room.ch, carriera.ch) per questo studente.
+    echo html_writer::tag('li', 'Cerco annunci su jobs.ch, job-room.ch, carriera.ch con AI...');
+    flush_output();
+    $ainew = 0;
+    if (class_exists('\local_jobmatchagent\source_manager')) {
+        try {
+            // force=false: usa cache 24h per non sprecare token AI
+            $aitotals = \local_jobmatchagent\source_manager::run_ai_scraping_for_student($studentid, false);
+            $ainew = $aitotals['offers_imported'] ?? 0;
+        } catch (\Throwable $e) {
+            // Non bloccare se AI scraper fallisce.
+        }
+    }
+    echo html_writer::tag('li', '→ ' . $ainew . ' nuovi annunci da AI scraper.', ['class' => 'text-muted small']);
     flush_output();
 
     // Step A: clear stale results (everything except those manually decided by a coach).
@@ -823,7 +1015,7 @@ function run_search_with_progress($studentid) {
     flush_output();
 
     // Step C: AI matching (ora usa ai_matcher interno, non dipende da ftm_jobsearch).
-    echo html_writer::tag('li', 'Sto chiedendo all\'AI di valutare ogni offerta vs il CV (questo richiede ~10 secondi)...');
+    echo html_writer::tag('li', 'Sto chiedendo all\'AI di valutare ogni offerta vs il CV (questo richiede qualche secondo)...');
     flush_output();
     try {
         $aires = \local_jobmatchagent\match_engine::process_ai_matching_for_pending(true);

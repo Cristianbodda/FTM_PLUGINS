@@ -3949,30 +3949,22 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
                     <!-- FILTRO SETTORE PER STAMPA -->
                     <div class="mb-3 p-3" style="background: #f8f9fa; border-radius: 8px;">
                         <h6>🏭 Filtra per Settore:</h6>
-                        <select name="print_sector" class="form-control">
-                            <option value="all">Tutti i settori</option>
+                        <select name="print_sector" id="printSectorSelect" class="form-control">
+                            <option value="all" <?php echo ($cm_sector_filter === 'all') ? 'selected' : ''; ?>>Tutti i settori</option>
                             <?php
-                            // Estrai settori unici dalle competenze
+                            // Estrai settori unici dalle aree disponibili
                             $printSectors = [];
-                            foreach ($competencies as $comp) {
-                                $idnumber = $comp['idnumber'] ?? '';
-                                if (!empty($idnumber)) {
-                                    $parts = explode('_', $idnumber);
-                                    if (count($parts) >= 2) {
-                                        $sec = strtoupper($parts[0]);
-                                        if (!isset($printSectors[$sec])) {
-                                            $printSectors[$sec] = 0;
-                                        }
-                                        $printSectors[$sec]++;
-                                    }
-                                }
+                            foreach (array_keys($areasData) as $areaKey) {
+                                $sec = strtoupper(explode('_', $areaKey)[0]);
+                                $printSectors[$sec] = ($printSectors[$sec] ?? 0) + 1;
                             }
                             arsort($printSectors);
-                            foreach ($printSectors as $sec => $count): ?>
-                            <option value="<?php echo $sec; ?>"><?php echo $sec; ?> (<?php echo $count; ?> competenze)</option>
+                            foreach ($printSectors as $sec => $count):
+                                $isSelected = (strtoupper($cm_sector_filter) === $sec); ?>
+                            <option value="<?php echo $sec; ?>" <?php echo $isSelected ? 'selected' : ''; ?>><?php echo $sec; ?> (<?php echo $count; ?> aree)</option>
                             <?php endforeach; ?>
                         </select>
-                        <small class="text-muted">Seleziona un settore per stampare solo le competenze di quel settore</small>
+                        <small class="text-muted">Seleziona un settore per vedere e stampare solo le aree di quel settore</small>
                     </div>
 
                     <div class="row">
@@ -4048,10 +4040,16 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
                             
                             <h6>🔍 Radar Dettaglio per Area:</h6>
                             <p class="small text-muted">Seleziona le aree per cui generare un radar dettagliato delle competenze:</p>
-                            <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
-                                <?php foreach ($areasData as $areaCode => $areaInfo): ?>
-                                <div class="custom-control custom-checkbox mb-1">
-                                    <input type="checkbox" class="custom-control-input area-detail-check" id="print_area_<?php echo $areaCode; ?>" name="print_radar_areas[]" value="<?php echo $areaCode; ?>">
+                            <div class="border rounded p-2" id="areaCheckboxList" style="max-height: 200px; overflow-y: auto;">
+                                <?php
+                                $activeSector = ($cm_sector_filter !== 'all') ? strtoupper($cm_sector_filter) : '';
+                                foreach ($areasData as $areaCode => $areaInfo):
+                                    $areaSector = strtoupper(explode('_', $areaCode)[0]);
+                                    $isVisible = (empty($activeSector) || $areaSector === $activeSector);
+                                    $isChecked = $isVisible && !empty($activeSector);
+                                ?>
+                                <div class="custom-control custom-checkbox mb-1 area-check-row" data-sector="<?php echo $areaSector; ?>" style="<?php echo $isVisible ? '' : 'display:none;'; ?>">
+                                    <input type="checkbox" class="custom-control-input area-detail-check" id="print_area_<?php echo $areaCode; ?>" name="print_radar_areas[]" value="<?php echo $areaCode; ?>" data-sector="<?php echo $areaSector; ?>" <?php echo $isChecked ? 'checked' : ''; ?>>
                                     <label class="custom-control-label" for="print_area_<?php echo $areaCode; ?>">
                                         <?php echo $areaInfo['icon'] . ' ' . $areaInfo['name']; ?>
                                         <span class="badge badge-<?php echo get_evaluation_band($areaInfo['percentage'])['class']; ?>"><?php echo $areaInfo['percentage']; ?>%</span>
@@ -4060,9 +4058,25 @@ echo '<a href="' . new moodle_url('/local/competencymanager/export.php', ['useri
                                 <?php endforeach; ?>
                             </div>
                             <div class="mt-2">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.querySelectorAll('.area-detail-check').forEach(c=>c.checked=true)">Tutte</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.querySelectorAll('#areaCheckboxList .area-check-row:not([style*=none]) .area-detail-check').forEach(c=>c.checked=true)">Tutte visibili</button>
                                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.querySelectorAll('.area-detail-check').forEach(c=>c.checked=false)">Nessuna</button>
                             </div>
+                            <script>
+                            document.getElementById('printSectorSelect').addEventListener('change', function() {
+                                var sel = this.value.toUpperCase();
+                                document.querySelectorAll('#areaCheckboxList .area-check-row').forEach(function(row) {
+                                    var rowSector = row.dataset.sector;
+                                    var visible = (sel === 'ALL' || rowSector === sel);
+                                    row.style.display = visible ? '' : 'none';
+                                    var cb = row.querySelector('.area-detail-check');
+                                    if (visible && sel !== 'ALL') {
+                                        cb.checked = true;
+                                    } else if (!visible) {
+                                        cb.checked = false;
+                                    }
+                                });
+                            });
+                            </script>
                         </div>
                     </div>
                     

@@ -25,6 +25,11 @@ $PAGE->set_pagelayout('standard');
 // Capabilities.
 $canviewall = has_capability('local/jobaida:viewall', $context) || is_siteadmin();
 $canmanage  = has_capability('local/jobaida:authorize', $context) || is_siteadmin();
+$canuse     = has_capability('local/jobaida:use', $context)
+    || $DB->record_exists('local_jobaida_auth', ['userid' => $USER->id, 'active' => 1]);
+if (!$canuse && !$canviewall) {
+    throw new moodle_exception('nopermissions', 'error', '', 'use JobAIDA');
+}
 
 // Pagination parameters.
 $page    = optional_param('page', 0, PARAM_INT);

@@ -4587,6 +4587,12 @@ function render_view_compatta($students, $dashboard) {
                         &#128197;
                     </button>
                     <?php endif; ?>
+                    <button class="btn btn-sm"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/jobmatchagent/student_targets.php?userid=<?php echo $student->id; ?>'"
+                            title="Autocandidature"
+                            style="background: #0066cc !important; color: #fff !important; border-color: #0052a3 !important;">
+                        &#128188;
+                    </button>
                     <?php if (has_capability('moodle/user:loginas', context_system::instance())): ?>
                     <button class="btn btn-sm"
                             onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/loginas_student.php?userid=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>'"
@@ -4730,6 +4736,10 @@ function render_view_standard($students, $dashboard) {
                         &#128197; Percorso
                     </a>
                     <?php endif; ?>
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/jobmatchagent/student_targets.php?userid=<?php echo $student->id; ?>"
+                       class="quick-btn" title="Autocandidature" style="background:#0066cc;color:#fff;">
+                        &#128188; Autocandidature
+                    </a>
                     <a href="#" onclick="event.stopPropagation(); openQuizUnlock(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>'); return false;"
                        class="quick-btn" title="Sblocca Quiz" style="background:#7c3aed;color:#fff;">
                         &#128275; Quiz
@@ -5314,6 +5324,11 @@ function render_view_dettagliata($students, $dashboard) {
                         &#128197; Percorso
                     </button>
                     <?php endif; ?>
+                    <button class="btn"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/jobmatchagent/student_targets.php?userid=<?php echo $student->id; ?>'"
+                            style="background: #0066cc !important; color: #fff !important; border-color: #0052a3 !important;">
+                        &#128188; Autocandidature
+                    </button>
                     <?php if (has_capability('moodle/user:loginas', context_system::instance())): ?>
                     <button class="btn"
                             onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/loginas_student.php?userid=<?php echo $student->id; ?>&amp;sesskey=<?php echo sesskey(); ?>'"
@@ -5505,6 +5520,12 @@ function render_view_classica($students, $dashboard) {
                             &#128197; Percorso
                         </button>
                         <?php endif; ?>
+                        <button class="btn btn-sm"
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/jobmatchagent/student_targets.php?userid=<?php echo $student->id; ?>'"
+                                title="Autocandidature"
+                                style="background: #0066cc !important; color: #fff !important; border-color: #0052a3 !important;">
+                            &#128188; Autocandidature
+                        </button>
                         <button class="btn btn-sm"
                                 onclick="openQuizUnlock(<?php echo $student->id; ?>, '<?php echo s(fullname($student)); ?>')"
                                 style="background: #7c3aed !important; color: #fff !important; border-color: #6d28d9 !important;">

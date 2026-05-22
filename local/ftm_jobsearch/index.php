@@ -12,11 +12,28 @@ require_once(__DIR__ . '/../../config.php');
 require_login();
 
 $context = context_system::instance();
+require_capability('local/ftm_jobsearch:use', $context);
+
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/ftm_jobsearch/index.php'));
 $PAGE->set_title(get_string('pluginname', 'local_ftm_jobsearch'));
 $PAGE->set_heading('FTM Job Search — Cerca Lavoro in Ticino');
 $PAGE->set_pagelayout('standard');
+
+// Load students assigned to this coach.
+$my_students = [];
+$coach_record = $DB->get_record('local_ftm_coaches', ['userid' => $USER->id]);
+if ($coach_record) {
+    $my_students = $DB->get_records_sql(
+        'SELECT u.id, u.firstname, u.lastname, ss.sector
+           FROM {local_student_coaching} sc
+           JOIN {user} u ON u.id = sc.userid
+      LEFT JOIN (SELECT userid, sector FROM {local_student_sectors} WHERE is_primary = 1) ss ON ss.userid = u.id
+          WHERE sc.coachid = :cid AND sc.status = :st
+       ORDER BY u.lastname, u.firstname',
+        ['cid' => $coach_record->id, 'st' => 'active']
+    );
+}
 
 // Load cities for dropdown.
 $cities = \local_ftm_jobsearch\job_manager::get_cities();
@@ -89,11 +106,36 @@ $settori = [
 <div class="js-container">
 
     <div class="js-card-header">
-        <h2>Cerca Lavoro in Ticino</h2>
-        <p>Inserisci i tuoi criteri, il sistema cerca offerte reali dai principali portali ticinesi usando AI.</p>
+        <h2>Cerca Lavoro in Ticino — Vista Coach</h2>
+        <p>Seleziona uno studente oppure imposta i criteri manualmente. Le offerte vengono dai portali job-room.ch e indeed.ch.</p>
     </div>
 
     <div class="js-card">
+
+        <?php if (!empty($my_students)): ?>
+        <!-- Selettore studente -->
+        <div style="background:#f0f7ff; border:1px solid #bfdbfe; border-radius:8px; padding:14px 16px; margin-bottom:16px;">
+            <label class="js-label" style="color:#1e40af;">Cerca offerte per uno studente</label>
+            <div style="display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end;">
+                <select id="js-student-select" class="js-select" onchange="loadStudent(this.value)">
+                    <option value="">— Seleziona uno studente —</option>
+                    <?php foreach ($my_students as $st): ?>
+                    <option value="<?php echo $st->id; ?>"
+                            data-sector="<?php echo s($st->sector ?? ''); ?>">
+                        <?php echo s(fullname($st)); ?>
+                        <?php if ($st->sector): ?>(<?php echo s($st->sector); ?>)<?php endif; ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="button" onclick="loadStudent(document.getElementById('js-student-select').value)"
+                        style="padding:10px 18px; background:#0066cc; color:#fff; border:none; border-radius:6px; font-weight:600; cursor:pointer; white-space:nowrap;">
+                    Carica settore
+                </button>
+            </div>
+            <p style="margin:6px 0 0; font-size:0.8rem; color:#6b7280;">Selezionando uno studente si pre-seleziona il suo settore primario.</p>
+        </div>
+        <?php endif; ?>
+
         <!-- Row 1: Mansione + Tipo -->
         <div class="js-row js-row-2">
             <div>
@@ -116,7 +158,7 @@ $settori = [
 
         <!-- Row 2: Settore (multi-selezione) -->
         <div style="margin-bottom:16px;">
-            <label class="js-label">Settore professionale <span style="font-weight:400; color:#9ca3af;">(puoi selezionarne piu di uno, oppure lascia vuoto se hai inserito il CV)</span></label>
+            <label class="js-label">Settore professionale</label>
             <div class="js-sectors" id="js-sectors">
                 <?php foreach ($settori as $code => $label): ?>
                 <button type="button" class="js-sector-btn" data-sector="<?php echo $code; ?>"
@@ -125,8 +167,8 @@ $settori = [
             </div>
         </div>
 
-        <!-- Row 3: Citta + Raggio + Occupazione + Codice -->
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px; margin-bottom:16px;">
+        <!-- Row 3: Citta + Raggio + Occupazione -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px;">
             <div>
                 <label class="js-label">Citta in Ticino</label>
                 <select id="js-citta" class="js-select">
@@ -152,18 +194,13 @@ $settori = [
                     <option value="0">Sotto 50%</option>
                 </select>
             </div>
-            <div>
-                <label class="js-label">Codice accesso *</label>
-                <input type="password" id="js-code" class="js-input" placeholder="Codice">
-            </div>
         </div>
 
-        <!-- CV text (optional) -->
+        <!-- CV text (opzionale — per matching) -->
         <div style="margin-bottom:16px;">
-            <label class="js-label">Il tuo CV — testo (opzionale)</label>
-            <p style="font-size:0.82rem; color:#6b7280; margin:0 0 6px;">Incolla qui il testo del tuo CV. Il sistema calcolera la compatibilita con ogni offerta trovata.</p>
-            <textarea id="js-cv" class="js-input" rows="6" style="resize:vertical; font-size:0.9rem;"
-                      placeholder="Incolla qui il contenuto del tuo CV (esperienze, competenze, formazione...)"></textarea>
+            <label class="js-label">CV dello studente — testo (opzionale, per calcolare compatibilita)</label>
+            <textarea id="js-cv" class="js-input" rows="5" style="resize:vertical; font-size:0.9rem;"
+                      placeholder="Incolla qui il CV dello studente per ordinare i risultati per compatibilita..."></textarea>
             <div id="js-cv-status" style="display:none; margin-top:6px; font-size:0.82rem; padding:6px 10px; border-radius:4px;"></div>
         </div>
 
@@ -171,7 +208,7 @@ $settori = [
         <div style="display:flex; align-items:center; gap:16px; margin-bottom:12px;">
             <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.85rem; color:#6b7280;">
                 <input type="checkbox" id="js-force" style="accent-color:#0066cc;">
-                Forza aggiornamento (ignora cache, ri-scrapa i siti)
+                Forza aggiornamento (ignora cache — usa solo se i risultati sembrano vecchi)
             </label>
         </div>
         <button id="js-btn-search" class="js-btn-search" onclick="doSearch()">
@@ -209,6 +246,27 @@ $settori = [
         });
     };
 
+    // Load student sector when selected from dropdown.
+    window.loadStudent = function(userid) {
+        if (!userid) return;
+        var sel = document.getElementById('js-student-select');
+        var opt = sel.options[sel.selectedIndex];
+        var sector = opt ? opt.getAttribute('data-sector') : '';
+
+        // Deactivate all sector buttons, then activate the student's sector.
+        document.querySelectorAll('.js-sector-btn').forEach(function(b) {
+            b.classList.remove('active');
+        });
+        selectedSectors = [];
+        if (sector) {
+            var btn = document.querySelector('.js-sector-btn[data-sector="' + sector + '"]');
+            if (btn) {
+                btn.classList.add('active');
+                selectedSectors = [sector];
+            }
+        }
+    };
+
     window.doSearch = function() {
         var cvText = document.getElementById('js-cv').value.trim();
         var hasCv = cvText.length > 30;
@@ -218,9 +276,6 @@ $settori = [
             alert('Seleziona almeno un settore, oppure inserisci il tuo CV per una ricerca automatica.');
             return;
         }
-
-        var code = document.getElementById('js-code').value.trim();
-        if (!code) { alert('Inserisci il codice di accesso.'); return; }
 
         var btn = document.getElementById('js-btn-search');
         btn.disabled = true;
@@ -244,7 +299,6 @@ $settori = [
         var formData = new FormData();
         formData.append('sesskey', SESSKEY);
         formData.append('action', 'search');
-        formData.append('access_code', code);
         formData.append('settori', selectedSectors.join(','));
         formData.append('mansione', document.getElementById('js-mansione').value.trim());
         formData.append('tipo_lavoro', document.getElementById('js-tipo').value);

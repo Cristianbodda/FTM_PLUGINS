@@ -201,5 +201,66 @@
         <INDEX NAME="task_time_idx" UNIQUE="false" FIELDS="task_name, run_time"/>
       </INDEXES>
     </TABLE>
+
+    <TABLE NAME="local_jobmatch_ticino_companies" COMMENT="Curated database of Ticino companies for targeted applications">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="nome" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Company name"/>
+        <FIELD NAME="indirizzo" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Street address"/>
+        <FIELD NAME="cap" TYPE="char" LENGTH="10" NOTNULL="false" COMMENT="Postal code"/>
+        <FIELD NAME="localita" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="City/locality"/>
+        <FIELD NAME="anno_primo_contatto" TYPE="int" LENGTH="4" NOTNULL="false" COMMENT="Year of first FTM contact"/>
+        <FIELD NAME="settore_ftm" TYPE="char" LENGTH="30" NOTNULL="false" DEFAULT="ALTRO" COMMENT="FTM sector"/>
+        <FIELD NAME="settore_raw" TYPE="text" NOTNULL="false" COMMENT="Raw sector text from source"/>
+        <FIELD NAME="dimensione" TYPE="char" LENGTH="10" NOTNULL="false" DEFAULT="unknown" COMMENT="S/M/L/unknown"/>
+        <FIELD NAME="website" TYPE="char" LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="email" TYPE="char" LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="referente" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="HR contact name"/>
+        <FIELD NAME="note_interne" TYPE="text" NOTNULL="false" COMMENT="Internal notes for coaches"/>
+        <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="manual" COMMENT="csv_import/job_board/manual/discover"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="15" NOTNULL="true" DEFAULT="unverified" COMMENT="active/inactive/unverified"/>
+        <FIELD NAME="last_job_board_seen" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Timestamp last seen on job boards"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="settore_ftm_idx" UNIQUE="false" FIELDS="settore_ftm"/>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="localita_idx" UNIQUE="false" FIELDS="localita"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="local_jobmatch_student_targets" COMMENT="Coach-assigned company targets for unsolicited applications">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Student user id"/>
+        <FIELD NAME="company_id" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="FK local_jobmatch_ticino_companies"/>
+        <FIELD NAME="coach_userid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="Coach who assigned the target"/>
+        <FIELD NAME="note_per_ai" TYPE="text" NOTNULL="false" COMMENT="Coach hint for letter generation"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending"/>
+        <FIELD NAME="jobaida_letter_id" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="FK to generated letter"/>
+        <FIELD NAME="data_invio" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Timestamp letter sent"/>
+        <FIELD NAME="data_risposta" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Timestamp response received"/>
+        <FIELD NAME="note_esito" TYPE="text" NOTNULL="false" COMMENT="Outcome notes"/>
+        <FIELD NAME="sip_entry_id" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="FK local_ftm_sip_search_entries if CI active"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="company_fk" TYPE="foreign" FIELDS="company_id" REFTABLE="local_jobmatch_ticino_companies" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_idx" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="company_idx" UNIQUE="false" FIELDS="company_id"/>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="userid_company_uq" UNIQUE="true" FIELDS="userid, company_id"/>
+      </INDEXES>
+    </TABLE>
+
   </TABLES>
 </XMLDB>
