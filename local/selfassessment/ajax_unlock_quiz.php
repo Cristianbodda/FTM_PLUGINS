@@ -46,10 +46,52 @@ try {
     }
     $courseids = array_keys($rcomp_courses);
 
+    // Get student's assigned sectors (used to filter quizzes).
+    $student_sector_rows = $DB->get_records('local_student_sectors', ['userid' => $studentid], 'is_primary DESC', 'sector');
+    $student_sectors = array_map('strtoupper', array_column($student_sector_rows, 'sector'));
+
+    // Sector alias map — keeps quiz visibility correct when sector codes have variants.
+    $sector_aliases = [
+        'AUTOMOBILE'       => ['AUTOMOBILE', 'AUTOVEICOLO'],
+        'AUTOMAZIONE'      => ['AUTOMAZIONE', 'AUTOM', 'AUTOMAZ'],
+        'CHIMFARM'         => ['CHIMFARM', 'CHIM', 'CHIMICA', 'FARMACEUTICA'],
+        'ELETTRICITA'      => ['ELETTRICITA', 'ELETTR', 'ELETT'],
+        'LOGISTICA'        => ['LOGISTICA', 'LOG'],
+        'MECCANICA'        => ['MECCANICA', 'MECC'],
+        'METALCOSTRUZIONE' => ['METALCOSTRUZIONE', 'METAL'],
+        'GENERICO'         => ['GENERICO', 'GEN'],
+    ];
+
+    // Collect all prefixes allowed for this student.
+    $allowed_prefixes = [];
+    foreach ($student_sectors as $sec) {
+        if (isset($sector_aliases[$sec])) {
+            foreach ($sector_aliases[$sec] as $alias) {
+                $allowed_prefixes[] = strtoupper($alias);
+            }
+        } else {
+            $allowed_prefixes[] = $sec;
+        }
+    }
+
     switch ($action) {
         case 'getquizzes':
             list($insql, $params) = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED);
             $quizzes = $DB->get_records_select('quiz', "course $insql", $params, 'name ASC');
+
+            // Filter by student sector: quiz name must start with one of the allowed prefixes.
+            // If the student has no sector assigned, show all (fallback).
+            if (!empty($allowed_prefixes)) {
+                $quizzes = array_filter($quizzes, function($quiz) use ($allowed_prefixes) {
+                    $upper_name = strtoupper($quiz->name);
+                    foreach ($allowed_prefixes as $prefix) {
+                        if (strpos($upper_name, $prefix) === 0) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            }
 
             $result = [];
             foreach ($quizzes as $quiz) {
