@@ -1,6 +1,6 @@
 # FTM PLUGINS - Guida per Claude
 
-**Ultimo aggiornamento:** 19 Maggio 2026 (v5)
+**Ultimo aggiornamento:** 27 Maggio 2026 (v6)
 
 ## Panoramica Progetto
 
@@ -235,12 +235,14 @@ Server Test: https://moodletest45.hizuvala.myhostpoint.ch
 - **Soglia globale:** Amministrazione -> Plugin -> Competency Manager -> Soglia minima %
 - **Setting esempi stile:** Amministrazione -> Plugin -> Competency Manager -> Esempi di stile AI
 
-#### 11. JobSearch + JobMatchAgent - 19/05/2026
+#### 11. JobSearch + JobMatchAgent - 27/05/2026
 - **ftm_jobsearch** (`local/ftm_jobsearch/`): Scraping offerte lavoro con AI
-  - Siti: jobs.admin.ch, jobs.ch, jobup.ch, jobscout24.ch, carriera.ch
-  - **job-room.ch (arbeit.swiss) via REST API** (`ai_scraper.php` + `debug_scraper.php`): endpoint `/jobadservice/api/jobAdvertisements/_search` — nessuna AI parsing, dati strutturati diretti
+  - Siti: jobs.admin.ch, jobs.ch, jobup.ch, jobscout24.ch, carriera.ch, **lavoro.cdt.ch** (Corriere del Ticino)
+  - job-room.ch rimosso dal loop principale (era REST API arbeit.swiss — mantenuto solo in debug_scraper.php)
   - Multi-keyword, HTML 15k, dedup per url_hash
 - **jobmatchagent** (`local/jobmatchagent/`): Matching AI offerte/studenti — coach review, student view, wizard, RSS fetcher
+  - **Auto-disable 403/404:** fonti RSS con errore permanente vengono disabilitate automaticamente (badge 🚫 in fetch_now.php)
+  - Indeed RSS rimossi (HTTP 403 permanente)
 
 #### 12. JobAIDA (local_jobaida) - 10/04/2026 (v1.1.0 BETA)
 - Generatore lettere di presentazione AIDA con AI (Azure OpenAI)

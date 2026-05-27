@@ -49,7 +49,7 @@ $starttime = microtime(true);
 // Phase 1: RSS feeds (ti.ch, admin.ch + any custom feeds).
 $rsstotals = \local_jobmatchagent\source_manager::run_all();
 
-// Phase 2: AI scraper via ftm_jobsearch (jobs.ch / job-room / carriera).
+// Phase 2: AI scraper via ftm_jobsearch (jobs.ch / jobup.ch / carriera.ch / lavoro.cdt.ch).
 $aitotals = \local_jobmatchagent\source_manager::run_ai_scraping_for_all_students($force);
 
 // Phase 3: AI matching CV -> offerte (uses jobsearch::match_cv_to_offers).
@@ -128,7 +128,7 @@ $table->data = [
         . ' · ' . $rsstotals['offers_added'] . ' nuovi annunci',
     ],
     [
-        '<strong>🤖 Fase 2 — AI Scraper (jobs.ch / job-room / carriera)</strong>',
+        '<strong>🤖 Fase 2 — AI Scraper (jobs.ch / jobup.ch / carriera.ch / lavoro.cdt.ch)</strong>',
         $aitotals['available']
             ? (count($aitotals['sectors_scraped']) . ' nuove + ' . count($aitotals['sectors_cached']) . ' da cache · '
                 . $aitotals['offers_imported'] . ' annunci importati')
@@ -174,9 +174,15 @@ if (!empty($rsstotals['per_source'])) {
     ];
     $detail->attributes['class'] = 'table table-sm';
     foreach ($rsstotals['per_source'] as $name => $r) {
-        $status = !empty($r['error'])
-            ? html_writer::span('❌ ' . s($r['error']), 'text-danger')
-            : html_writer::span('✅ OK', 'text-success');
+        if (!empty($r['error'])) {
+            $autodisabled = strpos($r['error'], 'disabilitata automaticamente') !== false;
+            $status = html_writer::span(
+                ($autodisabled ? '🚫 ' : '❌ ') . s($r['error']),
+                $autodisabled ? 'text-muted' : 'text-danger'
+            );
+        } else {
+            $status = html_writer::span('✅ OK', 'text-success');
+        }
         $detail->data[] = [s($name), $r['offers_added'], $r['matches_created'], $status];
     }
     echo html_writer::table($detail);

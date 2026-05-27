@@ -977,8 +977,8 @@ function run_search_with_progress($studentid) {
     echo html_writer::tag('li', '→ ' . $rssnew . ' nuovi annunci da feed RSS.', ['class' => 'text-muted small']);
     flush_output();
 
-    // Step 0c: AI scraper (jobs.ch, job-room.ch, carriera.ch) per questo studente.
-    echo html_writer::tag('li', 'Cerco annunci su jobs.ch, job-room.ch, carriera.ch con AI...');
+    // Step 0c: AI scraper (jobs.ch, jobup.ch, carriera.ch, lavoro.cdt.ch...) per questo studente.
+    echo html_writer::tag('li', 'Cerco annunci su jobs.ch, jobup.ch, carriera.ch con AI...');
     flush_output();
     $ainew = 0;
     if (class_exists('\local_jobmatchagent\source_manager')) {

@@ -15,3 +15,51 @@ node_modules/
 test-results/
 
 # NOTE: .claude/ NON è esclusa - contiene documentazione progetto (agents, skills, commands)
+
+# Debug/fix files temporanei (non fanno parte del plugin)
+debug_*.php
+fix_*.php
+bypass_upgrade.php
+diagnose_*.php
+
+# Playwright logs, report e screenshot automatici
+playwright_pm/logs/
+playwright_pm/reports/
+playwright_pm/screenshots/
+
+# Backup files
+*.bak
+*.backup
+*.backup2
+
+# Script Python utility (non Moodle)
+*.py
+
+# Manuali Word generati
+Manuale_*.docx
+
+# Artifact di release
+FTM_INSTALLER.html
+FTM_PLUGINS_INSTALL.zip
+FTM_PLUGINS_INSTALL/
+
+# File temporanei radice
+create_*.ps1
+create_zip.ps1
+pdf_*.png
+temp_*
+temp_*.png
+temp_*.docx
+temp_*.pdf
+temp_*.xlsx
+temp_*.xml
+temp_*.txt
+~$*
+test_email.php
+purge_emergency.php
+set_quiz_single_attempt.php
+prepare_ftp_deploy.ps1
+aggiornamento del 3101.txt
+
+# Playwright MCP
+.playwright-mcp/

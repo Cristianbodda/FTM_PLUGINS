@@ -146,92 +146,43 @@ class source_manager {
 
         } catch (\Throwable $e) {
             $result['error'] = $e->getMessage();
-            $DB->update_record('local_jobmatch_sources', (object) [
+            $update = (object) [
                 'id' => $source->id,
                 'last_error' => substr($e->getMessage(), 0, 1000),
                 'timemodified' => time(),
-            ]);
+            ];
+            // Auto-disable sources that are permanently unreachable (HTTP 403/404).
+            // They will stay disabled until an admin re-enables them manually.
+            if (preg_match('/HTTP (403|404)/', $e->getMessage())) {
+                $update->enabled = 0;
+                $result['error'] .= ' — fonte disabilitata automaticamente';
+            }
+            $DB->update_record('local_jobmatch_sources', $update);
         }
 
         return $result;
     }
 
     /**
-     * Ensure default RSS sources (ti.ch, admin.ch, Indeed Ticino) exist in DB.
-     * Safe to call multiple times — uses INSERT IGNORE via record_exists check.
+     * Ensure default RSS sources exist in DB.
+     * Safe to call multiple times — only inserts if name not present.
+     * NOTE: Indeed feeds removed (HTTP 403 permanent block).
+     *       Sources returning 404/403 are auto-disabled by run_source().
      */
     public static function ensure_default_sources() {
         global $DB;
 
-        // Indeed RSS base URL for Canton Ticino (one feed per keyword, sorted by date).
-        $indeedBase = 'https://ch.indeed.com/rss?l=Canton+Ticino&sort=date&radius=100&q=';
-
         $defaults = [
             // --- Fonti istituzionali CH ---
+            // These may return 404 if the feed URL has moved; they will be
+            // auto-disabled by run_source() on first failure.
             [
                 'name' => 'Canton Ticino — Posti di lavoro (RSS)',
                 'url'  => 'https://www4.ti.ch/can/rss/posti-di-lavoro/',
             ],
             [
                 'name' => 'Confederazione CH — Posti vacanti (RSS)',
-                'url'  => 'https://www.stelle.admin.ch/stellenangebote/feeds/rss.xml',
-            ],
-            // --- Indeed Ticino — offerte generali ---
-            [
-                'name' => 'Indeed Ticino — operaio',
-                'url'  => $indeedBase . 'operaio',
-            ],
-            [
-                'name' => 'Indeed Ticino — tecnico',
-                'url'  => $indeedBase . 'tecnico',
-            ],
-            [
-                'name' => 'Indeed Ticino — addetto produzione',
-                'url'  => $indeedBase . 'addetto+produzione',
-            ],
-            [
-                'name' => 'Indeed Ticino — montatore',
-                'url'  => $indeedBase . 'montatore',
-            ],
-            [
-                'name' => 'Indeed Ticino — manutentore',
-                'url'  => $indeedBase . 'manutentore',
-            ],
-            [
-                'name' => 'Indeed Ticino — elettricista',
-                'url'  => $indeedBase . 'elettricista',
-            ],
-            [
-                'name' => 'Indeed Ticino — meccanico',
-                'url'  => $indeedBase . 'meccanico',
-            ],
-            [
-                'name' => 'Indeed Ticino — logistica magazzino',
-                'url'  => $indeedBase . 'logistica+magazzino',
-            ],
-            [
-                'name' => 'Indeed Ticino — automazione',
-                'url'  => $indeedBase . 'automazione',
-            ],
-            [
-                'name' => 'Indeed Ticino — elettromeccanico',
-                'url'  => $indeedBase . 'elettromeccanico',
-            ],
-            [
-                'name' => 'Indeed Ticino — carpentiere',
-                'url'  => $indeedBase . 'carpentiere',
-            ],
-            [
-                'name' => 'Indeed Ticino — saldatore',
-                'url'  => $indeedBase . 'saldatore',
-            ],
-            [
-                'name' => 'Indeed Ticino — autista',
-                'url'  => $indeedBase . 'autista',
-            ],
-            [
-                'name' => 'Indeed Ticino — chimico farmaceutico',
-                'url'  => $indeedBase . 'chimico+farmaceutico',
+                'url'  => 'https://jobs.admin.ch/api/v1/publications?format=rss',
             ],
         ];
 
@@ -250,7 +201,7 @@ class source_manager {
     }
 
     /**
-     * Run AI-powered scraping (jobs.ch / job-room.ch / carriera.ch) for all
+     * Run AI-powered scraping (jobs.ch / jobup.ch / carriera.ch / lavoro.cdt.ch) for all
      * active students, deduplicated by (sector, mansione) combo.
      * Uses local_ftm_jobsearch's ai_scraper.
      *
@@ -511,7 +462,7 @@ class source_manager {
         $sourceid = $DB->get_field('local_jobmatch_sources', 'id', ['type' => 'scraper']);
         if (!$sourceid) {
             $sourceid = $DB->insert_record('local_jobmatch_sources', (object) [
-                'name' => 'AI Scraper (jobs.ch + job-room + carriera)',
+                'name' => 'AI Scraper (jobs.ch / jobup.ch / carriera.ch / lavoro.cdt.ch)',
                 'type' => 'scraper',
                 'config' => null,
                 'enabled' => 1,
