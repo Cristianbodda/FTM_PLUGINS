@@ -75,7 +75,8 @@
         <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="ID del corso (0 = globale)"/>
         <FIELD NAME="sector" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="Settore: AUTOMOBILE, MECCANICA, LOGISTICA, ecc."/>
         <FIELD NAME="is_primary" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = settore primario assegnato dalla segreteria"/>
-        <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="quiz" SEQUENCE="false" COMMENT="Origine: manual, quiz, enrollment"/>
+        <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="quiz" SEQUENCE="false" COMMENT="Origine: manual, quiz, enrollment, pin_unlock"/>
+        <FIELD NAME="unlocked_by" TYPE="char" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Sigla coach che ha autorizzato sblocco PIN (es. GM, RB)"/>
         <FIELD NAME="quiz_count" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Numero quiz completati in questo settore"/>
         <FIELD NAME="first_detected" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Timestamp prima rilevazione"/>
         <FIELD NAME="last_detected" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Timestamp ultima rilevazione"/>

@@ -424,5 +424,17 @@ function xmldb_local_competencymanager_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026051201, 'local', 'competencymanager');
     }
 
+    // Versione 2026052701: Campo unlocked_by in local_student_sectors (sblocco settore via PIN coach)
+    if ($oldversion < 2026052701) {
+        $table = new xmldb_table('local_student_sectors');
+        $field = new xmldb_field('unlocked_by', XMLDB_TYPE_CHAR, '10', null, null, null, null, 'source');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026052701, 'local', 'competencymanager');
+    }
+
     return true;
 }

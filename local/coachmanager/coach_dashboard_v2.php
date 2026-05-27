@@ -2367,6 +2367,16 @@ echo $OUTPUT->header();
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+.qu-pinned-bar { background:#dbeafe; border:1px solid #93c5fd; border-radius:6px; padding:8px 12px; margin:10px 0; font-size:13px; }
+.qu-pinned-badge { display:inline-flex; align-items:center; gap:6px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:4px; padding:3px 8px; margin:2px; }
+.qu-pinned-badge button { background:#ef4444; color:white; border:none; border-radius:3px; padding:1px 6px; font-size:11px; cursor:pointer; }
+.qu-pinned-badge button:hover { background:#dc2626; }
+.qu-available-bar { background:#f0fdf4; border:1px solid #86efac; border-radius:6px; padding:8px 12px; margin:10px 0; font-size:13px; }
+.qu-sector-btn { background:#16a34a; color:white; border:none; border-radius:4px; padding:4px 10px; margin:2px; cursor:pointer; font-size:12px; }
+.qu-sector-btn:hover { background:#15803d; }
+.qu-pin-form { background:#fefce8; border:1px solid #fde047; border-radius:6px; padding:10px 14px; margin:8px 0; font-size:13px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.qu-pin-form input { border:1px solid #ccc; border-radius:4px; padding:4px 8px; font-size:14px; font-weight:bold; letter-spacing:2px; }
+.qu-pin-hint { color:#92400e; font-size:11px; }
 
 /* Current activities section */
 .wp-current-section {
@@ -3943,6 +3953,45 @@ function loadQuizStatus() {
         });
 
         html += '</tbody></table>';
+
+        // --- Sezione: Settori sbloccati via PIN ---
+        if (data.pinned_sectors && data.pinned_sectors.length > 0) {
+            html += '<div class="qu-pinned-bar">';
+            html += '<strong>Settori sbloccati via PIN:</strong> ';
+            data.pinned_sectors.forEach(function(ps) {
+                const sectorEsc = escapeHtml(ps.sector);
+                const byEsc = escapeHtml(ps.unlocked_by || '');
+                const timeEsc = escapeHtml(ps.unlock_time || '');
+                html += '<span class="qu-pinned-badge">';
+                html += sectorEsc;
+                if (byEsc || timeEsc) {
+                    html += ' <small>(' + byEsc + (timeEsc ? ', ' + timeEsc : '') + ')</small>';
+                }
+                html += ' <button onclick="revokeUnlockedSector(\'' + sectorEsc + '\')">Revoca</button>';
+                html += '</span>';
+            });
+            html += '</div>';
+        }
+
+        // --- Sezione: Sblocca settore aggiuntivo ---
+        if (data.available_sectors && data.available_sectors.length > 0) {
+            html += '<div class="qu-available-bar">';
+            html += '<strong>Sblocca settore aggiuntivo:</strong> ';
+            data.available_sectors.forEach(function(sec) {
+                const secEsc = escapeHtml(sec);
+                html += '<button class="qu-sector-btn" onclick="showPinForm(\'' + secEsc + '\')">' + secEsc + ' 🔓</button>';
+            });
+            html += '</div>';
+            html += '<div id="qu-pin-form" style="display:none;" class="qu-pin-form">';
+            html += '<span id="qu-pin-sector-label" style="font-weight:600;"></span>';
+            html += ' &mdash; PIN coach: ';
+            html += '<input type="text" id="qu-pin-input" maxlength="6" placeholder="es. GM26" style="text-transform:uppercase;width:80px;" onkeydown="if(event.key===\'Enter\')submitPinUnlock();">';
+            html += '<button class="qu-unlock-btn" onclick="submitPinUnlock()">Sblocca</button>';
+            html += '<button style="background:#6c757d;color:white;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;" onclick="hidePinForm()">&#x2715;</button>';
+            html += '<span class="qu-pin-hint">Formato: iniziali + anno (GM26, RB26...)</span>';
+            html += '</div>';
+        }
+
         document.getElementById('quBody').innerHTML = html;
     })
     .catch(() => {
@@ -3979,6 +4028,83 @@ function unlockQuiz(quizId, quizName) {
         }
     })
     .catch(() => alert('Errore di connessione'));
+}
+
+// PIN-based sector unlock helpers
+var quPinCurrentSector = '';
+
+function showPinForm(sector) {
+    quPinCurrentSector = sector;
+    const label = document.getElementById('qu-pin-sector-label');
+    const form  = document.getElementById('qu-pin-form');
+    const input = document.getElementById('qu-pin-input');
+    if (label) label.textContent = sector;
+    if (form)  form.style.display = 'flex';
+    if (input) { input.value = ''; input.focus(); }
+}
+
+function hidePinForm() {
+    const form = document.getElementById('qu-pin-form');
+    if (form) form.style.display = 'none';
+    quPinCurrentSector = '';
+}
+
+function submitPinUnlock() {
+    const input = document.getElementById('qu-pin-input');
+    if (!input) return;
+    const pin = input.value.trim().toUpperCase();
+    if (!pin) { alert('Inserisci il PIN coach (es. GM26).'); return; }
+
+    const url = '<?php echo $CFG->wwwroot; ?>/local/selfassessment/ajax_unlock_quiz.php' +
+                '?action=unlock_sector&studentid=' + quStudentId +
+                '&sector=' + encodeURIComponent(quPinCurrentSector) +
+                '&pin=' + encodeURIComponent(pin) +
+                '&sesskey=<?php echo sesskey(); ?>';
+
+    fetch(url)
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const toast = document.createElement('div');
+            toast.className = 'qu-toast';
+            toast.textContent = '✅ ' + (data.message || 'Settore sbloccato!');
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+            hidePinForm();
+            loadQuizStatus();
+        } else {
+            alert(data.message || 'PIN non valido o errore.');
+        }
+    })
+    .catch(() => alert('Errore di connessione.'));
+}
+
+function revokeUnlockedSector(sector) {
+    if (!confirm('Revocare il settore ' + sector + ' per ' + quStudentName + '?\n\nI quiz di questo settore non saranno più visibili.')) {
+        return;
+    }
+
+    const url = '<?php echo $CFG->wwwroot; ?>/local/selfassessment/ajax_unlock_quiz.php' +
+                '?action=revoke_sector&studentid=' + quStudentId +
+                '&sector=' + encodeURIComponent(sector) +
+                '&sesskey=<?php echo sesskey(); ?>';
+
+    fetch(url)
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const toast = document.createElement('div');
+            toast.className = 'qu-toast';
+            toast.style.background = '#dc2626';
+            toast.textContent = '❌ ' + (data.message || 'Settore revocato.');
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+            loadQuizStatus();
+        } else {
+            alert(data.message || 'Errore nella revoca.');
+        }
+    })
+    .catch(() => alert('Errore di connessione.'));
 }
 
 function escapeHtml(text) {

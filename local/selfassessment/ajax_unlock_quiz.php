@@ -77,12 +77,23 @@ try {
     switch ($action) {
         case 'getquizzes':
             list($insql, $params) = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED);
-            $quizzes = $DB->get_records_select('quiz', "course $insql", $params, 'name ASC');
+            $all_quizzes = $DB->get_records_select('quiz', "course $insql", $params, 'name ASC');
+
+            // --- Extract all sector prefixes present in R.comp quizzes ---
+            // A quiz name has format "PREFIX - descrizione"; split on ' - ' and take first part uppercase.
+            $all_quiz_prefixes = [];
+            foreach ($all_quizzes as $q) {
+                $parts = explode(' - ', $q->name, 2);
+                $prefix = strtoupper(trim($parts[0]));
+                if ($prefix !== '') {
+                    $all_quiz_prefixes[$prefix] = true;
+                }
+            }
 
             // Filter by student sector: quiz name must start with one of the allowed prefixes.
             // If the student has no sector assigned, show all (fallback).
             if (!empty($allowed_prefixes)) {
-                $quizzes = array_filter($quizzes, function($quiz) use ($allowed_prefixes) {
+                $quizzes = array_filter($all_quizzes, function($quiz) use ($allowed_prefixes) {
                     $upper_name = strtoupper($quiz->name);
                     foreach ($allowed_prefixes as $prefix) {
                         if (strpos($upper_name, $prefix) === 0) {
@@ -91,6 +102,8 @@ try {
                     }
                     return false;
                 });
+            } else {
+                $quizzes = $all_quizzes;
             }
 
             $result = [];
@@ -138,7 +151,47 @@ try {
                 ];
             }
 
-            echo json_encode(['success' => true, 'quizzes' => $result]);
+            // --- Settori sbloccati via PIN per questo studente ---
+            $pinned_rows = $DB->get_records_select(
+                'local_student_sectors',
+                "userid = :uid AND source = 'pin_unlock'",
+                ['uid' => $studentid],
+                'timecreated ASC'
+            );
+            $pinned_sectors = [];
+            foreach ($pinned_rows as $row) {
+                $pinned_sectors[] = [
+                    'sector'      => strtoupper($row->sector),
+                    'unlocked_by' => $row->unlocked_by ?? '',
+                    'unlock_time' => $row->timecreated > 0 ? date('H:i', $row->timecreated) : '',
+                ];
+            }
+
+            // --- Settori disponibili ma non ancora assegnati allo studente ---
+            // Usa i prefissi trovati nei quiz R.comp, esclude quelli già in $allowed_prefixes.
+            // Mappa inversa alias → settore canonico per confronto normalizzato.
+            $available_sectors = [];
+            foreach (array_keys($all_quiz_prefixes) as $qprefix) {
+                // Controlla se questo prefisso è già coperto dai settori assegnati allo studente.
+                $already_allowed = false;
+                foreach ($allowed_prefixes as $ap) {
+                    if ($ap === $qprefix) {
+                        $already_allowed = true;
+                        break;
+                    }
+                }
+                if (!$already_allowed) {
+                    $available_sectors[] = $qprefix;
+                }
+            }
+            sort($available_sectors);
+
+            echo json_encode([
+                'success'           => true,
+                'quizzes'           => $result,
+                'pinned_sectors'    => $pinned_sectors,
+                'available_sectors' => $available_sectors,
+            ]);
             break;
 
         case 'unlock':
@@ -201,6 +254,103 @@ try {
                 'message' => 'Quiz sbloccato! ' . fullname($student) . ' puo\' ora fare il tentativo #' . $new_max . '.',
                 'new_max' => $new_max,
                 'finished' => $finished,
+            ]);
+            break;
+
+        case 'unlock_sector':
+            $sector = strtoupper(required_param('sector', PARAM_ALPHANUMEXT));
+            $pin    = strtoupper(required_param('pin', PARAM_ALPHANUMEXT));
+
+            // Validazione PIN: ultimi 2 char = anno corrente (es. "26"), primi char = sigla coach
+            $current_year_2 = substr(date('Y'), 2); // es. "26"
+            $pin_year   = substr($pin, -2);
+            $pin_initials = substr($pin, 0, strlen($pin) - 2);
+
+            if ($pin_year !== $current_year_2) {
+                echo json_encode(['success' => false, 'message' => 'PIN non valido: anno errato.']);
+                die();
+            }
+            if (empty($pin_initials)) {
+                echo json_encode(['success' => false, 'message' => 'PIN non valido: sigla coach mancante.']);
+                die();
+            }
+
+            // Verifica che la sigla corrisponda a un coach attivo in local_ftm_coaches.
+            $coach_record = $DB->get_record('local_ftm_coaches', [
+                'initials' => $pin_initials,
+                'active'   => 1,
+            ]);
+            if (!$coach_record) {
+                echo json_encode(['success' => false, 'message' => 'PIN non valido: sigla coach non riconosciuta.']);
+                die();
+            }
+
+            // Carica nome coach per il messaggio di ritorno.
+            $coach_user = $DB->get_record('user', ['id' => $coach_record->userid], 'id, firstname, lastname');
+            $coach_name = $coach_user ? fullname($coach_user) : $pin_initials;
+
+            // Verifica che il settore non sia già assegnato allo studente (primario o secondario).
+            // Confronta usando il campo sector in uppercase.
+            $existing_sector = $DB->get_record_select(
+                'local_student_sectors',
+                'userid = :uid AND ' . $DB->sql_compare_text('sector') . ' = ' . $DB->sql_compare_text(':sec'),
+                ['uid' => $studentid, 'sec' => $sector]
+            );
+            if ($existing_sector) {
+                echo json_encode(['success' => false, 'message' => 'Il settore ' . $sector . ' e\' già assegnato allo studente.']);
+                die();
+            }
+
+            // Inserisci il record pin_unlock in local_student_sectors.
+            $now = time();
+            $new_sector = new stdClass();
+            $new_sector->userid        = $studentid;
+            $new_sector->courseid      = 0;
+            $new_sector->sector        = $sector;
+            $new_sector->is_primary    = 0;
+            $new_sector->source        = 'pin_unlock';
+            $new_sector->unlocked_by   = $pin_initials;
+            $new_sector->quiz_count    = 0;
+            $new_sector->first_detected = $now;
+            $new_sector->last_detected  = $now;
+            $new_sector->timecreated   = $now;
+            $new_sector->timemodified  = $now;
+            $DB->insert_record('local_student_sectors', $new_sector);
+
+            echo json_encode([
+                'success'    => true,
+                'message'    => 'Settore ' . $sector . ' sbloccato da ' . $coach_name . '.',
+                'coach_name' => $coach_name,
+                'sector'     => $sector,
+            ]);
+            break;
+
+        case 'revoke_sector':
+            $sector = strtoupper(required_param('sector', PARAM_ALPHANUMEXT));
+
+            // Cancella SOLO il record pin_unlock per questo studente e settore. Mai toccare is_primary=1.
+            $to_delete = $DB->get_record_select(
+                'local_student_sectors',
+                "userid = :uid AND source = 'pin_unlock' AND " .
+                $DB->sql_compare_text('sector') . ' = ' . $DB->sql_compare_text(':sec'),
+                ['uid' => $studentid, 'sec' => $sector]
+            );
+
+            if (!$to_delete) {
+                echo json_encode(['success' => false, 'message' => 'Settore ' . $sector . ' non trovato tra i PIN sbloccati.']);
+                die();
+            }
+
+            if ((int)$to_delete->is_primary === 1) {
+                echo json_encode(['success' => false, 'message' => 'Non e\' possibile revocare un settore primario.']);
+                die();
+            }
+
+            $DB->delete_records('local_student_sectors', ['id' => $to_delete->id]);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Settore ' . $sector . ' revocato.',
             ]);
             break;
 
