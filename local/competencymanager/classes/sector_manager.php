@@ -688,6 +688,7 @@ class sector_manager {
             $obj->sector = $sectorUpper;
             $obj->quiz_count = $sector_counts[$sectorUpper] ?? 0;
             $obj->is_primary = $saved->is_primary ?? 0;
+            $obj->source = $saved->source ?? 'quiz';
             $result[$sectorUpper] = $obj;
             // Rimuovi dal conteggio per non duplicare
             unset($sector_counts[$sectorUpper]);

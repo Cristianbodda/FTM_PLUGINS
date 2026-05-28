@@ -1316,6 +1316,10 @@ $studentPrimarySector = null;
 try {
     // Carica i settori assegnati allo studente dalla tabella local_student_sectors
     $studentAssignedSectors = \local_competencymanager\sector_manager::get_student_sectors_with_quiz_data($userid);
+    // Escludi settori sbloccati via PIN senza quiz completati (non ancora "guadagnati")
+    $studentAssignedSectors = array_filter($studentAssignedSectors, function($sec) {
+        return !(($sec->source ?? '') === 'pin_unlock' && (int)($sec->quiz_count ?? 0) === 0);
+    });
     // Il settore primario è il primo (type = 'primary')
     foreach ($studentAssignedSectors as $sec) {
         if (($sec->type ?? '') === 'primary' || empty($studentPrimarySector)) {
