@@ -4871,7 +4871,7 @@ function render_view_standard($students, $dashboard) {
                     </a>
                     <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>"
                        class="quick-btn passval<?php if (!empty($student->has_approved_passport)) echo ' passval-approved'; ?>" title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>">
-                        &#128220; PassVal
+                        &#128220; PassTech
                     </a>
                     <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti"
                        class="quick-btn colloquio" title="Spunti Colloquio">
@@ -5464,7 +5464,7 @@ function render_view_dettagliata($students, $dashboard) {
                             onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&courseid=<?php echo $student->course_id ?? 0; ?>'"
                             title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>"
                             style="<?php echo !empty($student->has_approved_passport) ? 'background:#16a34a !important; color:#fff !important; border-color:#15803d !important;' : 'background:#f8f9fa !important; color:#334155 !important; border-color:#c0c5d0 !important;'; ?>">
-                        &#128220; PassVal
+                        &#128220; PassTech
                     </button>
                     <button class="btn btn-primary"
                             onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti'">
@@ -5665,7 +5665,7 @@ function render_view_classica($students, $dashboard) {
                                 onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&courseid=<?php echo $student->course_id ?? 0; ?>'"
                                 title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>"
                                 style="<?php echo !empty($student->has_approved_passport) ? 'background:#16a34a !important; color:#fff !important; border-color:#15803d !important;' : ''; ?>">
-                            &#128220; PassVal
+                            &#128220; PassTech
                         </button>
                         <button class="btn btn-primary btn-sm"
                                 onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti'">
