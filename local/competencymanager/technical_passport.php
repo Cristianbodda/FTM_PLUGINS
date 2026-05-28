@@ -19,7 +19,8 @@ require_login();
 
 $userid = required_param('userid', PARAM_INT);
 $courseid = optional_param('courseid', 0, PARAM_INT);
-$cm_sector_filter = optional_param('cm_sector', 'all', PARAM_ALPHANUMEXT);
+// '' = not set (will auto-detect primary sector); 'all' = user explicitly chose "Tutti"
+$cm_sector_filter = optional_param('cm_sector', '', PARAM_ALPHANUMEXT);
 
 $student = $DB->get_record('user', ['id' => $userid, 'deleted' => 0], '*', MUST_EXIST);
 $course = $courseid ? get_course($courseid) : null;
@@ -537,10 +538,46 @@ if (empty($sector) && !empty($courseSector)) {
     $sectorsFound[$courseSector] = true;
 }
 
-// Effective sector filter: use cm_sector param, or auto-detect if single sector.
-if ($cm_sector_filter !== 'all') {
+// Load sectors from local_student_sectors BEFORE determining effective filter,
+// so we can auto-select the primary sector when no explicit choice is made.
+$primarySectorFromDB = '';
+if ($DB->get_manager()->table_exists('local_student_sectors')) {
+    $dbSectorRows = $DB->get_records_select(
+        'local_student_sectors',
+        'userid = :uid AND quiz_count > 0',
+        ['uid' => $userid],
+        'quiz_count DESC',
+        'sector, quiz_count'
+    );
+    foreach ($dbSectorRows as $row) {
+        $upperSec = strtoupper(normalize_sector_name($row->sector));
+        if (!empty($upperSec)) {
+            $sectorsFound[$upperSec] = true;
+            // First row (highest quiz_count) = primary sector.
+            if (empty($primarySectorFromDB)) {
+                $primarySectorFromDB = $upperSec;
+            }
+        }
+    }
+}
+
+// Determine effective sector filter.
+// Priority: explicit pill click > auto-detect (primary from DB or from competencies).
+// '' means "not explicitly set" -> auto-select primary sector.
+// 'all' means user explicitly clicked "Tutti" -> show all.
+if (!empty($cm_sector_filter) && $cm_sector_filter !== 'all') {
+    // Explicit sector selected via pill.
     $effectiveSectorFilter = $cm_sector_filter;
+} else if ($cm_sector_filter === 'all') {
+    // User explicitly chose "Tutti".
+    $effectiveSectorFilter = 'all';
 } else if (count($sectorsFound) === 1 && !empty($sector)) {
+    // Single sector: auto-select it.
+    $effectiveSectorFilter = $sector;
+} else if (!empty($primarySectorFromDB)) {
+    // Multiple sectors, no explicit choice: default to primary (most quiz data).
+    $effectiveSectorFilter = $primarySectorFromDB;
+} else if (!empty($sector)) {
     $effectiveSectorFilter = $sector;
 } else {
     $effectiveSectorFilter = 'all';
@@ -558,25 +595,6 @@ if ($effectiveSectorFilter !== 'all') {
     // Only apply filter if it matches something; otherwise show all data.
     if (!empty($filtered)) {
         $competencies = array_values($filtered);
-    }
-}
-
-// Also load sectors assigned to the student in local_student_sectors (quiz_count > 0 = real data).
-// This ensures the selector shows all sectors with data, even if the current course/filter
-// doesn't expose them through competency idnumbers alone.
-if ($DB->get_manager()->table_exists('local_student_sectors')) {
-    $dbSectorRows = $DB->get_records_select(
-        'local_student_sectors',
-        'userid = :uid AND quiz_count > 0',
-        ['uid' => $userid],
-        '',
-        'sector'
-    );
-    foreach ($dbSectorRows as $row) {
-        $upperSec = strtoupper(normalize_sector_name($row->sector));
-        if (!empty($upperSec)) {
-            $sectorsFound[$upperSec] = true;
-        }
     }
 }
 
