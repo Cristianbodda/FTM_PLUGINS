@@ -1436,6 +1436,21 @@ echo $OUTPUT->header();
     color: #fff !important;
 }
 
+.quick-btn.passval.passval-approved {
+    background: #16a34a !important;
+    color: #fff !important;
+    border-color: #15803d !important;
+}
+.quick-btn.passval.passval-approved:hover {
+    background: #15803d !important;
+    color: #fff !important;
+}
+.quick-btn.passval.passval-approved:visited,
+.quick-btn.passval.passval-approved:focus,
+.quick-btn.passval.passval-approved:active {
+    color: #fff !important;
+}
+
 /* Card Footer */
 .view-standard .student-card-footer {
     display: none; /* Nascosto - bottoni ora nei Quick Actions */
@@ -2708,10 +2723,7 @@ echo $OUTPUT->header();
     font-size: 12px;
     font-weight: 600;
 }
-.passval-badge { display:inline-block; background:#16a34a; color:white; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; margin-left:4px; white-space:nowrap; cursor:pointer; text-decoration:none; }
-.passval-badge:hover { background:#15803d; color:white; }
-.passval-badge.passval-draft { background:#94a3b8; }
-.passval-badge.passval-draft:hover { background:#64748b; color:white; }
+
 .sip-week-info {
     font-size: 10px;
     color: #155E75;
@@ -4665,7 +4677,6 @@ function render_view_compatta($students, $dashboard) {
                     <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
                     <span class="sip-badge" style="background: #94a3b8 !important; margin-top:3px;">CI &#9998;</span>
                     <?php endif; ?>
-                    <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>" class="passval-badge<?php if (empty($student->has_approved_passport)) echo ' passval-draft'; ?>" title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>" onclick="event.stopPropagation();">&#128220; PassVal</a>
                 </div>
                 <div class="competency-cell <?php echo $is_below ? 'danger' : 'success'; ?>">
                     <?php echo round($student->competency_avg ?? 0); ?>%
@@ -4698,6 +4709,12 @@ function render_view_compatta($students, $dashboard) {
                             title="Profilo Studente"
                             style="background: #475569 !important; color: #fff !important; border-color: #3d4a5c !important;">
                         &#128203;
+                    </button>
+                    <button class="btn btn-sm"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&courseid=<?php echo $student->course_id ?? 0; ?>'"
+                            title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>"
+                            style="<?php echo !empty($student->has_approved_passport) ? 'background:#16a34a !important; color:#fff !important; border-color:#15803d !important;' : ''; ?>">
+                        &#128220;
                     </button>
                     <button class="btn btn-primary btn-sm"
                             onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti'"
@@ -4835,7 +4852,6 @@ function render_view_standard($students, $dashboard) {
                         <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
                         <span class="sip-badge" style="background: #94a3b8 !important;">CI &#9998;</span>
                         <?php endif; ?>
-                        <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>" class="passval-badge<?php if (empty($student->has_approved_passport)) echo ' passval-draft'; ?>" title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>" onclick="event.stopPropagation();">&#128220; PassVal</a>
                     </div>
                 </div>
 
@@ -4852,6 +4868,10 @@ function render_view_standard($students, $dashboard) {
                     <a href="<?php echo $CFG->wwwroot; ?>/local/ftm_cpurc/student_card.php?userid=<?php echo $student->id; ?>"
                        class="quick-btn qb-profile" title="Profilo Studente">
                         &#128203; Profilo
+                    </a>
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>"
+                       class="quick-btn passval<?php if (!empty($student->has_approved_passport)) echo ' passval-approved'; ?>" title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>">
+                        &#128220; PassVal
                     </a>
                     <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti"
                        class="quick-btn colloquio" title="Spunti Colloquio">
@@ -5297,7 +5317,6 @@ function render_view_dettagliata($students, $dashboard) {
                         <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
                         <span class="sip-badge" style="background: #94a3b8 !important;">CI &#9998;</span>
                         <?php endif; ?>
-                        <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>" class="passval-badge<?php if (empty($student->has_approved_passport)) echo ' passval-draft'; ?>" title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>" onclick="event.stopPropagation();">&#128220; PassVal</a>
                     </div>
                 </div>
 
@@ -5441,6 +5460,12 @@ function render_view_dettagliata($students, $dashboard) {
                             onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/coach_evaluation.php?studentid=<?php echo $student->id; ?>&sector=<?php echo urlencode($student->sector ?? 'MECCANICA'); ?>'">
                         &#128100; Valutazione Formatore
                     </button>
+                    <button class="btn"
+                            onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&courseid=<?php echo $student->course_id ?? 0; ?>'"
+                            title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>"
+                            style="<?php echo !empty($student->has_approved_passport) ? 'background:#16a34a !important; color:#fff !important; border-color:#15803d !important;' : 'background:#f8f9fa !important; color:#334155 !important; border-color:#c0c5d0 !important;'; ?>">
+                        &#128220; PassVal
+                    </button>
                     <button class="btn btn-primary"
                             onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti'">
                         &#128172; Colloquio
@@ -5554,7 +5579,6 @@ function render_view_classica($students, $dashboard) {
                         <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
                         <span class="sip-badge" style="background: #94a3b8 !important;">CI &#9998;</span>
                         <?php endif; ?>
-                        <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>" class="passval-badge<?php if (empty($student->has_approved_passport)) echo ' passval-draft'; ?>" title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>" onclick="event.stopPropagation();">&#128220; PassVal</a>
                     </div>
                 </div>
 
@@ -5636,6 +5660,12 @@ function render_view_classica($students, $dashboard) {
                         <button class="btn btn-secondary btn-sm"
                                 onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>'">
                             Report
+                        </button>
+                        <button class="btn btn-sm"
+                                onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&courseid=<?php echo $student->course_id ?? 0; ?>'"
+                                title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>"
+                                style="<?php echo !empty($student->has_approved_passport) ? 'background:#16a34a !important; color:#fff !important; border-color:#15803d !important;' : ''; ?>">
+                            &#128220; PassVal
                         </button>
                         <button class="btn btn-primary btn-sm"
                                 onclick="location.href='<?php echo $CFG->wwwroot; ?>/local/competencymanager/student_report.php?userid=<?php echo $student->id; ?>&amp;courseid=0&amp;viz_configured=1&amp;cm_sector=<?php echo strtolower($student->sector ?? 'meccanica'); ?>&amp;show_spunti=1&amp;show_dual_radar=1&amp;show_gap=1&amp;show_coach_eval=1&amp;show_overlay=1&amp;soglia_allineamento=10&amp;soglia_critico=30&amp;attempt_filter=all&amp;open_tab=spunti'">
