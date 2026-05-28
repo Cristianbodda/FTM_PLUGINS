@@ -99,24 +99,29 @@ switch ($action) {
         $data->activity_type = optional_param('activity_type', 'week1', PARAM_ALPHANUMEXT);
         $data->groupid = optional_param('groupid', 0, PARAM_INT);
         $date_str = required_param('date', PARAM_TEXT);
-        $time_slot = optional_param('time_slot', 'matt', PARAM_ALPHA);
+        $time_slot = optional_param('time_slot', 'matt', PARAM_ALPHANUMEXT);
         $data->roomid = optional_param('roomid', 0, PARAM_INT);
         $data->teacherid = optional_param('teacherid', 0, PARAM_INT);
         $data->max_participants = optional_param('max_participants', 10, PARAM_INT);
         $data->notes = optional_param('notes', '', PARAM_TEXT);
         $data->atelierid = optional_param('atelierid', 0, PARAM_INT) ?: null;
 
-        // Calculate start and end times based on slot
-        if ($time_slot === 'matt') {
-            $data->date_start = strtotime($date_str . ' 08:30:00');
-            $data->date_end = strtotime($date_str . ' 11:45:00');
-        } elseif ($time_slot === 'pom') {
-            $data->date_start = strtotime($date_str . ' 13:15:00');
-            $data->date_end = strtotime($date_str . ' 16:30:00');
-        } else { // all - tutto il giorno
-            $data->date_start = strtotime($date_str . ' 08:30:00');
-            $data->date_end = strtotime($date_str . ' 16:30:00');
-        }
+        // Start/end times per slot (including sub-slots)
+        $slot_times = [
+            'matt' => ['08:30:00', '11:45:00'],
+            'pom'  => ['13:15:00', '16:30:00'],
+            'all'  => ['08:30:00', '16:30:00'],
+            '0830' => ['08:30:00', '09:30:00'],
+            '0930' => ['09:30:00', '10:15:00'],
+            '1015' => ['10:15:00', '11:00:00'],
+            '1100' => ['11:00:00', '11:45:00'],
+            '1315' => ['13:15:00', '14:30:00'],
+            '1430' => ['14:30:00', '15:30:00'],
+            '1530' => ['15:30:00', '16:30:00'],
+        ];
+        $times = $slot_times[$time_slot] ?? $slot_times['matt'];
+        $data->date_start = strtotime($date_str . ' ' . $times[0]);
+        $data->date_end   = strtotime($date_str . ' ' . $times[1]);
 
         // Null for empty values — use > 0 check to avoid any browser autocomplete leakage
         $data->groupid = ($data->groupid > 0) ? (int)$data->groupid : null;

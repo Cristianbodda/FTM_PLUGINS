@@ -1,6 +1,6 @@
 <?php
 /**
- * Tab Calendario — Vista Globale Settimana (Righe=Slot, Colonne=Giorni) + Vista Mese
+ * Tab Calendario — Vista Unificata (Tabella Excel), Settimana e Mese
  *
  * @package    local_ftm_scheduler
  * @copyright  2026 FTM
@@ -18,7 +18,7 @@ if (!isset($coaches)) {
     $coaches = $manager::get_coaches();
 }
 
-// ---------- Room matrix (week) — kept for month view ----------
+// ---------- Room matrix (week) ----------
 $room_matrix = [];
 foreach ($week_dates as $wday) {
     foreach (['matt', 'pom'] as $slot) {
@@ -101,16 +101,10 @@ $js_coaches_map = [];
 foreach ($coaches as $c) {
     $js_coaches_map[(int)$c->userid] = ['id' => (int)$c->userid, 'name' => $c->firstname . ' ' . $c->lastname, 'initials' => $c->initials];
 }
-
-// ---------- Room quick lookup (name/shortname) ----------
-$room_lookup = [];
-foreach ($rooms as $r) {
-    $room_lookup[(int)$r->id] = $r->shortname ?: $r->name;
-}
 ?>
 
 <style>
-/* ===== Unified calendar table (kept for month view) ===== */
+/* ===== Unified calendar table ===== */
 .cal-unified {
     border-collapse: collapse;
     font-size: 11px;
@@ -222,7 +216,7 @@ foreach ($rooms as $r) {
 }
 .ce-pop-saved { color: #28a745; font-size: 11px; font-weight: 600; }
 
-/* ===== Legacy act-block + month styles ===== */
+/* ===== Legacy week/aule styles kept for month view compatibility ===== */
 .act-block {
     padding: 8px 10px; border-radius: 6px; font-size: 11px; margin-bottom: 5px;
     border-left: 4px solid; background: #F8FAFC; border-left-color: #94A3B8; position: relative;
@@ -246,135 +240,6 @@ foreach ($rooms as $r) {
     border-top: 2px solid #adb5bd; color: #444; font-weight: 600;
 }
 .cu-row-othermonth { opacity: 0.35; }
-
-/* ===== GLOBAL VIEW (GV) — inverted axes week layout ===== */
-.cgv-groups-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 8px 0 10px 0;
-    border-bottom: 1px solid #dee2e6;
-    margin-bottom: 8px;
-}
-.cgv-group-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 700;
-    border: 1px solid;
-}
-.cgv-group-pill.giallo  { background: #FEF9C3; color: #854D0E; border-color: #EAB308; }
-.cgv-group-pill.grigio  { background: #F3F4F6; color: #374151; border-color: #9CA3AF; }
-.cgv-group-pill.rosso   { background: #FEE2E2; color: #991B1B; border-color: #EF4444; }
-.cgv-group-pill.marrone { background: #FED7AA; color: #7C2D12; border-color: #F97316; }
-.cgv-group-pill.viola   { background: #F3E8FF; color: #5B21B6; border-color: #8B5CF6; }
-
-.cal-gv {
-    border-collapse: collapse;
-    width: 100%;
-    font-size: 12px;
-    table-layout: fixed;
-}
-.cal-gv th, .cal-gv td {
-    border: 1px solid #dee2e6;
-    vertical-align: top;
-}
-.cgv-th-orario {
-    width: 78px;
-    text-align: center;
-    font-size: 11px;
-    font-weight: 700;
-    background: #f8f9fa;
-    padding: 6px 4px;
-    color: #555;
-}
-.cgv-th-day {
-    text-align: center;
-    padding: 6px 4px;
-    background: #f8f9fa;
-}
-.cgv-dayname { font-weight: 700; font-size: 12px; }
-.cgv-daydate { font-size: 10px; color: #666; margin-top: 1px; }
-.cgv-td-orario {
-    vertical-align: middle;
-    text-align: center;
-    padding: 6px 4px;
-}
-.cgv-slot-matt { background: #FFFDE7; border-right: 3px solid #EAB308; }
-.cgv-slot-pom  { background: #E3F2FD; border-right: 3px solid #2196F3; }
-.cgv-slot-sub-matt { background: #FAFAF0; border-right: 2px solid #EAB308; }
-.cgv-slot-sub-pom  { background: #F0F8FF; border-right: 2px solid #2196F3; }
-.cgv-slot-label { font-weight: 700; font-size: 11px; color: #333; }
-.cgv-slot-time  { font-size: 9px; color: #888; margin-top: 2px; white-space: nowrap; }
-.cgv-row-main.cgv-row-mattino .cgv-td-day { background: #FAFAFA; min-height: 40px; }
-.cgv-row-main.cgv-row-pomeriggio .cgv-td-day { background: #F7FAFF; min-height: 40px; }
-.cgv-row-sub .cgv-td-day { background: #fff; }
-.cgv-td-day {
-    padding: 5px 7px;
-    cursor: default;
-}
-.cgv-cell-empty { cursor: pointer; }
-.cgv-cell-empty:hover { background: #EEF5FF !important; }
-.cgv-cell-plus { color: #ccc; font-size: 18px; display: block; text-align: center; line-height: 28px; }
-.cgv-cell-empty:hover .cgv-cell-plus { color: #0066cc; }
-.cgv-act-list { list-style: none; margin: 0; padding: 0; }
-.cgv-act {
-    padding: 3px 5px 3px 7px;
-    border-radius: 4px;
-    margin-bottom: 3px;
-    font-size: 11px;
-    cursor: pointer;
-    border-left: 3px solid #94A3B8;
-    background: #F8FAFC;
-    line-height: 1.5;
-    display: flex;
-    align-items: baseline;
-    gap: 3px;
-    flex-wrap: wrap;
-}
-.cgv-act:hover { filter: brightness(0.95); }
-.cgv-bullet { font-size: 7px; flex-shrink: 0; margin-top: 1px; }
-.cgv-act-text { flex: 1; }
-.cgv-sep { color: #bbb; font-size: 10px; }
-.cgv-room  { font-size: 10px; color: #0066cc; font-weight: 600; background: #EBF5FF; border-radius: 2px; padding: 0 3px; }
-.cgv-coach { font-size: 10px; font-weight: 700; padding: 0 4px; border-radius: 2px; white-space: nowrap; }
-.cgv-c-cb { background: #00B0F0; color: #000; }
-.cgv-c-fm { background: #FFFF00; color: #333; }
-.cgv-c-gm { background: #00B050; color: #fff; }
-.cgv-c-rb { background: #FF0000; color: #fff; }
-.cgv-c-lp { background: #CC00FF; color: #fff; }
-.cgv-c-db { background: #FFA500; color: #000; }
-/* Group color rows */
-.cgv-gc-giallo  { border-left-color: #EAB308; background: #FEFCE8; }
-.cgv-gc-grigio  { border-left-color: #6B7280; background: #F9FAFB; }
-.cgv-gc-rosso   { border-left-color: #EF4444; background: #FFF1F1; }
-.cgv-gc-marrone { border-left-color: #92400E; background: #FFF7ED; }
-.cgv-gc-viola   { border-left-color: #7C3AED; background: #FAF5FF; }
-.cgv-ext        { border-left-color: #2563EB; background: #DBEAFE; border-left-style: dashed; }
-/* Status panel */
-.cgv-status-panel {
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    overflow: hidden;
-    margin-top: 10px;
-}
-.cgv-status-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 7px 12px;
-    background: #f8f9fa;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    color: #444;
-    user-select: none;
-}
-.cgv-status-header:hover { background: #e9ecef; }
-.cgv-chevron { font-size: 10px; display: inline-block; transition: transform .2s; }
 </style>
 
 <!-- Legend (hidden) -->
@@ -458,257 +323,217 @@ function ftmChangeWeekYear(y) {
 }
 </script>
 
-<!-- ===================== GROUPS BAR ===================== -->
-<div class="cgv-groups-bar">
-    <?php foreach ($active_groups as $grp):
-        $ci = $colors[$grp->color] ?? $colors['giallo'];
-        $kw = $grp->calendar_week ? ' KW' . str_pad($grp->calendar_week, 2, '0', STR_PAD_LEFT) : '';
-    ?>
-    <span class="cgv-group-pill <?php echo s($grp->color); ?>">
-        <?php echo $ci['emoji']; ?> <?php echo s($grp->name . $kw); ?>
-    </span>
-    <?php endforeach; ?>
-    <?php if (empty($active_groups)): ?>
-    <span style="color:#aaa;font-size:11px;font-style:italic;">Nessun gruppo attivo</span>
-    <?php endif; ?>
-</div>
-
-<!-- ===================== VISTA SETTIMANA — GRIGLIA GLOBALE (righe=slot, colonne=giorni) ===================== -->
-<?php
-// Assign each activity to its sub-slot row based on date_start / date_end
-function cgv_get_subslot($date_start, $date_end) {
-    $h   = (int)date('H', $date_start);
-    $m   = (int)date('i', $date_start);
-    $hm  = $h * 60 + $m;
-    $dur = max(0, (int)$date_end - (int)$date_start);
-
-    // If duration >= 2h it's a full slot (matt or pom)
-    if ($dur >= 2 * 3600) {
-        return ($hm < 12 * 60) ? 'matt' : 'pom';
-    }
-    // Sub-slots by exact start time
-    if ($hm === 8*60+30)  return '0830';
-    if ($hm === 9*60+30)  return '0930';
-    if ($hm === 10*60+15) return '1015';
-    if ($hm === 11*60)    return '1100';
-    if ($hm === 13*60+15) return '1315';
-    if ($hm === 14*60+30) return '1430';
-    if ($hm === 15*60+30) return '1530';
-    // Fallback
-    return ($hm < 12*60) ? 'matt' : 'pom';
-}
-
-$act_matrix  = []; // [dow][ss_key][] = activity
-$active_subs = []; // dynamic sub-slot keys that actually have activities
-
-foreach ($week_dates as $wday) {
-    $dow = $wday['day_of_week'];
-    $all = array_merge(
-        $calendar_data[$dow]['matt'] ?? [],
-        $calendar_data[$dow]['pom']  ?? []
-    );
-    foreach ($all as $act) {
-        $ss = cgv_get_subslot((int)($act->date_start ?? 0), (int)($act->date_end ?? 0));
-        $act_matrix[$dow][$ss][] = $act;
-        if ($ss !== 'matt' && $ss !== 'pom') {
-            $active_subs[$ss] = true;
-        }
-    }
-}
-
-// Ordered row definitions
-$cgv_rows = [
-    'matt' => ['label' => 'Mattino',     'time' => '08:30–11:45', 'main' => true,  'morning' => true],
-    '0830' => ['label' => '08:30',        'time' => '08:30–09:30', 'main' => false, 'morning' => true],
-    '0930' => ['label' => '09:30',        'time' => '09:30–10:15', 'main' => false, 'morning' => true],
-    '1015' => ['label' => '10:15',        'time' => '10:15–11:00', 'main' => false, 'morning' => true],
-    '1100' => ['label' => '11:00',        'time' => '11:00–11:45', 'main' => false, 'morning' => true],
-    'pom'  => ['label' => 'Pomeriggio',  'time' => '13:15–16:30', 'main' => true,  'morning' => false],
-    '1315' => ['label' => '13:15',        'time' => '13:15–14:30', 'main' => false, 'morning' => false],
-    '1430' => ['label' => '14:30',        'time' => '14:30–15:30', 'main' => false, 'morning' => false],
-    '1530' => ['label' => '15:30',        'time' => '15:30–16:30', 'main' => false, 'morning' => false],
-];
-?>
-
-<div style="overflow-x:auto; margin-top:10px;">
-<table class="cal-gv">
-    <colgroup>
-        <col style="width:78px">
-        <?php foreach ($week_dates as $ignored): ?><col><?php endforeach; ?>
-    </colgroup>
+<!-- ===================== VISTA SETTIMANA — TABELLA UNIFICATA ===================== -->
+<div style="overflow-x:auto; margin-top:16px;">
+<table class="cal-unified">
     <thead>
         <tr>
-            <th class="cgv-th-orario">Orario</th>
-            <?php foreach ($week_dates as $wday): ?>
-            <th class="cgv-th-day">
-                <div class="cgv-dayname"><?php echo s($wday['day_name']); ?></div>
-                <div class="cgv-daydate"><?php echo date('d.m', $wday['timestamp']); ?></div>
-            </th>
+            <th rowspan="2" class="cu-day">Giorno</th>
+            <th rowspan="2" class="cu-sub"></th>
+            <th colspan="<?php echo $n_coaches; ?>" class="cu-sect cu-sect-sw">SW Coach</th>
+            <th colspan="<?php echo $n_coaches; ?>" class="cu-sect cu-sect-ass">Assenze Coach</th>
+            <?php foreach ($rooms as $r): ?>
+            <th colspan="2" class="cu-sect cu-sect-room"><?php echo s($r->shortname ?: $r->name); ?></th>
             <?php endforeach; ?>
+            <th colspan="2" class="cu-sect cu-sect-sw">SW Segreteria</th>
+            <th colspan="2" class="cu-sect cu-sect-ass">Assenze Segreteria</th>
+            <th class="cu-sect">Altre Attivita</th>
+        </tr>
+        <tr>
+            <!-- Coach iniziali SW -->
+            <?php foreach ($coaches as $c):
+                $ini = $c->initials;
+                $cc  = $coach_personal_colors[$ini] ?? ['bg' => '#ccc', 'text' => '#000'];
+            ?>
+            <th class="cu-actor" style="background:<?php echo $cc['bg']; ?>;color:<?php echo $cc['text']; ?>"><?php echo s($ini); ?></th>
+            <?php endforeach; ?>
+            <!-- Coach iniziali Assenze -->
+            <?php foreach ($coaches as $c):
+                $ini = $c->initials;
+                $cc  = $coach_personal_colors[$ini] ?? ['bg' => '#ccc', 'text' => '#000'];
+            ?>
+            <th class="cu-actor" style="background:<?php echo $cc['bg']; ?>;color:<?php echo $cc['text']; ?>"><?php echo s($ini); ?></th>
+            <?php endforeach; ?>
+            <!-- Room sub-headers -->
+            <?php foreach ($rooms as $r): ?>
+            <th class="cu-sub">Chi</th>
+            <th class="cu-sub">ATT.</th>
+            <?php endforeach; ?>
+            <!-- Secretary SW -->
+            <?php foreach ($secretaries as $s):
+                $sc = $secretary_colors[$s];
+            ?>
+            <th class="cu-actor" style="background:<?php echo $sc['bg']; ?>;color:<?php echo $sc['text']; ?>"><?php echo s($s); ?></th>
+            <?php endforeach; ?>
+            <!-- Secretary Assenze -->
+            <?php foreach ($secretaries as $s):
+                $sc = $secretary_colors[$s];
+            ?>
+            <th class="cu-actor" style="background:<?php echo $sc['bg']; ?>;color:<?php echo $sc['text']; ?>"><?php echo s($s); ?></th>
+            <?php endforeach; ?>
+            <th class="cu-sub"></th>
         </tr>
     </thead>
     <tbody>
-    <?php foreach ($cgv_rows as $ss_key => $ss_def):
-        // Skip dynamic sub-slots if no activities this week
-        if (!$ss_def['main'] && !isset($active_subs[$ss_key])) continue;
-        $row_cls  = $ss_def['main']
-            ? 'cgv-row-main ' . ($ss_def['morning'] ? 'cgv-row-mattino' : 'cgv-row-pomeriggio')
-            : 'cgv-row-sub';
-        $orario_cls = $ss_def['main']
-            ? ($ss_def['morning'] ? 'cgv-slot-matt' : 'cgv-slot-pom')
-            : ($ss_def['morning'] ? 'cgv-slot-sub-matt' : 'cgv-slot-sub-pom');
+    <?php foreach ($week_dates as $wday):
+        $dow      = $wday['day_of_week'];
+        $date_str = date('Y-m-d', $wday['timestamp']);
     ?>
-    <tr class="<?php echo $row_cls; ?>">
-        <td class="cgv-td-orario <?php echo $orario_cls; ?>">
-            <div class="cgv-slot-label"><?php echo $ss_def['label']; ?></div>
-            <div class="cgv-slot-time"><?php echo $ss_def['time']; ?></div>
+    <?php foreach (['matt', 'pom'] as $si => $slot): ?>
+    <tr class="<?php echo $slot === 'matt' ? 'cu-row-matt' : 'cu-row-pom'; ?>">
+
+        <?php if ($si === 0): ?>
+        <td class="cu-day-cell" rowspan="2">
+            <strong><?php echo s($wday['day_name']); ?></strong><br>
+            <small><?php echo date('d/m', $wday['timestamp']); ?></small>
         </td>
-        <?php foreach ($week_dates as $wday):
-            $dow      = $wday['day_of_week'];
-            $date_str = date('Y-m-d', $wday['timestamp']);
-            $acts     = $act_matrix[$dow][$ss_key] ?? [];
-            $is_empty = empty($acts);
+        <?php endif; ?>
+
+        <td class="cu-slot-cell <?php echo $slot; ?>">
+            <?php echo $slot === 'matt' ? 'Matt.' : 'Pom.'; ?>
+        </td>
+
+        <!-- Coach SW cells -->
+        <?php foreach ($coaches as $c):
+            $ini      = $c->initials;
+            $skey     = $ini . '|' . $date_str . '|' . $slot;
+            $cur_status = $initial_status_map[$skey] ?? 'present';
+            $cc       = $coach_personal_colors[$ini] ?? ['bg' => '#ccc', 'text' => '#000'];
         ?>
-        <td class="cgv-td-day <?php echo $is_empty ? 'cgv-cell-empty' : ''; ?>"
-            <?php if ($is_empty): ?>
-            onclick="cgvQuickCreate('<?php echo $date_str; ?>','<?php echo $ss_key; ?>')"
-            title="Aggiungi attivita"
-            <?php endif; ?>>
-            <?php if (!$is_empty): ?>
-            <ul class="cgv-act-list">
-                <?php foreach ($acts as $act):
-                    $room_nm   = $room_lookup[(int)($act->roomid ?? 0)] ?? '';
-                    $coach_ini = '';
-                    if (!empty($act->teacher_firstname) || !empty($act->teacher_lastname)) {
-                        $coach_ini = strtoupper(
-                            substr($act->teacher_firstname ?? '', 0, 1) .
-                            substr($act->teacher_lastname  ?? '', 0, 1)
-                        );
-                    }
-                    $is_ext = !empty($act->is_external);
-                    $gc     = $act->group_color ?? 'neutro';
-                    $act_id = (int)$act->id;
-                    $act_nm = $act->name;
-                    $rid    = (int)($act->roomid ?? 0);
-                    $gid    = (int)($act->groupid ?? 0);
-                    $tid    = (int)($act->teacherid ?? 0);
-                    if ($is_ext) {
-                        $onclick = 'ftmViewExternal(' . $act_id . ')';
-                    } else {
-                        $onclick = 'ceOpenPop(' . $act_id . ',' . htmlspecialchars(json_encode($act_nm), ENT_QUOTES) . ',' . $rid . ',' . $gid . ',' . $tid . ',this,event)';
-                    }
-                    $coach_cls = 'cgv-c-' . strtolower($coach_ini);
-                ?>
-                <li class="cgv-act <?php echo $is_ext ? 'cgv-ext' : 'cgv-gc-' . $gc; ?>"
-                    onclick="event.stopPropagation(); <?php echo $onclick; ?>">
-                    <span class="cgv-bullet">&#9679;</span>
-                    <span class="cgv-act-text">
-                        <?php echo s($act_nm); ?>
-                        <?php if ($room_nm): ?> <span class="cgv-sep">&ndash;</span> <span class="cgv-room"><?php echo s($room_nm); ?></span><?php endif; ?>
-                        <?php if ($coach_ini): ?> <span class="cgv-sep">&ndash;</span> <span class="cgv-coach <?php echo s($coach_cls); ?>"><?php echo s($coach_ini); ?></span><?php endif; ?>
-                    </span>
-                </li>
-                <?php endforeach; ?>
-            </ul>
-            <?php else: ?>
-            <span class="cgv-cell-plus">+</span>
+        <td class="cu-status-cell"
+            data-dskey="<?php echo htmlspecialchars($skey, ENT_QUOTES); ?>"
+            data-ds-section="sw"
+            title="<?php echo s($ini); ?> Smart Working"
+            onclick="dsToggle(<?php echo htmlspecialchars(json_encode($ini), ENT_QUOTES); ?>,'coach',<?php echo htmlspecialchars(json_encode($date_str), ENT_QUOTES); ?>,<?php echo htmlspecialchars(json_encode($slot), ENT_QUOTES); ?>,'sw',this)">
+            <?php if ($cur_status === 'sw'): ?>
+            <span class="ds-badge" style="background:<?php echo $cc['bg']; ?>;color:<?php echo $cc['text']; ?>"><?php echo s($ini); ?></span>
             <?php endif; ?>
         </td>
-        <?php endforeach; // week_dates ?>
+        <?php endforeach; ?>
+
+        <!-- Coach Assenze cells -->
+        <?php foreach ($coaches as $c):
+            $ini      = $c->initials;
+            $skey     = $ini . '|' . $date_str . '|' . $slot;
+            $cur_status = $initial_status_map[$skey] ?? 'present';
+            $cc       = $coach_personal_colors[$ini] ?? ['bg' => '#ccc', 'text' => '#000'];
+        ?>
+        <td class="cu-status-cell"
+            data-dskey="<?php echo htmlspecialchars($skey, ENT_QUOTES); ?>"
+            data-ds-section="assenza"
+            title="<?php echo s($ini); ?> Assente"
+            onclick="dsToggle(<?php echo htmlspecialchars(json_encode($ini), ENT_QUOTES); ?>,'coach',<?php echo htmlspecialchars(json_encode($date_str), ENT_QUOTES); ?>,<?php echo htmlspecialchars(json_encode($slot), ENT_QUOTES); ?>,'absent',this)">
+            <?php if ($cur_status === 'absent'): ?>
+            <span class="ds-badge" style="background:<?php echo $cc['bg']; ?>;color:<?php echo $cc['text']; ?>"><?php echo s($ini); ?></span>
+            <?php endif; ?>
+        </td>
+        <?php endforeach; ?>
+
+        <!-- Room cells (Chi + ATT.) -->
+        <?php foreach ($rooms as $room):
+            $act      = $room_matrix[$room->id][$dow][$slot] ?? null;
+            $pre_date = $date_str;
+        ?>
+        <?php if ($act && !empty($act->is_external)): ?>
+        <td class="cu-room-chi"
+            onclick="ftmViewExternal(<?php echo (int)$act->id; ?>)"
+            style="cursor:pointer"
+            title="Esterno">
+            <span class="ds-badge" style="background:#DBEAFE;color:#1E40AF;font-size:10px;">EXT</span>
+        </td>
+        <td class="cu-room-att"
+            onclick="ftmViewExternal(<?php echo (int)$act->id; ?>)"
+            style="cursor:pointer"><?php echo s($act->project_name); ?></td>
+        <?php elseif ($act):
+            $gc        = $act->group_color ?? 'neutro';
+            $tid       = (int)($act->teacherid ?? 0);
+            $gid       = (int)($act->groupid ?? 0);
+            $at        = !empty($act->is_atelier) ? 'atelier' : 'week1';
+            $coach_ini = '';
+            $coach_bg  = '#ccc';
+            $coach_txt = '#000';
+            if (!empty($act->teacher_firstname) || !empty($act->teacher_lastname)) {
+                $coach_ini = strtoupper(
+                    substr($act->teacher_firstname ?? '', 0, 1) .
+                    substr($act->teacher_lastname  ?? '', 0, 1)
+                );
+                $cc2       = $coach_personal_colors[$coach_ini] ?? ['bg' => '#ccc', 'text' => '#000'];
+                $coach_bg  = $cc2['bg'];
+                $coach_txt = $cc2['text'];
+            }
+        ?>
+        <td class="cu-room-chi"
+            data-actid="<?php echo (int)$act->id; ?>"
+            data-roomid="<?php echo (int)$room->id; ?>"
+            data-groupid="<?php echo $gid; ?>"
+            data-type="<?php echo $at; ?>"
+            onclick="ceOpenPop(<?php echo (int)$act->id; ?>,<?php echo htmlspecialchars(json_encode($act->name), ENT_QUOTES); ?>,<?php echo (int)$room->id; ?>,<?php echo $gid; ?>,<?php echo $tid; ?>,this,event)"
+            style="cursor:pointer">
+            <?php if ($coach_ini): ?>
+            <span class="ds-badge" style="background:<?php echo $coach_bg; ?>;color:<?php echo $coach_txt; ?>"><?php echo s($coach_ini); ?></span>
+            <?php endif; ?>
+            <?php if ($gid): ?><br><span class="cu-grp-dot <?php echo s($gc); ?>"></span><?php endif; ?>
+        </td>
+        <td class="cu-room-att"
+            data-actid="<?php echo (int)$act->id; ?>"
+            onclick="ceOpenPop(<?php echo (int)$act->id; ?>,<?php echo htmlspecialchars(json_encode($act->name), ENT_QUOTES); ?>,<?php echo (int)$room->id; ?>,<?php echo $gid; ?>,<?php echo $tid; ?>,document.querySelector('[data-actid=\'<?php echo (int)$act->id; ?>\'].cu-room-chi'),event)"
+            style="cursor:pointer"><?php echo s($act->name); ?></td>
+        <?php else: ?>
+        <td class="cu-room-free" colspan="2"
+            onclick="ftmQuickCreate(<?php echo (int)$room->id; ?>,'<?php echo $pre_date; ?>','<?php echo $slot; ?>')"
+            title="Crea attivita">+</td>
+        <?php endif; ?>
+        <?php endforeach; ?>
+
+        <!-- Secretary SW cells -->
+        <?php foreach ($secretaries as $s):
+            $skey      = $s . '|' . $date_str . '|' . $slot;
+            $cur_status = $initial_status_map[$skey] ?? 'present';
+            $sc        = $secretary_colors[$s];
+        ?>
+        <td class="cu-status-cell"
+            data-dskey="<?php echo htmlspecialchars($skey, ENT_QUOTES); ?>"
+            data-ds-section="sw"
+            title="<?php echo s($s); ?> Smart Working"
+            onclick="dsToggle(<?php echo htmlspecialchars(json_encode($s), ENT_QUOTES); ?>,'secretary',<?php echo htmlspecialchars(json_encode($date_str), ENT_QUOTES); ?>,<?php echo htmlspecialchars(json_encode($slot), ENT_QUOTES); ?>,'sw',this)">
+            <?php if ($cur_status === 'sw'): ?>
+            <span class="ds-badge" style="background:<?php echo $sc['bg']; ?>;color:<?php echo $sc['text']; ?>"><?php echo s($s); ?></span>
+            <?php endif; ?>
+        </td>
+        <?php endforeach; ?>
+
+        <!-- Secretary Assenze cells -->
+        <?php foreach ($secretaries as $s):
+            $skey      = $s . '|' . $date_str . '|' . $slot;
+            $cur_status = $initial_status_map[$skey] ?? 'present';
+            $sc        = $secretary_colors[$s];
+        ?>
+        <td class="cu-status-cell"
+            data-dskey="<?php echo htmlspecialchars($skey, ENT_QUOTES); ?>"
+            data-ds-section="assenza"
+            title="<?php echo s($s); ?> Assente"
+            onclick="dsToggle(<?php echo htmlspecialchars(json_encode($s), ENT_QUOTES); ?>,'secretary',<?php echo htmlspecialchars(json_encode($date_str), ENT_QUOTES); ?>,<?php echo htmlspecialchars(json_encode($slot), ENT_QUOTES); ?>,'absent',this)">
+            <?php if ($cur_status === 'absent'): ?>
+            <span class="ds-badge" style="background:<?php echo $sc['bg']; ?>;color:<?php echo $sc['text']; ?>"><?php echo s($s); ?></span>
+            <?php endif; ?>
+        </td>
+        <?php endforeach; ?>
+
+        <!-- Altre attivita cell -->
+        <?php
+        $ekey   = $date_str . '|' . $slot;
+        $enotes = $extra_map[$ekey] ?? '';
+        ?>
+        <td class="cu-extra"
+            data-extrakey="<?php echo htmlspecialchars($ekey, ENT_QUOTES); ?>"
+            onclick="dsEditExtra(this)"
+            title="Clicca per editare"><?php echo $enotes ? s($enotes) : ''; ?></td>
+
     </tr>
-    <?php endforeach; // cgv_rows ?>
+    <?php endforeach; // slot ?>
+    <?php endforeach; // week_dates ?>
     </tbody>
 </table>
-</div>
-
-<!-- ===================== STATO COACH & SEGRETERIA (collapsibile) ===================== -->
-<div class="cgv-status-panel">
-    <div class="cgv-status-header" id="cgv-status-hdr"
-         onclick="(function(hdr){var b=document.getElementById('cgv-status-body');var open=b.style.display!=='none';b.style.display=open?'none':'block';hdr.querySelector('.cgv-chevron').style.transform=open?'':'rotate(180deg)';})(this)">
-        <span>&#128203; Stato Coach &amp; Segreteria (SW / Assenze)</span>
-        <span class="cgv-chevron">&#9660;</span>
-    </div>
-    <div id="cgv-status-body" style="display:none; overflow-x:auto; padding:8px;">
-    <table class="cal-unified" style="min-width:auto;">
-        <thead>
-            <tr>
-                <th rowspan="2" style="min-width:55px;text-align:center;background:#f8f9fa;">Persona</th>
-                <th rowspan="2" class="cu-sub">Fascia</th>
-                <?php foreach ($week_dates as $wday): ?>
-                <th colspan="2" class="cu-sect" style="text-align:center;background:#f8f9fa;font-size:10px;">
-                    <?php echo s(substr($wday['day_name'], 0, 3)); ?><br>
-                    <span style="font-weight:400;"><?php echo date('d/m', $wday['timestamp']); ?></span>
-                </th>
-                <?php endforeach; ?>
-            </tr>
-            <tr>
-                <?php foreach ($week_dates as $ignored): ?>
-                <th class="cu-sub cu-sect-sw" style="font-size:9px;">SW</th>
-                <th class="cu-sub cu-sect-ass" style="font-size:9px;">Ass.</th>
-                <?php endforeach; ?>
-            </tr>
-        </thead>
-        <tbody>
-        <?php foreach (['matt' => 'M', 'pom' => 'P'] as $slot => $slot_lbl): ?>
-        <?php foreach ($coaches as $c):
-            $ini = $c->initials;
-            $cc  = $coach_personal_colors[$ini] ?? ['bg' => '#ccc', 'text' => '#000'];
-        ?>
-        <tr class="<?php echo $slot === 'matt' ? 'cu-row-matt' : 'cu-row-pom'; ?>">
-            <td class="cu-actor" style="background:<?php echo $cc['bg']; ?>;color:<?php echo $cc['text']; ?>"><?php echo s($ini); ?></td>
-            <td class="cu-slot-cell <?php echo $slot; ?>"><?php echo $slot_lbl; ?></td>
-            <?php foreach ($week_dates as $wday):
-                $ds    = date('Y-m-d', $wday['timestamp']);
-                $skey  = $ini . '|' . $ds . '|' . $slot;
-                $cur   = $initial_status_map[$skey] ?? 'present';
-            ?>
-            <td class="cu-status-cell"
-                data-dskey="<?php echo htmlspecialchars($skey, ENT_QUOTES); ?>"
-                data-ds-section="sw"
-                onclick="dsToggle(<?php echo htmlspecialchars(json_encode($ini), ENT_QUOTES); ?>,'coach',<?php echo htmlspecialchars(json_encode($ds), ENT_QUOTES); ?>,<?php echo htmlspecialchars(json_encode($slot), ENT_QUOTES); ?>,'sw',this)">
-                <?php if ($cur === 'sw'): ?><span class="ds-badge" style="background:<?php echo $cc['bg']; ?>;color:<?php echo $cc['text']; ?>"><?php echo s($ini); ?></span><?php endif; ?>
-            </td>
-            <td class="cu-status-cell"
-                data-dskey="<?php echo htmlspecialchars($skey, ENT_QUOTES); ?>"
-                data-ds-section="assenza"
-                onclick="dsToggle(<?php echo htmlspecialchars(json_encode($ini), ENT_QUOTES); ?>,'coach',<?php echo htmlspecialchars(json_encode($ds), ENT_QUOTES); ?>,<?php echo htmlspecialchars(json_encode($slot), ENT_QUOTES); ?>,'absent',this)">
-                <?php if ($cur === 'absent'): ?><span class="ds-badge" style="background:<?php echo $cc['bg']; ?>;color:<?php echo $cc['text']; ?>"><?php echo s($ini); ?></span><?php endif; ?>
-            </td>
-            <?php endforeach; ?>
-        </tr>
-        <?php endforeach; // coaches ?>
-        <?php endforeach; // slots coaches ?>
-        <?php foreach (['matt' => 'M', 'pom' => 'P'] as $slot => $slot_lbl): ?>
-        <?php foreach ($secretaries as $s):
-            $sc = $secretary_colors[$s];
-        ?>
-        <tr class="<?php echo $slot === 'matt' ? 'cu-row-matt' : 'cu-row-pom'; ?>">
-            <td class="cu-actor" style="background:<?php echo $sc['bg']; ?>;color:<?php echo $sc['text']; ?>"><?php echo s($s); ?></td>
-            <td class="cu-slot-cell <?php echo $slot; ?>"><?php echo $slot_lbl; ?></td>
-            <?php foreach ($week_dates as $wday):
-                $ds   = date('Y-m-d', $wday['timestamp']);
-                $skey = $s . '|' . $ds . '|' . $slot;
-                $cur  = $initial_status_map[$skey] ?? 'present';
-            ?>
-            <td class="cu-status-cell"
-                data-dskey="<?php echo htmlspecialchars($skey, ENT_QUOTES); ?>"
-                data-ds-section="sw"
-                onclick="dsToggle(<?php echo htmlspecialchars(json_encode($s), ENT_QUOTES); ?>,'secretary',<?php echo htmlspecialchars(json_encode($ds), ENT_QUOTES); ?>,<?php echo htmlspecialchars(json_encode($slot), ENT_QUOTES); ?>,'sw',this)">
-                <?php if ($cur === 'sw'): ?><span class="ds-badge" style="background:<?php echo $sc['bg']; ?>;color:<?php echo $sc['text']; ?>"><?php echo s($s); ?></span><?php endif; ?>
-            </td>
-            <td class="cu-status-cell"
-                data-dskey="<?php echo htmlspecialchars($skey, ENT_QUOTES); ?>"
-                data-ds-section="assenza"
-                onclick="dsToggle(<?php echo htmlspecialchars(json_encode($s), ENT_QUOTES); ?>,'secretary',<?php echo htmlspecialchars(json_encode($ds), ENT_QUOTES); ?>,<?php echo htmlspecialchars(json_encode($slot), ENT_QUOTES); ?>,'absent',this)">
-                <?php if ($cur === 'absent'): ?><span class="ds-badge" style="background:<?php echo $sc['bg']; ?>;color:<?php echo $sc['text']; ?>"><?php echo s($s); ?></span><?php endif; ?>
-            </td>
-            <?php endforeach; ?>
-        </tr>
-        <?php endforeach; // secretaries ?>
-        <?php endforeach; // slots secretaries ?>
-        </tbody>
-    </table>
-    </div>
 </div>
 
 <?php else: ?>
@@ -780,6 +605,7 @@ function ftmChangeYear(y) {
     <tbody>
     <?php foreach ($month_weeks as $week_info):
         $wn = $week_info['week_num'];
+        // Build room matrix for this week from month_activities
         $wk_room_matrix = [];
         foreach ($week_info['days'] as $mday) {
             $mdow = $mday['day_of_week'];
@@ -1106,6 +932,7 @@ function dsToggle(actor, actorType, date, slot, targetStatus, clickedCell) {
     var newStatus = (current === targetStatus) ? 'present' : targetStatus;
     dsStatusMap[key] = newStatus;
 
+    // Update all cells sharing this key
     document.querySelectorAll('[data-dskey="' + key + '"]').forEach(function(cell) {
         var section    = cell.getAttribute('data-ds-section');
         var badge      = cell.querySelector('.ds-badge');
@@ -1118,6 +945,7 @@ function dsToggle(actor, actorType, date, slot, targetStatus, clickedCell) {
         }
     });
 
+    // AJAX persist
     var fd = new FormData();
     fd.append('action', 'save_status');
     fd.append('sesskey', dsSesskey);
@@ -1130,6 +958,7 @@ function dsToggle(actor, actorType, date, slot, targetStatus, clickedCell) {
         .then(function(r) { return r.json(); })
         .then(function(d) {
             if (!d.success) {
+                // Revert on failure
                 dsStatusMap[key] = current;
                 location.reload();
             }
@@ -1174,20 +1003,6 @@ function dsEditExtra(cell) {
     inp.focus();
     inp.select();
 }
-
-// ---- Quick create from global view (new) ----
-function cgvQuickCreate(dateStr, slot) {
-    ftmOpenModal('newActivity');
-    var modal = document.getElementById('modal-newActivity');
-    if (!modal) return;
-    var form = modal.querySelector('form');
-    var dateField = form.querySelector('[name="date"]');
-    if (dateField) dateField.value = dateStr;
-    var slotField = form.querySelector('[name="time_slot"]');
-    if (slotField) slotField.value = slot;
-    var nameField = form.querySelector('[name="name"]');
-    if (nameField) setTimeout(function() { nameField.focus(); }, 80);
-}
 </script>
 
 <!-- ===================== FILTER JS ===================== -->
@@ -1201,12 +1016,14 @@ function cgvQuickCreate(dateStr, slot) {
         var gv = fg ? fg.value : '';
         var tv = ft ? ft.value : '';
 
+        // Month view mini activities
         document.querySelectorAll('.month-activity-mini').forEach(function(b) {
             var bt = b.classList.contains('external') ? 'external' :
                      (b.classList.contains('atelier') ? 'atelier' : 'week1');
             b.style.display = (!tv || bt === tv) ? '' : 'none';
         });
 
+        // Unified table: cu-room-chi / cu-room-att by data-type
         document.querySelectorAll('[data-type]').forEach(function(b) {
             var bt = b.getAttribute('data-type') || '';
             var bg = b.getAttribute('data-groupid') || '';

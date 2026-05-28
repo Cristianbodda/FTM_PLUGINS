@@ -1421,9 +1421,22 @@ foreach ($atelier_catalog as $at) {
                     <div class="form-group">
                         <label>Fascia Oraria *</label>
                         <select name="time_slot" id="newact-slot" autocomplete="off">
-                            <option value="matt" selected>Mattina (08:30-11:45)</option>
-                            <option value="pom">Pomeriggio (13:15-16:30)</option>
-                            <option value="all">Tutto il giorno (08:30-16:30)</option>
+                            <optgroup label="Fasce complete">
+                                <option value="matt" selected>Mattina (08:30-11:45)</option>
+                                <option value="pom">Pomeriggio (13:15-16:30)</option>
+                                <option value="all">Tutto il giorno (08:30-16:30)</option>
+                            </optgroup>
+                            <optgroup label="Slot mattino">
+                                <option value="0830">08:30-09:30</option>
+                                <option value="0930">09:30-10:15</option>
+                                <option value="1015">10:15-11:00</option>
+                                <option value="1100">11:00-11:45</option>
+                            </optgroup>
+                            <optgroup label="Slot pomeriggio">
+                                <option value="1315">13:15-14:30</option>
+                                <option value="1430">14:30-15:30</option>
+                                <option value="1530">15:30-16:30</option>
+                            </optgroup>
                         </select>
                     </div>
                 </div>
