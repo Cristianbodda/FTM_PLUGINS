@@ -1411,7 +1411,12 @@ $overlayCoach = [];
 if ($showOverlayRadar || $printOverlayRadar) {
     // 1. Quiz (gia in percentuale)
     if (!empty($areasData)) {
-        foreach ($areasData as $areaData) {
+        foreach ($areasData as $areaKey => $areaData) {
+            // Filtra per settore corrente: previene collisione GEN_A vs LOGISTICA_A (stesso codice 'A')
+            $areaKeySector = strtoupper(explode('_', $areaKey)[0]);
+            if (!empty($currentSector) && strcasecmp(normalize_sector_name($areaKeySector), normalize_sector_name($currentSector)) !== 0) {
+                continue;
+            }
             $code = $areaData['code'];
             if (!isset($overlayAreas[$code])) {
                 $overlayAreas[$code] = [
@@ -1424,7 +1429,12 @@ if ($showOverlayRadar || $printOverlayRadar) {
     }
     // 2. Autovalutazione
     if (!empty($autovalutazioneAreas)) {
-        foreach ($autovalutazioneAreas as $areaData) {
+        foreach ($autovalutazioneAreas as $areaKey => $areaData) {
+            // Filtra per settore corrente
+            $areaKeySector = strtoupper(explode('_', $areaKey)[0]);
+            if (!empty($currentSector) && strcasecmp(normalize_sector_name($areaKeySector), normalize_sector_name($currentSector)) !== 0) {
+                continue;
+            }
             $code = $areaData['code'];
             if (!isset($overlayAreas[$code])) {
                 $overlayAreas[$code] = [
@@ -4543,7 +4553,12 @@ if ($tab === 'overview') {
                         <?php
                         $allAreas4Fonti = [];
                         if (!empty($areasData)) {
-                            foreach ($areasData as $areaData) {
+                            foreach ($areasData as $areaKey => $areaData) {
+                                // Filtra per settore corrente: previene collisione GEN_A vs LOGISTICA_A
+                                $areaKeySector = strtoupper(explode('_', $areaKey)[0]);
+                                if (!empty($currentSector) && strcasecmp(normalize_sector_name($areaKeySector), normalize_sector_name($currentSector)) !== 0) {
+                                    continue;
+                                }
                                 $code = $areaData['code'];
                                 if (!isset($allAreas4Fonti[$code])) {
                                     $allAreas4Fonti[$code] = ['name' => $areaData['name'], 'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null];
@@ -4552,7 +4567,12 @@ if ($tab === 'overview') {
                             }
                         }
                         if (!empty($autovalutazioneAreas)) {
-                            foreach ($autovalutazioneAreas as $areaData) {
+                            foreach ($autovalutazioneAreas as $areaKey => $areaData) {
+                                // Filtra per settore corrente
+                                $areaKeySector = strtoupper(explode('_', $areaKey)[0]);
+                                if (!empty($currentSector) && strcasecmp(normalize_sector_name($areaKeySector), normalize_sector_name($currentSector)) !== 0) {
+                                    continue;
+                                }
                                 $code = $areaData['code'];
                                 if (!isset($allAreas4Fonti[$code])) {
                                     $allAreas4Fonti[$code] = ['name' => $areaData['name'], 'quiz' => null, 'auto' => null, 'labeval' => null, 'coach' => null];

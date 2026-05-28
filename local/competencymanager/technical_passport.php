@@ -561,6 +561,29 @@ if ($effectiveSectorFilter !== 'all') {
     }
 }
 
+// Also load sectors assigned to the student in local_student_sectors (quiz_count > 0 = real data).
+// This ensures the selector shows all sectors with data, even if the current course/filter
+// doesn't expose them through competency idnumbers alone.
+if ($DB->get_manager()->table_exists('local_student_sectors')) {
+    $dbSectorRows = $DB->get_records_select(
+        'local_student_sectors',
+        'userid = :uid AND quiz_count > 0',
+        ['uid' => $userid],
+        '',
+        'sector'
+    );
+    foreach ($dbSectorRows as $row) {
+        $upperSec = strtoupper(normalize_sector_name($row->sector));
+        if (!empty($upperSec)) {
+            $sectorsFound[$upperSec] = true;
+        }
+    }
+}
+
+// Ordered list of all selectable sectors (for the UI selector).
+$allSelectableSectors = array_keys($sectorsFound);
+sort($allSelectableSectors);
+
 // Load area descriptions for all detected sectors.
 $areaDescriptions = [];
 foreach (array_keys($sectorsFound) as $sec) {
@@ -692,11 +715,15 @@ if (empty($sectionOrder)) {
 // ========================================
 
 // Sector display name.
+// When filter is 'all' and multiple sectors exist, $sectorDisplay stays empty (shown as "Tutti").
 $sectorDisplay = '';
-$displaySector = ($effectiveSectorFilter !== 'all') ? $effectiveSectorFilter : $sector;
-if ($displaySector) {
-    $sectorDisplay = get_sector_display_name($displaySector);
+if ($effectiveSectorFilter !== 'all') {
+    $sectorDisplay = get_sector_display_name($effectiveSectorFilter);
+} else if (count($allSelectableSectors) === 1) {
+    // Only one sector available — show it even without an explicit filter.
+    $sectorDisplay = get_sector_display_name($allSelectableSectors[0]);
 }
+$displaySector = ($effectiveSectorFilter !== 'all') ? $effectiveSectorFilter : (count($allSelectableSectors) === 1 ? $allSelectableSectors[0] : $sector);
 
 // Overall percentage.
 $overallPct = $summary['overall_percentage'] ?? 0;
@@ -1767,6 +1794,71 @@ echo $OUTPUT->header();
     display: none;
 }
 
+/* ---- Sector selector bar ---- */
+.passport-sector-bar {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    padding: 14px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.sector-bar-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+.sector-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.sector-pill {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 2px solid #dee2e6;
+    background: #f8f9fa;
+    color: #555;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+}
+.sector-pill:hover {
+    border-color: #c62828;
+    color: #c62828;
+    background: #fff5f5;
+    text-decoration: none;
+}
+.sector-pill-active {
+    background: #c62828 !important;
+    border-color: #c62828 !important;
+    color: #fff !important;
+}
+.sector-pill-active:hover {
+    background: #a61d1d !important;
+    color: #fff !important;
+}
+.sector-viewing-badge {
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: #c62828;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.sector-viewing-all {
+    color: #555;
+}
+
 /* AI Modal */
 .ai-modal-overlay {
     display: none;
@@ -1937,6 +2029,8 @@ echo $OUTPUT->header();
             <strong>Settore:</strong>
             <?php if ($sectorDisplay): ?>
                 <span class="print-sector-badge"><?php echo s($sectorDisplay); ?></span>
+            <?php elseif ($effectiveSectorFilter === 'all' && count($allSelectableSectors) > 1): ?>
+                <span class="print-sector-badge"><?php echo s(implode(' + ', array_map('get_sector_display_name', $allSelectableSectors))); ?></span>
             <?php else: ?>
                 -
             <?php endif; ?>
@@ -1957,6 +2051,8 @@ echo $OUTPUT->header();
                 <?php echo s(fullname($student)); ?>
                 <?php if ($sectorDisplay): ?>
                     &mdash; Settore: <?php echo s($sectorDisplay); ?>
+                <?php elseif ($effectiveSectorFilter === 'all' && count($allSelectableSectors) > 1): ?>
+                    &mdash; Tutti i settori
                 <?php endif; ?>
             </p>
         </div>
@@ -1992,29 +2088,41 @@ echo $OUTPUT->header();
     <!-- Save feedback -->
     <div id="passport-save-feedback" class="passport-save-feedback no-print"></div>
 
-    <!-- Summary bar — solo settore con selettore -->
-    <div class="passport-summary" style="justify-content:center;">
-        <?php if (!empty($sectorsFound) && count($sectorsFound) > 1): ?>
-        <div class="passport-summary-item">
-            <div class="label">Settore</div>
-            <div class="value">
-                <select onchange="location.href='?userid=<?php echo $userid; ?>&courseid=<?php echo $courseid; ?>&cm_sector=' + this.value"
-                        style="font-size:1.1rem; font-weight:700; border:2px solid #c62828; border-radius:6px; padding:4px 10px; color:#c62828; background:#fff; cursor:pointer;">
-                    <?php foreach ($sectorsFound as $sf): ?>
-                    <option value="<?php echo s($sf); ?>" <?php echo (strcasecmp($effectiveSectorFilter, $sf) === 0 || $sectorDisplay === get_sector_display_name($sf)) ? 'selected' : ''; ?>>
-                        <?php echo s(get_sector_display_name($sf)); ?>
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+    <!-- Sector selector bar — always visible when at least one sector is available -->
+    <?php if (!empty($allSelectableSectors)): ?>
+    <div class="passport-sector-bar no-print">
+        <span class="sector-bar-label">Settore visualizzato:</span>
+        <div class="sector-pills">
+            <?php if (count($allSelectableSectors) > 1): ?>
+            <a href="?userid=<?php echo $userid; ?>&courseid=<?php echo $courseid; ?>&cm_sector=all"
+               class="sector-pill <?php echo ($effectiveSectorFilter === 'all') ? 'sector-pill-active' : ''; ?>">
+                Tutti
+            </a>
+            <?php endif; ?>
+            <?php foreach ($allSelectableSectors as $sf):
+                $isActive = strcasecmp($effectiveSectorFilter, $sf) === 0;
+            ?>
+            <a href="?userid=<?php echo $userid; ?>&courseid=<?php echo $courseid; ?>&cm_sector=<?php echo urlencode($sf); ?>"
+               class="sector-pill <?php echo $isActive ? 'sector-pill-active' : ''; ?>">
+                <?php echo s(get_sector_display_name($sf)); ?>
+            </a>
+            <?php endforeach; ?>
         </div>
-        <?php elseif ($sectorDisplay): ?>
-        <div class="passport-summary-item">
-            <div class="label">Settore</div>
-            <div class="value" style="font-size: 1.1rem;"><?php echo s($sectorDisplay); ?></div>
-        </div>
+        <?php
+        // Show a clear "what you're seeing" indicator.
+        if ($effectiveSectorFilter !== 'all' && $sectorDisplay):
+        ?>
+        <span class="sector-viewing-badge">
+            &#128065; Stai visualizzando: <strong><?php echo s($sectorDisplay); ?></strong>
+        </span>
+        <?php elseif ($effectiveSectorFilter === 'all' && count($allSelectableSectors) > 1): ?>
+        <span class="sector-viewing-badge sector-viewing-all">
+            &#128065; Stai visualizzando: <strong>Tutti i settori</strong>
+            <em style="font-size:0.78rem; font-weight:400; margin-left:6px;">(seleziona un settore per filtrare)</em>
+        </span>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <!-- ========================================
          CONFIGURABLE SECTIONS (rendered in garage order)
