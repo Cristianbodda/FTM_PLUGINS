@@ -2710,6 +2710,8 @@ echo $OUTPUT->header();
 }
 .passval-badge { display:inline-block; background:#16a34a; color:white; font-size:10px; font-weight:700; padding:2px 6px; border-radius:10px; margin-left:4px; white-space:nowrap; cursor:pointer; text-decoration:none; }
 .passval-badge:hover { background:#15803d; color:white; }
+.passval-badge.passval-draft { background:#94a3b8; }
+.passval-badge.passval-draft:hover { background:#64748b; color:white; }
 .sip-week-info {
     font-size: 10px;
     color: #155E75;
@@ -4663,9 +4665,7 @@ function render_view_compatta($students, $dashboard) {
                     <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
                     <span class="sip-badge" style="background: #94a3b8 !important; margin-top:3px;">CI &#9998;</span>
                     <?php endif; ?>
-                    <?php if (!empty($student->has_approved_passport)): ?>
-                    <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>" class="passval-badge" title="Passaporto Tecnico Approvato" onclick="event.stopPropagation();">&#128220; PassVal</a>
-                    <?php endif; ?>
+                    <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>" class="passval-badge<?php if (empty($student->has_approved_passport)) echo ' passval-draft'; ?>" title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>" onclick="event.stopPropagation();">&#128220; PassVal</a>
                 </div>
                 <div class="competency-cell <?php echo $is_below ? 'danger' : 'success'; ?>">
                     <?php echo round($student->competency_avg ?? 0); ?>%
@@ -4835,9 +4835,7 @@ function render_view_standard($students, $dashboard) {
                         <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
                         <span class="sip-badge" style="background: #94a3b8 !important;">CI &#9998;</span>
                         <?php endif; ?>
-                        <?php if (!empty($student->has_approved_passport)): ?>
-                        <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>" class="passval-badge" title="Passaporto Tecnico Approvato" onclick="event.stopPropagation();">&#128220; PassVal</a>
-                        <?php endif; ?>
+                        <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>" class="passval-badge<?php if (empty($student->has_approved_passport)) echo ' passval-draft'; ?>" title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>" onclick="event.stopPropagation();">&#128220; PassVal</a>
                     </div>
                 </div>
 
@@ -5299,9 +5297,7 @@ function render_view_dettagliata($students, $dashboard) {
                         <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
                         <span class="sip-badge" style="background: #94a3b8 !important;">CI &#9998;</span>
                         <?php endif; ?>
-                        <?php if (!empty($student->has_approved_passport)): ?>
-                        <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>" class="passval-badge" title="Passaporto Tecnico Approvato" onclick="event.stopPropagation();">&#128220; PassVal</a>
-                        <?php endif; ?>
+                        <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>" class="passval-badge<?php if (empty($student->has_approved_passport)) echo ' passval-draft'; ?>" title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>" onclick="event.stopPropagation();">&#128220; PassVal</a>
                     </div>
                 </div>
 
@@ -5558,9 +5554,7 @@ function render_view_classica($students, $dashboard) {
                         <?php elseif (!empty($student->sip_data) && ($student->sip_data->is_draft ?? false)): ?>
                         <span class="sip-badge" style="background: #94a3b8 !important;">CI &#9998;</span>
                         <?php endif; ?>
-                        <?php if (!empty($student->has_approved_passport)): ?>
-                        <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>" class="passval-badge" title="Passaporto Tecnico Approvato" onclick="event.stopPropagation();">&#128220; PassVal</a>
-                        <?php endif; ?>
+                        <a href="<?php echo $CFG->wwwroot; ?>/local/competencymanager/technical_passport.php?userid=<?php echo $student->id; ?>&amp;courseid=<?php echo $student->course_id ?? 0; ?>" class="passval-badge<?php if (empty($student->has_approved_passport)) echo ' passval-draft'; ?>" title="<?php echo !empty($student->has_approved_passport) ? 'Passaporto Tecnico Approvato' : 'Passaporto Tecnico'; ?>" onclick="event.stopPropagation();">&#128220; PassVal</a>
                     </div>
                 </div>
 

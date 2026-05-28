@@ -125,20 +125,10 @@ $total_bozze    = count($bozze_records);
 
 $month_start    = mktime(0, 0, 0, date('n'), 1);
 $this_month     = 0;
-$coach_counts   = [];
 foreach ($approved_records as $r) {
     if (($r->display_date ?? 0) >= $month_start) {
         $this_month++;
     }
-    $cn = trim(($r->coach_firstname ?? '') . ' ' . ($r->coach_lastname ?? ''));
-    if ($cn !== '') {
-        $coach_counts[$cn] = ($coach_counts[$cn] ?? 0) + 1;
-    }
-}
-$top_coach = '—';
-if (!empty($coach_counts)) {
-    arsort($coach_counts);
-    $top_coach = array_key_first($coach_counts);
 }
 
 // -------------------------------------------------------------------------
@@ -351,10 +341,6 @@ echo $OUTPUT->header();
     <div class="stat-card">
         <div class="stat-number"><?php echo $this_month; ?></div>
         <div class="stat-label">Approvati questo mese</div>
-    </div>
-    <div class="stat-card" style="min-width:180px;">
-        <div class="stat-number" style="font-size:16px; padding-top:6px;"><?php echo s($top_coach); ?></div>
-        <div class="stat-label">Coach pi&ugrave; attivo</div>
     </div>
 </div>
 
