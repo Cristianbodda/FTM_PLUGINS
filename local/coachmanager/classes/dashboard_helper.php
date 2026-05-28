@@ -246,6 +246,9 @@ class dashboard_helper {
         if ($this->db->get_manager()->table_exists('local_ftm_sip_eligibility')) {
             $student->has_eligibility = $this->db->record_exists('local_ftm_sip_eligibility', ['userid' => $student->id]);
         }
+
+        // Passaporto Tecnico approvato.
+        $student->has_approved_passport = $this->get_student_passport_approved($student->id);
     }
 
     /**
@@ -619,6 +622,21 @@ class dashboard_helper {
         return $this->db->record_exists('local_ftm_sip_enrollments', [
             'userid' => $userid,
             'status' => 'active',
+        ]);
+    }
+
+    /**
+     * Check if student has an approved technical passport.
+     * @param int $userid
+     * @return bool
+     */
+    private function get_student_passport_approved($userid) {
+        if (!$this->db->get_manager()->table_exists('local_passport_comments')) {
+            return false;
+        }
+        return $this->db->record_exists('local_passport_comments', [
+            'userid'    => $userid,
+            'area_code' => '__PASSPORT_APPROVED__',
         ]);
     }
 

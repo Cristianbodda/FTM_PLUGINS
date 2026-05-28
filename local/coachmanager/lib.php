@@ -46,6 +46,18 @@ function local_coachmanager_extend_navigation(global_navigation $navigation) {
         'coachmanager_all_students',
         new pix_icon('i/users', '')
     );
+
+    // PassVal — visibile solo a chi ha viewallevaluations (manager/superiore)
+    $syscontext = context_system::instance();
+    if (has_capability('local/competencymanager:viewallevaluations', $syscontext)) {
+        $node->add(
+            '&#128220; PassVal',
+            new moodle_url('/local/competencymanager/passport_approved_list.php'),
+            navigation_node::TYPE_CUSTOM,
+            null,
+            'passval_list'
+        );
+    }
 }
 
 /**
