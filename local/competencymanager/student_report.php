@@ -1054,17 +1054,43 @@ if (empty($sector) && !empty($courseSector)) {
     $sectorsFound[$courseSector] = true;
 }
 
+// Pre-carica settore primario PRIMA della logica filtro (necessario per auto-selezione multi-settore).
+$studentPrimarySector = null;
+$studentAssignedSectors = [];
+try {
+    $_earlySecRows = \local_competencymanager\sector_manager::get_student_sectors_with_quiz_data($userid);
+    $studentAssignedSectors = array_filter($_earlySecRows, function($s) {
+        return !(($s->source ?? '') === 'pin_unlock' && (int)($s->quiz_count ?? 0) === 0);
+    });
+    foreach ($studentAssignedSectors as $_earlyS) {
+        if (($_earlyS->type ?? '') === 'primary' || empty($studentPrimarySector)) {
+            $studentPrimarySector = $_earlyS->sector ?? $_earlyS->sector_alias ?? null;
+            if (($_earlyS->type ?? '') === 'primary') break;
+        }
+    }
+    unset($_earlySecRows, $_earlyS);
+} catch (Exception $e) {}
+if (empty($studentPrimarySector) && !empty($sector)) {
+    $studentPrimarySector = $sector;
+}
+
 // ============================================
-// SETTORE EFFETTIVO: auto-rileva dal quiz se filtro non impostato
-// Se l'utente seleziona quiz di un solo settore senza cambiare il dropdown,
-// filtriamo automaticamente autovalutazione/overlay per quel settore.
+// SETTORE EFFETTIVO: auto-rileva dal quiz o usa settore primario.
+// Priorità: singolo settore rilevato > filtro URL esplicito > settore primario DB > 'all'.
+// Quando cm_sector='all' e lo studente ha più settori, usa il settore primario
+// invece di mescolare i dati (causa valori errati nell'overlay e nei grafici).
 // ============================================
-// Se i quiz selezionati sono tutti di UN settore, usa quel settore
-// indipendentemente dal valore cm_sector nell'URL (che può essere stale)
 if (count($sectorsFound) === 1 && !empty($sector)) {
+    // Un solo settore rilevato: usalo sempre.
     $effectiveSectorFilter = $sector;
-} else {
+} else if ($cm_sector_filter !== 'all') {
+    // Filtro esplicito dall'URL (dropdown).
     $effectiveSectorFilter = $cm_sector_filter;
+} else if (!empty($studentPrimarySector)) {
+    // Multi-settore senza filtro esplicito: auto-seleziona il settore primario.
+    $effectiveSectorFilter = strtoupper(normalize_sector_name($studentPrimarySector));
+} else {
+    $effectiveSectorFilter = 'all';
 }
 
 // DEBUG SETTORE - solo per visualizzazione HTML (non per PDF/print)
@@ -1310,32 +1336,8 @@ if (file_exists(__DIR__ . '/../labeval/classes/api.php')) {
 
 // ============================================
 // CARICAMENTO SETTORI ASSEGNATI (per stampa)
+// $studentPrimarySector e $studentAssignedSectors già caricati prima del filtro effettivo.
 // ============================================
-$studentAssignedSectors = [];
-$studentPrimarySector = null;
-try {
-    // Carica i settori assegnati allo studente dalla tabella local_student_sectors
-    $studentAssignedSectors = \local_competencymanager\sector_manager::get_student_sectors_with_quiz_data($userid);
-    // Escludi settori sbloccati via PIN senza quiz completati (non ancora "guadagnati")
-    $studentAssignedSectors = array_filter($studentAssignedSectors, function($sec) {
-        return !(($sec->source ?? '') === 'pin_unlock' && (int)($sec->quiz_count ?? 0) === 0);
-    });
-    // Il settore primario è il primo (type = 'primary')
-    foreach ($studentAssignedSectors as $sec) {
-        if (($sec->type ?? '') === 'primary' || empty($studentPrimarySector)) {
-            $studentPrimarySector = $sec->sector ?? $sec->sector_alias ?? null;
-            if (($sec->type ?? '') === 'primary') break;
-        }
-    }
-} catch (Exception $e) {
-    // Se sector_manager non disponibile, usa $sector dai competencies
-    debugging('sector_manager not available: ' . $e->getMessage(), DEBUG_DEVELOPER);
-}
-
-// Se non c'è settore assegnato, usa quello rilevato dalle competenze
-if (empty($studentPrimarySector) && !empty($sector)) {
-    $studentPrimarySector = $sector;
-}
 
 // ============================================
 // CARICAMENTO NOMI QUIZ E AUTOVALUTAZIONE (per stampa)
